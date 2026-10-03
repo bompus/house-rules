@@ -9,8 +9,12 @@ Commits you write on `main` carry one identity as both author and committer:
 `bompus <bompus@users.noreply.github.com>`. Set it per commit with
 `git -c user.name=bompus -c user.email=bompus@users.noreply.github.com commit`.
 An outside contributor's commits keep their author. Rebase them onto `main`
-with that identity as committer (the same `-c` flags on `git rebase`), then
-land them as below.
+with that identity as committer (the same `-c` flags on `git rebase`), push
+the result to the pull request's branch (forks allow maintainer edits by
+default), then land it as below. Rebasing changes the commit IDs, so GitHub
+marks the pull request merged only when its updated head reaches `main`. When
+you cannot push to that branch, close the pull request with a comment naming
+the landing commit.
 
 Land through a pull request for the record, then fast-forward `main` to the
 branch head: `git push origin <branch>:main`. GitHub marks the pull request
