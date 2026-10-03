@@ -11,8 +11,9 @@ The user's choices live in a personal layer, by default
 `skills/` directories. Composition never edits host files; connecting a host
 is a separate step the user approves.
 
-1. Find the house-rules checkout (the directory holding `compose.mjs`). When
-   there is none, ask the user where to clone it. Done when
+1. Find the house-rules checkout (the directory holding `compose.mjs`;
+   `install.sh` puts it in `${XDG_DATA_HOME:-~/.local/share}/house-rules`).
+   When there is none, ask the user where to clone it. Done when
    `node compose.mjs --list` prints the modifiers. When only Bun is installed,
    run this and the compose step below with `bun` in place of `node`.
 2. Read the existing `house-rules.json` if there is one. Show the modifiers
