@@ -167,17 +167,44 @@ const TW_VIOLET_NAMES = new Set(["indigo", "violet", "purple"]);
 const TW_CHROMA =
   "red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose";
 
+// Longest gradient expression read; real ones are far shorter. The bound keeps
+// a stray "gradient(" with no closing parenthesis from reading the whole file.
+const MAX_GRADIENT = 2000;
+
+// Offset of the parenthesis closing the one at `open`, skipping /* */ comments,
+// or -1 when none closes within MAX_GRADIENT characters.
+function closingParen(text, open) {
+  const limit = Math.min(text.length, open + MAX_GRADIENT);
+  let depth = 0;
+  let comment = false;
+  for (let i = open; i < limit; i++) {
+    if (comment) {
+      if (text[i] === "*" && text[i + 1] === "/") {
+        comment = false;
+        i++;
+      }
+    } else if (text[i] === "/" && text[i + 1] === "*") {
+      comment = true;
+      i++;
+    } else if (text[i] === "(") depth++;
+    else if (text[i] === ")" && --depth === 0) return i;
+  }
+  return -1;
+}
+
 // CSS gradient functions often span several lines, so these are read from the
-// whole file: each purple-to-blue one as its start and end offsets.
+// whole file: each purple-to-blue one as its start and end offsets. An unclosed
+// one is read to the end of its line.
 function cssGradients(text) {
   const out = [];
   for (const m of text.matchAll(/(?:linear|radial|conic)-gradient\(/gi)) {
-    let end = m.index + m[0].length - 1;
-    for (let depth = 0; end < text.length; end++) {
-      if (text[end] === "(") depth++;
-      else if (text[end] === ")" && --depth === 0) break;
+    let end = closingParen(text, m.index + m[0].length - 1);
+    if (end === -1) {
+      end = text.indexOf("\n", m.index);
+      if (end === -1) end = text.length;
     }
-    const stops = colorsIn(text.slice(m.index, end + 1)).filter(chromatic);
+    const body = text.slice(m.index, end + 1).replaceAll(/\/\*[\s\S]*?\*\//g, " ");
+    const stops = colorsIn(body).filter(chromatic);
     if (stops.length >= 2 && stops.every(isCool) && stops.some(isViolet)) {
       out.push({ start: m.index, end });
     }
@@ -411,24 +438,34 @@ function scanFile(path, display, fonts) {
   for (let i = 0; i < text.length; i++) if (text[i] === "\n") starts.push(i + 1);
   const lineAt = (offset) => {
     let lo = 0;
-    while (lo + 1 < starts.length && starts[lo + 1] <= offset) lo++;
+    let hi = starts.length - 1;
+    while (lo < hi) {
+      const mid = (lo + hi + 1) >> 1;
+      if (starts[mid] <= offset) lo = mid;
+      else hi = mid - 1;
+    }
     return lo;
   };
 
-  // A gradient is reported once, at its first line; its stops are not reported
-  // again as violet accents.
-  const gradientLines = new Set();
+  // A gradient is reported once, at its first line. Its text is blanked before
+  // the violet check, so its stops are not reported again as violet accents but
+  // other colors on the same lines still are.
+  let blanked = "";
+  let from = 0;
   for (const { start, end } of cssGradients(text)) {
     const first = lineAt(start);
     add("purple-blue-gradient", first + 1, start - starts[first]);
-    for (let k = first; k <= lineAt(end); k++) gradientLines.add(k + 1);
+    const at = Math.max(from, start);
+    blanked += text.slice(from, at) + text.slice(at, end + 1).replaceAll(/[^\r\n]/g, " ");
+    from = Math.max(from, end + 1);
   }
+  const violetLines = (blanked + text.slice(from)).split(/\r?\n/);
 
   lines.forEach((line, i) => {
     const n = i + 1;
     let at = twGradientHit(line);
     if (at !== -1) add("purple-blue-gradient", n, at);
-    else if (!gradientLines.has(n) && (at = violetHit(line)) !== -1) add("violet-accent", n, at);
+    else if ((at = violetHit(violetLines[i])) !== -1) add("violet-accent", n, at);
     if ((at = gradientTextHit(line)) !== -1) add("gradient-text", n, at);
     if ((at = frostedHit(line)) !== -1) add("frosted-glass", n, at);
     if ((at = glowHit(line)) !== -1) add("neon-glow", n, at);
@@ -573,7 +610,8 @@ function main(argv) {
       `Scanned ${files.length} file${files.length === 1 ? "" : "s"}: ${counts.high} high, ${counts.medium} medium, ${counts.low} low (failing at ${failOn}).\n`,
     );
   }
-  process.exit(failing ? 1 : 0);
+  // exitCode, not exit(): exit() drops piped output that has not drained yet.
+  process.exitCode = failing ? 1 : 0;
 }
 
 main(process.argv.slice(2));

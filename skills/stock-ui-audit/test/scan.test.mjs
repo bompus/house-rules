@@ -8,7 +8,11 @@ const SCANNER = join(SKILL, "scripts", "scan.mjs");
 const FIX = join(SKILL, "test", "fixtures");
 
 function run(...args) {
-  const r = spawnSync(process.execPath, [SCANNER, ...args], { cwd: SKILL, encoding: "utf8" });
+  const r = spawnSync(process.execPath, [SCANNER, ...args], {
+    cwd: SKILL,
+    encoding: "utf8",
+    maxBuffer: 64 * 1024 * 1024,
+  });
   return { code: r.status, stdout: r.stdout, stderr: r.stderr };
 }
 
@@ -107,6 +111,50 @@ describe("walking", () => {
     expect(report.findings.map((f) => f.file)).toEqual([
       expect.stringMatching(/src\/app\.svelte$/),
     ]);
+  });
+});
+
+describe("gradients read across lines", () => {
+  let dir;
+  const write = (name, text) => {
+    writeFileSync(join(dir, name), text);
+    return join(dir, name);
+  };
+  beforeAll(() => {
+    dir = mkdtempSync(join(SKILL, "test", "gradients-"));
+  });
+  afterAll(() => rmSync(dir, { recursive: true, force: true }));
+
+  test("a parenthesis inside a comment does not end the gradient", () => {
+    const file = write(
+      "comment.css",
+      ".a { background: linear-gradient(/* ) */ #8b5cf6, #3b82f6); }\n",
+    );
+    expect(rulesIn(scanJson(file))).toEqual(["purple-blue-gradient@1"]);
+  });
+
+  test("an unclosed gradient( reads only its own line, not later colors", () => {
+    const file = write(
+      "unclosed.js",
+      'const label = "linear-gradient(";\nconst blue = "#3b82f6";\nconst styles = { color: "#a855f7" };\n',
+    );
+    expect(rulesIn(scanJson(file))).toEqual(["violet-accent@3"]);
+  });
+
+  test("a violet color after the gradient on its closing line is still reported", () => {
+    const file = write(
+      "closing.css",
+      ".hero {\n  background: linear-gradient(\n    #8b5cf6,\n    #3b82f6\n  ); color: #a855f7;\n}\n",
+    );
+    expect(rulesIn(scanJson(file))).toEqual(["purple-blue-gradient@2", "violet-accent@5"]);
+  });
+
+  test("piped --json output is complete when it is large", () => {
+    const file = write(
+      "many.css",
+      ".a { background: linear-gradient(#8b5cf6, #3b82f6); }\n".repeat(5000),
+    );
+    expect(scanJson(file).findings).toHaveLength(5000);
   });
 });
 

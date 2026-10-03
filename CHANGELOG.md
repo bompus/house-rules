@@ -2,6 +2,14 @@
 
 Notable changes to house-rules. Versions follow [semantic versioning](https://semver.org).
 
+## 0.2.1 - 2026-10-03
+
+- `stock-ui-audit`'s scanner: a `)` inside a comment no longer ends a gradient
+  early; an unclosed `gradient(` reads only its own line instead of borrowing
+  colors from the rest of the file; a violet color after a gradient on its
+  closing line is still reported; large files scan in linear time; and large
+  `--json` output is no longer cut off when piped.
+
 ## 0.2.0 - 2026-10-03
 
 - Eight new skills: `api-exposure-check`, `change-impact`, `explain-code`,
