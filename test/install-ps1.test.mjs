@@ -1,6 +1,14 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, writeFileSync } from "node:fs";
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  realpathSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 import { test } from "node:test";
@@ -41,7 +49,9 @@ const DROP = new Set(
 );
 
 function scratch() {
-  const home = mkdtempSync(join(tmpdir(), "house-rules-ps1-"));
+  // The long form of the path: TEMP can be an 8.3 short name (C:\Users\RUNNER~1),
+  // while the script reports the long names Get-ChildItem returns.
+  const home = realpathSync.native(mkdtempSync(join(tmpdir(), "house-rules-ps1-")));
   mkdirSync(join(home, "AppData", "Local"), { recursive: true });
   mkdirSync(join(home, "AppData", "Roaming"), { recursive: true });
   return home;
