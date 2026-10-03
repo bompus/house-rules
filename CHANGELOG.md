@@ -2,6 +2,12 @@
 
 Notable changes to house-rules. Versions follow [semantic versioning](https://semver.org).
 
+## 0.1.1 - 2026-10-03
+
+- `test-audit`: authoring-gate question 2 lists more production changes a
+  test should catch: a wrong argument, an empty or default return, and a
+  missing check for empty, nil, unauthorized or malformed input.
+
 ## 0.1.0 - 2026-10-02
 
 First public release.

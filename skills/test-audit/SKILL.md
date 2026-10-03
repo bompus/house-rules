@@ -17,9 +17,11 @@ keeping.
 Before adding a test, answer all four. A missing answer means don't add it yet.
 
 1. What observable behavior, invariant or contract does it protect?
-2. What credible regression makes it fail? Name the production change (a
-   constant, a branch, a side effect) that turns it red. If none would, it
-   is a change detector or cannot fail.
+2. What credible regression makes it fail? Name the production change that
+   turns it red: a wrong constant or argument, a wrong branch, a missing side
+   effect, an empty or default return, or a missing check for empty, nil,
+   unauthorized or malformed input. If none would, it is a change detector or
+   cannot fail.
 3. Why doesn't existing coverage already catch that? Each contract has one
    owning test at its strongest boundary. Another layer needs its own risk the
    owner cannot reach. Prefer a new case in an existing table or fixture over a
@@ -135,7 +137,8 @@ Original synthesis, adapting:
 - addyosmani/agent-skills'
   [floor guard](https://github.com/addyosmani/agent-skills/blob/main/skills/constraint-driven-development/references/floor-guard.md)
   (MIT): the diff checker.
-- obra/superpowers `writing-good-tests.md`: the mutation question.
+- obra/superpowers `writing-good-tests.md`: the mutation check behind
+  authoring-gate question 2.
 - omkamal's [pypict skill](https://github.com/omkamal/pypict-claude-skill):
   pairwise coverage.
 
