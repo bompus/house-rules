@@ -166,7 +166,14 @@ main() {
   "$rt" "$dir/compose.mjs" --config "$cfg/house-rules.json" --out "$cfg/rules.md" \
     --skills-out "$next" || die "compose failed; see the error above ($next may hold a partial result)"
   if [ -e "$skills" ]; then
-    old=$skills.previous-$(date +%Y%m%d%H%M%S)
+    # mv into an existing directory would nest it, so never reuse a name.
+    stamp=$skills.previous-$(date +%Y%m%d%H%M%S)
+    old=$stamp
+    n=0
+    while [ -e "$old" ]; do
+      n=$((n + 1))
+      old=$stamp-$n
+    done
     mv "$skills" "$old"
     say "Kept the previous skills in $old; remove it when you no longer need it"
   fi

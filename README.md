@@ -38,10 +38,16 @@ unknown target or any attempt to replace the end-of-reply check.
 ## Quick start
 
 Requires `git` and either [Bun](https://bun.sh) 1.4 or newer or Node.js 22 or
-newer. On Linux or macOS, one line installs or updates everything:
+newer. On Linux, macOS or WSL, one line installs or updates everything:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/bompus/house-rules/main/install.sh | sh
+```
+
+On Windows 10 or 11, run this in PowerShell instead:
+
+```powershell
+irm https://raw.githubusercontent.com/bompus/house-rules/main/install.ps1 | iex
 ```
 
 To read the script before it runs:
@@ -52,6 +58,12 @@ less install.sh
 sh install.sh
 ```
 
+```powershell
+irm https://raw.githubusercontent.com/bompus/house-rules/main/install.ps1 -OutFile install.ps1
+notepad install.ps1
+powershell -ExecutionPolicy Bypass -File install.ps1
+```
+
 The script picks the newest Bun 1.4 or newer it finds on `PATH` or in a
 version manager's directory, otherwise the newest Node.js 22 or newer. It
 clones this repository to `~/.local/share/house-rules` (or pulls it when it is
@@ -59,11 +71,14 @@ already there), copies `examples/person/house-rules.json` to
 `~/.config/house-rules/` when you have no config yet, and composes
 `~/.config/house-rules/rules.md` and `~/.config/house-rules/composed-skills`.
 Those are the default paths: a set `XDG_DATA_HOME` replaces `~/.local/share`,
-and a set `XDG_CONFIG_HOME` replaces `~/.config`.
+and a set `XDG_CONFIG_HOME` replaces `~/.config`. On Windows the checkout goes
+to `%LOCALAPPDATA%\house-rules` and the config to
+`%USERPROFILE%\.config\house-rules`.
 On a later run it keeps the previous skills directory under a dated name
 instead of deleting it. It never edits an agent host's files. The comment at
 the top of `install.sh` lists the environment variables that change its paths
-or runtime. Some skill scripts need Bun even when Node.js composes the rules.
+or runtime; `install.ps1` takes the same variables. Some skill scripts need Bun
+even when Node.js composes the rules.
 
 Then connect the composed file to your agent. Claude Code reads
 `@~/.config/house-rules/rules.md` on its own line in `~/.claude/CLAUDE.md`;
@@ -74,8 +89,7 @@ hosts, and asks before it touches a host file.
 
 ### Manual steps
 
-On Windows, or to keep the checkout somewhere else, run the same steps by
-hand. The commands use `node`; `bun` runs them the same way.
+To keep the checkout somewhere else, run the same steps by hand. The commands use `node`; `bun` runs them the same way.
 
 ```bash
 git clone https://github.com/bompus/house-rules.git

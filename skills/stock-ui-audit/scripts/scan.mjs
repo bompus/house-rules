@@ -9,7 +9,7 @@
 // above it, 2 bad usage (unknown flag, no paths, missing path, zero files).
 
 import { readdirSync, readFileSync, statSync } from "node:fs";
-import { extname, join, relative, resolve } from "node:path";
+import { extname, join, relative, resolve, sep } from "node:path";
 
 const EXTENSIONS = new Set([
   ".html",
@@ -582,7 +582,9 @@ function main(argv) {
     usageError(`no scannable files (${[...EXTENSIONS].join(" ")}) under the given paths`);
 
   const fonts = [];
-  const findings = files.flatMap((f) => scanFile(f, relative(process.cwd(), f) || f, fonts));
+  const findings = files.flatMap((f) =>
+    scanFile(f, (relative(process.cwd(), f) || f).split(sep).join("/"), fonts),
+  );
   const font = fontFinding(fonts);
   if (font) findings.push(font);
   findings.sort(

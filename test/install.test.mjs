@@ -31,7 +31,10 @@ function toolDir() {
   }
   return dir;
 }
-const tools = toolDir();
+// install.sh is for Linux, macOS and WSL; Windows uses install.ps1.
+const posix = process.platform !== "win32";
+const tools = posix ? toolDir() : "";
+const it = posix ? test : test.skip;
 
 // Writes a stub runtime that prints a version; returns its directory.
 function stub(home, rel, version) {
@@ -54,14 +57,14 @@ const picked = (home, pathDirs) => {
   return r.stdout.trim();
 };
 
-test("prefers Bun 1.4 or newer over any Node", () => {
+it("prefers Bun 1.4 or newer over any Node", () => {
   const home = scratch();
   const bun = stub(home, "a/bun", "1.4.2");
   const node = stub(home, "b/node", "v24.1.0");
   assert.equal(picked(home, [node, bun]), join(bun, "bun"));
 });
 
-test("picks the newest Bun across PATH and version managers", () => {
+it("picks the newest Bun across PATH and version managers", () => {
   const home = scratch();
   const onPath = stub(home, "a/bun", "1.4.2");
   stub(home, ".bun/bin/bun", "1.5.0-canary.3");
@@ -69,7 +72,7 @@ test("picks the newest Bun across PATH and version managers", () => {
   assert.equal(picked(home, [onPath]), join(home, ".bun/bin/bun"));
 });
 
-test("falls back to the newest Node 22 or newer when Bun is older than 1.4", () => {
+it("falls back to the newest Node 22 or newer when Bun is older than 1.4", () => {
   const home = scratch();
   const bun = stub(home, "a/bun", "1.3.9");
   const node = stub(home, "b/node", "v22.11.0");
@@ -78,14 +81,14 @@ test("falls back to the newest Node 22 or newer when Bun is older than 1.4", () 
   assert.equal(picked(home, [bun, node]), join(home, ".nvm/versions/node/v24.2.0/bin/node"));
 });
 
-test("compares version fields as numbers", () => {
+it("compares version fields as numbers", () => {
   const home = scratch();
   const nine = stub(home, "a/node", "v22.9.0");
   const ten = stub(home, "b/node", "v22.10.0");
   assert.equal(picked(home, [nine, ten]), join(ten, "node"));
 });
 
-test("fails with install pointers when no runtime is new enough", () => {
+it("fails with install pointers when no runtime is new enough", () => {
   const home = scratch();
   const node = stub(home, "a/node", "v20.18.0");
   const r = run(home, [node], ["--print-runtime"]);
@@ -93,7 +96,7 @@ test("fails with install pointers when no runtime is new enough", () => {
   assert.match(r.stderr, /Bun 1\.4 or newer .* Node\.js 22 or newer/);
 });
 
-test("rejects a HOUSE_RULES_RUNTIME below the minimum", () => {
+it("rejects a HOUSE_RULES_RUNTIME below the minimum", () => {
   const home = scratch();
   const dir = stub(home, "a/node", "v21.7.0");
   const r = run(home, [], ["--print-runtime"], { HOUSE_RULES_RUNTIME: join(dir, "node") });
@@ -101,7 +104,7 @@ test("rejects a HOUSE_RULES_RUNTIME below the minimum", () => {
   assert.match(r.stderr, /below 22\.0\.0/);
 });
 
-test("refuses a non-empty directory that is not a checkout", () => {
+it("refuses a non-empty directory that is not a checkout", () => {
   const home = scratch();
   const dir = join(home, "stuff");
   mkdirSync(dir);
@@ -112,7 +115,7 @@ test("refuses a non-empty directory that is not a checkout", () => {
   assert.deepEqual(readdirSync(dir), ["notes.txt"]);
 });
 
-test("installs from a checkout, then recomposes without deleting the old skills", () => {
+it("installs from a checkout, then recomposes without deleting the old skills", () => {
   const home = scratch();
   const checkout = join(home, "house-rules");
   cpSync(root, checkout, { recursive: true, filter: (src) => basename(src) !== ".git" });
@@ -131,4 +134,11 @@ test("installs from a checkout, then recomposes without deleting the old skills"
   const kept = readdirSync(config).filter((f) => f.startsWith("composed-skills.previous-"));
   assert.equal(kept.length, 1);
   assert.ok(readdirSync(join(config, "composed-skills")).length > 0);
+
+  // Runs within the same second keep separate backups instead of nesting one.
+  const third = run(home, [], [], env);
+  assert.equal(third.status, 0, third.stderr);
+  const backups = readdirSync(config).filter((f) => f.startsWith("composed-skills.previous-"));
+  assert.equal(backups.length, 2);
+  for (const b of backups) assert.ok(!existsSync(join(config, b, "composed-skills")));
 });
