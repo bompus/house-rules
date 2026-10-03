@@ -2,6 +2,15 @@
 
 Notable changes to house-rules. Versions follow [semantic versioning](https://semver.org).
 
+## 0.3.0 - 2026-10-03
+
+- `install.sh`: a one-line installer for Linux and macOS. It picks the newest
+  Bun 1.4 or newer, otherwise the newest Node.js 22 or newer, clones or
+  updates the checkout, creates a starter config when there is none and
+  composes the rules file and skills. A previous skills directory is kept
+  under a dated name, never deleted. The README quick start leads with it and
+  keeps the manual steps for Windows and custom checkouts.
+
 ## 0.2.10 - 2026-10-03
 
 - `effort-estimates`: the same rule in fewer words, so the paragraph stays

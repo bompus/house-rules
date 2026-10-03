@@ -37,9 +37,43 @@ unknown target or any attempt to replace the end-of-reply check.
 
 ## Quick start
 
-Requires Node.js 22 or newer, or [Bun](https://bun.sh) 1.4 or newer. The
-commands below use `node`; `bun` runs them the same way. Some skill scripts
-need Bun.
+Requires `git` and either [Bun](https://bun.sh) 1.4 or newer or Node.js 22 or
+newer. On Linux or macOS, one line installs or updates everything:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/bompus/house-rules/main/install.sh | sh
+```
+
+To read the script before it runs:
+
+```bash
+curl -fsSLO https://raw.githubusercontent.com/bompus/house-rules/main/install.sh
+less install.sh
+sh install.sh
+```
+
+The script picks the newest Bun 1.4 or newer it finds on `PATH` or in a
+version manager's directory, otherwise the newest Node.js 22 or newer. It
+clones this repository to `~/.local/share/house-rules` (or pulls it when it is
+already there), copies `examples/person/house-rules.json` to
+`~/.config/house-rules/` when you have no config yet, and composes
+`~/.config/house-rules/rules.md` and `~/.config/house-rules/composed-skills`.
+On a later run it keeps the previous skills directory under a dated name
+instead of deleting it. It never edits an agent host's files. The comment at
+the top of `install.sh` lists the environment variables that change its paths
+or runtime. Some skill scripts need Bun even when Node.js composes the rules.
+
+Then connect the composed file to your agent. Claude Code reads
+`@~/.config/house-rules/rules.md` on its own line in `~/.claude/CLAUDE.md`;
+other hosts take a copy in their user-level rules file. To change modifiers,
+edit `~/.config/house-rules/house-rules.json` and run the script again. The
+`house-rules-setup` skill walks through choosing modifiers and connecting
+hosts, and asks before it touches a host file.
+
+### Manual steps
+
+On Windows, or to keep the checkout somewhere else, run the same steps by
+hand. The commands use `node`; `bun` runs them the same way.
 
 ```bash
 git clone https://github.com/bompus/house-rules.git
@@ -51,14 +85,9 @@ node compose.mjs --config ~/.config/house-rules/house-rules.json \
   --out ~/.config/house-rules/rules.md --skills-out ~/.config/house-rules/composed-skills
 ```
 
-Then connect the composed file to your agent. Claude Code reads
-`@~/.config/house-rules/rules.md` on its own line in `~/.claude/CLAUDE.md`;
-other hosts take a copy in their user-level rules file. To recompose later,
-remove the old `composed-skills` directory first, because `--skills-out` must
-be empty or absent. The
-`house-rules-setup` skill walks through all of this and asks before it touches
-a host file. `compose.mjs` itself writes only the paths you give it and never
-deletes anything.
+To recompose later, move or remove the old `composed-skills` directory first,
+because `--skills-out` must be empty or absent. `compose.mjs` itself writes
+only the paths you give it and never deletes anything.
 
 ## Evaluate it with your agent
 
