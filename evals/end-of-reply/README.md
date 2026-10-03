@@ -10,7 +10,7 @@ node evals/end-of-reply/run.mjs --rules ~/.config/house-rules/rules.md --cmd "<y
 node evals/end-of-reply/run.mjs --rules ~/.config/house-rules/rules.md --cmd "..." --slice 80   # agents that read 80 lines at a time
 ```
 
-Add `--coded` when the `coded-offers` modifier is enabled. Each file in `scenarios/`
+Bun runs these commands in place of `node`. Add `--coded` when the `coded-offers` modifier is enabled. Each file in `scenarios/`
 states what it expects: `continue` (a tool call, no request for permission),
 `offer` (an offer with a recommendation and a reply line), or
 `offer-or-continue` (either, but never "nothing left"). One run per scenario is

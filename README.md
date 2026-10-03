@@ -37,7 +37,9 @@ unknown target or any attempt to replace the end-of-reply check.
 
 ## Quick start
 
-Requires Node.js 22 or newer. Some skill scripts need [Bun](https://bun.sh).
+Requires Node.js 22 or newer, or [Bun](https://bun.sh) 1.4 or newer. The
+commands below use `node`; `bun` runs them the same way. Some skill scripts
+need Bun.
 
 ```bash
 git clone https://github.com/bompus/house-rules.git
@@ -149,7 +151,7 @@ time, including when it reads only the first 80 lines. See its README.
 ## Development
 
 ```bash
-node --test test/*.test.mjs   # composer and eval grader
+node --test test/*.test.mjs   # composer and eval grader (or: bun test test/)
 bun test skills/    # skill scripts
 npx oxlint . && npx oxfmt --check .
 ```

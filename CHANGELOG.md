@@ -2,6 +2,12 @@
 
 Notable changes to house-rules. Versions follow [semantic versioning](https://semver.org).
 
+## 0.1.6 - 2026-10-03
+
+- The composer and eval runner need Node.js 22 or newer, or Bun 1.4 or newer;
+  the README, setup skill and eval README now say so. CI also runs the tests
+  and the example composition under Bun.
+
 ## 0.1.5 - 2026-10-02
 
 - `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1). Reports go through the

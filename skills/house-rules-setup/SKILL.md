@@ -13,7 +13,8 @@ is a separate step the user approves.
 
 1. Find the house-rules checkout (the directory holding `compose.mjs`). When
    there is none, ask the user where to clone it. Done when
-   `node compose.mjs --list` prints the modifiers.
+   `node compose.mjs --list` prints the modifiers. When only Bun is installed,
+   run this and the compose step below with `bun` in place of `node`.
 2. Read the existing `house-rules.json` if there is one. Show the modifiers
    from `--list` with their descriptions and the ones already enabled, and ask
    which to enable in one question where any combination is allowed. When

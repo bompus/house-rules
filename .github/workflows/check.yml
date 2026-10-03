@@ -23,6 +23,11 @@ jobs:
           bun-version: 1.4.2
       - name: Composer and eval grader
         run: node --test test/*.test.mjs
+      - name: Composer and eval grader under Bun
+        run: |
+          bun test test/
+          bun compose.mjs --config examples/person/house-rules.json \
+            --out "$RUNNER_TEMP/rules.md" --skills-out "$RUNNER_TEMP/composed-skills"
       - name: Skill scripts
         run: bun test skills/
       - name: Lint
