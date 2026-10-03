@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+# Additions to the CodeRabbit organization settings. With inheritance on, every
+# key this file leaves out keeps its organization value instead of resetting
+# to CodeRabbit's default.
+inheritance: true
+
+reviews:
+  estimate_code_review_effort: false
+  sequence_diagrams: false
+  suggested_reviewers: false
+  suggested_labels: false
+  in_progress_fortune: false
+  poem: false
+  auto_review:
+    ignore_title_keywords: ["WIP", "DO NOT MERGE"]
+  path_instructions:
+    - path: "**/*"
+      instructions: >-
+        Flag only problems this pull request introduces. Lines that were moved
+        or re-indented are not new. Before posting a finding, check it against
+        the code in the repository.
+    - path: "rules/**"
+      instructions: &agent-rules >-
+        Agents follow this text as rules. Flag a rule that contradicts another
+        rule or skill in this repository, a trigger an agent could not tell
+        applies, and a requirement with no yes/no test for whether it was met.
+    - path: "skills/*/SKILL.md"
+      instructions: *agent-rules
+  pre_merge_checks:
+    docstrings:
+      mode: "off"
+    custom_checks:
+      - name: Suppressions explained
+        mode: warning
+        instructions: >-
+          FAIL if a changed line adds or broadens a directive that silences a
+          lint, type-check or formatter diagnostic (for example
+          `oxlint-disable`, `eslint-disable`, `@ts-expect-error`, `@ts-ignore`,
+          or a new ignore entry in `.oxfmtrc.json` or a lint config) without a
+          comment on the same or the preceding line that says why. PASS
+          otherwise, including when the pull request adds no such directive.
+      - name: Rule changes documented
+        mode: warning
+        instructions: >-
+          FAIL if the diff changes `rules/core.md`, a file under
+          `rules/modifiers/` or a `skills/*/SKILL.md` and does not add a new
+          version entry to `CHANGELOG.md`. Also FAIL if it adds, removes or
+          renames a modifier or a skill and does not update the matching table
+          in `README.md`. PASS otherwise.
+
+knowledge_base:
+  code_guidelines:
+    filePatterns:
+      - "CONTRIBUTING.md"
+  learnings:
+    approval_delay: 7
