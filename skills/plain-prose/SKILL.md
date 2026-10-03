@@ -1,6 +1,6 @@
 ---
 name: plain-prose
-description: Revise text a person will read (commit messages, pull request descriptions, docs, code comments, replies) so it is plain, specific and free of the habits that mark machine-written prose. Use when drafting or revising human-facing text, or when asked to "unslop" text or make it sound less generated.
+description: Revise text a person will read (commit messages, PR descriptions, docs, code comments, replies) so it is plain, specific and free of AI tells, the habits that mark machine-written prose. Use when drafting or revising human-facing text, or when asked to "unslop" text or make it sound less generated.
 ---
 
 # Plain prose
