@@ -2,6 +2,15 @@
 
 Notable changes to house-rules. Versions follow [semantic versioning](https://semver.org).
 
+## 0.2.7 - 2026-10-03
+
+- `plain-prose`: the description says it applies even to a short message or
+  reply, so the skill loads when an agent drafts a Slack reply, an email or an
+  issue comment for a person. In Claude Code routing tests it loaded for 14 of
+  18 such prompts across two skill catalogs, up from 0 of 9 on one catalog
+  before the change. It kept loading for closing reports and stayed off
+  agent-instruction edits, quick answers and code.
+
 ## 0.2.6 - 2026-10-03
 
 - `plain-prose`: the description names the final report on a task, so the
