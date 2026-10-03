@@ -2,6 +2,13 @@
 
 Notable changes to house-rules. Versions follow [semantic versioning](https://semver.org).
 
+## 0.2.6 - 2026-10-03
+
+- `plain-prose`: the description names the final report on a task, so the
+  skill loads when an agent writes it. In Claude Code routing tests on two
+  skill catalogs, it loaded for 5 of 6 closing-report prompts, up from 0 of 6,
+  and still stayed off agent-instruction edits, quick answers and code.
+
 ## 0.2.5 - 2026-10-03
 
 - Core: keep a list of every checkout you touch, outside ones included, and
