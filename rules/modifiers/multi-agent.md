@@ -15,14 +15,14 @@ are not. Reuse workers for related follow-ups, do independent work while they
 run instead of polling, and keep workers from delegating further unless asked.
 
 Split standards by where they are enforced. Give implementers the task, file
-boundaries, public APIs and load-bearing architectural constraints; keep style
-and judgment calls for the review pass, where the reviewer reads the applicable
-guidance itself. What a formatter, linter, type check or automated gate can
-enforce belongs in tooling for both, never in prose for either. A rule that
-does not fit one line with a yes/no test is taste and reviewer-only. When no
-second reviewer runs, the user's direction is the only judgment backstop; say
-so instead of assuming review happened. Asking an advisor model is not a second
-review.
+boundaries, public APIs and load-bearing architectural constraints, even ones
+no tool can check. Keep style and judgment calls for the review pass, where the
+reviewer reads the applicable guidance itself; a convention that does not fit
+one line with a yes/no test is taste and reviewer-only. What a formatter,
+linter, type check or automated gate can enforce belongs in tooling for both,
+never in prose for either. When no second reviewer runs, the user's direction
+is the only judgment backstop; say so instead of assuming review happened.
+Asking an advisor model is not a second review.
 
 Before cleaning up a branch, directory or worktree by hand or on a schedule,
 check that no session of any installed agent host uses it: session records and
