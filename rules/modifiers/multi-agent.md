@@ -29,8 +29,8 @@ check that no session of any installed agent host uses it: session records and
 workspace or branch associations as well as processes, including idle, paused,
 disconnected and resumable sessions. Resolve equivalent paths and check
 sessions in child directories before removing a parent. Recheck right before
-deleting; scheduled cleanup skips what it could not verify. Offer to delete an
-app-managed session's branch when you finish, unless the session is still on
-it. Before creating a task worktree, check the repository's worktree list and
-report unexplained leftovers; `git worktree prune --dry-run` shows stale
-registrations.
+deleting; scheduled cleanup skips what it could not verify. When you finish,
+offer an app-managed session's branch to its owner for deletion, unless the
+session is still on it. Before creating a task worktree, check the
+repository's worktree list and report unexplained leftovers; `git worktree
+prune --dry-run` shows stale registrations.
