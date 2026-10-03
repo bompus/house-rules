@@ -26,6 +26,13 @@ card may not display on every host), with these parts in order:
    combination: reply `<code>, <code>` or `go`" for several (for example
    "Recommended combination: reply `1B, 2A` or `go`").
 
+Close tracked work, an implementation or review report, or unlanded commits with
+an offer, and answer a bare "what next" or "what remains" the same way. Its
+candidates come from the plan ledger when there is one, this session's findings,
+open items of a resumed handoff, unlanded commits and untriaged review feedback;
+re-check each and drop stale ones. A candidate held by a "don't start until
+asked" safeguard stays listed as "(Not Recommended)", naming the safeguard.
+
 The offer exists only when the coded option list is present; a prose
 recommendation is not one. `go` (or `continue`) always means the stated
 recommended code or combination. Plain numbers stay for ordered action steps;

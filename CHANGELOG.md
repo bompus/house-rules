@@ -2,6 +2,23 @@
 
 Notable changes to house-rules. Versions follow [semantic versioning](https://semver.org).
 
+## 0.2.5 - 2026-10-03
+
+- Core: keep a list of every checkout you touch, outside ones included, and
+  check each before ending a task; name the owner of work you leave, or say it
+  is unknown. When asked to send text through a channel you cannot reach, hand
+  over the exact text instead of posting it another way.
+- `coded-offers`: what calls for a closing offer, where its candidates come
+  from, and that a candidate held by a "don't start until asked" safeguard
+  stays listed as "(Not Recommended)".
+- `plan-files`: check every `blocked-on-user` plan at session start, point at
+  the plan or handoff that owns an item, and sweep other sessions' plans only
+  when the user asks what is waiting on them.
+- `scratch-on-disk`: a harness's pre-approved temp path does not override it;
+  write in-progress receipts straight to their final location.
+- `writing-for-agents`: how Claude Code's eval runner selects several cases and
+  where its replies land.
+
 ## 0.2.4 - 2026-10-03
 
 - New `multi-agent` modifier for work split across delegated workers and

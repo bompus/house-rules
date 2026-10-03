@@ -10,9 +10,11 @@ is available, keep the list in short progress messages and say so once.
 
 Mirror the list to a plan file: the project's plans directory when it documents
 one, otherwise `plans/<topic>/plan.md` in your notes directory (§ Durable
-notes). Check relevant plans at session start. Update the plan
-when you update the list, add findings as they turn up, and use the same item
-states in both.
+notes). At session start, check the relevant plans and every
+`blocked-on-user` plan whatever its owner, so unanswered decisions stay
+visible. Update the plan when you update the list, add findings as they turn
+up, and use the same item states in both. Point at the plan or handoff that
+owns an item instead of copying it; a handoff points at its plan.
 
 - Head the plan with `Owner:` (session name, or `none` for a shared backlog)
   and `Status:` (`active`, `paused`, `blocked-on-user`); update both when they
@@ -34,3 +36,9 @@ states in both.
   waiting on a dependency or ruling out a hypothesis does not by itself show
   that an approach is not working.
 - On completion, move the plan to `plans/archive/<topic>-<date>/` beside it.
+
+Sweep other sessions' plans and handoffs only when the user asks, such as
+"what's waiting on me?", and only for the current project. Offer unowned items,
+items whose owner has no live session, and `blocked-on-user` items, naming
+each owner. When ownership is unclear, mention the item as another session's
+context instead of offering it.

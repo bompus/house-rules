@@ -68,9 +68,11 @@ scenario), so a run needs no repository.
 
 When your host has a skill-eval runner (Claude Code's `claude plugin eval`,
 for example), run the cases under it: it supplies the fresh runner, a grader
-and the no-skill arm. Check its help for how it selects several cases at once.
-Its results cover that host's skill selection only; other hosts need their own
-runs.
+and the no-skill arm. Check its help for how it selects several cases at once:
+Claude Code's `--case` takes one glob and a repeated flag keeps only the last,
+so select several cases by a shared name prefix (`--case 'audit-*'`), and the
+replies land in the run's `aggregate-result.json`. Its results cover that
+host's skill selection only; other hosts need their own runs.
 
 ## Splitting by invocation
 
