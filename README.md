@@ -149,7 +149,7 @@ time, including when it reads only the first 80 lines. See its README.
 ## Development
 
 ```bash
-node --test test/   # composer and eval grader
+node --test test/*.test.mjs   # composer and eval grader
 bun test skills/    # skill scripts
 npx oxlint . && npx oxfmt --check .
 ```

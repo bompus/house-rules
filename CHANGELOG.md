@@ -7,6 +7,8 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 - `CONTRIBUTING.md`, and CI that runs the composer, grader and skill tests,
   oxlint and oxfmt on every push and pull request.
 - Every version from 0.1.0 on is tagged `v<version>` with a GitHub release.
+- README: the composer test command now lists its files, so it runs on
+  Node 22 (`node --test test/` needs a newer Node).
 
 ## 0.1.2 - 2026-10-02
 

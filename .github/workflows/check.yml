@@ -22,7 +22,7 @@ jobs:
         with:
           bun-version: 1.4.2
       - name: Composer and eval grader
-        run: node --test test/
+        run: node --test test/*.test.mjs
       - name: Skill scripts
         run: bun test skills/
       - name: Lint
