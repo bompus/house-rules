@@ -64,8 +64,9 @@ expected value, write that it is undefined rather than passing judgment.
   measurement belongs there. "Loads really fast" becomes "Loads in 180 ms";
   "sharply reduces errors" becomes "Cuts failed uploads from 4% to 0.3%".
 
-Generated prose returns again and again to a small set of words that readers
-now catch. One in a long document is harmless; several per paragraph mark the text.
+The words below are cues to reread a sentence, not proof of anything. When
+one turns up, check whether it says more than its plain replacement would, and
+look harder where several cluster in one paragraph.
 
 | Word | Write instead |
 |---|---|
