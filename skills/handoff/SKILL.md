@@ -14,9 +14,10 @@ is necessary to reach a safe boundary. Do not abandon time-critical duty mid-act
 current state, Git ownership
 and next action first so they survive an interrupted write; then fill in the
 remaining context. Record the triggering bucket, reading source/time and reset
-time when known, and unknown quota/reset information as unknown. Verify the
-saved handoff, report its absolute path, and end the turn without continuing
-substantive work, even if tasks were previously authorized; this is the stop
+time when known, and unknown quota/reset information as unknown.
+
+Verify the saved handoff, report its absolute path, and end the turn without
+continuing substantive work, even if tasks were previously authorized; this is the stop
 the house rules' § End of every reply allows for a rule you are following. Only an explicit
 user instruction resumes work, limited to its requested scope; update this same
 handoff and stop again afterward while quota remains low. Do not change

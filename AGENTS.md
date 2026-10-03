@@ -5,9 +5,12 @@ in the README's Development section; run all three before landing.
 
 ## Landing
 
-Commits on `main` carry one identity as both author and committer:
+Commits you write on `main` carry one identity as both author and committer:
 `bompus <bompus@users.noreply.github.com>`. Set it per commit with
 `git -c user.name=bompus -c user.email=bompus@users.noreply.github.com commit`.
+An outside contributor's commits keep their author. Rebase them onto `main`
+with that identity as committer (the same `-c` flags on `git rebase`), then
+land them as below.
 
 Land through a pull request for the record, then fast-forward `main` to the
 branch head: `git push origin <branch>:main`. GitHub marks the pull request
@@ -19,7 +22,9 @@ history.
 ## Releases
 
 A change users will notice gets a `CHANGELOG.md` entry under a new version,
-following semantic versioning, in the same commit.
+following semantic versioning, in the same commit. Once that commit is on
+`main`, tag it `v<version>` and publish a release whose notes are the entry:
+`gh release create v<version> --target <sha> --title v<version> --notes-file <entry>`.
 
 ## Public repository
 

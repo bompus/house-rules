@@ -154,6 +154,9 @@ bun test skills/    # skill scripts
 npx oxlint . && npx oxfmt --check .
 ```
 
+CI runs the same checks on every push and pull request. See
+[CONTRIBUTING.md](CONTRIBUTING.md) before opening one.
+
 ## Licence
 
 MIT. Some skills adapt MIT-licensed work; see `THIRD_PARTY_NOTICES.md`.
