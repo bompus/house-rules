@@ -10,10 +10,10 @@ is available, keep the list in short progress messages and say so once.
 
 Mirror the list to a plan file: the project's plans directory when it documents
 one, otherwise `plans/<topic>/plan.md` in your notes directory (§ Durable
-notes). At session start, check the relevant plans and every
-`blocked-on-user` plan whatever its owner, so unanswered decisions stay
-visible. Update the plan when you update the list, add findings as they turn
-up, and use the same item states in both. Point at the plan or handoff that
+notes). At session start, read the relevant plans and every `blocked-on-user`
+plan whatever its owner, so unanswered decisions stay visible; that read is not
+the sweep below. Update the plan when you update the list, add findings as they
+turn up, and use the same item states in both. Point at the plan or handoff that
 owns an item instead of copying it; a handoff points at its plan.
 
 - Head the plan with `Owner:` (session name, or `none` for a shared backlog)
@@ -39,6 +39,7 @@ owns an item instead of copying it; a handoff points at its plan.
 
 Sweep other sessions' plans and handoffs only when the user asks, such as
 "what's waiting on me?", and only for the current project. Offer unowned items,
-items whose owner has no live session, and `blocked-on-user` items, naming
-each owner. When ownership is unclear, mention the item as another session's
+`blocked-on-user` items and items whose owner has no live session in the host's
+session list or coordination roster, naming each owner. When you cannot tell
+whether an owner is live, or who owns an item, mention it as another session's
 context instead of offering it.
