@@ -2,6 +2,13 @@
 
 Notable changes to house-rules. Versions follow [semantic versioning](https://semver.org).
 
+## 0.1.2 - 2026-10-03
+
+- `swarmail` modifier: when you won't act on a request, or can't yet, reply
+  to the sender with the reason. Pausing your own work for another session
+  is allowed when you can resume it; pause between steps instead of
+  suspending a process, and tell the sender and the user.
+
 ## 0.1.1 - 2026-10-03
 
 - `test-audit`: authoring-gate question 2 lists more production changes a
