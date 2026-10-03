@@ -116,6 +116,7 @@ in name order, after the modifiers.
 | `effort-estimates` | Options that differ in cost, or work that waits on CI, a build or a deploy, carry a wall-clock estimate based on comparable finished work. |
 | `land-when-done` | Authorized repository work is not finished until it is in the remote default branch. |
 | `low-quota-handoff` | When the current model's usage allowance runs low, write a handoff before work stops. |
+| `multi-agent` | Work is split across delegated workers and several agent hosts; worker reports, review standards and cleanup checks account for all of them. |
 | `no-attribution` | Commits, pull requests and comments carry no agent or tool credit lines. |
 | `plan-files` | Multi-step work keeps a visible task list mirrored to a plan file with a ledger of every item's outcome. |
 | `scratch-on-disk` | Task scratch lives on disk under the user data directory, never in RAM-backed `/tmp`. |

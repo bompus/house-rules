@@ -2,6 +2,15 @@
 
 Notable changes to house-rules. Versions follow [semantic versioning](https://semver.org).
 
+## 0.2.4 - 2026-10-03
+
+- New `multi-agent` modifier for work split across delegated workers and
+  several agent hosts. A worker report with open items and no named blocker
+  goes back as a checkpoint; implementers get only load-bearing constraints
+  while style and judgment stay with the reviewer and anything checkable moves
+  into tooling; cleanup checks every installed host's sessions, including idle
+  and resumable ones, before deleting a branch, directory or worktree.
+
 ## 0.2.3 - 2026-10-03
 
 - `squash-landing`: merge only after a review bot's check finishes and each
