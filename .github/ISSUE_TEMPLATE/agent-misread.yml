@@ -1,0 +1,30 @@
+name: An agent misread a rule
+description: An agent ignored or misapplied a rule or skill from house-rules.
+labels: [rules]
+body:
+  - type: input
+    id: rule
+    attributes:
+      label: Rule or skill
+      description: The file and section, such as `rules/core.md` § Offers or the `handoff` skill.
+    validations:
+      required: true
+  - type: input
+    id: host
+    attributes:
+      label: Host and model
+      description: For example, Claude Code with Sonnet, Cursor with GPT, Codex.
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: What the agent did, and what the rule says it should have done
+      description: Quote the agent's reply where you can. Remove anything private first.
+    validations:
+      required: true
+  - type: textarea
+    id: setup
+    attributes:
+      label: Your setup
+      description: The modifiers you enabled, and whether your own or a project layer changes this section.

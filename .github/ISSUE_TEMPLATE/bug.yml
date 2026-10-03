@@ -1,0 +1,25 @@
+name: Bug in a script
+description: compose.mjs, the eval grader or a skill script fails or gives a wrong result.
+labels: [bug]
+body:
+  - type: input
+    id: command
+    attributes:
+      label: Command
+      description: The exact command you ran.
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: What you expected, and what happened
+      description: Include the error output. Remove anything private first.
+    validations:
+      required: true
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      description: house-rules version or commit, and your Node or Bun version.
+    validations:
+      required: true

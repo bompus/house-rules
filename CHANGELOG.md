@@ -2,6 +2,11 @@
 
 Notable changes to house-rules. Versions follow [semantic versioning](https://semver.org).
 
+## 0.1.4 - 2026-10-02
+
+- Issue forms for a rule an agent misread and for a script bug, and a pull
+  request checklist.
+
 ## 0.1.3 - 2026-10-02
 
 - `CONTRIBUTING.md`, and CI that runs the composer, grader and skill tests,
