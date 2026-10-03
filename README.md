@@ -130,14 +130,22 @@ in name order, after the modifiers.
 |---|---|
 | `agent-guidance-audit` | Audit a repository's agent guidance for stale, duplicated or conflicting rules. |
 | `agent-guidance-refresh` | Re-read guidance that changed since the session started. |
+| `api-exposure-check` | Keep API responses to the fields a consumer reads and the caller may see. |
 | `audit-choices` | List and check the decisions made while implementing a task. |
+| `change-impact` | Check what a change can break beyond its diff before merging. |
 | `code-review` | Review a diff against the repository's standards and the originating request. |
 | `diagnosing-bugs` | Work a hard bug or regression to a confirmed cause. |
+| `explain-code` | Trace how existing code works, read-only, before changing it. |
+| `extract-shared-steps` | Move operations repeated across workflows into shared functions. |
 | `handoff` | Write a handoff a fresh session can resume from. |
 | `house-rules-setup` | Choose modifiers, create your layer and connect your hosts. |
+| `lean-plan` | Write or tighten an implementation plan with the fewest moving parts. |
+| `maintainability-review` | Review a branch strictly for structure and maintainability. |
 | `ordering-tests` | Enumerate event orderings through the real code to find race bugs. |
+| `plain-prose` | Make text people read plain and specific. |
 | `read-reddit` | Read Reddit threads and searches through public feeds. |
 | `read-x-links` | Read the full content of X posts. |
+| `stock-ui-audit` | Find and triage template-default styling in frontend code. |
 | `test-audit` | Decide which new tests are worth keeping and which old ones to prune. |
 | `writing-for-agents` | Write skills, rules and other documents agents read. |
 | `writing-pr` | Write a pull request title and body from the final diff. |

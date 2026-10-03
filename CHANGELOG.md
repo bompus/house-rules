@@ -2,6 +2,14 @@
 
 Notable changes to house-rules. Versions follow [semantic versioning](https://semver.org).
 
+## 0.2.0 - 2026-10-03
+
+- Eight new skills: `api-exposure-check`, `change-impact`, `explain-code`,
+  `extract-shared-steps`, `lean-plan`, `maintainability-review`,
+  `plain-prose` and `stock-ui-audit`. `stock-ui-audit` ships a
+  dependency-free scanner (`scripts/scan.mjs`, Node.js 22+ or Bun) with its
+  tests.
+
 ## 0.1.7 - 2026-10-03
 
 - § Finishing work: the end-of-task checkout check is one command per

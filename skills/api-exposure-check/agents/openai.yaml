@@ -1,0 +1,3 @@
+interface:
+  display_name: "API exposure check"
+  short_description: "Return only the fields consumers need and callers may see"

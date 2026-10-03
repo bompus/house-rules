@@ -1,0 +1,3 @@
+interface:
+  display_name: "Maintainability review"
+  short_description: "Strict maintainability review of a branch"

@@ -1,0 +1,6 @@
+:root {
+  --accent: #8b5cf6;
+  --accent-hover: hsl(262 83% 58%);
+  --ring: oklch(0.606 0.25 292.717);
+  --primary: 262.1 83.3% 57.8%;
+}

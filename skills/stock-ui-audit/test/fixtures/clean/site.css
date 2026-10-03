@@ -1,0 +1,12 @@
+:root {
+  --accent: #2563eb;
+  --muted: #6b6b80;
+  --surface: hsl(220 14% 96%);
+}
+body { font-family: system-ui, sans-serif; }
+.card {
+  background: linear-gradient(#ffffff, #f3f4f6);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+.label { text-transform: uppercase; }
+.focus { outline: 2px solid #2563eb; }

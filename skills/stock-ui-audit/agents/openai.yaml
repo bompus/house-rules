@@ -1,0 +1,3 @@
+interface:
+  display_name: "Stock UI audit"
+  short_description: "Find and fix unchosen template styling in UI code"

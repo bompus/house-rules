@@ -1,0 +1,3 @@
+interface:
+  display_name: "Change impact"
+  short_description: "Check what a change could break before merging"

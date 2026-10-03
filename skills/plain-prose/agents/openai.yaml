@@ -1,0 +1,3 @@
+interface:
+  display_name: "Plain prose"
+  short_description: "Make human-facing text plain and specific"
