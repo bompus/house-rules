@@ -2,6 +2,17 @@
 
 Notable changes to house-rules. Versions follow [semantic versioning](https://semver.org).
 
+## 0.2.2 - 2026-10-03
+
+- `plain-prose` covers more habits: no em dashes and no stand-in marks for
+  them, colons only before a list or example, straight quotes, a list of
+  overused words and abstract stand-in nouns with plain replacements,
+  figurative prose, unnamed authorities, fake ranges, weak adverbs and
+  judgment words without a baseline. It also checks for new uniform habits
+  left by heavy editing, recurring replacement phrases and paragraph openers
+  that read like a summary, allows an uneven quiet sentence, and leaves
+  passages the author marks to keep.
+
 ## 0.2.1 - 2026-10-03
 
 - `stock-ui-audit`'s scanner: a `)` inside a comment no longer ends a gradient
