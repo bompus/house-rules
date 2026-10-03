@@ -2,6 +2,17 @@
 
 Notable changes to house-rules. Versions follow [semantic versioning](https://semver.org).
 
+## 0.2.8 - 2026-10-03
+
+- Core: the end-of-task checkout check reads only your own branches
+  (`git log <yours> --not --remotes`), since checkouts
+  share branches and `--branches` or a bare `HEAD` can list another session's. The report covers
+  your own leftovers; other sessions' work stays out of it unless it blocks
+  yours.
+- `squash-landing`: an app-managed checkout left on a landed branch is the
+  app's to retire and goes unmentioned; a dirty or doubtful one is recorded
+  where the task is tracked.
+
 ## 0.2.7 - 2026-10-03
 
 - `plain-prose`: the description says it applies even to a short message or

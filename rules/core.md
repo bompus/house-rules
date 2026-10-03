@@ -61,10 +61,15 @@ option is the next step, not landing, closing or another item.
 Keep a list of the checkouts you touch, adding each when you first touch it,
 outside ones included (sibling worktrees, other repositories, shared paths).
 Before ending a task, check every one once, with one command each:
-`git status --short --branch; git log --branches --not --remotes --oneline`.
-Report uncommitted files, unpushed commits and new local-only branches by path.
-Never commit, push or merge another session's or person's work to clear the
-list; name its owner, or say the owner is unknown, and leave it.
+`git status --short --branch; git log --oneline <yours> --not --remotes`,
+where `<yours>` names the branches you committed to there (`HEAD` only when you
+committed on a detached `HEAD`). Checkouts share their branches, and another
+session's branch may be checked out, so `--branches` or a bare `HEAD` would
+list its commits too. Report your own uncommitted files, unpushed commits and
+new local-only branches by path. Leave other sessions' and people's work as it
+is and out of the report; mention it only when it blocks yours, naming its
+owner or saying the owner is unknown. Never commit, push or merge it to clear
+the list.
 
 ## Reporting
 
