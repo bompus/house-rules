@@ -2,6 +2,16 @@
 
 Notable changes to house-rules. Versions follow [semantic versioning](https://semver.org).
 
+## 0.2.3 - 2026-10-03
+
+- `squash-landing`: merge only after a review bot's check finishes and each
+  finding is fixed or answered, including findings outside the diff that it
+  posts in the review body instead of as threads. Landing never switches,
+  resets or removes the session's own checkout; after the merge the checkout
+  moves onto the fetched base (or detaches there when another worktree holds
+  the base), and each landing updates the task list and any handoff before the
+  task worktree is retired.
+
 ## 0.2.2 - 2026-10-03
 
 - `plain-prose` covers more habits: no em dashes and no stand-in marks for

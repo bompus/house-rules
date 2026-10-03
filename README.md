@@ -121,7 +121,7 @@ in name order, after the modifiers.
 | `scratch-on-disk` | Task scratch lives on disk under the user data directory, never in RAM-backed `/tmp`. |
 | `shared-host-load` | On a machine shared by many sessions, heavy work runs one at a time with capped CPU and memory. |
 | `solo-operator` | For repositories with one maintainer, the user's direction is the review; no review-gated steps. |
-| `squash-landing` | Pull requests land by squash merge, with the merge commit verified on the default branch. |
+| `squash-landing` | Pull requests land by squash merge after review-bot findings are handled, and the session's checkout moves off the landed branch. |
 | `swarmail` | Sessions on one machine coordinate through Swarmail messages instead of the user relaying between them. |
 
 ## Skills
