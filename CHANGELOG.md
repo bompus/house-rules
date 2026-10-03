@@ -2,6 +2,15 @@
 
 Notable changes to house-rules. Versions follow [semantic versioning](https://semver.org).
 
+## 0.2.9 - 2026-10-03
+
+- `effort-estimates`: before calling an estimate unmeasured, search for a
+  comparable finished run (the same kind of work with the same waits) in logs,
+  plan entries, pull request timestamps and earlier session transcripts, and
+  say where you looked. An estimate is unmeasured only when no such run has
+  both start and end times. A quote stays the same in later replies unless new
+  evidence moves it.
+
 ## 0.2.8 - 2026-10-03
 
 - Core: the end-of-task checkout check reads only your own branches
