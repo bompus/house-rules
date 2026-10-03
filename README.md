@@ -159,4 +159,5 @@ CI runs the same checks on every push and pull request. See
 
 ## Licence
 
-MIT. Some skills adapt MIT-licensed work; see `THIRD_PARTY_NOTICES.md`.
+MIT. Some skills adapt MIT-licensed work, and `CODE_OF_CONDUCT.md` is the
+Contributor Covenant under CC BY 4.0; see `THIRD_PARTY_NOTICES.md`.

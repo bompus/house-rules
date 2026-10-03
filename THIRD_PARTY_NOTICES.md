@@ -2,6 +2,8 @@
 
 Some files in this repository copy or adapt work published under the MIT
 License. Each source's copyright notice and the licence text follow.
+`CODE_OF_CONDUCT.md` is the Contributor Covenant, under CC BY 4.0, noted at
+the end.
 
 ## mattpocock/skills
 
@@ -89,3 +91,12 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+## Contributor Covenant
+
+Source: https://www.contributor-covenant.org/version/2/1/code_of_conduct.html
+
+- `CODE_OF_CONDUCT.md`: version 2.1, with this repository's reporting method
+  filled in. Licensed under
+  [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/); its own
+  Attribution section credits the source.

@@ -2,6 +2,11 @@
 
 Notable changes to house-rules. Versions follow [semantic versioning](https://semver.org).
 
+## 0.1.5 - 2026-10-02
+
+- `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1). Reports go through the
+  repository's private reporting form, so no address is published.
+
 ## 0.1.4 - 2026-10-02
 
 - Issue forms for a rule an agent misread and for a script bug, and a pull

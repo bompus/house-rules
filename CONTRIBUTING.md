@@ -2,6 +2,7 @@
 
 Issues and pull requests are welcome: a rule an agent misreads, a modifier
 or skill that would help other setups, a bug in `compose.mjs`.
+Everyone taking part follows the [code of conduct](CODE_OF_CONDUCT.md).
 
 ## What fits
 
