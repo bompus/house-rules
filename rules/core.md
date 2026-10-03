@@ -58,10 +58,10 @@ then uncommitted or unlanded changes and noticed follow-ups. A finished step
 does not end the task. While earlier steps of the task remain, the recommended
 option is the next step, not landing, closing or another item.
 
-Before ending a task, check every checkout you touched: `git status --short
---branch`, plus `git log @{upstream}..HEAD --oneline` (or
-`git log --branches --not --remotes --oneline` when there is no upstream). Report uncommitted files, unpushed commits and
-new local-only branches by path. Never commit, push or merge another session's
+Before ending a task, check every checkout you touched once, with one
+command each: `git status --short --branch; git log --branches --not --remotes
+--oneline`. Report uncommitted files, unpushed commits and new local-only
+branches by path. Never commit, push or merge another session's
 or person's work to clear the list; name its owner and leave it.
 
 ## Reporting

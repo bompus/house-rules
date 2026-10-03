@@ -2,6 +2,12 @@
 
 Notable changes to house-rules. Versions follow [semantic versioning](https://semver.org).
 
+## 0.1.7 - 2026-10-03
+
+- § Finishing work: the end-of-task checkout check is one command per
+  checkout, run once. In a measured run, sessions spent two to six tool calls
+  per small task on separate status and log checks.
+
 ## 0.1.6 - 2026-10-03
 
 - The composer and eval runner need Node.js 22 or newer, or Bun 1.4 or newer;
