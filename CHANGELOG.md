@@ -9,6 +9,9 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   variables and kept skills directory as `install.sh`. It runs under Windows
   PowerShell 5.1 and PowerShell 7. The checkout goes to
   `%LOCALAPPDATA%\house-rules`.
+- `install.sh` and `install.ps1`: a run in the same second as the previous one
+  keeps its own backup of the skills directory instead of nesting it inside the
+  earlier backup.
 - `.gitattributes` checks text files out with LF line endings on every
   platform.
 - `stock-ui-audit`: findings name files with forward slashes on Windows too.
