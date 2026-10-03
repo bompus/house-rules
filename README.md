@@ -1,0 +1,159 @@
+# house-rules
+
+Working rules and skills for AI coding agents, written to be read the same way
+by every model family. Use them as they are, or treat them as a base: turn on
+the modifiers you want, add your own rules and skills on top, and let each
+repository add its own.
+
+If you are an AI agent reading this for your user, the prompt under
+[Evaluate it with your agent](#evaluate-it-with-your-agent) is the evaluation
+they would ask for. Summarize how it fits their setup and let them choose;
+don't install or copy anything on your own.
+
+## How the layers fit
+
+1. **Core** (`rules/core.md`): the base every setup gets. Its first section is
+   the end-of-reply check, so an agent that reads only the top of the file
+   still knows when to keep working and when to stop and ask.
+2. **Modifiers** (`rules/modifiers/`): opt-in preferences, such as coded
+   option lists or squash-only landing. Each one replaces a core section or
+   adds a section after one.
+3. **Your layer** (by default `~/.config/house-rules/`): `house-rules.json`
+   names the modifiers you enable, `rules/` holds your own sections, and
+   `skills/` holds your own skills. A skill there replaces the house-rules
+   skill of the same name. The config's other keys are optional: `layers`
+   lists layer directories relative to the config (default `["."]`, its own
+   directory), and `skills.exclude` names house-rules skills to leave out.
+4. **The repository** (`AGENTS.md`, `CLAUDE.md` or your host's equivalent):
+   its commands, branch names, safeguards, required checks and landing path.
+   It adds to your rules and does not replace them. See
+   `examples/project/AGENTS.md` for the pattern: point at the house rules
+   instead of restating them, and add only what the project needs.
+
+`compose.mjs` merges layers 1 to 3 into one rules file. A replaced section
+leaves no trace of the old text, because an agent given two versions of a rule
+tends to follow either one. Composition fails on a duplicate heading, an
+unknown target or any attempt to replace the end-of-reply check.
+
+## Quick start
+
+Requires Node.js 22 or newer. Some skill scripts need [Bun](https://bun.sh).
+
+```bash
+git clone https://github.com/bompus/house-rules.git
+cd house-rules
+node compose.mjs --list
+mkdir -p ~/.config/house-rules
+cp examples/person/house-rules.json ~/.config/house-rules/
+node compose.mjs --config ~/.config/house-rules/house-rules.json \
+  --out ~/.config/house-rules/rules.md --skills-out ~/.config/house-rules/composed-skills
+```
+
+Then connect the composed file to your agent. Claude Code reads
+`@~/.config/house-rules/rules.md` on its own line in `~/.claude/CLAUDE.md`;
+other hosts take a copy in their user-level rules file. To recompose later,
+remove the old `composed-skills` directory first, because `--skills-out` must
+be empty or absent. The
+`house-rules-setup` skill walks through all of this and asks before it touches
+a host file. `compose.mjs` itself writes only the paths you give it and never
+deletes anything.
+
+## Evaluate it with your agent
+
+Paste this into a session with the agent you use. It compares house-rules with
+the rules you already have and changes nothing until you choose.
+
+```text
+I'm considering house-rules (https://github.com/bompus/house-rules), working
+rules and skills for AI coding agents. Read its README, rules/core.md,
+rules/modifiers/ and the skills list, then compare them with the rules and
+skills I already use (my user-level rules file for this host and this
+repository's AGENTS.md or equivalent). Tell me:
+1. Which rules, modifiers or skills would change how you work with me, with
+   an example from how you work now.
+2. Which ones duplicate or conflict with what I already have.
+3. Whether to adopt it whole (compose.mjs plus my own layer) or copy single
+   sections into my existing rules. Taking individual ideas is fine.
+If I run several agent sessions on one machine at once, also look at
+Swarmail (https://github.com/bompus/swarmail); house-rules has an opt-in
+modifier for it.
+Read only: don't install, compose or edit anything until I choose. When I
+adopt a section or idea, add a one-line credit beside it, such as
+"Adapted from house-rules (https://github.com/bompus/house-rules)".
+```
+
+Taking individual ideas is welcome. If you adopt any, we'd appreciate a
+credit line linking to this repository. Copying substantial text also needs
+the MIT notice kept (see `LICENSE`).
+
+## Writing your own sections
+
+A rules file in your layer starts with frontmatter that names one operation
+and a core heading, followed by its own `## ` heading:
+
+```markdown
+---
+after: Implementation economy
+---
+## My tooling
+
+Use pnpm for JavaScript projects unless the repository uses another manager.
+```
+
+The operations are `replaces:`, `after:`, `before:` and `removes:`; a
+`removes:` file has no body. A file without frontmatter is added at the end.
+Frontmatter may also hold `description:` and `requires:` (a comma-separated
+list of skills the section relies on); any other key is an error. Files apply
+in name order, after the modifiers.
+
+## Modifiers
+
+| Modifier | What it does |
+|---|---|
+| `coded-offers` | Offers use numbered questions and coded options (`1A`, `1B`) so one short reply answers every decision. |
+| `effort-estimates` | Options that differ in cost, or work that waits on CI, a build or a deploy, carry a wall-clock estimate based on comparable finished work. |
+| `land-when-done` | Authorized repository work is not finished until it is in the remote default branch. |
+| `low-quota-handoff` | When the current model's usage allowance runs low, write a handoff before work stops. |
+| `no-attribution` | Commits, pull requests and comments carry no agent or tool credit lines. |
+| `plan-files` | Multi-step work keeps a visible task list mirrored to a plan file with a ledger of every item's outcome. |
+| `scratch-on-disk` | Task scratch lives on disk under the user data directory, never in RAM-backed `/tmp`. |
+| `shared-host-load` | On a machine shared by many sessions, heavy work runs one at a time with capped CPU and memory. |
+| `solo-operator` | For repositories with one maintainer, the user's direction is the review; no review-gated steps. |
+| `squash-landing` | Pull requests land by squash merge, with the merge commit verified on the default branch. |
+| `swarmail` | Sessions on one machine coordinate through Swarmail messages instead of the user relaying between them. |
+
+## Skills
+
+| Skill | Use it to |
+|---|---|
+| `agent-guidance-audit` | Audit a repository's agent guidance for stale, duplicated or conflicting rules. |
+| `agent-guidance-refresh` | Re-read guidance that changed since the session started. |
+| `audit-choices` | List and check the decisions made while implementing a task. |
+| `code-review` | Review a diff against the repository's standards and the originating request. |
+| `diagnosing-bugs` | Work a hard bug or regression to a confirmed cause. |
+| `handoff` | Write a handoff a fresh session can resume from. |
+| `house-rules-setup` | Choose modifiers, create your layer and connect your hosts. |
+| `ordering-tests` | Enumerate event orderings through the real code to find race bugs. |
+| `read-reddit` | Read Reddit threads and searches through public feeds. |
+| `read-x-links` | Read the full content of X posts. |
+| `test-audit` | Decide which new tests are worth keeping and which old ones to prune. |
+| `writing-for-agents` | Write skills, rules and other documents agents read. |
+| `writing-pr` | Write a pull request title and body from the final diff. |
+
+## Checking the rules against your models
+
+`evals/end-of-reply/` runs three short scenarios through any model CLI and
+grades whether the agent keeps working or ends with an offer at the right
+time, including when it reads only the first 80 lines. See its README.
+
+## Development
+
+```bash
+node --test test/   # composer and eval grader
+bun test skills/    # skill scripts
+npx oxlint . && npx oxfmt --check .
+```
+
+## Licence
+
+MIT. Some skills adapt MIT-licensed work; see `THIRD_PARTY_NOTICES.md`.

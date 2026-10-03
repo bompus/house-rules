@@ -1,0 +1,5 @@
+interface:
+  display_name: "House Rules Setup"
+  short_description: "Choose modifiers, create your layer, connect hosts"
+policy:
+  allow_implicit_invocation: false

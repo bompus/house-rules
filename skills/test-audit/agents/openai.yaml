@@ -1,0 +1,3 @@
+interface:
+  display_name: "Test audit"
+  short_description: "Gate new tests and prune low-value ones"

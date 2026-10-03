@@ -1,0 +1,44 @@
+---
+name: writing-pr
+description: Write or revise pull request titles and bodies from the final diff, with concrete behavior and relevant proof. Use when preparing a PR or improving its description.
+---
+
+# Writing pull requests
+
+Give a reviewer who has not seen the conversation enough context to understand the change and assess its evidence. Follow the target repository's PR template and contribution rules. This skill governs writing; existing rules govern commits, publication, and review gates.
+
+## Read before writing
+
+Inspect the actual diff against the intended target branch, the linked issue or request, and available validation results. For an existing PR, confirm its current base and head. Commit messages can provide context; the final diff determines what the PR claims.
+
+Resolve mismatches between the description and the implementation before calling the description complete. If evidence is unavailable, state the specific gap rather than inventing a result.
+
+## Title and body
+
+Write a title naming the resulting behavior or fixed failure. Use the repository's title convention when it has one. Check the title's type and scope against the diff's dominant change, not the author's intent: a `docs:` title on a diff that adds an executable installer misfiles the record the squash message becomes. When no PR template exists, the title convention is the only template; default to Conventional Commits `type(scope):` unless the repository's recent history uses another style. Flag a mixed diff as a possible split into separate PRs (the `split-to-prs` skill, where installed) instead of stretching the title to cover it.
+
+Lead the body with the concrete problem and resulting behavior. A small change may need only a paragraph and a validation sentence. Expand only where the reviewer needs more context:
+
+- **Bug fix:** trigger, previous behavior, corrected behavior, and regression proof.
+- **Feature:** observable capability, a small usage example, and supported limits.
+- **Refactor:** motivation, the structural change, and evidence that required behavior is preserved.
+
+Explain implementation details only when they clarify a decision or help assess correctness. Include compatibility, dependency, migration, or documentation implications when the diff creates them. When the change has a hard-to-reverse surface (host-level effects such as `sudo install-deps`, migrations, destructive actions), say so in one sentence; never a fixed risk section, and nothing on purely additive changes. Identify a useful review starting point for a complex change, using `path:line` anchors for load-bearing claims.
+
+Describe the final combined change. Leave out intermediate attempts, commit reshuffling, conversational history, and file inventories already visible in the diff. Write for the reviewer in plain language: no unexplained jargon, and no narrative about how the change was produced. Review panels, models consulted, harnesses, and agent process never appear in titles, bodies, or PR comments; that detail lives in plan files and session records. Rewrite the title and body when the scope changes.
+
+## Evidence that earns its space
+
+Report relevant checks and their actual outcomes, including material failures and unverified behavior. Name the tests or commands run and their scope; a suite-wide pass count alone is not evidence for the changed behavior. When generated files dominate the diff, give the authored line count alongside the headline number so the size does not mislead review. Distinguish newly introduced failures from established baseline failures only when a comparison supports that claim. Keep detailed logs in a linked artifact when the short result is sufficient.
+
+Use a small code example when it makes behavior concrete. For visual changes, use comparable before/after images when available. When the change replaces an existing procedure, state the prior and new procedure in one line each. For measured performance claims, identify the baseline and candidate, measurement conditions, and variability. Use a diagram only when it explains relationships more clearly than prose.
+
+Scale structure to the change. Omit empty optional sections, placeholder text, guessed risk scores or review times, and coverage percentages that were not measured. Complete a required checklist with this PR's specifics rather than omitting it, and mark non-applicable items N/A with a reason. Preserve required template sections and mark unavailable evidence honestly.
+
+## Completion check
+
+Every factual claim must be supported by inspected code, the originating request, or observed results. The opening explains what changes and why; the remaining text helps review it. Deliver the title and body in the form requested. Apply them to a remote PR only within the user's authorized scope. When the user's rules turn attribution off (the `no-attribution` modifier, for example), include no `Made with` or other host attribution, and after `gh pr create` or `gh pr edit`, reread the published body and strip any footer a harness appended.
+
+## Sources
+
+Original synthesis of selected ideas from [Luke Parker's writing-pr post](https://x.com/LukeParkerDev/status/2096769160021979571) and [git-pr-workflows-pr-enhance](https://github.com/sickn33/antigravity-awesome-skills/tree/main/skills/git-pr-workflows-pr-enhance). Relevant validation stays in the description; extensive templates and review automation are outside this skill.
