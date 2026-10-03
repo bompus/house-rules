@@ -2,6 +2,16 @@
 
 Notable changes to house-rules. Versions follow [semantic versioning](https://semver.org).
 
+## 0.4.1 - 2026-10-03
+
+- Core: before installing or enabling a third-party plugin, hook, skill that
+  ships scripts or MCP server, check on a local copy what it can reach
+  (commands, file writes, network hosts, skipped permission prompts, text added
+  to the model's context). It uses the host's static listing where one exists,
+  such as `claude plugin validate` for Claude Code mods from 2.1.287, and
+  reads the scripts and server code the listing leaves out. Anything beyond
+  the extension's stated purpose goes to the user before it is installed.
+
 ## 0.4.0 - 2026-10-03
 
 - `install.ps1`: the installer for Windows 10 and 11
