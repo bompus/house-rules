@@ -2,6 +2,11 @@
 
 Notable changes to house-rules. Versions follow [semantic versioning](https://semver.org).
 
+## 0.2.10 - 2026-10-03
+
+- `effort-estimates`: the same rule in fewer words, so the paragraph stays
+  under the 900-character ceiling a composing layer checks.
+
 ## 0.2.9 - 2026-10-03
 
 - `effort-estimates`: before calling an estimate unmeasured, search for a
