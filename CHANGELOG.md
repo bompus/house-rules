@@ -2,6 +2,15 @@
 
 Notable changes to house-rules. Versions follow [semantic versioning](https://semver.org).
 
+## 0.4.2 - 2026-10-03
+
+- `effort-estimates`: the rule covers every estimate of work the session or its
+  workers would do, in prose as well as in options. It never quotes human
+  developer time (days, focused days, sprints) for that work. An estimate from
+  a worker, doc or other model is converted to the session's wall-clock time
+  with a comparable run, or dropped, never relayed as given. Workers are asked
+  for scope (pieces, files, unknowns) rather than effort.
+
 ## 0.4.1 - 2026-10-03
 
 - Core: before installing or enabling a third-party plugin, hook, skill that
