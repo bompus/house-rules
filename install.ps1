@@ -170,13 +170,21 @@ param([switch]$PrintRuntime)
   # --skills-out must be new or empty, so compose beside the old directory and
   # keep the old one under another name instead of deleting it.
   $skills = "$cfg\composed-skills"
-  $next = "$skills.new-$PID"
+  # Unique per run: under iex, $PID is the caller's session and repeats on a retry.
+  $next = "$skills.new-$([guid]::NewGuid().ToString('N').Substring(0, 8))"
   $code = Invoke-Native $rt @("$dir\compose.mjs", '--config', "$cfg\house-rules.json", '--out', "$cfg\rules.md", '--skills-out', $next)
   if ($code -ne 0) {
     Fail "compose failed; see the error above ($next may hold a partial result)"
   }
   if (Test-Path -LiteralPath $skills) {
-    $old = "$skills.previous-$(Get-Date -Format 'yyyyMMddHHmmss')"
+    # Move-Item into an existing directory would nest it, so never reuse a name.
+    $stamp = "$skills.previous-$(Get-Date -Format 'yyyyMMddHHmmss')"
+    $old = $stamp
+    $n = 0
+    while (Test-Path -LiteralPath $old) {
+      $n++
+      $old = "$stamp-$n"
+    }
     Move-Item -LiteralPath $skills -Destination $old
     Write-Host "Kept the previous skills in $old; remove it when you no longer need it"
   }

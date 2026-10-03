@@ -134,4 +134,11 @@ it("installs from a checkout, then recomposes without deleting the old skills", 
   const kept = readdirSync(config).filter((f) => f.startsWith("composed-skills.previous-"));
   assert.equal(kept.length, 1);
   assert.ok(readdirSync(join(config, "composed-skills")).length > 0);
+
+  // Runs within the same second keep separate backups instead of nesting one.
+  const third = run(home, [], [], env);
+  assert.equal(third.status, 0, third.stderr);
+  const backups = readdirSync(config).filter((f) => f.startsWith("composed-skills.previous-"));
+  assert.equal(backups.length, 2);
+  for (const b of backups) assert.ok(!existsSync(join(config, b, "composed-skills")));
 });
