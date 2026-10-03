@@ -58,6 +58,8 @@ clones this repository to `~/.local/share/house-rules` (or pulls it when it is
 already there), copies `examples/person/house-rules.json` to
 `~/.config/house-rules/` when you have no config yet, and composes
 `~/.config/house-rules/rules.md` and `~/.config/house-rules/composed-skills`.
+Those are the default paths: a set `XDG_DATA_HOME` replaces `~/.local/share`,
+and a set `XDG_CONFIG_HOME` replaces `~/.config`.
 On a later run it keeps the previous skills directory under a dated name
 instead of deleting it. It never edits an agent host's files. The comment at
 the top of `install.sh` lists the environment variables that change its paths
