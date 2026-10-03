@@ -24,6 +24,8 @@ describe("rules", () => {
   const cases = [
     ["purple-blue-gradient.css", ["purple-blue-gradient@2"]],
     ["purple-blue-gradient.tsx", ["purple-blue-gradient@2"]],
+    // Stops on lines 4 and 5 belong to the gradient, not to violet accents.
+    ["purple-blue-gradient-multiline.css", ["purple-blue-gradient@2"]],
     [
       "violet-accent.css",
       ["violet-accent@2", "violet-accent@3", "violet-accent@4", "violet-accent@5"],

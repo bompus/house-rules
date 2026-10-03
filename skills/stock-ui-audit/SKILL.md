@@ -69,9 +69,9 @@ Give every match exactly one verdict:
   violet hue in a syntax-highlighting theme, a blur on a modal backdrop over
   busy content, or an emoji inside user-generated sample data. Leave it and say
   why.
-
-When the evidence is missing either way, call it an unchosen default in review
-mode and ask before changing it in cleanup mode.
+- **Unresolved**: you cannot tell whether someone chose it. It is not a
+  finding and you change nothing. Report what is missing and the question
+  that would settle it.
 
 ## Fixing what is real
 
@@ -118,6 +118,8 @@ Write the report in this order:
 2. Findings fixed (or, in review mode, proposed), each with `file:line`, the
    rule, and what replaced it.
 3. Matches kept as deliberate, each with its evidence.
-4. False positives, each with one line on why.
-5. Issues the scanner cannot see, if you found any.
-6. How you verified: rerun result, sizes and themes viewed, or "static only".
+4. Unresolved matches, each with what is missing and the question that
+   settles it.
+5. False positives, each with one line on why.
+6. Issues the scanner cannot see, if you found any.
+7. How you verified: rerun result, sizes and themes viewed, or "static only".

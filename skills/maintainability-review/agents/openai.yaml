@@ -1,3 +1,5 @@
 interface:
   display_name: "Maintainability review"
   short_description: "Strict maintainability review of a branch"
+policy:
+  allow_implicit_invocation: false

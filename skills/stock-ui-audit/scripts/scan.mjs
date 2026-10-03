@@ -167,12 +167,25 @@ const TW_VIOLET_NAMES = new Set(["indigo", "violet", "purple"]);
 const TW_CHROMA =
   "red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose";
 
-function gradientHit(line) {
-  const fn = line.search(/(?:linear|radial|conic)-gradient\(/i);
-  if (fn !== -1) {
-    const stops = colorsIn(line.slice(fn)).filter(chromatic);
-    if (stops.length >= 2 && stops.every(isCool) && stops.some(isViolet)) return fn;
+// CSS gradient functions often span several lines, so these are read from the
+// whole file: each purple-to-blue one as its start and end offsets.
+function cssGradients(text) {
+  const out = [];
+  for (const m of text.matchAll(/(?:linear|radial|conic)-gradient\(/gi)) {
+    let end = m.index + m[0].length - 1;
+    for (let depth = 0; end < text.length; end++) {
+      if (text[end] === "(") depth++;
+      else if (text[end] === ")" && --depth === 0) break;
+    }
+    const stops = colorsIn(text.slice(m.index, end + 1)).filter(chromatic);
+    if (stops.length >= 2 && stops.every(isCool) && stops.some(isViolet)) {
+      out.push({ start: m.index, end });
+    }
   }
+  return out;
+}
+
+function twGradientHit(line) {
   const names = [...line.matchAll(TW_GRADIENT_STOP)];
   if (names.length >= 2) {
     const colors = names.map((m) => m[1]);
@@ -394,11 +407,28 @@ function scanFile(path, display, fonts) {
     });
   };
 
+  const starts = [0];
+  for (let i = 0; i < text.length; i++) if (text[i] === "\n") starts.push(i + 1);
+  const lineAt = (offset) => {
+    let lo = 0;
+    while (lo + 1 < starts.length && starts[lo + 1] <= offset) lo++;
+    return lo;
+  };
+
+  // A gradient is reported once, at its first line; its stops are not reported
+  // again as violet accents.
+  const gradientLines = new Set();
+  for (const { start, end } of cssGradients(text)) {
+    const first = lineAt(start);
+    add("purple-blue-gradient", first + 1, start - starts[first]);
+    for (let k = first; k <= lineAt(end); k++) gradientLines.add(k + 1);
+  }
+
   lines.forEach((line, i) => {
     const n = i + 1;
-    let at = gradientHit(line);
+    let at = twGradientHit(line);
     if (at !== -1) add("purple-blue-gradient", n, at);
-    else if ((at = violetHit(line)) !== -1) add("violet-accent", n, at);
+    else if (!gradientLines.has(n) && (at = violetHit(line)) !== -1) add("violet-accent", n, at);
     if ((at = gradientTextHit(line)) !== -1) add("gradient-text", n, at);
     if ((at = frostedHit(line)) !== -1) add("frosted-glass", n, at);
     if ((at = glowHit(line)) !== -1) add("neon-glow", n, at);
@@ -416,11 +446,8 @@ function scanFile(path, display, fonts) {
       fonts.push({ ...d, file: display, line: n, text: line });
   });
 
-  const starts = [0];
-  for (let i = 0; i < text.length; i++) if (text[i] === "\n") starts.push(i + 1);
   for (const offset of trackedCapsBlocks(text)) {
-    let lo = 0;
-    while (lo + 1 < starts.length && starts[lo + 1] <= offset) lo++;
+    const lo = lineAt(offset);
     add("tracked-caps", lo + 1, offset - starts[lo]);
   }
   return findings;

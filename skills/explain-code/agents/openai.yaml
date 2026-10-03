@@ -1,3 +1,5 @@
 interface:
   display_name: "Explain code"
   short_description: "Trace how existing code works, read-only"
+policy:
+  allow_implicit_invocation: false
