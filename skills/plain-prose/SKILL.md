@@ -176,6 +176,20 @@ self-reference ("As an AI..."). Start with the content.
 - Write full sentences with articles and verbs. Arrows, slashes and fragments
   ("config -> cache, retry/backoff fixed") belong in notes, not in text a
   stranger reads.
+- Cap sentence length. Keep a step the reader carries out near 20 words and a
+  descriptive sentence near 25. A longer one usually holds two ideas. Vary the
+  length below the cap.
+- Write each step as a command with one action, and put its condition first:
+  "If the build fails, rerun it with `--verbose`." Two actions share a step
+  only when they happen at the same time.
+- Use only names the reader already has. A nickname for a bug, a label for an
+  option or a shorthand for a plan, coined during the work, means nothing to
+  someone who was not there. Describe the thing in everyday words first, then
+  give its code name in backticks. Every noun should still make sense to the
+  reader a week later.
+- In a report or a note to the user, make each heading or bold lead state the
+  takeaway ("Multi-turn ask is switched off"), not only the topic ("Prompt
+  caching and multi-turn ask"). Reference pages keep topic headings.
 
 ## Do not overcorrect
 
@@ -201,15 +215,21 @@ self-reference ("As an AI..."). Start with the content.
 ## Check the result
 
 Run `bun <this skill's directory>/scripts/check.mjs <file>` (Node 22+ also
-works; with no file it reads standard input). It lists each em dash or other
-dash stand-in, colon between two clauses, curly quote, filler phrase and word
-from the two tables above, with its line and column, and exits 1 when it
-finds any. Each is a cue to reread, not a verdict, because the script cannot
-tell a deliberate word from a habit. It skips code, URLs, text in straight
-double quotes (also when the quote wraps a line), block quotations, word-table
-rows like the ones above, a table cell holding only a dash and the paragraph
-after a `plain-prose: keep` comment. A colon that ends the label opening a
-list item is not counted. It does not compare the revision with the
+works; with no file it reads standard input). It lists each of these with its
+line and column, and exits 1 when it finds any:
+
+- an em dash or other dash stand-in
+- a colon between two clauses
+- a curly quote or a filler phrase
+- a word from the two tables above
+- a sentence over 30 words
+
+Each is a cue to reread, not a verdict, because the script cannot tell a
+deliberate word from a habit. It skips code, URLs, block quotations and text
+in straight double quotes, also when the quote wraps a line. It also skips
+word-table rows like the ones above, a table cell holding only a dash and the
+paragraph after a `plain-prose: keep` comment. A colon that ends the label
+opening a list item is not counted. It does not compare the revision with the
 original; the steps below do.
 
 Compare the revision against the original, sentence by sentence:

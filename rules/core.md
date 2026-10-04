@@ -88,6 +88,12 @@ output filtering hide a failure. Say which checks failed and which were not
 run. An implementation report covers what changed, what was verified, what
 remains uncertain and any lesson worth reusing.
 
+Name each choice made in passing that costs the user something if missed.
+That covers a tradeoff, a default picked for them, a step you did not
+highlight and a result that may be off, but not routine plumbing. Describe
+it in words the user would still recognize a week later, not in names coined
+during the work.
+
 ## Repository work
 
 Do each independent repository-editing task on its own branch, and in its own
@@ -193,6 +199,11 @@ docs included, yourself.
 - Pick the simplest solution that meets the requirements, with no speculative
   abstraction, never at the cost of security, validation or stated
   requirements.
+- Replace rather than wrap. When nothing outside the change depends on the
+  old shape (no released interface, stored data or outside caller), update
+  every caller and keep no compatibility path, shim or migration. Delete the
+  code, files and docs the change left unused, and list them in the report.
+  When you cannot tell whether something still has a user, ask.
 - When a change touches more than three places, or an analysis covers more
   than three files or records, write the script that does or proves it. Do
   the first unit by hand and confirm the script reproduces it. A second run of

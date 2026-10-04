@@ -2,6 +2,23 @@
 
 Notable changes to house-rules. Versions follow [semantic versioning](https://semver.org).
 
+## 0.5.19 - 2026-10-04
+
+- Core § Implementation economy: replace rather than wrap. When nothing
+  outside the change depends on the old shape, update every caller and keep
+  no compatibility path, shim or migration. Delete what the change left
+  unused and list it in the report.
+- Core § Reporting: name each choice made in passing that costs the user
+  something if missed, in words they would still recognize a week later.
+  Prompted by the guidance in Claude Code's built-in "You should know" plugin.
+- `plain-prose` § Make it easy to read gains four rules. Keep a step near 20
+  words and a descriptive sentence near 25. Write each step as one command
+  with its condition first. Use no names coined during the work. Make report
+  headings state the takeaway. The length and step rules follow ASD-STE100,
+  held loosely.
+- `plain-prose` checker: flags a sentence over 30 words, counted across
+  wrapped lines, skipping code and front matter.
+
 ## 0.5.18 - 2026-10-04
 
 - `diagnosing-bugs` § Question the premise: after two fixes that rest on the

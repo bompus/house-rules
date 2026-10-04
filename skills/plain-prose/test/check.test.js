@@ -129,3 +129,24 @@ test("the CLI reads standard input and exits 1 on findings, 0 when clean", () =>
   expect(run("", "--nope").status).toBe(2);
   expect(run("", "/no/such/file.md").status).toBe(2);
 });
+
+test("a sentence over 30 words is flagged once, even when it wraps", () => {
+  const long = Array.from({ length: 31 }, (_, i) => `w${i}`);
+  const draft = [
+    "A short sentence stays quiet.",
+    `${long.slice(0, 15).join(" ")}`,
+    `${long.slice(15).join(" ")}.`,
+    "",
+    `- ${long.slice(0, 30).join(" ")}.`,
+    "",
+    "```",
+    `${long.join(" ")}.`,
+    "```",
+  ].join("\n");
+  expect(rules(draft)).toEqual(["2 long-sentence w0 w1 w2 w3 w4"]);
+});
+
+test("front matter is not read as a sentence", () => {
+  const long = Array.from({ length: 31 }, (_, i) => `w${i}`).join(" ");
+  expect(rules(`---\ndescription: ${long}.\n---\n\nShort.`)).toEqual([]);
+});

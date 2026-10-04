@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // Lists the spots in a draft that the plain-prose skill asks you to reread:
-// dash stand-ins, colons between two clauses, curly quotes, and the words in
-// SKILL.md's two word tables. Every finding is a cue, not a verdict.
+// dash stand-ins, colons between two clauses, curly quotes, the words in
+// SKILL.md's two word tables and sentences over 30 words. Every finding is a
+// cue, not a verdict.
 // Runs on Node 22+ or Bun with no dependencies.
 //
 //   check.mjs [--json] [<file>...]   (no file, or -, reads standard input)
@@ -145,6 +146,51 @@ function skippedLines(lines) {
   });
 }
 
+// Sentences over LONG words. A paragraph or list item is read as one run, so
+// a sentence that wraps across lines counts once. Kept spans count as no words.
+const LONG = 30;
+function longSentences(doc, raws, skipped) {
+  const found = [];
+  const lines = doc.split("\n");
+  let unit = [];
+  const flush = () => {
+    let joined = "";
+    const at = [];
+    for (const { i, text } of unit) {
+      if (joined) {
+        joined += " ";
+        at.push(null);
+      }
+      for (let c = 0; c < text.length; c++) at.push([i, c]);
+      joined += text;
+    }
+    unit = [];
+    for (const m of joined.matchAll(/[^.!?]+(?:[.!?]+|$)/g)) {
+      const words = m[0].match(/[A-Za-z0-9][\w'-]*/g) ?? [];
+      if (words.length <= LONG) continue;
+      const lead = m.index + m[0].search(/\S/);
+      const [i, col] = at[lead];
+      found.push({
+        line: i + 1,
+        col: col + 1,
+        rule: "long-sentence",
+        text: raws[i].slice(col).trim().split(/\s+/).slice(0, 5).join(" "),
+        hint: `${words.length} words; split it`,
+      });
+    }
+  };
+  // Front matter holds fields, not sentences.
+  const front = raws[0] === "---" ? raws.indexOf("---", 1) : -1;
+  lines.forEach((text, i) => {
+    const raw = raws[i];
+    if (i <= front || skipped[i] || raw.trim() === "" || /^\s*(#|\|)/.test(raw)) return flush();
+    if (/^\s*([-*+]|\d+\.)\s/.test(raw)) flush();
+    unit.push({ i, text });
+  });
+  flush();
+  return found;
+}
+
 export function check(markdown, terms = parseWordTables(readFileSync(SKILL, "utf8"))) {
   const findings = [];
   const raws = markdown.split("\n");
@@ -202,6 +248,7 @@ export function check(markdown, terms = parseWordTables(readFileSync(SKILL, "utf
       for (const m of text.matchAll(re)) add("filler", m.index, m[0], `cut "${term}"`);
     }
   });
+  findings.push(...longSentences(doc, raws, skipped));
   return findings.sort((a, b) => a.line - b.line || a.col - b.col);
 }
 
