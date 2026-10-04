@@ -2,6 +2,22 @@
 
 Notable changes to house-rules. Versions follow [semantic versioning](https://semver.org).
 
+## 0.5.0 - 2026-10-04
+
+- New `question-cards` modifier. On hosts with a multiple-choice question
+  tool, every offer is also sent as a question card, in the same reply right
+  after the complete text offer. Without such a tool the text offer goes
+  alone, and the agent does not look for a substitute. It also covers how an
+  agent that delegates work answers a worker's card.
+- `coded-offers`: a question card goes in the same reply, right after the
+  text offer, instead of in its own later reply. In a check across agent
+  hosts, a model given the old wording ended its reply after the text and
+  never sent the card. Another section of the rules can now ask for a card,
+  as well as a skill or plugin.
+- `house-rules-setup` asks whether you run Swarmail and how offers should
+  appear (plain, coded, or coded with a question card) before the remaining
+  modifiers.
+
 ## 0.4.2 - 2026-10-03
 
 - `effort-estimates`: the rule covers every estimate of work the session or its

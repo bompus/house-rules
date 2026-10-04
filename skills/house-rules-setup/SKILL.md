@@ -17,12 +17,19 @@ is a separate step the user approves.
    When there is none, ask the user where to clone it. Done when
    `node compose.mjs --list` prints the modifiers. When only Bun is installed,
    run this and the compose step below with `bun` in place of `node`.
-2. Read the existing `house-rules.json` if there is one. Show the modifiers
-   from `--list` with their descriptions and the ones already enabled, and ask
-   which to enable in one question where any combination is allowed. When
-   the user enables `swarmail` and the Swarmail MCP tools are not available,
-   point them to its install steps (https://github.com/bompus/swarmail) and
-   ask before installing anything. Done when the user has answered.
+2. Read the existing `house-rules.json` if there is one. Ask these three
+   questions in one message, showing the current choice for each:
+   - Do you run Swarmail, local mail between agent sessions? Yes enables
+     `swarmail`. When the Swarmail MCP tools are not available, point the
+     user to its install steps (https://github.com/bompus/swarmail) and ask
+     before installing anything.
+   - How should offers appear? Plain text options enable neither offer
+     modifier. Coded text options enable `coded-offers`. Coded text options
+     plus a question card, on hosts that have a question tool, enable
+     `coded-offers` and `question-cards`.
+   - Which other modifiers should be on? Show the rest from `--list` with
+     their descriptions; any combination is allowed.
+   Done when the user has answered all three.
 3. Write `house-rules.json` with the chosen `modifiers`. On a later run, keep
    any existing `layers` and `skills.exclude` unchanged. Create `rules/` and `skills/` beside it.
    Explain the file format once: a rules file starts with frontmatter naming

@@ -164,6 +164,7 @@ in name order, after the modifiers.
 | `multi-agent` | Work is split across delegated workers and several agent hosts; worker reports, review standards and cleanup checks account for all of them. |
 | `no-attribution` | Commits, pull requests and comments carry no agent or tool credit lines. |
 | `plan-files` | Multi-step work keeps a visible task list mirrored to a plan file with a ledger of every item's outcome. |
+| `question-cards` | On hosts with a multiple-choice question tool, every offer is also sent as a question card, in the same reply right after the text offer. |
 | `scratch-on-disk` | Task scratch lives on disk under the user data directory, never in RAM-backed `/tmp`. |
 | `shared-host-load` | On a machine shared by many sessions, heavy work runs one at a time with capped CPU and memory. |
 | `solo-operator` | For repositories with one maintainer, the user's direction is the review; no review-gated steps. |

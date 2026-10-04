@@ -53,7 +53,9 @@ you track follow-ups, or list it as "(Deferred until <condition>)" when the
 user should see it.
 
 Some hosts can also show the offer as a question card (a multiple-choice tool
-call). Send one only when a skill or plugin asks for it, and never instead of
-the text offer. Put the card in its own later reply that contains only the tool
-call, because some hosts drop text sent beside it. Its payload carries the
-context and recommendation, with multi-select for combinable choices.
+call). Send one only when a skill, a plugin or another section of these rules
+asks for it, and never instead of the text offer. Put the card in the same
+reply, right after the complete text offer: an agent that ends its reply first
+often never sends the card, and some hosts drop short text sent beside one.
+Its payload carries the context and recommendation, with multi-select for
+combinable choices.
