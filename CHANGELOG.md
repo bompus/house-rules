@@ -2,6 +2,14 @@
 
 Notable changes to house-rules. Versions follow [semantic versioning](https://semver.org).
 
+## 0.5.7 - 2026-10-04
+
+- End-of-reply eval: `--baseline` also runs every scenario with a
+  one-sentence instruction in place of the rules and with no rules, prints
+  each arm's passes, and warns about a scenario that passes in every arm.
+  The rules arm alone sets the exit status. The idea of a no-skill arm comes
+  from QingYunA/agent-html's eval runner; no code was copied.
+
 ## 0.5.6 - 2026-10-04
 
 - Core § Implementation economy: the second time the same mistake or
