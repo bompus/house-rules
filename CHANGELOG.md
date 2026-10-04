@@ -2,6 +2,13 @@
 
 Notable changes to house-rules. Versions follow [semantic versioning](https://semver.org).
 
+## 0.5.17 - 2026-10-04
+
+- Core § Implementation economy: when a change or analysis is more than a few
+  edits you can check at a glance, write the script that does or proves it.
+  Do the first unit by hand and confirm the script reproduces it. Adapted from
+  pstack's build-the-lever principle.
+
 ## 0.5.16 - 2026-10-04
 
 - Multi-agent modifier: the review-rounds rule from 0.5.15 is its own
