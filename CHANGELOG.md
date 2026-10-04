@@ -2,6 +2,12 @@
 
 Notable changes to house-rules. Versions follow [semantic versioning](https://semver.org).
 
+## 0.5.8 - 2026-10-04
+
+- End-of-reply eval README: results of the first `--baseline` run on seven
+  models, three runs each. The rules passed 62 of 63 replies, a one-sentence
+  instruction 26 and no rules 21. The main README links the result.
+
 ## 0.5.7 - 2026-10-04
 
 - End-of-reply eval: `--baseline` also runs every scenario with a

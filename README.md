@@ -214,7 +214,9 @@ in name order, after the modifiers.
 
 `evals/end-of-reply/` runs three short scenarios through any model CLI and
 grades whether the agent keeps working or ends with an offer at the right
-time, including when it reads only the first 80 lines. See its README.
+time, including when it reads only the first 80 lines. On seven models, the
+rules passed 62 of 63 replies, against 26 for a one-sentence instruction and 21
+with no rules; its README has the breakdown and limits.
 
 ## Development
 
