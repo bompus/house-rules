@@ -6,8 +6,9 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 - Swarmail modifier: a session whose register hook already named it at
   session start uses that name and does not call `macro_start_session` or
-  `register_agent` for another. Elsewhere it registers with the name it
-  already has. Before this change the rule told every agent to call
+  `register_agent` for another. Elsewhere it registers with
+  `macro_start_session`, passing its name as `agent_name` when it has one.
+  Before this change the rule told every agent to call
   `macro_start_session` before its first edit, and agents that did so
   without the session tag got a second name.
 
