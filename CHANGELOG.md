@@ -2,6 +2,11 @@
 
 Notable changes to house-rules. Versions follow [semantic versioning](https://semver.org).
 
+## 0.5.16 - 2026-10-04
+
+- Multi-agent modifier: the review-rounds rule from 0.5.15 is its own
+  paragraph, so the paragraph before it fits a 900-character limit again.
+
 ## 0.5.15 - 2026-10-04
 
 - Multi-agent modifier: after a model review's findings are fixed, review again

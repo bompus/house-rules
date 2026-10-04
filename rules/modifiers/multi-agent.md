@@ -22,11 +22,13 @@ one line with a yes/no test is taste and reviewer-only. What a formatter,
 linter, type check or automated gate can enforce belongs in tooling for both,
 never in prose for either. When no second reviewer runs, the user's direction
 is the only judgment backstop; say so instead of assuming review happened.
-Asking an advisor model is not a second review. After a model review's
-findings are fixed, review again only when a fix changed code logic: control
-flow, data handling, an interface, a query or a value a program reads. Fixes
-that touch only docs, comments, changelog text or tests ship on local checks;
-the pull request body names the findings fixed and says no further round ran.
+Asking an advisor model is not a second review.
+
+After a model review's findings are fixed, review again only when a fix
+changed code logic: control flow, data handling, an interface, a query or a
+value a program reads. Fixes that touch only docs, comments, changelog text or
+tests ship on local checks; the pull request body names the findings fixed and
+says no further round ran.
 
 Before cleaning up a branch, directory or worktree by hand or on a schedule,
 check that no session of any installed agent host uses it: session records and
