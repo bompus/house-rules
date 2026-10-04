@@ -7,9 +7,9 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 - plain-prose: `scripts/check.mjs` lists the spots in a draft the skill asks
   you to reread: em dashes and other dash stand-ins, colons between two
   clauses, curly quotes, filler phrases, and the words in the skill's two
-  word tables, which it reads from SKILL.md. It skips code, URLs, quoted
-  text, block quotations and kept passages, and exits 1 when it finds
-  anything. "Check the result" tells the agent to run it first.
+  word tables, which it reads from SKILL.md. It skips code, URLs, text in
+  straight double quotes, block quotations and kept passages, and exits 1
+  when it finds anything. "Check the result" tells the agent to run it first.
 
 ## 0.5.11 - 2026-10-04
 
