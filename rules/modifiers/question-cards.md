@@ -21,7 +21,8 @@ as well as text:
    option the label it has in the text offer, code included when the offer
    uses codes, with "(Recommended)" where the text offer has it: for example
    `1A (Recommended) pylon` under coded offers, not `pylon`. Use multi-select
-   when the options combine. Leave out an "Other" option; hosts add their own free-text choice.
+   when the options combine. Leave out an "Other" option; hosts add their own
+   free-text choice.
 4. Treat the card's answer as a typed reply naming the same options. On some
    hosts the answer arrives as a new turn; it still answers the offer.
 
