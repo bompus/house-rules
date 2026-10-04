@@ -207,9 +207,10 @@ from the two tables above, with its line and column, and exits 1 when it
 finds any. Each is a cue to reread, not a verdict, because the script cannot
 tell a deliberate word from a habit. It skips code, URLs, text in straight
 double quotes (also when the quote wraps a line), block quotations, word-table
-rows like the ones above and the paragraph after a `plain-prose: keep`
-comment. A colon that ends the label opening a list item is not counted. It
-does not compare the revision with the original; the steps below do.
+rows like the ones above, a table cell holding only a dash and the paragraph
+after a `plain-prose: keep` comment. A colon that ends the label opening a
+list item is not counted. It does not compare the revision with the
+original; the steps below do.
 
 Compare the revision against the original, sentence by sentence:
 

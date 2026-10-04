@@ -79,12 +79,15 @@ const DASHES = [
 
 // Replaces kept spans with spaces of the same length and keeps line breaks, so
 // lines and columns still line up. Code spans and quotes may wrap onto the next
-// line but never cross a blank line.
+// line but never cross a blank line. A code span becomes KEPT characters,
+// neither space nor word, so `50`–`950` does not read as a spaced dash.
+const KEPT = "\u2063";
 const blank = (s) => s.replace(/[^\n]/g, " ");
+const keptCode = (s) => s.replace(/[^\n]/g, KEPT);
 const WRAP = String.raw`(?:[^"\n]|\n(?![ \t]*\n))`;
 function prose(doc) {
   return doc
-    .replace(new RegExp(String.raw`(\`+)(?:[^\`\n]|\n(?![ \t]*\n))*?\1`, "g"), blank)
+    .replace(new RegExp(String.raw`(\`+)(?:[^\`\n]|\n(?![ \t]*\n))*?\1`, "g"), keptCode)
     .replace(new RegExp(`"${WRAP}*"`, "g"), blank)
     .replace(/\]\([^)\n]*\)/g, blank)
     .replace(/<?\bhttps?:\/\/\S+/g, blank)
@@ -98,7 +101,7 @@ function prose(doc) {
 const LINKING = /\b(is|are|was|were|be|been|has|have|had|do|does|did|can|will|should|must)\b/i;
 function listLabel(head) {
   if (/[.!?]\s|: /.test(head)) return false;
-  if (/(\)|\s)$/.test(head)) return true;
+  if (new RegExp(`(\\)|\\s|${KEPT})$`).test(head)) return true;
   return head.trim().split(/\s+/).length <= 6 && !LINKING.test(head);
 }
 
@@ -157,10 +160,20 @@ export function check(markdown, terms = parseWordTables(readFileSync(SKILL, "utf
     if (skipped[i] || raw.trim() === "") return;
     const line = i + 1;
     const add = (rule, index, match, hint) =>
-      findings.push({ line, col: index + 1, rule, text: match.trim(), ...(hint && { hint }) });
+      findings.push({
+        line,
+        col: index + 1,
+        rule,
+        text: raw.slice(index, index + match.length).trim(),
+        ...(hint && { hint }),
+      });
     for (const { re, rule } of DASHES) {
-      for (const m of text.matchAll(re))
-        add(rule, m.index, m[0], "end the sentence or use a comma");
+      for (const m of text.matchAll(re)) {
+        // A table cell holding only a dash marks an empty cell.
+        const cell =
+          /\|\s*$/.test(text.slice(0, m.index)) && /^\s*\|/.test(text.slice(m.index + 1));
+        if (!cell) add(rule, m.index, m[0], "end the sentence or use a comma");
+      }
     }
     for (const m of text.matchAll(/[‘’“”]/g)) {
       add("curly-quote", m.index, m[0], "use straight quotes");
