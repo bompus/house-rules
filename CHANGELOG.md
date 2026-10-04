@@ -2,6 +2,15 @@
 
 Notable changes to house-rules. Versions follow [semantic versioning](https://semver.org).
 
+## 0.5.3 - 2026-10-04
+
+- `question-cards`: asking the user to choose between options is an offer,
+  even when the user asked to be asked, so it gets the full text offer before
+  the card. A one-line question, a line saying the agent will ask, or no text
+  does not count. Card labels keep the offer's codes, with an example. In a
+  check where the user asked to be asked, three of five models sent little or
+  no text before the card, and three used labels without codes.
+
 ## 0.5.2 - 2026-10-04
 
 - `effort-estimates`: the first paragraph is split in two, so each stays
