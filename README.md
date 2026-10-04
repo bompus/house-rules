@@ -232,7 +232,9 @@ CI runs the same checks on every push and pull request. See
 ## Sponsoring
 
 house-rules is built and maintained by one person. If it saves you time, you can
-support it on [Ko-fi](https://ko-fi.com/bompus).
+sponsor it monthly or once through
+[GitHub Sponsors](https://github.com/sponsors/bompus), or leave a tip on
+[Ko-fi](https://ko-fi.com/bompus).
 
 ## Licence
 
