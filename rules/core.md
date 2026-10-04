@@ -201,6 +201,10 @@ docs included, yourself.
 - Write regression tests that would catch a real failure; skip tests that only
   mirror the implementation, redundant tests and release gates without a
   reason.
+- When the same mistake or instruction keeps coming back, encode it in
+  structure before prose: a type, then a lint rule, then a test or check
+  script, then a shared helper, then a runtime check. Write a rule only when
+  none of these can hold it.
 
 ## Durable notes
 

@@ -2,6 +2,13 @@
 
 Notable changes to house-rules. Versions follow [semantic versioning](https://semver.org).
 
+## 0.5.6 - 2026-10-04
+
+- Core § Implementation economy: a mistake or instruction that keeps coming
+  back is encoded in structure before prose, in this order: a type, a lint
+  rule, a test or check script, a shared helper, a runtime check. A written
+  rule is the fallback when none of these can hold it.
+
 ## 0.5.5 - 2026-10-04
 
 - Core § Reporting: the answer and anything the user must read or act on go
