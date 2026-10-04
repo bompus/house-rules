@@ -2,6 +2,22 @@
 
 Notable changes to house-rules. Versions follow [semantic versioning](https://semver.org).
 
+## 0.5.14 - 2026-10-04
+
+- plain-prose checker: fewer false cues. A sweep of 378 tracked Markdown
+  files in two repositories found six kinds. The word-table rows in SKILL.md
+  (and any table built the same way) no longer flag their own terms.
+  Straight double quotes that wrap onto the next line are skipped like
+  one-line quotes. The colon after a list item's opening label (a phrase
+  ending in a parenthesis or code, or up to six words with no linking verb)
+  is no longer a colon reveal. An administrator ("elevated") shell on Windows
+  and "elevation" as interface shadow depth no longer match the "elevate"
+  cue. A dash between two code spans, as in a range of two code values, no
+  longer reads as a spaced dash. A table cell holding only a dash is an empty
+  cell, not prose. Code spans now count as words in the colon rule, which
+  finds 11 reveals the earlier version missed. In that sweep the change
+  removed 237 of 833 findings.
+
 ## 0.5.13 - 2026-10-04
 
 - Swarmail modifier: a session whose register hook already named it at
