@@ -165,10 +165,19 @@ function longSentences(doc, raws, skipped) {
       joined += text;
     }
     unit = [];
-    for (const m of joined.matchAll(/[^.!?]+(?:[.!?]+|$)/g)) {
-      const words = m[0].match(/[A-Za-z0-9][\w'-]*/g) ?? [];
+    // A sentence ends at . ! or ? before a space or the end, never inside a
+    // dotted token such as 0.5.19 or right after an initialism such as e.g.
+    const ends = [...joined.matchAll(/[.!?]+(?=\s|$)/g)]
+      .filter((e) => !/(?:^|\s)(?:[A-Za-z]\.)+[A-Za-z]$/.test(joined.slice(0, e.index)))
+      .map((e) => e.index + e[0].length);
+    let from = 0;
+    for (const end of [...ends, joined.length]) {
+      const sentence = joined.slice(from, end);
+      const start = from;
+      from = end;
+      const words = sentence.match(/[A-Za-z0-9][\w'-]*(?:\.[A-Za-z0-9][\w'-]*)*/g) ?? [];
       if (words.length <= LONG) continue;
-      const lead = m.index + m[0].search(/\S/);
+      const lead = start + sentence.search(/\S/);
       const [i, col] = at[lead];
       found.push({
         line: i + 1,

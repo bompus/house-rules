@@ -150,3 +150,11 @@ test("front matter is not read as a sentence", () => {
   const long = Array.from({ length: 31 }, (_, i) => `w${i}`).join(" ");
   expect(rules(`---\ndescription: ${long}.\n---\n\nShort.`)).toEqual([]);
 });
+
+test("initialisms and version numbers do not end a sentence", () => {
+  const words = (n) => Array.from({ length: n }, (_, i) => `w${i}`).join(" ");
+  expect(rules(`${words(20)}, e.g. ${words(5)} in v0.5.19 ${words(5)}.`)).toEqual([
+    "1 long-sentence w0 w1 w2 w3 w4",
+  ]);
+  expect(rules(`${words(25)} e.g. w25 w26 w27 w28.`)).toEqual([]);
+});
