@@ -229,6 +229,11 @@ npx oxlint . && npx oxfmt --check .
 CI runs the same checks on every push and pull request. See
 [CONTRIBUTING.md](CONTRIBUTING.md) before opening one.
 
+## Sponsoring
+
+house-rules is built and maintained by one person. If it saves you time, you can
+support it on [Ko-fi](https://ko-fi.com/bompus).
+
 ## Licence
 
 MIT. Some skills adapt MIT-licensed work, and `CODE_OF_CONDUCT.md` is the
