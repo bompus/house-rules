@@ -14,7 +14,8 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 - plain-prose checker: fewer false cues. A sweep of 378 tracked Markdown
   files in two repositories found six kinds. The word-table rows in SKILL.md
-  (and any table built the same way) no longer flag their own terms.
+  no longer flag their own terms. A table row is skipped only when every term
+  in its first cell is one of the skill's cue words.
   Straight double quotes that wrap onto the next line are skipped like
   one-line quotes. The colon after a list item's opening label (a phrase
   ending in a parenthesis or code, or up to six words with no linking verb)
