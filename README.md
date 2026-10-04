@@ -1,9 +1,22 @@
-# house-rules
+<h1 align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/banner-dark.png">
+    <img src="docs/assets/banner-light.png" alt="house-rules" width="100%">
+  </picture>
+</h1>
+
+<p align="center">
+  <a href="https://github.com/bompus/house-rules/actions/workflows/check.yml"><img src="https://github.com/bompus/house-rules/actions/workflows/check.yml/badge.svg" alt="CI status"></a>
+  <a href="https://github.com/bompus/house-rules/releases/latest"><img src="https://img.shields.io/github/v/release/bompus/house-rules" alt="Latest release"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/bompus/house-rules" alt="MIT license"></a>
+</p>
 
 Working rules and skills for AI coding agents, written to be read the same way
 by every model family. Use them as they are, or treat them as a base: turn on
 the modifiers you want, add your own rules and skills on top, and let each
 repository add its own.
+
+<p align="center"><img src="docs/assets/overview.png" alt="The four layers composed into one rules file (core, opt-in modifiers, your layer, each repository's AGENTS.md), and the end-of-reply eval: 2/10 before the rewrite to 42/42 with the shipped wording, on an agent that reads only the first 80 lines." width="100%"></p>
 
 If you are an AI agent reading this for your user, the prompt under
 [Evaluate it with your agent](#evaluate-it-with-your-agent) is the evaluation
