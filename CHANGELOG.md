@@ -2,6 +2,14 @@
 
 Notable changes to house-rules. Versions follow [semantic versioning](https://semver.org).
 
+## 0.5.15 - 2026-10-04
+
+- Multi-agent modifier: after a model review's findings are fixed, review again
+  only when a fix changed code logic. Fixes that touch only docs, comments,
+  changelog text or tests ship on local checks, and the pull request says no
+  further round ran. Before this change nothing said when to stop, and agents
+  re-ran reviews after fixes to wording alone.
+
 ## 0.5.14 - 2026-10-04
 
 - plain-prose checker: fewer false cues. A sweep of 378 tracked Markdown
