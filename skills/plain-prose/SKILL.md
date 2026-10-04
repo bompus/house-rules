@@ -66,7 +66,9 @@ expected value, write that it is undefined rather than passing judgment.
 
 The words below are cues to reread a sentence, not proof of anything. When
 one turns up, check whether it says more than its plain replacement would, and
-look harder where several cluster in one paragraph.
+look harder where several cluster in one paragraph. The checker script under
+"Check the result" reads this table and the one under "Name the actual
+thing", so keep each row as `| term | replacement |`.
 
 | Word | Write instead |
 |---|---|
@@ -197,6 +199,16 @@ self-reference ("As an AI..."). Start with the content.
 - Leave text alone when it is already plain. A light edit beats a rewrite.
 
 ## Check the result
+
+Run `bun <this skill's directory>/scripts/check.mjs <file>` (Node 22+ also
+works; with no file it reads standard input). It lists each em dash or other
+dash stand-in, colon between two clauses, curly quote, filler phrase and word
+from the two tables above, with its line and column, and exits 1 when it
+finds any. Each is a cue to reread, not a verdict, because the script cannot
+tell a deliberate word from a habit. It skips code, URLs, text in straight
+double quotes, block quotations and the paragraph after a
+`plain-prose: keep` comment. It does not compare the revision with the
+original; the steps below do.
 
 Compare the revision against the original, sentence by sentence:
 
