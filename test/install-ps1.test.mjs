@@ -93,6 +93,10 @@ function run(shell, home, pathDirs, args = [], env = {}) {
   );
 }
 
+// Each test starts PowerShell at least once, and a cold start on a CI runner can take
+// seconds. Bun's default per-test timeout is 5 s; node --test has none.
+const slow = { timeout: 30_000 };
+
 for (const shell of shells) {
   const name = basename(shell);
   const picked = (home, pathDirs) => {
@@ -101,14 +105,14 @@ for (const shell of shells) {
     return r.stdout.trim();
   };
 
-  it(`${name}: prefers Bun 1.4 or newer over any Node`, () => {
+  it(`${name}: prefers Bun 1.4 or newer over any Node`, slow, () => {
     const home = scratch();
     const bun = stub(home, "a\\bun.cmd", "1.4.2");
     const node = stub(home, "b\\node.cmd", "v24.1.0");
     assert.equal(picked(home, [node, bun]), join(bun, "bun.cmd"));
   });
 
-  it(`${name}: picks the newest Bun across PATH and version managers`, () => {
+  it(`${name}: picks the newest Bun across PATH and version managers`, slow, () => {
     const home = scratch();
     const onPath = stub(home, "a\\bun.cmd", "1.4.2");
     stub(home, ".bun\\bin\\bun.cmd", "1.5.0-canary.3");
@@ -116,7 +120,7 @@ for (const shell of shells) {
     assert.equal(picked(home, [onPath]), join(home, ".bun", "bin", "bun.cmd"));
   });
 
-  it(`${name}: falls back to the newest Node 22 or newer when Bun is older than 1.4`, () => {
+  it(`${name}: falls back to the newest Node 22 or newer when Bun is older than 1.4`, slow, () => {
     const home = scratch();
     const bun = stub(home, "a\\bun.cmd", "1.3.9");
     const node = stub(home, "b\\node.cmd", "v22.11.0");
@@ -128,14 +132,14 @@ for (const shell of shells) {
     );
   });
 
-  it(`${name}: compares version fields as numbers`, () => {
+  it(`${name}: compares version fields as numbers`, slow, () => {
     const home = scratch();
     const nine = stub(home, "a\\node.cmd", "v22.9.0");
     const ten = stub(home, "b\\node.cmd", "v22.10.0");
     assert.equal(picked(home, [nine, ten]), join(ten, "node.cmd"));
   });
 
-  it(`${name}: fails with install pointers when no runtime is new enough`, () => {
+  it(`${name}: fails with install pointers when no runtime is new enough`, slow, () => {
     const home = scratch();
     const node = stub(home, "a\\node.cmd", "v20.18.0");
     const r = run(shell, home, [node], ["-PrintRuntime"]);
@@ -143,7 +147,7 @@ for (const shell of shells) {
     assert.match(plain(r), /Bun 1\.4 or newer .* Node\.js 22 or newer/);
   });
 
-  it(`${name}: refuses a non-empty directory that is not a checkout`, () => {
+  it(`${name}: refuses a non-empty directory that is not a checkout`, slow, () => {
     const home = scratch();
     const dir = join(home, "stuff");
     mkdirSync(dir);
@@ -157,7 +161,7 @@ for (const shell of shells) {
     assert.deepEqual(readdirSync(dir), ["notes.txt"]);
   });
 
-  it(`${name}: installs from a checkout, then recomposes without deleting the old skills`, () => {
+  it(`${name}: installs from a checkout, then recomposes without deleting the old skills`, slow, () => {
     const home = scratch();
     const checkout = join(home, "house-rules");
     cpSync(root, checkout, { recursive: true, filter: (src) => basename(src) !== ".git" });
