@@ -2,6 +2,16 @@
 
 Notable changes to house-rules. Versions follow [semantic versioning](https://semver.org).
 
+## 0.5.10 - 2026-10-04
+
+- `writing-for-agents` § Pruning: a rule a check can enforce lives in the
+  check. The document keeps the reason, the deliberate exceptions and the
+  check's name. A new mechanical rule gets a check in the same change or is
+  marked unchecked.
+- `read-x-links`: a fourth step keeps a post's claims apart from what its
+  linked source shows, reports what the tool actually does, and names claims
+  with no evidence behind them.
+
 ## 0.5.9 - 2026-10-04
 
 - LICENSE names the copyright holder as Aaron Queen instead of the GitHub
