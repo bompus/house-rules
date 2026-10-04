@@ -2,6 +2,12 @@
 
 Notable changes to house-rules. Versions follow [semantic versioning](https://semver.org).
 
+## 0.5.2 - 2026-10-04
+
+- `effort-estimates`: the first paragraph is split in two, so each stays
+  under the 900-character paragraph limit some downstream configuration
+  checks enforce. The wording is unchanged.
+
 ## 0.5.1 - 2026-10-04
 
 - `effort-estimates`: a reply that moves an earlier quote shows the earlier
