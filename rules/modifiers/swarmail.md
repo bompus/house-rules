@@ -14,9 +14,10 @@ skip this section.
   not call `macro_start_session` or `register_agent` to get another. In any
   other repository, before your first edit, pull request or message, register
   with `macro_start_session`, which creates the project, registers you and
-  returns your inbox in one call. Pass the name you already have as
-  `agent_name`, and the repository's primary checkout path; a path inside a
-  worktree also works on current servers. Keep one agent name across
+  returns your inbox in one call. If you already have a name, pass it as
+  `agent_name`; otherwise leave `agent_name` out. Pass the repository's
+  primary checkout path; a path inside a worktree also works on current
+  servers. Keep one agent name across
   projects, and use `register_agent` only to rename yourself or update your
   task description.
 - Before shared work, and before acting on an assumption about another
