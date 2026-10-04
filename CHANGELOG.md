@@ -2,6 +2,15 @@
 
 Notable changes to house-rules. Versions follow [semantic versioning](https://semver.org).
 
+## 0.5.1 - 2026-10-04
+
+- `effort-estimates`: a reply that moves an earlier quote shows the earlier
+  figure beside the new one and names the evidence that moved it. The number
+  of review and fix rounds comes from the comparable run, or from the task's
+  own rounds so far, instead of assuming one. Asked how much time remains
+  without a named scope, the agent answers for the whole task and gives any
+  running benchmark, build, test suite or CI run its own labeled finish time.
+
 ## 0.5.0 - 2026-10-04
 
 - New `question-cards` modifier. On hosts with a multiple-choice question
