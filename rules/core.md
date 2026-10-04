@@ -197,7 +197,7 @@ docs included, yourself.
   than three files or records, write the script that does or proves it. Do
   the first unit by hand and confirm the script reproduces it. A second run of
   the script must change nothing and repeat no external action, such as a
-  push or a sent message.
+  push or a sent message. (Adapted from pstack's `principle-build-the-lever`.)
 - Check current official documentation when behavior depends on a version, and
   stay compatible with the versions in use; no blind upgrades. Before landing a
   dependency or toolchain upgrade, read the release notes for every version in

@@ -72,6 +72,16 @@ Source: https://github.com/sickn33/antigravity-awesome-skills (compared at revis
 
 Copyright (c) 2026 Antigravity User
 
+## cursor/plugins (pstack)
+
+Source: https://github.com/cursor/plugins (compared at revision `e43c7ee`)
+
+- `rules/core.md`: the § Implementation economy bullet on scripting changes
+  that span more than three places is adapted from
+  `pstack/skills/principle-build-the-lever/`.
+
+Copyright (c) 2026 Lauren Tan
+
 ## MIT License text
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
