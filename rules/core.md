@@ -193,9 +193,11 @@ docs included, yourself.
 - Pick the simplest solution that meets the requirements, with no speculative
   abstraction, never at the cost of security, validation or stated
   requirements.
-- When a change or analysis is more than a few edits you can check at a
-  glance, write the script that does or proves it. Do the first unit by hand,
-  confirm the script reproduces it, and keep the script safe to rerun.
+- When a change touches more than three places, or an analysis covers more
+  than three files or records, write the script that does or proves it. Do
+  the first unit by hand and confirm the script reproduces it. A second run of
+  the script must change nothing and repeat no external action, such as a
+  push or a sent message.
 - Check current official documentation when behavior depends on a version, and
   stay compatible with the versions in use; no blind upgrades. Before landing a
   dependency or toolchain upgrade, read the release notes for every version in
