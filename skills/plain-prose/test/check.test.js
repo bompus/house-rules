@@ -72,6 +72,39 @@ test("code, URLs, quotations and kept passages are left alone", () => {
   expect(rules(draft)).toEqual([]);
 });
 
+test("word-table rows, wrapped quotes, list labels and technical senses are not cues", () => {
+  const draft = [
+    "| robust | name the failure it survives |",
+    "Delete announcements (\"Here's a breakdown",
+    'of...") and keep the title "Version 2 - is the',
+    'old parser dead".',
+    "- Weekly Sunday 05:00 (task `nightly-image`): shadow copy of the live disk",
+    "2. Tests for what changed: the files the doc names",
+    "Run an elevated PowerShell session; the script self-elevates. In an elevated",
+    "**Windows** shell the shadows keep their elevation.",
+  ].join("\n");
+  expect(rules(draft)).toEqual([]);
+});
+
+test("the same cues outside those shapes are still flagged", () => {
+  const draft = [
+    "| Area | A robust plan |",
+    'A "stray quote opens here.',
+    "",
+    "A robust plan.",
+    "- It ran twice. The cause was simple: a stale cache.",
+    "It elevated the brand.",
+    "- Semantic risk is the larger tax: the turns that break are rare.",
+  ].join("\n");
+  expect(rules(draft)).toEqual([
+    "1 word robust",
+    "4 word robust",
+    "5 colon-reveal : a stale cache",
+    "6 word elevated",
+    "7 colon-reveal : the turns that break are rare",
+  ]);
+});
+
 test("the CLI reads standard input and exits 1 on findings, 0 when clean", () => {
   const run = (input, ...args) =>
     spawnSync(process.execPath, [SCRIPT, ...args], { input, encoding: "utf8" });

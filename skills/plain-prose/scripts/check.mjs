@@ -7,8 +7,9 @@
 //   check.mjs [--json] [<file>...]   (no file, or -, reads standard input)
 //
 // Skipped as material to keep: fenced code, inline code, URLs, text in
-// straight double quotes, block quotes, and the paragraph after a
-// `plain-prose: keep` comment.
+// straight double quotes (also when the quote wraps onto the next line), block
+// quotes, the paragraph after a `plain-prose: keep` comment, and the rows of a
+// word table like SKILL.md's own.
 // Exit codes: 0 no findings, 1 findings, 2 bad usage or an unreadable file.
 
 import { readFileSync, realpathSync } from "node:fs";
@@ -27,15 +28,20 @@ function termPattern(term) {
   return [`${stem}\\w*`, ...rest].join("\\s+");
 }
 
-// The word tables are the rows whose first cell is a plain term and second a
-// replacement: "| delve into | look at, read, test |".
+// A word-table row has a plain term in its first cell and a replacement in its
+// second: "| delve into | look at, read, test |". Returns the two cells.
+function wordTableRow(line) {
+  const cells = line.split("|").map((c) => c.trim());
+  if (cells.length !== 4 || cells[0] !== "" || cells[3] !== "") return null;
+  return /^[a-z][a-z ,]*$/.test(cells[1]) ? cells.slice(1, 3) : null;
+}
+
 export function parseWordTables(markdown) {
   const terms = [];
   for (const line of markdown.split("\n")) {
-    const cells = line.split("|").map((c) => c.trim());
-    if (cells.length !== 4 || cells[0] !== "" || cells[3] !== "") continue;
-    const [, words, hint] = cells;
-    if (!/^[a-z][a-z ,]*$/.test(words)) continue;
+    const row = wordTableRow(line);
+    if (!row) continue;
+    const [words, hint] = row;
     for (const term of words.split(/,\s*/)) {
       terms.push({ term, hint, re: new RegExp(`\\b${termPattern(term)}\\b`, "gi") });
     }
@@ -55,6 +61,15 @@ const CHAT = [
   "at the end of the day",
 ].map((p) => ({ term: p, re: new RegExp(`\\b${p.replace(/ /g, "\\s+")}\\b`, "gi") }));
 
+// Technical senses of a table word, not the inflated usage the table targets:
+// an administrator ("elevated") shell on Windows, and "elevation" as shadow
+// depth in an interface.
+const TECHNICAL = [
+  /\bself-elevat\w*/gi,
+  /\belevated(?:\*\*|__)?\s+(?:\*\*|__)?(?:shell|prompt|session|terminal|powershell|windows|command|capture|recording|follow-up|privileges?|rights|token)\b/gi,
+  /\belevation\b/gi,
+];
+
 const DASHES = [
   { re: /—/g, rule: "em-dash" },
   { re: /\s–\s/g, rule: "spaced-en-dash" },
@@ -62,27 +77,40 @@ const DASHES = [
   { re: /(?<=[A-Za-z_])\s--?\s(?=\w)|(?<=\d)\s--?\s(?=[A-Za-z_])/g, rule: "spaced-hyphen" },
 ];
 
-// Replaces kept spans with spaces of the same length, so columns still line up.
-const blank = (s) => " ".repeat(s.length);
-function prose(line) {
-  return line
-    .replace(/(`+)[^`]*?\1/g, blank)
-    .replace(/"[^"]*"/g, blank)
-    .replace(/\]\([^)]*\)/g, blank)
+// Replaces kept spans with spaces of the same length and keeps line breaks, so
+// lines and columns still line up. Code spans and quotes may wrap onto the next
+// line but never cross a blank line.
+const blank = (s) => s.replace(/[^\n]/g, " ");
+const WRAP = String.raw`(?:[^"\n]|\n(?![ \t]*\n))`;
+function prose(doc) {
+  return doc
+    .replace(new RegExp(String.raw`(\`+)(?:[^\`\n]|\n(?![ \t]*\n))*?\1`, "g"), blank)
+    .replace(new RegExp(`"${WRAP}*"`, "g"), blank)
+    .replace(/\]\([^)\n]*\)/g, blank)
     .replace(/<?\bhttps?:\/\/\S+/g, blank)
-    .replace(/<!--.*?-->/g, blank);
+    .replace(/<!--[\s\S]*?-->/g, blank);
+}
+
+// The first colon of a list item ends a label when the text before it ends in
+// a parenthesis or code, or is a phrase of up to six words with no linking
+// verb: "- Weekly backup (task): a shadow copy", "2. Tests for what changed:
+// the files". "- Semantic risk is the larger tax: ..." stays a reveal.
+const LINKING = /\b(is|are|was|were|be|been|has|have|had|do|does|did|can|will|should|must)\b/i;
+function listLabel(head) {
+  if (/[.!?]\s|: /.test(head)) return false;
+  if (/(\)|\s)$/.test(head)) return true;
+  return head.trim().split(/\s+/).length <= 6 && !LINKING.test(head);
 }
 
 // A colon between two clauses in a sentence: at least four words before it,
 // a sentence after it, and no comma there that would make it a list.
 function colonReveals(text) {
   const found = [];
+  const marker = text.match(/^\s*([-*+]|\d+\.)\s+/)?.[0].length;
   for (const m of text.matchAll(/: +(?=[A-Za-z])/g)) {
-    const before = text
-      .slice(0, m.index)
-      .split(/[.!?]\s+/)
-      .pop()
-      .replace(/^\s*([-*+]|\d+\.)\s+/, "");
+    const head = text.slice(marker ?? 0, m.index);
+    if (marker && listLabel(head)) continue;
+    const before = head.split(/[.!?]\s+/).pop();
     const after = text.slice(m.index + m[0].length).split(/[.!?](\s|$)/)[0];
     if (before.trim().split(/\s+/).length < 4 || /\*\*|__/.test(before)) continue;
     if (after.includes(",") || after.trim().split(/\s+/).length < 2) continue;
@@ -91,32 +119,43 @@ function colonReveals(text) {
   return found;
 }
 
-export function check(markdown, terms = parseWordTables(readFileSync(SKILL, "utf8"))) {
-  const findings = [];
+// Marks the lines that hold no prose to check: fenced code, block quotes, and
+// the keep comment with the paragraph after it.
+function skippedLines(lines) {
   let fence = null;
   let keep = false;
-  markdown.split("\n").forEach((raw, i) => {
-    const line = i + 1;
+  return lines.map((raw) => {
     const fenceMark = raw.match(/^\s*(`{3,}|~{3,})/);
     if (fence) {
       if (fenceMark && fenceMark[1][0] === fence[0] && fenceMark[1].length >= fence.length)
         fence = null;
-      return;
+      return true;
     }
     if (fenceMark) {
       fence = fenceMark[1];
-      return;
+      return true;
     }
-    if (/plain-prose:\s*keep/.test(raw)) {
-      keep = true;
-      return;
-    }
-    if (raw.trim() === "") {
-      keep = false;
-      return;
-    }
-    if (keep || /^\s*>/.test(raw)) return;
-    const text = prose(raw);
+    if (/plain-prose:\s*keep/.test(raw)) return (keep = true);
+    if (raw.trim() === "") return (keep = false);
+    return keep || /^\s*>/.test(raw);
+  });
+}
+
+export function check(markdown, terms = parseWordTables(readFileSync(SKILL, "utf8"))) {
+  const findings = [];
+  const raws = markdown.split("\n");
+  const skipped = skippedLines(raws);
+  const doc = prose(raws.map((raw, i) => (skipped[i] ? blank(raw) : raw)).join("\n"));
+  const technical = TECHNICAL.flatMap((re) =>
+    [...doc.matchAll(re)].map((m) => [m.index, m.index + m[0].length]),
+  );
+  let offset = 0;
+  doc.split("\n").forEach((text, i) => {
+    const raw = raws[i];
+    const start = offset;
+    offset += text.length + 1;
+    if (skipped[i] || raw.trim() === "") return;
+    const line = i + 1;
     const add = (rule, index, match, hint) =>
       findings.push({ line, col: index + 1, rule, text: match.trim(), ...(hint && { hint }) });
     for (const { re, rule } of DASHES) {
@@ -130,8 +169,14 @@ export function check(markdown, terms = parseWordTables(readFileSync(SKILL, "utf
       for (const c of colonReveals(text))
         add("colon-reveal", c.index, c.text, "state the point directly");
     }
-    for (const { term, hint, re } of terms) {
-      for (const m of text.matchAll(re)) add("word", m.index, m[0], `${term}: ${hint}`);
+    if (!wordTableRow(raw)) {
+      for (const { term, hint, re } of terms) {
+        for (const m of text.matchAll(re)) {
+          const at = start + m.index;
+          if (technical.some(([a, b]) => at >= a && at < b)) continue;
+          add("word", m.index, m[0], `${term}: ${hint}`);
+        }
+      }
     }
     for (const { term, re } of CHAT) {
       for (const m of text.matchAll(re)) add("filler", m.index, m[0], `cut "${term}"`);
