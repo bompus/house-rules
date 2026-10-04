@@ -4,10 +4,12 @@ after: Offers
 ---
 ## Question cards
 
+Asking the user to choose between options is an offer, even when the user
+asked you to ask them, so it gets the full text offer on every host.
+
 When your host gives you a multiple-choice question tool (one that shows the
 user a question with selectable options), send every offer as a question card
-as well as text. Asking the user to choose between options is an offer, even
-when the user asked you to ask them.
+as well as text:
 
 1. Write the complete text offer first, with every part § Offers lists. A
    one-line question, a line saying you will ask, or no text at all is not a
