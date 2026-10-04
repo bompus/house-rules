@@ -2,6 +2,16 @@
 
 Notable changes to house-rules. Versions follow [semantic versioning](https://semver.org).
 
+## 0.5.13 - 2026-10-04
+
+- Swarmail modifier: a session whose register hook already named it at
+  session start uses that name and does not call `macro_start_session` or
+  `register_agent` for another. Elsewhere it registers with
+  `macro_start_session`, passing its name as `agent_name` when it has one.
+  Before this change the rule told every agent to call
+  `macro_start_session` before its first edit, and agents that did so
+  without the session tag got a second name.
+
 ## 0.5.12 - 2026-10-04
 
 - plain-prose: `scripts/check.mjs` lists the spots in a draft the skill asks

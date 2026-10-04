@@ -9,12 +9,17 @@ for agent sessions. When its MCP tools (server `swarmail`) are available, use
 them to coordinate with other agent sessions on this machine. Without them,
 skip this section.
 
-- Before your first edit, pull request or message in a repository, register
+- When Swarmail's register hook tells you your agent name at session start,
+  you are already registered in that repository. Use that name there, and do
+  not call `macro_start_session` or `register_agent` to get another. In any
+  other repository, before your first edit, pull request or message, register
   with `macro_start_session`, which creates the project, registers you and
-  returns your inbox in one call. Pass the repository's primary checkout path;
-  a path inside a worktree also works on current servers. Keep one agent name
-  across projects, and use `register_agent` only to rename yourself or update
-  your task description.
+  returns your inbox in one call. If you already have a name, pass it as
+  `agent_name`; otherwise leave `agent_name` out. Pass the repository's
+  primary checkout path; a path inside a worktree also works on current
+  servers. Keep one agent name across
+  projects, and use `register_agent` only to rename yourself or update your
+  task description.
 - Before shared work, and before acting on an assumption about another
   session's plans, read your inbox with `fetch_inbox` and check who else is
   working there with `list_agents`.
