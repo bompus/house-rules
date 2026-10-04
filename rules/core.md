@@ -78,8 +78,9 @@ remains, and separate measured facts from unverified claims. Use numbered steps
 for actions the user must perform.
 
 Put the answer, and anything the user must read or act on, in the reply's text
-after its last tool call; a question card's text offer is the exception. Text
-written between tool calls can be collapsed or lost.
+after its last tool call. Text written between tool calls can be collapsed or
+lost. When the reply ends with a question card, that text goes after every
+other tool call, right before the card.
 
 A task counts as verified by evidence: checks run, with their output. Confirm a
 check's own exit status or final result before reporting a pass, and do not let
