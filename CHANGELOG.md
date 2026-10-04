@@ -8,7 +8,8 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   package, command or MCP server), search the package registries it could
   publish to and GitHub, and for an MCP server the official MCP registry,
   Glama and awesome-mcp-servers. Exact and near matches are reported beside
-  the candidate; the user picks.
+  the candidate; the user picks. A near match, ignoring case and separators,
+  differs by one letter or contains the candidate whole.
 
 ## 0.5.10 - 2026-10-04
 
