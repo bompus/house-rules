@@ -161,31 +161,35 @@ for (const shell of shells) {
     assert.deepEqual(readdirSync(dir), ["notes.txt"]);
   });
 
-  it(`${name}: installs from a checkout, then recomposes without deleting the old skills`, slow, () => {
-    const home = scratch();
-    const checkout = join(home, "house-rules");
-    cpSync(root, checkout, { recursive: true, filter: (src) => basename(src) !== ".git" });
-    const env = { HOUSE_RULES_DIR: checkout, HOUSE_RULES_RUNTIME: process.execPath };
-    const config = join(home, ".config", "house-rules");
+  it(
+    `${name}: installs from a checkout, then recomposes without deleting the old skills`,
+    slow,
+    () => {
+      const home = scratch();
+      const checkout = join(home, "house-rules");
+      cpSync(root, checkout, { recursive: true, filter: (src) => basename(src) !== ".git" });
+      const env = { HOUSE_RULES_DIR: checkout, HOUSE_RULES_RUNTIME: process.execPath };
+      const config = join(home, ".config", "house-rules");
 
-    const first = run(shell, home, [], [], env);
-    assert.equal(first.status, 0, first.stderr);
-    assert.ok(existsSync(join(config, "house-rules.json")));
-    assert.ok(existsSync(join(config, "rules.md")));
-    assert.ok(readdirSync(join(config, "composed-skills")).length > 0);
-    assert.match(first.stdout, /@~\/\.config\/house-rules\/rules\.md/);
+      const first = run(shell, home, [], [], env);
+      assert.equal(first.status, 0, first.stderr);
+      assert.ok(existsSync(join(config, "house-rules.json")));
+      assert.ok(existsSync(join(config, "rules.md")));
+      assert.ok(readdirSync(join(config, "composed-skills")).length > 0);
+      assert.match(first.stdout, /@~\/\.config\/house-rules\/rules\.md/);
 
-    const second = run(shell, home, [], [], env);
-    assert.equal(second.status, 0, second.stderr);
-    const kept = readdirSync(config).filter((f) => f.startsWith("composed-skills.previous-"));
-    assert.equal(kept.length, 1);
-    assert.ok(readdirSync(join(config, "composed-skills")).length > 0);
+      const second = run(shell, home, [], [], env);
+      assert.equal(second.status, 0, second.stderr);
+      const kept = readdirSync(config).filter((f) => f.startsWith("composed-skills.previous-"));
+      assert.equal(kept.length, 1);
+      assert.ok(readdirSync(join(config, "composed-skills")).length > 0);
 
-    // Runs within the same second keep separate backups instead of nesting one.
-    const third = run(shell, home, [], [], env);
-    assert.equal(third.status, 0, third.stderr);
-    const backups = readdirSync(config).filter((f) => f.startsWith("composed-skills.previous-"));
-    assert.equal(backups.length, 2);
-    for (const b of backups) assert.ok(!existsSync(join(config, b, "composed-skills")));
-  });
+      // Runs within the same second keep separate backups instead of nesting one.
+      const third = run(shell, home, [], [], env);
+      assert.equal(third.status, 0, third.stderr);
+      const backups = readdirSync(config).filter((f) => f.startsWith("composed-skills.previous-"));
+      assert.equal(backups.length, 2);
+      for (const b of backups) assert.ok(!existsSync(join(config, b, "composed-skills")));
+    },
+  );
 }
