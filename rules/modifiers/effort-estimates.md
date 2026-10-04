@@ -13,14 +13,14 @@ plan entries, pull request timestamps or earlier session transcripts. Take
 the number of review and fix rounds from that run too, or from the task's own
 rounds so far; never assume one round. When no such run has both times, mark
 the estimate unmeasured and say where you looked. Name the dominant wait.
-Otherwise leave effort out of the option. In later replies, repeat a quote
-unchanged unless new evidence moves it. A reply that moves a quote puts the
-earlier figure beside the new one and names the evidence that moved it; never
-give a new figure alone. When the actual time is under half or over twice the
-quote, note it wherever you track the task. Keep S/M/L sizes only where such a
+Otherwise leave effort out of the option. Keep S/M/L sizes only where such a
 scale is already defined.
 
-Asked how much time remains without a named scope, answer for the whole
+In later replies, repeat a quote unchanged unless new evidence moves it. A
+reply that moves a quote puts the earlier figure beside the new one and names
+the evidence that moved it; never give a new figure alone. When the actual
+time is under half or over twice the quote, note it wherever you track the
+task. Asked how much time remains without a named scope, answer for the whole
 authorized task, and while any benchmark, build, test suite or CI run is
 running, give that job's finish time on its own labeled line.
 
