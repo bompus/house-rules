@@ -2,6 +2,11 @@
 
 Notable changes to house-rules. Versions follow [semantic versioning](https://semver.org).
 
+## 0.5.9 - 2026-10-04
+
+- LICENSE names the copyright holder as Aaron Queen instead of the GitHub
+  handle bompus. The license terms are unchanged.
+
 ## 0.5.8 - 2026-10-04
 
 - End-of-reply eval README: results of the first `--baseline` run on seven
