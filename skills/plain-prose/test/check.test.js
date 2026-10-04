@@ -158,3 +158,13 @@ test("initialisms and version numbers do not end a sentence", () => {
   ]);
   expect(rules(`${words(25)} e.g. w25 w26 w27 w28.`)).toEqual([]);
 });
+
+test("a final initialism ends a sentence, while internal abbreviations stay together", () => {
+  const words = (n) => Array.from({ length: n }, (_, i) => `w${i}`).join(" ");
+  const draft = `${words(28)} U.S. We agree.`;
+  expect(rules(draft)).toEqual([]);
+  const cli = spawnSync(process.execPath, [SCRIPT], { input: draft, encoding: "utf8" });
+  expect(cli.status).toBe(0);
+  expect(rules(`${words(28)} U.S. policy applies.`)).toEqual(["1 long-sentence w0 w1 w2 w3 w4"]);
+  expect(rules(`${words(28)} e.g. JSON data follows.`)).toEqual(["1 long-sentence w0 w1 w2 w3 w4"]);
+});

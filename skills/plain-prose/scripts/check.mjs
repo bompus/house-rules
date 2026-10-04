@@ -165,10 +165,15 @@ function longSentences(doc, raws, skipped) {
       joined += text;
     }
     unit = [];
-    // A sentence ends at . ! or ? before a space or the end, never inside a
-    // dotted token such as 0.5.19 or right after an initialism such as e.g.
+    // Keep dotted tokens and internal abbreviations together. An uppercase
+    // initialism may end a sentence when the next word starts with a capital.
     const ends = [...joined.matchAll(/[.!?]+(?=\s|$)/g)]
-      .filter((e) => !/(?:^|\s)(?:[A-Za-z]\.)+[A-Za-z]$/.test(joined.slice(0, e.index)))
+      .filter((e) => {
+        if (e[0] !== ".") return true;
+        const initialism = joined.slice(0, e.index).match(/(?:^|\s)((?:[A-Za-z]\.)+[A-Za-z])$/);
+        if (!initialism) return true;
+        return /^[A-Z.]+$/.test(initialism[1]) && /^\s+[A-Z]/.test(joined.slice(e.index + 1));
+      })
       .map((e) => e.index + e[0].length);
     let from = 0;
     for (const end of [...ends, joined.length]) {
