@@ -255,3 +255,9 @@ Docs, rules, skills and code comments describe current behavior. Version
 history belongs in changelogs, findings ledgers, receipts and git history,
 unless the user asks for it elsewhere. Text a person will read (commit
 messages, pull requests, docs, replies) uses plain, specific language.
+
+Before settling a name for anything public (a project, repository, package,
+command or MCP server), search where it would appear: the package registries
+it could publish to and GitHub, and for an MCP server also the official MCP
+registry, Glama and awesome-mcp-servers. Report exact and near matches beside
+the candidate name; the user picks.

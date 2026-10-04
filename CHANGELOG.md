@@ -2,6 +2,14 @@
 
 Notable changes to house-rules. Versions follow [semantic versioning](https://semver.org).
 
+## 0.5.11 - 2026-10-04
+
+- Core § Writing: before a public name is settled (project, repository,
+  package, command or MCP server), search the package registries it could
+  publish to and GitHub, and for an MCP server the official MCP registry,
+  Glama and awesome-mcp-servers. Exact and near matches are reported beside
+  the candidate; the user picks.
+
 ## 0.5.10 - 2026-10-04
 
 - `writing-for-agents` § Pruning: a rule a check can enforce lives in the
