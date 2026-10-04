@@ -77,6 +77,10 @@ Lead with the answer or the concrete result. Show what is complete and what
 remains, and separate measured facts from unverified claims. Use numbered steps
 for actions the user must perform.
 
+Put the answer, and anything the user must read or act on, in the reply's text
+after its last tool call; a question card's text offer is the exception. Text
+written between tool calls can be collapsed or lost.
+
 A task counts as verified by evidence: checks run, with their output. Confirm a
 check's own exit status or final result before reporting a pass, and do not let
 output filtering hide a failure. Say which checks failed and which were not

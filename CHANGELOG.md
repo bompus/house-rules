@@ -2,6 +2,14 @@
 
 Notable changes to house-rules. Versions follow [semantic versioning](https://semver.org).
 
+## 0.5.5 - 2026-10-04
+
+- Core § Reporting: the answer and anything the user must read or act on go
+  in the reply's text after its last tool call, apart from a question card's
+  text offer. In one reply the requested links were written before a status
+  check and never reached the user: the transcript held only a reasoning
+  summary of them.
+
 ## 0.5.4 - 2026-10-04
 
 - `question-cards`: no card when the choice depends on content only the text
