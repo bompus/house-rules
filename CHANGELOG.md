@@ -2,6 +2,14 @@
 
 Notable changes to house-rules. Versions follow [semantic versioning](https://semver.org).
 
+## 0.5.4 - 2026-10-04
+
+- `question-cards`: no card when the choice depends on content only the text
+  carries, such as images, tables, code, links or a long comparison. That
+  offer goes as text alone. Each card option's description must stand on its
+  own. On one host the card showed before the text written ahead of it, and
+  the user had to answer without the screenshots the text held.
+
 ## 0.5.3 - 2026-10-04
 
 - `question-cards`: asking the user to choose between options is an offer,

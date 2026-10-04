@@ -1,5 +1,5 @@
 ---
-description: On hosts with a multiple-choice question tool, every offer is also sent as a question card, in the same reply right after the text offer.
+description: On hosts with a multiple-choice question tool, every offer is also sent as a question card, in the same reply right after the text offer, unless the choice depends on content only the text carries.
 after: Offers
 ---
 ## Question cards
@@ -9,7 +9,10 @@ asked you to ask them, so it gets the full text offer on every host.
 
 When your host gives you a multiple-choice question tool (one that shows the
 user a question with selectable options), send every offer as a question card
-as well as text:
+as well as text, unless the choice depends on content only the text carries:
+images, tables, code, links, or a comparison longer than a card option holds.
+Some hosts show the card before the text written ahead of it, so the user
+would answer without that content. Send those offers as text alone.
 
 1. Write the complete text offer first, with every part § Offers lists. A
    one-line question, a line saying you will ask, or no text at all is not a
@@ -20,9 +23,11 @@ as well as text:
 3. Ask one card question per offer question, in the same order. Give each
    option the label it has in the text offer, code included when the offer
    uses codes, with "(Recommended)" where the text offer has it: for example
-   `1A (Recommended) pylon` under coded offers, not `pylon`. Use multi-select
-   when the options combine. Leave out an "Other" option; hosts add their own
-   free-text choice.
+   `1A (Recommended) pylon` under coded offers, not `pylon`. Write each
+   option's description so it stands alone, saying what the option does and
+   what it costs or risks: on some hosts the card is all the user sees before
+   answering. Use multi-select when the options combine. Leave out an "Other"
+   option; hosts add their own free-text choice.
 4. Treat the card's answer as a typed reply naming the same options. On some
    hosts the answer arrives as a new turn; it still answers the offer.
 
