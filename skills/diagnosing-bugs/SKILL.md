@@ -54,6 +54,17 @@ no-progress (repeated identical calls, oscillation, unchanged error class),
 and enforce time/token/cost ceilings outside the agent so a stuck loop
 terminates instead of retrying.
 
+## Question the premise
+
+When two fixes that rest on the same assumption have failed the same check,
+stop fixing and test the assumption. Write it down as the one sentence every
+failed fix took for granted. Before a third fix, gather evidence that would
+show the sentence false, such as a count per input, actor or run, and keep it
+as a script that can be rerun. If the evidence contradicts the sentence, find
+what made it false and fix that, instead of compensating for it on every run.
+If the evidence supports the sentence, keep it as a record and look for the
+cause elsewhere. (Adapted from pstack's `principle-attack-the-premise`.)
+
 ## Fix and verify
 
 When the confirmed cause admits more than one viable fix, such as a targeted

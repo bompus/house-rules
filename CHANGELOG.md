@@ -2,6 +2,13 @@
 
 Notable changes to house-rules. Versions follow [semantic versioning](https://semver.org).
 
+## 0.5.18 - 2026-10-04
+
+- `diagnosing-bugs` § Question the premise: after two fixes that rest on the
+  same assumption fail the same check, write the assumption down and gather
+  rerunnable evidence that would show it false before a third fix. Adapted
+  from pstack's attack-the-premise principle.
+
 ## 0.5.17 - 2026-10-04
 
 - Core § Implementation economy: when a change touches more than three places,

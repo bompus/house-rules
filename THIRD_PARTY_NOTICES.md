@@ -79,6 +79,8 @@ Source: https://github.com/cursor/plugins (compared at revision `e43c7ee`)
 - `rules/core.md`: the § Implementation economy bullet on scripting changes
   that span more than three places is adapted from
   `pstack/skills/principle-build-the-lever/`.
+- `skills/diagnosing-bugs/SKILL.md`: § Question the premise is adapted from
+  `pstack/skills/principle-attack-the-premise/`.
 
 Copyright (c) 2026 Lauren Tan
 
