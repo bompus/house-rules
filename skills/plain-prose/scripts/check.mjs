@@ -63,11 +63,12 @@ const CHAT = [
 
 // Technical senses of a table word, not the inflated usage the table targets:
 // an administrator ("elevated") shell on Windows, and "elevation" as shadow
-// depth in an interface.
+// depth in an interface (a "shadow" within 120 characters, same paragraph).
+const NEAR = String.raw`(?:(?!\n[ \t]*\n)[\s\S]){0,120}?`;
 const TECHNICAL = [
   /\bself-elevat\w*/gi,
   /\belevated(?:\*\*|__)?\s+(?:\*\*|__)?(?:shell|prompt|session|terminal|powershell|windows|command|capture|recording|follow-up|privileges?|rights|token)\b/gi,
-  /\belevation\b/gi,
+  new RegExp(String.raw`\bshadow${NEAR}\belevation\b|\belevation\b(?=${NEAR}\bshadow)`, "gi"),
 ];
 
 const DASHES = [
@@ -101,7 +102,7 @@ function prose(doc) {
 const LINKING = /\b(is|are|was|were|be|been|has|have|had|do|does|did|can|will|should|must)\b/i;
 function listLabel(head) {
   if (/[.!?]\s|: /.test(head)) return false;
-  if (new RegExp(`(\\)|\\s|${KEPT})$`).test(head)) return true;
+  if (new RegExp(`(\\)|${KEPT})$`).test(head.trimEnd())) return true;
   return head.trim().split(/\s+/).length <= 6 && !LINKING.test(head);
 }
 
@@ -152,6 +153,12 @@ export function check(markdown, terms = parseWordTables(readFileSync(SKILL, "utf
   const technical = TECHNICAL.flatMap((re) =>
     [...doc.matchAll(re)].map((m) => [m.index, m.index + m[0].length]),
   );
+  // A row of a word table defines its terms; the same words elsewhere are cues.
+  const known = new Set(terms.map((t) => t.term));
+  const defines = (raw) =>
+    wordTableRow(raw)?.[0]
+      .split(/,\s*/)
+      .every((t) => known.has(t));
   let offset = 0;
   doc.split("\n").forEach((text, i) => {
     const raw = raws[i];
@@ -171,7 +178,7 @@ export function check(markdown, terms = parseWordTables(readFileSync(SKILL, "utf
       for (const m of text.matchAll(re)) {
         // A table cell holding only a dash marks an empty cell.
         const cell =
-          /\|\s*$/.test(text.slice(0, m.index)) && /^\s*\|/.test(text.slice(m.index + 1));
+          /\|\s*$/.test(text.slice(0, m.index)) && /^\s*\|/.test(text.slice(m.index + m[0].length));
         if (!cell) add(rule, m.index, m[0], "end the sentence or use a comma");
       }
     }
@@ -182,7 +189,7 @@ export function check(markdown, terms = parseWordTables(readFileSync(SKILL, "utf
       for (const c of colonReveals(text))
         add("colon-reveal", c.index, c.text, "state the point directly");
     }
-    if (!wordTableRow(raw)) {
+    if (!defines(raw)) {
       for (const { term, hint, re } of terms) {
         for (const m of text.matchAll(re)) {
           const at = start + m.index;

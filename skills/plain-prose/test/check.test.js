@@ -84,6 +84,8 @@ test("word-table rows, wrapped quotes, list labels and technical senses are not 
     "**Windows** shell the shadows keep their elevation.",
     "Both the `50`–`950` and `1`–`12` scales map to roles.",
     "| — | `C:\\System Volume Information` | out of scope |",
+    "| – | empty | cell |",
+    "Count the distinct shadows; nine means each page invented its own elevation.",
   ].join("\n");
   expect(rules(draft)).toEqual([]);
 });
@@ -98,6 +100,9 @@ test("the same cues outside those shapes are still flagged", () => {
     "It elevated the brand.",
     "- Semantic risk is the larger tax: the turns that break are rare.",
     "Run `make` – then stop.",
+    "| setting | robust plan |",
+    "- Semantic risk is the larger tax : the turns that break are rare.",
+    "The elevation of the brand matters.",
   ].join("\n");
   expect(rules(draft)).toEqual([
     "1 word robust",
@@ -106,6 +111,9 @@ test("the same cues outside those shapes are still flagged", () => {
     "6 word elevated",
     "7 colon-reveal : the turns that break are rare",
     "8 spaced-en-dash –",
+    "9 word robust",
+    "10 colon-reveal : the turns that break are rare",
+    "11 word elevation",
   ]);
 });
 
