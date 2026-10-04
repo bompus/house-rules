@@ -31,6 +31,11 @@ Then:
    thumbnail), earlier posts in a thread (a reply shows its parent's ID; fetch
    that URL to walk up), and any post the script reported as failed. Say so
    rather than rating content you did not see.
+4. When the post promotes a tool, method or result, keep what the post claims
+   apart from what its source shows. Check each claim against the repository,
+   docs or paper it links, report what the tool actually does, and name each
+   claim with no evidence behind it, such as a benchmark with no method or a
+   screenshot with no source.
 
 A deleted, protected or age-restricted post fails with the API's message; ask
 the user for a screenshot. If the API itself is down, fall back to web fetch
