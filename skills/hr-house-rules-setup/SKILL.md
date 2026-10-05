@@ -21,19 +21,20 @@ The commands below use `node`. If only Bun is installed, replace `node` with
    Run `node compose.mjs config catalog`. If it fails, show the error and run
    `node compose.mjs --list` for modifier choices without reading the config.
    Done when modifier choices are available.
-2. Inspect `node compose.mjs config status --config <path>`. If status reports
-   `invalid JSON in configuration`, `configuration must be a JSON object`,
-   `skills must be an object`, or a field's array-type or duplicate error,
-   preserve the file. Show skill choices from the README's Skills table and
-   known personal skill directories. Stop before `config set`, composition or
-   host writes; ask the user how to repair the file. Resume this step after the
-   agreed repair passes `config validate`.
+2. Inspect `node compose.mjs config status --config <path>`.
    If status reports legacy skill names, stop inspection. Read the config and follow
    `docs/skill-names.md` before continuing. If catalog or status reports
    `unknown modifier` or `question-cards requires coded-offers`, read the config
    for current choices. Follow `docs/configuration.md` and preview the user's
    selection in step 3
    with `--disable-modifier <name>` or `--questions`.
+   For any other status failure, show the error and preserve the existing file
+   or filesystem object. Show skill choices from the README's Skills table and
+   known personal skill directories. Stop before `config set`, composition or
+   host writes. Ask the user how to repair the configuration or select a usable
+   path. For `config must be a regular file, not a symlink or directory`, ask
+   them to select or create a regular config file. Resume this step after the
+   agreed repair or selected path passes `config validate`.
    Ask these four questions in one message, showing the current choice for each:
    - Do you run Swarmail, local mail between agent sessions? Yes enables
      `swarmail`. When the Swarmail MCP tools are not available, point the
