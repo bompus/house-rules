@@ -59,9 +59,10 @@ Before the first run used in that claim, set a repetition count or stopping
 rule and a reproducible variation criterion (statistic and threshold).
 Retain every result. Keep pilots that informed the plan separate from the
 claim's sample. Capture raw results, exit status, elapsed time, CPU and memory
-observations. Report the sample count, median and range; apply the preset
-criterion and treat a gap within run-to-run variation as inconclusive. Profile separately
-from the runs used to claim a speed difference.
+observations. Report the selected repetition count or stopping rule, variation
+statistic and threshold, sample count, median and range. Apply the preset
+criterion and treat a gap within run-to-run variation as inconclusive. Profile
+separately from the runs used to claim a speed difference.
 
 Record memory by what it measures. Whole-process peak RSS includes startup,
 inputs and dependencies. Heap snapshots describe retained objects; allocation

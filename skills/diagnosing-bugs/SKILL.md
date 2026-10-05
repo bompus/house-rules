@@ -18,8 +18,11 @@ Use the project or host's current benchmark-backed order for bug-finding models
 and efforts. Primary, secondary and tertiary choices can change with benchmark
 results; read the current selection rather than carrying names from an old run.
 If the primary is unavailable through quota, outage or an unsupported route,
-use the next available eligible choice within authorized billing limits.
-Preserve review independence and record the model, effort and fallback reason.
+use the next available eligible choice within authorized billing limits only
+when changing provider, model or effort is authorized. If the low-quota
+handoff rule applies without that authorization, use the handoff skill and
+stop. Preserve review independence and record the model, effort and fallback
+reason.
 If no eligible model is available, report the blocker.
 
 ## Establish the symptom
