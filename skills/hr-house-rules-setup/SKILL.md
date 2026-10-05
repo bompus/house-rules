@@ -17,10 +17,15 @@ is a separate step the user approves.
    When there is none, ask the user where to clone it. Done when
    `node compose.mjs config catalog` prints the catalog. When only Bun is installed,
    run this and the compose step below with `bun` in place of `node`.
+   If catalog fails with `unknown modifier` or
+   `question-cards requires coded-offers`, show the error and continue to step 2.
 2. Inspect `node compose.mjs config status --config <path>`. If status reports
    legacy skill names, stop inspection. Read the config and follow
-   `docs/skill-names.md` before continuing. Ask these four questions in one message, showing the current
-   choice for each:
+   `docs/skill-names.md` before continuing. If catalog or status reports either
+   modifier error above, read the config for current choices. Follow the repair
+   guidance in `docs/configuration.md` and preview the user's selection in step 3
+   with `--disable-modifier <name>` or `--questions`.
+   Ask these four questions in one message, showing the current choice for each:
    - Do you run Swarmail, local mail between agent sessions? Yes enables
      `swarmail`. When the Swarmail MCP tools are not available, point the
      user to its install steps (https://github.com/bompus/swarmail) and ask
