@@ -1,6 +1,6 @@
 ---
 name: hr-what-next
-description: "Reconcile remaining work and recommend priorities. Use for next, next?, what's next, what remains, backlog reviews or equivalent next-work requests. Do not use for go or continue, which retain their acceptance/continuation meaning, or progress/ETA-only requests."
+description: "Reconcile remaining work and recommend priorities. Use for next, next?, what's next, what remains, backlog reviews, full-session or unanswered-question audits, and equivalent requests. Do not use for go or continue, which retain their acceptance/continuation meaning, or progress/ETA-only requests."
 ---
 
 # What next
