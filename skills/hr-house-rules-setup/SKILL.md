@@ -17,9 +17,9 @@ is a separate step the user approves.
    When there is none, ask the user where to clone it. Done when
    `node compose.mjs config catalog` prints the catalog. When only Bun is installed,
    run this and the compose step below with `bun` in place of `node`.
-2. Inspect `node compose.mjs config status --config <path>`. If legacy names
-   stop inspection, read the config and follow `docs/skill-names.md` before
-   continuing. Ask these four questions in one message, showing the current
+2. Inspect `node compose.mjs config status --config <path>`. If status reports
+   legacy skill names, stop inspection. Read the config and follow
+   `docs/skill-names.md` before continuing. Ask these four questions in one message, showing the current
    choice for each:
    - Do you run Swarmail, local mail between agent sessions? Yes enables
      `swarmail`. When the Swarmail MCP tools are not available, point the
