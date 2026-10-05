@@ -2,6 +2,16 @@
 
 Notable changes to house-rules. Versions follow [semantic versioning](https://semver.org).
 
+## 0.7.0 - 2026-10-05
+
+- Handoffs now reconcile transcript records and linked task ledgers with an
+  offline checker. The receipt records source counts and gaps, item outcomes,
+  owned and dependency pull requests, and commits without pull requests.
+- The checker reports complete, partial or invalid mechanical coverage.
+  It cannot find promises hidden in records classified as context, discover
+  unreported sources, or decide whether an outcome is supported semantically.
+  An unfinished receipt never delays a low-quota stop.
+
 ## 0.6.5 - 2026-10-05
 
 - Attribute benchmark CPU, load and resident memory before treating them as

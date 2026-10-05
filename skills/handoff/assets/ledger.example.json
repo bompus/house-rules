@@ -1,0 +1,10 @@
+{
+  "records": [
+    {
+      "id": "deferred-1",
+      "text": "User deferred the evaluation. Resume only after explicit selection.",
+      "at": "2025-01-01T09:00:00Z",
+      "outcome": { "item": "evaluation", "state": "deferred" }
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "records": [
+    {
+      "id": "request-1",
+      "text": "Implement the parser, then wait for my landing decision."
+    },
+    {
+      "id": "completion-1",
+      "text": "Parser implementation and checks complete; PR8 remains unlanded.",
+      "at": "2025-01-01T10:00:00Z",
+      "outcome": { "item": "parser", "state": "done" }
+    },
+    {
+      "id": "git-1",
+      "text": "Checked example/widget: own PR8 open, dependency PR9 open, no commits without a PR.",
+      "at": "2025-01-01T10:01:00Z",
+      "outcome": { "item": "landing", "state": "open" }
+    }
+  ]
+}

@@ -42,6 +42,17 @@ items are addressed. When the handoff spans several threads or scopes, include
 an integrated plan. Preserve an already-selected next action; record unresolved
 decisions and recommendations in priority order.
 
+For a handoff unrelated to quota, follow
+[reconciliation.md](references/reconciliation.md) to compare the current and
+preceding source transcripts, linked ledgers and Git inventory with this
+inventory. Save its receipt and run the offline checker. Report coverage gaps
+and mechanical results separately from the reviewed claim that all items are
+addressed. Include owned unlanded PRs, dependency PRs and own commits without a
+PR; preserve their owners and landing authority.
+
+At a low-quota stop, save essential state first and record partial coverage
+when feasible. An unfinished receipt or failing check never delays that stop.
+
 Ask what to work on next only when an unresolved decision needs the user's
 input and the handoff's stop boundary permits it. Follow the house rules'
 § Offers and § Finishing work. When stopping for low quota, the saved handoff and recorded next action serve

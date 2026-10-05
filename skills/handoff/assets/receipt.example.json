@@ -1,0 +1,76 @@
+{
+  "version": 1,
+  "owner": "session-example",
+  "coverage": "complete",
+  "sources": [
+    {
+      "id": "current",
+      "file": "source.example.json",
+      "snapshot": "Fictional session records through 2025-01-01T10:01:00Z",
+      "expectedRecords": 3,
+      "gaps": []
+    },
+    {
+      "id": "prior-ledger",
+      "file": "ledger.example.json",
+      "snapshot": "Fictional child ledger at 2025-01-01T09:00:00Z",
+      "expectedRecords": 1,
+      "gaps": []
+    }
+  ],
+  "accounting": [
+    { "source": "current", "record": "request-1", "items": ["parser", "landing"] },
+    { "source": "current", "record": "completion-1", "items": ["parser"] },
+    { "source": "current", "record": "git-1", "items": ["landing"] },
+    { "source": "prior-ledger", "record": "deferred-1", "items": ["evaluation"] }
+  ],
+  "items": [
+    {
+      "id": "parser",
+      "owner": "session-example",
+      "state": "done",
+      "evidence": [{ "source": "current", "record": "completion-1" }],
+      "next": "Implementation complete; landing is tracked separately."
+    },
+    {
+      "id": "landing",
+      "owner": "session-example",
+      "state": "open",
+      "evidence": [{ "source": "current", "record": "git-1" }],
+      "next": "Wait for the user's landing decision; dependency PR9 belongs to its owner."
+    },
+    {
+      "id": "evaluation",
+      "owner": "session-example",
+      "state": "deferred",
+      "evidence": [{ "source": "prior-ledger", "record": "deferred-1" }],
+      "next": "Resume only after explicit user selection."
+    }
+  ],
+  "git": {
+    "scope": "example/widget; no other repository work",
+    "checkedAt": "2025-01-01T10:01:00Z",
+    "evidence": [{ "source": "current", "record": "git-1" }],
+    "ownedPrs": [
+      {
+        "url": "https://github.com/example/widget/pull/8",
+        "owner": "session-example",
+        "state": "open",
+        "checkedAt": "2025-01-01T10:01:00Z",
+        "evidence": [{ "source": "current", "record": "git-1" }],
+        "next": "Wait for the user's landing decision."
+      }
+    ],
+    "dependencyPrs": [
+      {
+        "url": "https://github.com/example/widget/pull/9",
+        "owner": "session-other",
+        "state": "open",
+        "checkedAt": "2025-01-01T10:01:00Z",
+        "evidence": [{ "source": "current", "record": "git-1" }],
+        "next": "Await the owner's adoption receipt; no landing authority transferred."
+      }
+    ],
+    "commitsWithoutPr": []
+  }
+}
