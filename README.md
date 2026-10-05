@@ -179,7 +179,7 @@ in name order, after the modifiers.
 | `plan-files` | Multi-step work keeps a visible task list mirrored to a plan file with a ledger of every item's outcome. |
 | `question-cards` | On hosts with a multiple-choice question tool, every offer is also sent as a question card, in the same reply right after the text offer, unless the choice depends on content only the text carries. |
 | `scratch-on-disk` | Task scratch lives on disk under the user data directory, never in RAM-backed `/tmp`. |
-| `shared-host-load` | On a machine shared by many sessions, heavy work runs one at a time with capped CPU and memory. |
+| `shared-host-load` | Run one heavy job at a time with capped CPU and memory; other sessions may continue light work within its resource limits. |
 | `solo-operator` | For repositories with one maintainer, the user's direction is the review; no review-gated steps. |
 | `squash-landing` | Pull requests land by squash merge after review-bot findings are handled, and the session's checkout moves off the landed branch. |
 | `swarmail` | Sessions on one machine coordinate through Swarmail messages instead of the user relaying between them. |
@@ -192,6 +192,7 @@ in name order, after the modifiers.
 | `agent-guidance-refresh` | Re-read guidance that changed since the session started. |
 | `api-exposure-check` | Keep API responses to the fields a consumer reads and the caller may see. |
 | `audit-choices` | List and check the decisions made while implementing a task. |
+| `benchmarking` | Design, run and assess timing, CPU and memory comparisons; choose tools by the question they answer. |
 | `change-impact` | Check what a change can break beyond its diff before merging. |
 | `code-review` | Review a diff against the repository's standards and the originating request. |
 | `diagnosing-bugs` | Work a hard bug or regression to a confirmed cause. |

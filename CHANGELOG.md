@@ -2,6 +2,16 @@
 
 Notable changes to house-rules. Versions follow [semantic versioning](https://semver.org).
 
+## 0.6.0 - 2026-10-05
+
+- New `benchmarking` skill: portable comparison methodology and a focused
+  tool reference for timing, profiling, debugging and correctness checks.
+  Keep workload identity, repetitions and measurement limits with results.
+- Shared-host-load modifier: allow light work in other sessions during heavy
+  jobs and measurements. Pause competing jobs rather than whole sessions;
+  account for hooks and child processes, preserve the measured environment,
+  and release reservations while waiting on remote work or reviews.
+
 ## 0.5.20 - 2026-10-05
 
 - Before submitting a GitHub issue or pull request, read its templates and

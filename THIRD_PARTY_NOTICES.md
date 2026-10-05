@@ -81,6 +81,8 @@ Source: https://github.com/cursor/plugins (compared at revision `e43c7ee`)
   `pstack/skills/principle-build-the-lever/`.
 - `skills/diagnosing-bugs/SKILL.md`: § Question the premise is adapted from
   `pstack/skills/principle-attack-the-premise/`.
+- `skills/benchmarking/SKILL.md`: the validity checks are adapted from
+  `pstack/skills/benchmark-checklist/`.
 
 Copyright (c) 2026 Lauren Tan
 

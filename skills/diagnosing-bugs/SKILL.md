@@ -1,6 +1,6 @@
 ---
 name: diagnosing-bugs
-description: Investigate difficult, intermittent or unresolved bugs and performance regressions, or an explicit request for systematic diagnosis. Routine fixes with an evident cause do not need this workflow. Do not use for change reviews.
+description: Investigate hard, intermittent or unresolved bugs and performance regressions systematically. Skip routine fixes and change reviews.
 ---
 
 # Diagnosing bugs

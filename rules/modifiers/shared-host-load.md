@@ -1,5 +1,5 @@
 ---
-description: On a machine shared by many sessions, heavy work runs one at a time with capped CPU and memory.
+description: Run one heavy job at a time with capped CPU and memory; other sessions may continue light work within its resource limits.
 after: Coordination and isolation
 ---
 ## Shared machine load
@@ -9,6 +9,13 @@ the load and other sessions' running jobs, and run one heavy step at a time.
 Limit workers and compiler jobs to half the CPUs (at least one) and use
 `nice -n 10` where available. Ask before heavy work when the user is working
 interactively on the same machine.
+
+Other sessions may continue light work within the job's resource limits:
+remote requests, targeted reads and edits in independent checkouts. Pause
+competing CPU, memory or I/O jobs, not whole sessions. Include hooks and child
+processes when assessing load. During measurements, preserve measured files,
+runtimes, dependencies and services; the measuring session only monitors.
+Between jobs, release the reservation while waiting on remote work or a review.
 
 Run anything that can exceed about 1 GiB of memory (indexers, toolchain or
 bundler builds, full-corpus probes) under a memory cap, for example
