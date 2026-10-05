@@ -4,6 +4,10 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Use tables for comparisons and repeated records. Show scoped backlog and
+  research items in priority order based on the task's goal, expected impact
+  and decision value, with readiness and uncertainty stated separately.
+
 - Add an opt-in `release-batching` modifier to batch approved compatible changes
   with a defined cutoff, preserve repository release requirements, and let
   urgent fixes ship without waiting for unfinished work.
