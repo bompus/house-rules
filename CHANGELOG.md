@@ -9,6 +9,16 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   resource pressure still does. Use a settled fresh interval between arms and
   investigate uncertain overlap before a decisive comparison.
 
+## 0.6.4 - 2026-10-05
+
+- Benchmarking starts with one run per arm. Correctness-only checks can use
+  one candidate run. Performance claims need repeated alternating runs to
+  assess variation, with the run plan and variation criterion set before the
+  first result used for the claim. Retain pilot results separately.
+- Bug hunts use the current benchmark-backed model order. An unavailable
+  primary falls back to the next eligible model, recording the model, effort
+  and reason while preserving review independence and billing limits.
+
 ## 0.6.3 - 2026-10-05
 
 - At task or session closeout, check for reusable lessons and save their
