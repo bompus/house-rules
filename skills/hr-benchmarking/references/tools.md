@@ -26,6 +26,25 @@ Use [cgroup swap and zswap accounting](https://www.kernel.org/doc/html/latest/ad
 from other jobs. These occupancy values do not measure activity by themselves.
 Record missing counters and preserve the run plan's declared pressure criteria.
 
+## Scheduling controls
+
+These Linux controls change resource allocation under competition; they do not
+establish isolation. Check support for the actual kernel, controller and I/O
+path. Record effective values and unavailable controls for every arm; requesting
+a setting does not prove it took effect.
+
+| Control | Effect and limit |
+|---|---|
+| [Nice level](https://man7.org/linux/man-pages/man2/nice.2.html) | Lower numeric values raise fair CPU scheduling priority. Permissions and autogroup policy affect the result. This does not reserve a core. |
+| [CPU and I/O cgroup weights](https://docs.kernel.org/admin-guide/cgroup-v2.html) | Adjust relative shares among active sibling groups. Parent limits and controller/device support still apply; a higher weight is not a capacity guarantee. |
+| [Process I/O priority](https://man7.org/linux/man-pages/man2/ioprio_set.2.html) | Depends on the supporting I/O scheduler and path. Process-specific priority does not cover asynchronous writes. |
+| [Memory protection](https://docs.kernel.org/admin-guide/cgroup-v2.html) | `memory.low` and `memory.min` protect against reclaim, not memory-bandwidth competition. Excessive hard protection can cause OOM. Memory caps remain limits, not reservations. |
+
+Avoid realtime [CPU](https://man7.org/linux/man-pages/man7/sched.7.html) or
+[I/O](https://man7.org/linux/man-pages/man1/ionice.1.html) classes for generic
+benchmark noise reduction; they can starve dependencies or monitoring.
+Preserve the host's scheduling policy unless it authorizes a different regime.
+
 ## Profiling and debugging
 
 Use a separate diagnostic run; instrumentation changes the work it observes.

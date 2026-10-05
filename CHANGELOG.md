@@ -4,6 +4,10 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Prefer isolation over elevated benchmark priority. Record effective scheduling
+  settings equally across comparison arms, preserve deployment settings for
+  representative results, and test priority changes in separate sensitivity
+  pilots under the host's resource rules.
 - Batch approved changes into releases instead of publishing a version for each
   pull request. Record changes under `Unreleased` until the batch is ready;
   urgent fixes can still ship independently. Review checks accept matching
