@@ -2,6 +2,13 @@
 
 Notable changes to house-rules. Versions follow [semantic versioning](https://semver.org).
 
+## 0.7.2 - 2026-10-05
+
+- Align resource-counter boundaries with measured work. Keep post-run
+  observations diagnostic and report admission and monitoring overhead
+  separately from workload time. Batch compatible probes when they dominate
+  elapsed time.
+
 ## 0.7.1 - 2026-10-05
 
 - Reserve shared machines only for heavy local phases or deliberately isolated

@@ -66,7 +66,11 @@ collecting performance results. Start only when every admission condition passes
 During measurements, attribute CPU, load and resident memory to the recorded
 benchmark process tree or resource scope before calling them competing work.
 Expected benchmark utilization is not contention; total host CPU and load
-average include it. Between arms, let cleanup settle and use a fresh interval.
+average include it. Collect boundary counters adjacent to the measured work,
+with unrelated probes outside that interval. Record sample times and observer
+overhead. A counter interval extending past completion cannot by itself
+establish overlap. Keep post-run observations diagnostic and use a fresh
+settled interval before the next arm.
 
 Reject a run when inputs change, competing work crosses a declared contention
 limit, or a declared pressure condition fails. Before collecting performance
@@ -89,8 +93,10 @@ Before the first run used in that claim, set a repetition count or stopping
 rule and a reproducible variation criterion (statistic and threshold).
 Retain every result. Keep pilots that informed the plan separate from the
 claim's sample. Capture raw results, exit status, elapsed time, CPU and memory
-observations. Report the selected repetition count or stopping rule, variation
-statistic and threshold, sample count, median and range. Apply the preset
+observations. Report admission and monitoring overhead separately from the
+measured workload; batch compatible probes when they dominate elapsed time.
+Report the selected repetition count or stopping rule, variation statistic and
+threshold, sample count, median and range. Apply the preset
 criterion and treat a gap within run-to-run variation as inconclusive. Profile
 separately from the runs used to claim a speed difference.
 
