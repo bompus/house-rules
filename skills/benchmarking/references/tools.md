@@ -1,8 +1,8 @@
 # Benchmarking and investigation tools
 
-These are defaults by task, not mandatory installations or universal standards.
-Prefer a suitable runner already used by the project. Check the official
-version's documentation before relying on flags or interpreting output.
+These defaults come from tools used in our work. Prefer a suitable runner
+already used by the project. Check the official version's documentation before
+relying on flags or interpreting output.
 
 ## Timing and resource measurement
 
@@ -36,7 +36,7 @@ For a concrete crash, hang or event-tracing question, use the available
 [system tracing tool](https://bpftrace.org/docs). They are optional diagnostic
 tools, not benchmark prerequisites; platform and permissions affect availability.
 
-For JavaScript/TypeScript tool choices, HTTP scripting or source maps, read [the language reference](javascript.md).
+For TypeScript compiler versus application timing, read [the language reference](javascript.md).
 
 ## Correctness and audit evidence
 
@@ -44,7 +44,6 @@ Use the repository's lint, type checks, focused tests and relevant static or
 security analysis. These establish intended behavior and detect defects; passing
 them does not establish speed or memory use. State their coverage limits.
 
-Add language-specific tools when a real task demonstrates their role. Record
-the question answered, why the existing tools were insufficient, platform and
-measurement limits, and the official documentation. Avoid an exhaustive catalog
-or adding mandatory dependencies for hypothetical future work.
+Add a tool after using it successfully on a real task. Record the question it
+answered, why it helped, its platform and measurement limits, and the official
+documentation. Keep untried candidates in research notes until then.
