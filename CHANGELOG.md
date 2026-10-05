@@ -2,6 +2,13 @@
 
 Notable changes to house-rules. Versions follow [semantic versioning](https://semver.org).
 
+## 0.7.1 - 2026-10-05
+
+- Reserve shared machines only for heavy local phases or deliberately isolated
+  local performance measurements. Remote inference, light CLI work and remote
+  waits do not need an exclusive slot. Keep timing conditions visible when
+  evaluating remote agents and models.
+
 ## 0.7.0 - 2026-10-05
 
 - Handoffs now reconcile transcript records and linked task ledgers with an

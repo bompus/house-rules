@@ -43,9 +43,17 @@ input. When the generator limits the result, report that limit.
 
 ## Measure without changing the experiment
 
-Coordinate resource use under the host's rules. The measuring session only
-monitors during the timed region. Other sessions may do light work within the
-run's resource limits, with measured files, toolchains and services unchanged.
+Coordinate resource use under the host's rules. During isolated local performance
+measurements, the measuring session only monitors. Other sessions may do light
+work within the run's resource limits. Keep measured files, toolchains and
+services unchanged.
+Classify the timed region first. Reserve the host only for heavy local phases
+or deliberately isolated local performance measurements. Remote model
+inference, light CLI/API work and remote waits need no exclusive slot; a
+memory cap or elapsed-time record alone does not establish heavy work. For
+remote agent/model evaluations, record the timing regime and concurrent local
+work. Apply the local admission and pressure rules below when measuring local
+performance, rather than treating every model call as a CPU benchmark.
 Before each arm, inspect CPU outside the measuring scope, memory headroom and
 pressure, swap and competing CPU, memory or I/O jobs. Use the host's admission
 limits; when it has none, declare the metrics and pass/fail thresholds before
@@ -64,8 +72,9 @@ smaller stalls without rejecting them. Stalls exceeding the budget, swapping
 or memory-limit/OOM events invalidate measurements even when the benchmark
 causes them. Investigate uncertain overlap and repeat affected runs before
 using them for a decisive comparison. A light session's presence alone is not
-rejection evidence. Release reservations between jobs while awaiting remote
-work or a review; retain them for an active run.
+rejection evidence. Hold reservations during heavy local phases or declared
+isolated local performance measurements. Release them during remote waits,
+light work and reviews.
 
 Start with one run per arm. A correctness-only check can use one candidate run;
 report its coverage and make no performance claim.

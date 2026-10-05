@@ -10,11 +10,19 @@ Limit workers and compiler jobs to half the CPUs (at least one) and use
 `nice -n 10` where available. Ask before heavy work when the user is working
 interactively on the same machine.
 
+Reserve a shared slot only for heavy local phases or a deliberately isolated
+local performance measurement. Remote model inference, light CLI/API work and
+remote waits need no exclusive slot. A memory cap, an agent/model comparison
+or recording elapsed time alone does not make a job heavy. Coordinate heavy
+local tool, build and test phases separately. Record the timing regime and
+concurrent local work for remote or shared evaluations.
+
 Other sessions may continue light work within the job's resource limits:
 remote requests, targeted reads and edits in independent checkouts. Pause
 competing CPU, memory or I/O jobs, not whole sessions. Include hooks and child
-processes when assessing load. During measurements, preserve measured files,
-runtimes, dependencies and services; the measuring session only monitors.
+processes when assessing load. Preserve measured files, runtimes, dependencies
+and services. During isolated local performance measurements, the measuring
+session only monitors.
 Between jobs, release the reservation while waiting on remote work or a review.
 
 Run anything that can exceed about 1 GiB of memory (indexers, toolchain or
