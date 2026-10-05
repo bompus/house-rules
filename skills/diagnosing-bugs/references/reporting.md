@@ -2,8 +2,9 @@
 
 Before filing in any repository, search existing issues and fix pull requests.
 Inspect labels, linked changes and timeline actions as well as comments.
-Add new evidence to a matching open issue. When a closed report still
-reproduces, explain the failed fix or changed conditions and request reopening.
+For the same problem and scope, add new evidence to a matching open issue.
+When a closed report still reproduces, explain the failed fix or changed
+conditions and request reopening.
 If reopening is unavailable, file one linked follow-up.
 
 Reduce the failure to the smallest self-contained reproduction you can verify.
@@ -34,9 +35,16 @@ labels and routing; copied headings alone do not preserve form metadata.
 Verify the published body and metadata. If available tooling cannot preserve
 the form, prepare the report and ask for access or user submission.
 
-Keep one active report per problem. Follow up with new evidence or a specific
-unanswered question. An absent bot comment is not evidence that nothing
-happened. Do not duplicate a report or close and reopen it merely to seek
+When an issue needs major or material changes, replace it with a new issue
+in any repository. Changes to the problem, scope, reproduction or main
+conclusion can be material. Carry forward relevant evidence and unresolved
+questions, and link the old and new reports both ways. Submit and verify the
+replacement before closing the old report as superseded, not fixed. Routine
+corrections and evidence that leave the report materially unchanged stay in place.
+
+Keep one active report per problem after replacement. Follow up with new
+evidence or a specific unanswered question. An absent bot comment is not
+evidence that nothing happened. Do not duplicate a report or close and reopen it merely to seek
 priority. Small examples help investigation; they do not guarantee action or a fix deadline.
 
 When a fix build is available, test the same reproduction and report the

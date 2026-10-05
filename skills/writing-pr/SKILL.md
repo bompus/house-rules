@@ -17,6 +17,16 @@ abstractions out. When performance requires a larger change, show measurements
 explaining why the simpler approach is insufficient and what the added
 complexity achieves.
 
+## Material changes to an existing PR
+
+When an existing PR needs major or material changes, replace it with a new
+PR in any repository. Changes to scope, the fix approach or resulting behavior
+can be material. Carry forward relevant evidence and unresolved review findings,
+and link the old and new PRs both ways. Publish and verify the replacement
+before closing the old PR as superseded. Recheck its final diff and required
+checks; prior approval and CI results do not cover the new submission.
+Routine corrections that leave the PR materially unchanged stay in place.
+
 ## Read before writing
 
 Inspect the actual diff against the intended target branch, the linked issue or request, and available validation results. For an existing PR, confirm its current base and head. Commit messages can provide context; the final diff determines what the PR claims.
@@ -35,7 +45,7 @@ Lead the body with the concrete problem and resulting behavior. A small change m
 
 Explain implementation details only when they clarify a decision or help assess correctness. Include compatibility, dependency, migration, or documentation implications when the diff creates them. When the change has a hard-to-reverse surface (host-level effects such as `sudo install-deps`, migrations, destructive actions), say so in one sentence; never a fixed risk section, and nothing on purely additive changes. Identify a useful review starting point for a complex change, using `path:line` anchors for load-bearing claims.
 
-Describe the final combined change. Leave out intermediate attempts, commit reshuffling, conversational history, and file inventories already visible in the diff. Write for the reviewer in plain language: no unexplained jargon, and no narrative about how the change was produced. Review panels, models consulted, harnesses, and agent process never appear in titles, bodies, or PR comments; that detail lives in plan files and session records. Rewrite the title and body when the scope changes.
+Describe the final combined change. Leave out intermediate attempts, commit reshuffling, conversational history, and file inventories already visible in the diff. Write for the reviewer in plain language: no unexplained jargon, and no narrative about how the change was produced. Review panels, models consulted, harnesses, and agent process never appear in titles, bodies, or PR comments; that detail lives in plan files and session records. For routine clarifications, update the title and body. Material scope changes follow the replacement rule above.
 
 ## Evidence that earns its space
 

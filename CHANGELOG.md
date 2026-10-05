@@ -2,6 +2,13 @@
 
 Notable changes to house-rules. Versions follow [semantic versioning](https://semver.org).
 
+## 0.6.2 - 2026-10-05
+
+- Issues and pull requests with major or material changes now get a new,
+  linked submission in every repository. Carry forward evidence and unresolved
+  feedback, verify the replacement, then close the old submission as superseded.
+  Routine corrections stay in place.
+
 ## 0.6.1 - 2026-10-05
 
 - Portable bug reporting now lives in `diagnosing-bugs/references/reporting.md`: search existing reports, reduce and verify a case, preserve submission metadata, follow up with evidence, and verify fixes. Shared rules point to this guide; fix-scope guidance lives in `writing-pr`.
