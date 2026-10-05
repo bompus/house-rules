@@ -55,10 +55,12 @@ Start with one run per arm. A correctness-only check can use one candidate run;
 report its coverage and make no performance claim.
 
 For a performance claim, add alternating runs to assess run-to-run variation.
-Set a repetition count or stopping rule before adding runs; retain every result.
-Capture raw results, exit status, elapsed time, CPU and memory observations.
-Report the sample count, median and range;
-treat a gap within run-to-run variation as inconclusive. Profile separately
+Before the first run used in that claim, set a repetition count or stopping
+rule and a reproducible variation criterion (statistic and threshold).
+Retain every result. Keep pilots that informed the plan separate from the
+claim's sample. Capture raw results, exit status, elapsed time, CPU and memory
+observations. Report the sample count, median and range; apply the preset
+criterion and treat a gap within run-to-run variation as inconclusive. Profile separately
 from the runs used to claim a speed difference.
 
 Record memory by what it measures. Whole-process peak RSS includes startup,
