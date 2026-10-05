@@ -11,20 +11,28 @@ The user's choices live in a personal layer, by default
 `skills/` directories. Composition never edits host files; connecting a host
 is a separate step the user approves.
 
+The commands below use `node`. If only Bun is installed, replace `node` with
+`bun` in every `compose.mjs` command.
+
 1. Find the house-rules checkout (the directory holding `compose.mjs`;
    `install.sh` puts it in `${XDG_DATA_HOME:-~/.local/share}/house-rules`,
    `install.ps1` in `%LOCALAPPDATA%\house-rules`).
    When there is none, ask the user where to clone it.
-   Run `node compose.mjs config catalog`. If it fails with `unknown modifier` or
-   `question-cards requires coded-offers`, show the error and run
+   Run `node compose.mjs config catalog`. If it fails, show the error and run
    `node compose.mjs --list` for modifier choices without reading the config.
-   Done when modifier choices are available. When only Bun is installed,
-   run these commands and the compose step below with `bun` in place of `node`.
+   Done when modifier choices are available.
 2. Inspect `node compose.mjs config status --config <path>`. If status reports
-   legacy skill names, stop inspection. Read the config and follow
-   `docs/skill-names.md` before continuing. If catalog or status reports either
-   modifier error above, read the config for current choices. Follow the repair
-   guidance in `docs/configuration.md` and preview the user's selection in step 3
+   `invalid JSON in configuration`, `configuration must be a JSON object`,
+   `skills must be an object`, or a field's array-type or duplicate error,
+   preserve the file. Show skill choices from the README's Skills table and
+   known personal skill directories. Stop before `config set`, composition or
+   host writes; ask the user how to repair the file. Resume this step after the
+   agreed repair passes `config validate`.
+   If status reports legacy skill names, stop inspection. Read the config and follow
+   `docs/skill-names.md` before continuing. If catalog or status reports
+   `unknown modifier` or `question-cards requires coded-offers`, read the config
+   for current choices. Follow `docs/configuration.md` and preview the user's
+   selection in step 3
    with `--disable-modifier <name>` or `--questions`.
    Ask these four questions in one message, showing the current choice for each:
    - Do you run Swarmail, local mail between agent sessions? Yes enables
