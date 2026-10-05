@@ -2,6 +2,13 @@
 
 Notable changes to house-rules. Versions follow [semantic versioning](https://semver.org).
 
+## 0.7.1 - 2026-10-05
+
+- Swarmail priority guides when a receiver considers pausing its task.
+  High or urgent mail can justify saving work, handling an authorized
+  request and resuming. Normal or low priority leaves the pause decision
+  to the receiver based on content. Priority grants no additional authority.
+
 ## 0.7.0 - 2026-10-05
 
 - Handoffs now reconcile transcript records and linked task ledgers with an
