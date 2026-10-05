@@ -2,6 +2,13 @@
 
 Notable changes to house-rules. Versions follow [semantic versioning](https://semver.org).
 
+## 0.6.1 - 2026-10-05
+
+- Before filing a bug in any repository, reduce and run the smallest
+  self-contained reproduction. Trace library failures to individual operations,
+  preserve the original failure, and separate suspected causes from confirmed
+  ones. If reduction fails, ask before submitting the broader case.
+
 ## 0.6.0 - 2026-10-05
 
 - New `benchmarking` skill: portable comparison methodology and a focused
