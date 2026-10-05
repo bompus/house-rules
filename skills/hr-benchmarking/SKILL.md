@@ -48,6 +48,16 @@ measurements, the measuring session only monitors. Other sessions may do light
 work within the run's resource limits. Keep measured files, toolchains and
 services unchanged.
 
+Prefer removing competing work to raising priority. Record effective CPU and
+I/O scheduling policies and memory protections; keep them equal across arms.
+Use deployment settings for representative results. Treat a priority change as
+a separate sensitivity pilot under the host's rules, with preset variation
+criteria and retained raw results. Verify that the controls apply and that
+dependencies and monitoring still progress before adopting them for the
+declared experiment. Priority changes never replace admission checks, resource
+caps or pressure rejection. Read [scheduling controls](references/tools.md#scheduling-controls)
+before choosing them.
+
 Classify the timed region against the host's budget for concurrent light work.
 A local phase is heavy when measured or expected CPU, memory or I/O exceeds
 that budget. When either is unknown, contact the active reservation owner or
