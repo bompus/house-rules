@@ -30,6 +30,9 @@ user's confirmation unless they already directed them.
 
 ## Offers
 
+Use text for questions. Unless § Question cards is enabled, do not call
+multiple-choice question tools, even when your host exposes them.
+
 Write the offer as normal text that stands alone, with these parts in order:
 
 1. One or two lines of context and your recommendation.

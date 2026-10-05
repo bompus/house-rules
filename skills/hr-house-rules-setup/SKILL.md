@@ -23,10 +23,17 @@ is a separate step the user approves.
      `swarmail`. When the Swarmail MCP tools are not available, point the
      user to its install steps (https://github.com/bompus/swarmail) and ask
      before installing anything.
-   - How should offers appear? Plain text options enable neither offer
-     modifier. Coded text options enable `coded-offers`. Coded text options
-     plus a question card, on hosts that have a question tool, enable
-     `coded-offers` and `question-cards`.
+   - How should questions appear? Text only with plain options enables
+     neither offer modifier. Text only with coded options enables
+     `coded-offers`. Text plus question cards enables `coded-offers` and
+     `question-cards`; every card still has a complete text offer beside it.
+     Explain before choosing: card availability, invocation and presentation
+     can vary by host, provider and model. Cards may be unavailable, skipped
+     or shown unexpectedly, so this is an opt-in preference, not a guarantee.
+     Both text-only choices prohibit question-card tools even when the host
+     exposes them. On a later run, remove `question-cards` for a text-only
+     choice. If personal rules still request cards, show the conflict and
+     get direction before changing those rules or composing.
    - Which other modifiers should be on? Show the rest from `--list` with
      their descriptions; any combination is allowed.
    Done when the user has answered all three.

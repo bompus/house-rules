@@ -1,8 +1,15 @@
 ---
-description: On hosts with a multiple-choice question tool, every offer is also sent as a question card, in the same reply right after the text offer, unless the choice depends on content only the text carries.
+description: Opt in to question cards beside complete text offers when the host supports them; availability and presentation can vary by host, provider and model.
 after: Offers
 ---
 ## Question cards
+
+This modifier opts in to cards beside text. Availability, invocation and
+presentation can vary by host, provider and model: a card may be unavailable,
+skipped or shown unexpectedly. Keep the complete text offer usable on its
+own; do not promise identical behavior across sessions. If the user chooses
+text only, disable this modifier and do not call question-card tools, even
+when they are exposed.
 
 Asking the user to choose between options is an offer, even when the user
 asked you to ask them, so it gets the full text offer on every host.

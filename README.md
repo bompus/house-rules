@@ -185,12 +185,19 @@ in name order, after the modifiers.
 | `multi-agent` | Work is split across delegated workers and several agent hosts; worker reports, review standards and cleanup checks account for all of them. |
 | `no-attribution` | Commits, pull requests and comments carry no agent or tool credit lines. |
 | `plan-files` | Multi-step work keeps a visible task list mirrored to a plan file with a ledger of every item's outcome. |
-| `question-cards` | On hosts with a multiple-choice question tool, every offer is also sent as a question card, in the same reply right after the text offer, unless the choice depends on content only the text carries. |
+| `question-cards` | Opt in to question cards beside complete text offers when the host supports them; availability and presentation can vary by host, provider and model. |
 | `scratch-on-disk` | Task scratch lives on disk under the user data directory, never in RAM-backed `/tmp`. |
 | `shared-host-load` | Run one heavy job at a time with capped CPU and memory; other sessions may continue light work within its resource limits. |
 | `solo-operator` | For repositories with one maintainer, the user's direction is the review; no review-gated steps. |
 | `squash-landing` | Pull requests land by squash merge after review-bot findings are handled, and the session's checkout moves off the landed branch. |
 | `swarmail` | Sessions on one machine coordinate through Swarmail messages instead of the user relaying between them. |
+
+Questions use text by default, with plain options or `coded-offers`. Text-only
+setups do not call question-card tools merely because a host exposes them.
+Enable `question-cards` only when you want cards too. Cards can be unavailable,
+skipped or shown unexpectedly across hosts, providers and models; the text
+offer remains usable on its own. `hr-house-rules-setup` asks which format you
+want and explains these limits before changing the configuration.
 
 ## Skills
 

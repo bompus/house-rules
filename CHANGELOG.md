@@ -2,6 +2,15 @@
 
 Notable changes to house-rules. Versions follow [semantic versioning](https://semver.org).
 
+## 0.9.2 - 2026-10-05
+
+- Make text-only questions explicit: do not call question-card tools unless
+  the question-cards modifier is enabled. Setup explains text-only and
+  optional card formats before changing the configuration, including
+  differences in availability and presentation across hosts, providers and models.
+- Preserve complete text offers when cards are enabled, and remove the card
+  modifier when a user changes to text only.
+
 ## 0.9.1 - 2026-10-05
 
 - Observe compressed-swap activity and cgroup ownership when interpreting Linux
