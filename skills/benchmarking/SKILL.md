@@ -46,10 +46,26 @@ input. When the generator limits the result, report that limit.
 Coordinate resource use under the host's rules. The measuring session only
 monitors during the timed region. Other sessions may do light work within the
 run's resource limits, with measured files, toolchains and services unchanged.
-Record observed contention; reject runs affected by competing work, memory
-pressure, swap or changed inputs. A light session's presence alone is not a
-reason to reject a run. Release reservations between jobs while awaiting
-remote work or a review; do not release an active measured run.
+Before each arm, inspect CPU outside the measuring scope, memory headroom and
+pressure, swap and competing CPU, memory or I/O jobs. Use the host's admission
+limits; when it has none, declare the metrics and pass/fail thresholds before
+collecting performance results. Start only when every admission condition passes.
+During measurements, attribute CPU, load and resident memory to the recorded
+benchmark process tree or resource scope before calling them competing work.
+Expected benchmark utilization is not contention; total host CPU and load
+average include it. Between arms, let cleanup settle and use a fresh interval.
+
+Reject a run when inputs change, competing work crosses a declared contention
+limit, or a declared pressure condition fails. Before collecting performance
+results, define pressure rejection using stall duration, swap activity and
+memory-limit/OOM events; name any additional signals and their thresholds.
+Set a stall-duration budget from the experiment's timing precision. Record
+smaller stalls without rejecting them. Stalls exceeding the budget, swapping
+or memory-limit/OOM events invalidate measurements even when the benchmark
+causes them. Investigate uncertain overlap and repeat affected runs before
+using them for a decisive comparison. A light session's presence alone is not
+rejection evidence. Release reservations between jobs while awaiting remote
+work or a review; retain them for an active run.
 
 Start with one run per arm. A correctness-only check can use one candidate run;
 report its coverage and make no performance claim.
