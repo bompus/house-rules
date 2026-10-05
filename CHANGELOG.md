@@ -8,7 +8,8 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 - Batch approved changes into releases instead of publishing a version for each
   pull request. Record changes under `Unreleased` until the batch is ready;
-  urgent fixes can still ship independently.
+  urgent fixes can still ship independently. Review checks accept matching
+  `Unreleased` entries.
 
 ## 0.9.2 - 2026-10-05
 
