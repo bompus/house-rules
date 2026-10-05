@@ -46,10 +46,18 @@ input. When the generator limits the result, report that limit.
 Coordinate resource use under the host's rules. The measuring session only
 monitors during the timed region. Other sessions may do light work within the
 run's resource limits, with measured files, toolchains and services unchanged.
-Record observed contention; reject runs affected by competing work, memory
-pressure, swap or changed inputs. A light session's presence alone is not a
-reason to reject a run. Release reservations between jobs while awaiting
-remote work or a review; do not release an active measured run.
+Check idle before a run. During measurements, attribute CPU, load and resident
+memory to the recorded benchmark process tree or resource scope before calling
+them competing work. Expected benchmark utilization is not contention; total
+host CPU and load average include it. Between arms, let cleanup settle and use
+a fresh sampling interval.
+
+Record observed contention; reject runs affected by competing work, resource
+pressure, swap or changed inputs. Actual stalls, swapping or OOM still invalidate
+measurements when the benchmark causes them. Investigate uncertain overlap and
+repeat affected runs before using them for a decisive comparison. A light
+session's presence alone is not rejection evidence. Release reservations between
+jobs while awaiting remote work or a review; retain them for an active run.
 
 Alternate arm order over at least five runs per arm. Capture raw results,
 exit status, elapsed time, CPU and memory observations. Report median and range;

@@ -2,6 +2,13 @@
 
 Notable changes to house-rules. Versions follow [semantic versioning](https://semver.org).
 
+## 0.6.5 - 2026-10-05
+
+- Attribute benchmark CPU, load and resident memory before treating them as
+  competing work. Expected own utilization does not reject a run; actual
+  resource pressure still does. Use a settled fresh interval between arms and
+  investigate uncertain overlap before a decisive comparison.
+
 ## 0.6.3 - 2026-10-05
 
 - At task or session closeout, check for reusable lessons and save their
