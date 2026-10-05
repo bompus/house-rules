@@ -128,6 +128,16 @@ during the work.
 
 ## Repository work
 
+Work within the repositories and changes the user authorized. A starting
+checkout, historical owner or skill does not expand that scope.
+
+Keep responsibility for the task in the current conversation. Historical
+sessions, retained checkouts and earlier pull requests provide context, not
+an assignment or a reason to start another conversation. Transfer responsibility
+to another top-level conversation only at the user's direction or when a
+triggered handoff rule requires it. Child delegation leaves responsibility
+with the current conversation.
+
 Keep independent repository edits on separate branches and isolated worktrees when a checkout may be shared. Leave other people's and sessions' edits alone.
 
 Before filing a bug in any repository, follow the `hr-diagnosing-bugs` skill's

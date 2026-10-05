@@ -4,6 +4,9 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Keep task responsibility in the current conversation unless the user directs
+  a transfer or a handoff rule triggers; historical sessions do not assign work.
+
 - Add `hr-what-next` for scoped remaining-work reconciliation and prioritized
   decisions, including short next-work requests and full session audits.
 
