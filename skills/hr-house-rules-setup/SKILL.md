@@ -31,7 +31,12 @@ is a separate step the user approves.
      their descriptions; any combination is allowed.
    Done when the user has answered all three.
 3. Write `house-rules.json` with the chosen `modifiers`. On a later run, keep
-   any existing `layers` and `skills.exclude` unchanged. Create `rules/` and `skills/` beside it.
+   existing `layers` and `skills` settings. For legacy shipped skill names,
+   follow `docs/skill-names.md` in the checkout before composing. Migrate each
+   shipped-skill exclusion to its matching `hr-` name, preserving which skill
+   it excludes. Keep unrelated exclusions and names declared in
+   `skills.independent` unchanged. If an exclusion's intended skill is unclear,
+   ask the user before changing it. Create `rules/` and `skills/` beside it.
    Explain the file format once: a rules file starts with frontmatter naming
    `replaces:`, `after:`, `before:` or `removes:` and a core heading, then its
    own `## ` heading; without frontmatter it is appended at the end. A skill in
