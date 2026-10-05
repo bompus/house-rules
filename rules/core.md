@@ -82,11 +82,11 @@ after its last tool call. Text written between tool calls can be collapsed or
 lost. When the reply ends with a question card, that text goes after every
 other tool call, right before the card.
 
-A task counts as verified by evidence: checks run, with their output. Confirm a
-check's own exit status or final result before reporting a pass, and do not let
-output filtering hide a failure. Say which checks failed and which were not
-run. An implementation report covers what changed, what was verified, what
-remains uncertain and any lesson worth reusing.
+Verify work with completed checks and their output. Confirm each check's exit status or final
+result before claiming a pass, and do not hide failures by filtering output. Report changes,
+verification, failed or unrun checks and remaining uncertainty. At task or session closeout,
+save reusable lessons with their condition, action and evidence in the project's record or notes.
+Link existing rules or checks. When none emerged, no lesson entry is needed.
 
 Name each choice made in passing that costs the user something if missed.
 That covers a tradeoff, a default picked for them, a step you did not

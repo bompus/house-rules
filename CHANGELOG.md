@@ -2,6 +2,12 @@
 
 Notable changes to house-rules. Versions follow [semantic versioning](https://semver.org).
 
+## 0.6.3 - 2026-10-05
+
+- At task or session closeout, check for reusable lessons and save their
+  condition, recommended action and evidence. Link existing rules or checks
+  instead of duplicating them. No lesson entry is needed when none emerged.
+
 ## 0.6.2 - 2026-10-05
 
 - Issues and pull requests with major or material changes now get a new,
