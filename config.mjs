@@ -58,9 +58,8 @@ function validateShape(config) {
 }
 
 export function readConfiguration(path) {
-  // Resolve parent aliases so two CLI callers use the same lock. Never replace a symlink config.
+  // Preserve the caller's config directory: relative layers use the same base as composition.
   path = resolve(path);
-  if (existsSync(dirname(path))) path = join(realpathSync(dirname(path)), basename(path));
   let text = null;
   try {
     if (!lstatSync(path).isFile())
@@ -187,7 +186,8 @@ export function writeConfiguration(snapshot, next, expected) {
   if (!expected) throw new Error("--apply requires --expect <revision> from status or a preview");
   selectionReport(next, snapshot.path);
   mkdirSync(dirname(snapshot.path), { recursive: true });
-  const lock = `${snapshot.path}.lock`;
+  // Lock aliases of the same parent together without changing relative layer discovery.
+  const lock = `${join(realpathSync(dirname(snapshot.path)), basename(snapshot.path))}.lock`;
   let lockFd;
   try {
     lockFd = openSync(lock, "wx", 0o600);
@@ -270,8 +270,8 @@ export function configCommand(argv) {
   const output = {
     command,
     configPath: snapshot.path,
-    exists: snapshot.text !== null,
-    revision: snapshot.revision,
+    exists: values.apply || snapshot.text !== null,
+    revision: applied?.revision ?? snapshot.revision,
     changes,
     applied,
     ...report,

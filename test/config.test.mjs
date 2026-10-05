@@ -318,3 +318,87 @@ test("terminal styling respects NO_COLOR and removes control characters from per
     else process.env.TERM = oldTerm;
   }
 });
+
+test("BOM-prefixed configuration validates and composes consistently", (t) => {
+  const { path } = fixture(t);
+  writeFileSync(path, '\uFEFF{"modifiers":["coded-offers"]}');
+  const preview = report(path);
+  const composed = execFileSync(process.execPath, [join(root, "compose.mjs"), "--config", path], {
+    encoding: "utf8",
+    stdio: "pipe",
+  });
+  assert.equal(preview.composedRules, composed);
+});
+
+test("first apply reports the saved config and current revision", (t) => {
+  const { dir } = fixture(t);
+  const path = join(dir, "new.json");
+  const applied = JSON.parse(
+    cli(["set", "--config", path, "--json", "--apply", "--expect", "missing"]),
+  );
+  assert.equal(applied.exists, true);
+  assert.equal(applied.revision, readConfiguration(path).revision);
+  assert.equal(applied.revision, applied.applied.revision);
+});
+
+test(
+  "parent directory aliases preserve composition's relative layer semantics and share the lock",
+  { skip: process.platform === "win32" ? "creating symlinks requires Windows privileges" : false },
+  (t) => {
+    const { dir } = fixture(t);
+    const physical = join(dir, "physical", "config");
+    const aliasRoot = join(dir, "alias-parent");
+    mkdirSync(physical, { recursive: true });
+    mkdirSync(aliasRoot);
+    mkdirSync(join(dir, "physical", "rules"));
+    mkdirSync(join(aliasRoot, "rules"));
+    writeFileSync(
+      join(dir, "physical", "rules", "owner.md"),
+      "---\nafter: Writing\n---\n## Physical parent\n",
+    );
+    writeFileSync(
+      join(aliasRoot, "rules", "owner.md"),
+      "---\nafter: Writing\n---\n## Alias parent\n",
+    );
+    symlinkSync(physical, join(aliasRoot, "config"));
+    writeFileSync(join(physical, "house-rules.json"), '{"layers":[".."]}');
+    const path = join(aliasRoot, "config", "house-rules.json");
+    const preview = report(path, ["--enable-modifier", "swarmail"]);
+    assert.match(preview.composedRules, /## Alias parent/);
+    assert.doesNotMatch(preview.composedRules, /## Physical parent/);
+    cli([
+      "set",
+      "--config",
+      path,
+      "--enable-modifier",
+      "swarmail",
+      "--apply",
+      "--expect",
+      preview.revision,
+    ]);
+    const composed = execFileSync(process.execPath, [join(root, "compose.mjs"), "--config", path], {
+      encoding: "utf8",
+      stdio: "pipe",
+    });
+    assert.equal(composed, preview.composedRules);
+    writeFileSync(join(physical, "house-rules.json.lock"), "another alias writer");
+    assert.throws(
+      () =>
+        cli([
+          "set",
+          "--config",
+          path,
+          "--questions",
+          "coded",
+          "--apply",
+          "--expect",
+          readConfiguration(path).revision,
+        ]),
+      /locked/,
+    );
+    assert.equal(
+      readFileSync(join(physical, "house-rules.json.lock"), "utf8"),
+      "another alias writer",
+    );
+  },
+);

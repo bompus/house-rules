@@ -47,7 +47,7 @@ function main(argv) {
     return;
   }
   const configPath = configurationPath(values.config);
-  const config = JSON.parse(readFileSync(configPath, "utf8"));
+  const config = JSON.parse(readFileSync(configPath, "utf8").replace(/^\uFEFF/, ""));
   const { fragments, rules, skills, warnings } = composeConfiguration(config, dirname(configPath));
   for (const warning of warnings) console.error(`warning: ${warning}`);
   const { out, "skills-out": skillsOut } = values;
