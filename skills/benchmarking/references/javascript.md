@@ -7,13 +7,18 @@ compiler timing and application timing answer different questions.
 
 ## Profiling and HTTP load
 
+Use oha for HTTP load, including JavaScript/TypeScript servers. Consider
+another generator only when a required workload capability is missing or the
+project requires its existing harness. Check protocol and workload equivalence
+before comparing generators.
+
 | Need | Tool and reason | Limits to record |
 |---|---|---|
 | Rich profile reports and source maps | [Platformatic Flame](https://github.com/platformatic/flame) captures pprof profiles and generates interactive HTML and Markdown with source-map translation. | Verify its Node engine requirement and native profiler dependency against the tested platform. Read sample types and units, not just filenames. |
 | Node flamegraphs | [0x](https://github.com/davidmarkclements/0x) samples stacks and produces an interactive flamegraph; it can visualize existing CPU profiles. | Check the selected release's documentation when its README and package engine floor disagree. Validate exact Node support. Native tracing can miss optimized JS frames. |
 | Profiles for services already managed by Watt | [Watt pprof](https://github.com/platformatic/platformatic/blob/main/docs/reference/wattpm/cli-commands.md) starts and stops profiling for selected services; Flame visualizes its artifacts. | Requires Watt. Preserve the service state and inspect profile sample types. Do not adopt a new application runtime merely to profile it. |
 | Live metrics and shareable service recordings | [Watt Admin](https://github.com/platformatic/watt-admin) records resource and application metrics alongside optional profiles in a standalone HTML report. | Requires a Watt application; it does not attach to arbitrary Node processes. Declare recorded metrics, sampling and profiling overhead. |
-| Programmable HTTP/1.1 workloads | [autocannon](https://github.com/mcollina/autocannon) supports JS request sequences, HTTPS and pipelining. | Its Node client can saturate CPU. Observe the generator independently and verify rate/latency-correction semantics. Native oha remains suitable for general load. |
+| Existing or specifically required Node HTTP harnesses | [autocannon](https://github.com/mcollina/autocannon) supports JS request sequences, HTTPS and pipelining. | oha is the default. Retain this only for a required existing harness or a demonstrated missing capability. Its Node client can saturate CPU; observe generator capacity independently. |
 
 Platformatic Flame's [preload](https://github.com/platformatic/flame/blob/main/preload.js)
 uses `pprof.time` for the artifact named CPU. The [underlying profiler](https://github.com/DataDog/pprof-nodejs)
