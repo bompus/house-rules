@@ -48,7 +48,10 @@ measurements, the measuring session only monitors. Other sessions may do light
 work within the run's resource limits. Keep measured files, toolchains and
 services unchanged.
 
-Classify the timed region first. Reserve the host only for heavy local phases
+Classify the timed region against the host's budget for concurrent light work.
+A local phase is heavy when measured or expected CPU, memory or I/O exceeds
+that budget. When either is unknown, coordinate local builds, suites and
+indexers before launch. Reserve the host only for heavy local phases
 or deliberately isolated local performance measurements. Remote model
 inference, light CLI/API work and remote waits need no exclusive slot; a
 memory cap or elapsed-time record alone does not establish heavy work. For

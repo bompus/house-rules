@@ -17,6 +17,11 @@ or recording elapsed time alone does not make a job heavy. Coordinate heavy
 local tool, build and test phases separately. Record the timing regime and
 concurrent local work for remote or shared evaluations.
 
+A local phase is heavy when its measured or expected CPU, memory or I/O use
+exceeds the host's declared budget for concurrent light work. When the budget
+or expected use is unknown, coordinate local builds, suites and indexers before
+launching them.
+
 Other sessions may continue light work within the job's resource limits:
 remote requests, targeted reads and edits in independent checkouts. Pause
 competing CPU, memory or I/O jobs, not whole sessions. Include hooks and child
