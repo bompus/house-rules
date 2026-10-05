@@ -193,6 +193,11 @@ in name order, after the modifiers.
 | `api-exposure-check` | Keep API responses to the fields a consumer reads and the caller may see. |
 | `audit-choices` | List and check the decisions made while implementing a task. |
 | `benchmarking` | Design, run and assess timing, CPU and memory comparisons; choose tools by the question they answer. |
+| `better-accessibility` | Build and review keyboard access, semantics, forms, focus, motion and reflow in web UI. |
+| `better-colors` | Choose and check palettes, semantic tokens, themes, gamut and rendered contrast. |
+| `better-layout` | Build and review grouping, alignment, spacing, responsive layout and clipping. |
+| `better-typography` | Style and review type scales, wrapping, spacing, truncation and font loading. |
+| `better-writing` | Write and review interface labels, errors, empty states and product terminology. |
 | `change-impact` | Check what a change can break beyond its diff before merging. |
 | `code-review` | Review a diff against the repository's standards and the originating request. |
 | `diagnosing-bugs` | Work a hard bug or regression to a confirmed cause. |

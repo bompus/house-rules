@@ -2,6 +2,15 @@
 
 Notable changes to house-rules. Versions follow [semantic versioning](https://semver.org).
 
+## 0.8.0 - 2026-10-05
+
+- Add five web UI skills for accessibility, colors, layout, typography and
+  interface writing, with their supporting references and discovery metadata.
+- Preserve both upstream MIT notices and pinned provenance. Mobile browser
+  checks distinguish device emulation from hardware verification, and
+  `theme-color` guidance accounts for platform support.
+- UI review verdicts fit within the host's completion rules.
+
 ## 0.7.3 - 2026-10-05
 
 - Align resource-counter boundaries with measured work. Keep post-run
