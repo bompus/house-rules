@@ -5,6 +5,9 @@ description: Investigate unknown-cause or intermittent bugs and performance regr
 
 # Diagnosing bugs
 
+When filing an upstream bug, follow [Reporting a bug](references/reporting.md)
+for reduction, submission and fix verification.
+
 Follow project guidance for source paths, domain safeguards, tests and deployment.
 Read relevant domain documents when they help explain the affected behavior.
 Choose the next probe from the evidence; these techniques are not mandatory phases.

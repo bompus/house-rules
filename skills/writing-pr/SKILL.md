@@ -7,6 +7,16 @@ description: Write or revise pull request titles and bodies from the final diff,
 
 Give a reviewer who has not seen the conversation enough context to understand the change and assess its evidence. Follow the target repository's PR template and contribution rules. This skill governs writing; existing rules govern commits, publication, and review gates.
 
+## Fix scope
+
+For fixes intended for pull requests in any repository, try the simplest
+adequate change first. Keep the diff focused and easy to review, with the fewest
+changed lines and files that solve the problem while preserving correctness,
+readability and required tests. Leave unrelated refactors and speculative
+abstractions out. When performance requires a larger change, show measurements
+explaining why the simpler approach is insufficient and what the added
+complexity achieves.
+
 ## Read before writing
 
 Inspect the actual diff against the intended target branch, the linked issue or request, and available validation results. For an existing PR, confirm its current base and head. Commit messages can provide context; the final diff determines what the PR claims.

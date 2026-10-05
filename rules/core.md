@@ -98,33 +98,10 @@ during the work.
 
 Keep independent repository edits on separate branches and isolated worktrees when a checkout may be shared. Leave other people's and sessions' edits alone.
 
-Before filing a bug in any repository, reduce it to the smallest self-contained
-reproduction you can verify. Remove unrelated code, dependencies, data and setup;
-keep reducing until each remaining part is needed to reproduce the failure.
-For a library failure, trace the failing operation and reproduce it directly
-when possible. Dig deeper when a broad symptom hides which part fails.
-
-Run the final reproduction with exact commands and pinned versions. Confirm
-that it preserves the original failure; for performance bugs, check correctness
-and compare the same operation under the same measurement conditions.
-Include expected and actual results and the environment needed to reproduce
-it. Separate a confirmed cause from a suspected explanation. A verified small
-reproduction can be reported while its internal cause remains unknown.
-When reduction fails, report what you tried and what remains before asking
-whether to submit the broader case. Never silently substitute an entire
-application or a general claim that a library is broken or slow.
-
-For pull requests in any repository, try the simplest adequate fix first.
-Keep the diff focused and easy to review, with the fewest changed lines and
-files that solve the problem while preserving correctness, readability and
-required tests. Leave unrelated refactors and speculative abstractions out.
-When performance requires a larger change, show measurements explaining why
-the simpler approach is insufficient and what the added complexity achieves.
-
-Before submitting a GitHub issue or pull request, read its templates and contribution guidelines, including organization defaults.
-Complete the matching template and its required fields and checklists.
-Submit issue forms through the form or tooling that preserves its behavior, then verify required labels and routing.
-Copying headings into a CLI body loses form metadata. If tooling cannot preserve it, prepare the report and request access.
+Before filing a bug in any repository, follow the `diagnosing-bugs` skill's
+`references/reporting.md`: reduce and verify the reproduction before submitting.
+For fixes intended for pull requests, try the simplest adequate change first;
+keep the diff focused, and follow `writing-pr` for scope and submission checks.
 
 Fetch before updating a feature branch. Prefer rebasing unpublished commits this task owns; merge the fetched base into published or shared branches.
 Do not rewrite history another person or agent may rely on.

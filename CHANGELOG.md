@@ -4,6 +4,7 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## 0.6.1 - 2026-10-05
 
+- Portable bug reporting now lives in `diagnosing-bugs/references/reporting.md`: search existing reports, reduce and verify a case, preserve submission metadata, follow up with evidence, and verify fixes. Shared rules point to this guide; fix-scope guidance lives in `writing-pr`.
 - Before filing a bug in any repository, reduce and run the smallest
   self-contained reproduction. Trace library failures to individual operations,
   preserve the original failure, and separate suspected causes from confirmed
