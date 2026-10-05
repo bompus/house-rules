@@ -4,6 +4,8 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+## 0.10.0 - 2026-10-05
+
 - Add `hr-progress-report` for task activity, evidence-based milestone progress
   and remaining wall-clock time, with blockers, waiting conditions and unknowns.
 
