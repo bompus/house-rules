@@ -2,11 +2,21 @@
 
 Notable changes to house-rules. Versions follow [semantic versioning](https://semver.org).
 
+## 0.6.4 - 2026-10-05
+
+- Benchmarking starts with one run per arm. Correctness-only checks can use
+  one candidate run. Performance claims need repeated alternating runs to
+  assess variation, with a repetition count or stopping rule set beforehand.
+- Bug hunts use the current benchmark-backed model order. An unavailable
+  primary falls back to the next eligible model, recording the model, effort
+  and reason while preserving review independence and billing limits.
+
 ## 0.6.3 - 2026-10-05
 
 - At task or session closeout, check for reusable lessons and save their
   condition, recommended action and evidence. Link existing rules or checks
   instead of duplicating them. No lesson entry is needed when none emerged.
+
 
 ## 0.6.2 - 2026-10-05
 

@@ -51,8 +51,13 @@ pressure, swap or changed inputs. A light session's presence alone is not a
 reason to reject a run. Release reservations between jobs while awaiting
 remote work or a review; do not release an active measured run.
 
-Alternate arm order over at least five runs per arm. Capture raw results,
-exit status, elapsed time, CPU and memory observations. Report median and range;
+Start with one run per arm. A correctness-only check can use one candidate run;
+report its coverage and make no performance claim.
+
+For a performance claim, add alternating runs to assess run-to-run variation.
+Set a repetition count or stopping rule before adding runs; retain every result.
+Capture raw results, exit status, elapsed time, CPU and memory observations.
+Report the sample count, median and range;
 treat a gap within run-to-run variation as inconclusive. Profile separately
 from the runs used to claim a speed difference.
 
