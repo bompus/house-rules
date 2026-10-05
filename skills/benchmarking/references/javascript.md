@@ -10,7 +10,9 @@ compiler timing and application timing answer different questions.
 | Need | Tool and reason | Limits to record |
 |---|---|---|
 | Rich profile reports and source maps | [Platformatic Flame](https://github.com/platformatic/flame) captures pprof profiles and generates interactive HTML and Markdown with source-map translation. | Verify its Node engine requirement and native profiler dependency against the tested platform. Read sample types and units, not just filenames. |
-| Node flamegraphs | [0x](https://github.com/davidmarkclements/0x) samples stacks and produces an interactive flamegraph; it can visualize existing CPU profiles. | Validate exact Node support. Native stacks depend on platform/tracing support; optimized JS frames can be incomplete. |
+| Node flamegraphs | [0x](https://github.com/davidmarkclements/0x) samples stacks and produces an interactive flamegraph; it can visualize existing CPU profiles. | Check the selected release's documentation when its README and package engine floor disagree. Validate exact Node support. Native tracing can miss optimized JS frames. |
+| Profiles for services already managed by Watt | [Watt pprof](https://github.com/platformatic/platformatic/blob/main/docs/reference/wattpm/cli-commands.md) starts and stops profiling for selected services; Flame visualizes its artifacts. | Requires Watt. Preserve the service state and inspect profile sample types. Do not adopt a new application runtime merely to profile it. |
+| Live metrics and shareable service recordings | [Watt Admin](https://github.com/platformatic/watt-admin) records resource and application metrics alongside optional profiles in a standalone HTML report. | Requires a Watt application; it does not attach to arbitrary Node processes. Declare recorded metrics, sampling and profiling overhead. |
 | Programmable HTTP/1.1 workloads | [autocannon](https://github.com/mcollina/autocannon) supports JS request sequences, HTTPS and pipelining. | Its Node client can saturate CPU. Observe the generator independently and verify rate/latency-correction semantics. Native oha remains suitable for general load. |
 
 Platformatic Flame's [preload](https://github.com/platformatic/flame/blob/main/preload.js)
@@ -19,20 +21,10 @@ describes that API as wall-time profiling. Inspect the sample type and units
 before interpreting widths as on-CPU time. Heap sampling is allocation evidence,
 not whole-process RSS or a full retained-object snapshot.
 
-## Clinic.js
-
-The [Clinic.js README](https://github.com/clinicjs/node-clinic) warns that the
-suite is no longer actively maintained and may produce inaccurate results due
-to its reliance on Node internals. Its older minimum-Node statement does not
-establish compatibility with a modern release. Use it only after validation
-against the exact runtime and corroborate findings with supported tools.
-
-| Tool | Implementation and purpose | Limits |
-|---|---|---|
-| [Doctor](https://github.com/clinicjs/node-clinic-doctor) | Process sampling and Node trace events classify CPU, memory and event-loop symptoms. | Recommendations are diagnostic hypotheses, not controlled benchmark results. |
-| [Flame](https://github.com/clinicjs/node-clinic-flame) | Wraps 0x for sampled stacks and flamegraph visualization. | The wrapper shares Clinic's maintenance caveat; check 0x support independently. |
-| [Bubbleprof](https://github.com/clinicjs/node-clinic-bubbleprof) | Injects async-hooks collection and stacks to visualize asynchronous activity. | Instrumentation changes execution. Its collector lacks source-map support for transpiled code. |
-| [HeapProfiler](https://github.com/clinicjs/node-clinic-heap-profiler) | Wraps a sampling heap profiler to visualize allocation activity. | Samples differ from RSS and full heap snapshots. |
+These tools primarily target Node. Keep Bun profiling on Bun-supported tools
+for engine comparisons. The service recording tools do not document automatic
+bottleneck classification or an asynchronous causality diagram. Diagnose those
+questions with runtime metrics, profiles and focused probes.
 
 ## TypeScript measurement
 

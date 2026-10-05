@@ -1,6 +1,6 @@
 ---
 name: diagnosing-bugs
-description: Investigate hard, intermittent or unresolved bugs and performance regressions systematically. Skip routine fixes and change reviews.
+description: Investigate unknown-cause or intermittent bugs and performance regressions systematically. Evident fixes only on explicit diagnosis requests; exclude change reviews.
 ---
 
 # Diagnosing bugs

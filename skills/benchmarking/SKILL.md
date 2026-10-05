@@ -1,6 +1,6 @@
 ---
 name: benchmarking
-description: Run or assess a benchmark of equivalent work with repeated timing, CPU and RSS measurements.
+description: Benchmark equivalent work with repeated timing, CPU and RSS.
 ---
 
 # Benchmarking
@@ -73,8 +73,9 @@ missing repetitions is unverified or inconclusive.
 For agent, model, rule or skill comparisons, distinguish development cases
 from held-out cases and report runs per case. Include a one-line instruction
 control when claiming an improvement from a rule or skill. Keep helper,
-setup and retry costs visible. If one case dominates the difference, report
-the result without it too.
+setup and retry costs visible. Before collecting results, define a per-case
+contribution threshold. If a case exceeds it, report results both with and
+without that case.
 
 Record every experiment, rejected ones included, with the observed result and
 disposition. End with adopt, reject or inconclusive, and the evidence for that

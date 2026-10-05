@@ -36,8 +36,7 @@ For a concrete crash, hang or event-tracing question, use the available
 [system tracing tool](https://bpftrace.org/docs). They are optional diagnostic
 tools, not benchmark prerequisites; platform and permissions affect availability.
 
-For JavaScript/TypeScript tool choices, Clinic.js compatibility, HTTP scripting
-or source maps, read [the language reference](javascript.md).
+For JavaScript/TypeScript tool choices, HTTP scripting or source maps, read [the language reference](javascript.md).
 
 ## Correctness and audit evidence
 
