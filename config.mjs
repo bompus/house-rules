@@ -223,9 +223,12 @@ export function writeConfiguration(snapshot, next, expected) {
     renameSync(temporary, snapshot.path);
     return { changed: true, revision: revisionOf(text) };
   } finally {
-    if (existsSync(temporary)) unlinkSync(temporary);
-    closeSync(lockFd);
-    unlinkSync(lock);
+    try {
+      if (existsSync(temporary)) unlinkSync(temporary);
+    } finally {
+      closeSync(lockFd);
+      unlinkSync(lock);
+    }
   }
 }
 
