@@ -53,6 +53,12 @@ modifier toggles, rather than combining both in one command. Cards still depend
 on the agent host, provider and model. Review any personal Offers override
 before saving; the CLI does not rewrite personal prose.
 
+To repair invalid modifier selections, preview changes that produce a valid
+selection. `--questions` can repair the offer dependency; `--disable-modifier`
+can remove an unknown modifier already stored in the config. Malformed config
+structure, unknown enables and unknown disables absent from the config remain
+errors.
+
 `preview` accepts the same selection flags without saving. Add `--rules` to
 print the composed rules, or `--json` for the full report. Unknown choices,
 contradictory flags, malformed config and composition errors stop the command

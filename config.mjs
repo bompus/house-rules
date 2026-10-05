@@ -41,12 +41,16 @@ function stringList(value, key) {
   if (new Set(value).size !== value.length) throw new Error(`${key} contains duplicates`);
 }
 
-function validateShape(config) {
+function validateStructure(config) {
   if (!object(config)) throw new Error("configuration must be a JSON object");
   for (const key of ["modifiers", "layers"]) stringList(config[key], key);
   if (config.skills !== undefined && !object(config.skills))
     throw new Error("skills must be an object");
   for (const key of ["exclude", "independent"]) stringList(config.skills?.[key], `skills.${key}`);
+}
+
+function validateSelection(config) {
+  validateStructure(config);
   const known = new Set(modifierList().map((m) => m.name));
   for (const name of config.modifiers ?? []) {
     if (!known.has(name)) throw new Error(`unknown modifier "${name}" (see config catalog)`);
@@ -74,12 +78,12 @@ export function readConfiguration(path) {
   } catch {
     throw new Error("invalid JSON in configuration");
   }
-  validateShape(config);
+  validateStructure(config);
   return { path, text, revision: revisionOf(text), config };
 }
 
 export function selectionReport(config, path) {
-  validateShape(config);
+  validateSelection(config);
   const result = composeConfiguration(config, dirname(path));
   const allSkills = skillSources(
     { ...config, skills: { ...config.skills, exclude: [] } },
@@ -145,7 +149,8 @@ export function changeSelection(config, options, path) {
     const enable = options[`enable-${kind}`] ?? [];
     const disable = options[`disable-${kind}`] ?? [];
     for (const name of [...enable, ...disable]) {
-      if (!known.has(name)) throw new Error(`unknown ${kind} "${name}" (see config catalog)`);
+      if (!known.has(name) && !(kind === "modifier" && disable.includes(name) && choices.has(name)))
+        throw new Error(`unknown ${kind} "${name}" (see config catalog)`);
       if (enable.includes(name) && disable.includes(name))
         throw new Error(`cannot enable and disable "${name}" together`);
       if (

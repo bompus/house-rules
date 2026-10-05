@@ -98,7 +98,8 @@ Then connect the composed file to your agent. Claude Code reads
 `@~/.config/house-rules/rules.md` on its own line in `~/.claude/CLAUDE.md`;
 other hosts take a copy in their user-level rules file. To change modifiers or
 skills, change to the checkout directory and run `node compose.mjs config help`,
-then run the installer again.
+or `bun compose.mjs config help` when Node.js is unavailable. Then run the
+installer again.
 The [configuration CLI guide](docs/configuration.md) covers status, previews,
 question preferences and safe writes. The
 `hr-house-rules-setup` skill walks through choosing modifiers and connecting

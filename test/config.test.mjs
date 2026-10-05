@@ -98,6 +98,7 @@ test("invalid requests and invalid composition never write config", (t) => {
   const original = readFileSync(path, "utf8");
   for (const args of [
     ["--enable-modifier", "no-such-modifier"],
+    ["--disable-modifier", "no-such-modifier"],
     ["--disable-skill", "no-such-skill"],
     ["--enable-modifier", "swarmail", "--disable-modifier", "swarmail"],
     ["--questions", "plain", "--enable-modifier", "coded-offers"],
@@ -144,6 +145,54 @@ test("invalid requests and invalid composition never write config", (t) => {
     /stays first/,
   );
   assert.equal(readFileSync(path, "utf8"), original);
+});
+
+test("stored invalid modifier selections can be repaired through preview and apply", (t) => {
+  for (const [modifiers, args, expected] of [
+    [["question-cards"], ["--questions", "cards"], ["coded-offers", "question-cards"]],
+    [["question-cards"], ["--disable-modifier", "question-cards"], []],
+    [["removed-modifier", "swarmail"], ["--disable-modifier", "removed-modifier"], ["swarmail"]],
+  ]) {
+    const original = { modifiers, custom: { keep: true }, skills: { exclude: ["hr-handoff"] } };
+    const { path } = fixture(t, original);
+    assert.throws(() => report(path), /requires coded-offers|unknown modifier/);
+    const preview = report(path, args);
+    assert.equal(readFileSync(path, "utf8"), JSON.stringify(original));
+    assert.deepEqual(
+      preview.modifiers
+        .filter((m) => m.enabled)
+        .map((m) => m.name)
+        .sort(),
+      expected.toSorted(),
+    );
+    cli(["set", "--config", path, ...args, "--apply", "--expect", preview.revision]);
+    const stored = JSON.parse(readFileSync(path, "utf8"));
+    assert.deepEqual(
+      { ...stored, modifiers: stored.modifiers.toSorted() },
+      {
+        ...original,
+        modifiers: expected.toSorted(),
+      },
+    );
+    assert.equal(existsSync(`${path}.lock`), false);
+  }
+});
+
+test("selection repairs refuse malformed stored config before any write", (t) => {
+  for (const [config, error] of [
+    [null, /configuration must be a JSON object/],
+    [{ modifiers: "swarmail" }, /modifiers must be an array/],
+    [{ modifiers: ["swarmail", "swarmail"] }, /modifiers contains duplicates/],
+    [{ skills: [] }, /skills must be an object/],
+  ]) {
+    const { path } = fixture(t, config);
+    assert.throws(
+      () => cli(["set", "--config", path, "--questions", "plain", "--apply", "--expect", "unused"]),
+      error,
+    );
+    assert.equal(readFileSync(path, "utf8"), JSON.stringify(config));
+    assert.equal(existsSync(`${path}.lock`), false);
+  }
 });
 
 test("missing config is read without creating it and explicit apply can initialize it", (t) => {
