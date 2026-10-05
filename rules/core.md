@@ -100,6 +100,14 @@ Do each independent repository-editing task on its own branch, and in its own
 worktree whenever another session or person may use the same checkout. Leave
 other sessions' and people's uncommitted work as you found it.
 
+Before submitting a GitHub issue or pull request, read the applicable templates
+and contribution guidelines, including repository or organization defaults.
+Use the matching template and complete its required fields and checklists.
+For issue forms, submit through the form or tooling that preserves its behavior,
+then verify required labels and routing. A CLI body with the same headings does
+not preserve form metadata. If the tooling cannot do this, prepare the report
+and request the missing access rather than bypassing the form.
+
 When updating a feature branch, fetch first. Prefer rebasing unpublished
 commits that only this task owns onto the fetched base; merge the base into published or
 shared branches. Do not rewrite history another person or agent may rely on.

@@ -2,6 +2,12 @@
 
 Notable changes to house-rules. Versions follow [semantic versioning](https://semver.org).
 
+## 0.5.20 - 2026-10-05
+
+- Before submitting a GitHub issue or pull request, read its templates and
+  contribution guidelines and use the matching template. Preserve issue-form
+  behavior and verify required labels and routing after submission.
+
 ## 0.5.19 - 2026-10-04
 
 - Core § Implementation economy: replace rather than wrap. When nothing
