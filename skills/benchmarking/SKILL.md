@@ -50,9 +50,9 @@ services unchanged.
 
 Classify the timed region against the host's budget for concurrent light work.
 A local phase is heavy when measured or expected CPU, memory or I/O exceeds
-that budget. When either is unknown, coordinate local builds, suites and
-indexers before launch. Reserve the host only for heavy local phases
-or deliberately isolated local performance measurements. Remote model
+that budget. When either is unknown, coordinate the local phase before launch.
+Reserve the host only for heavy local phases or deliberately isolated local
+performance measurements. Remote model
 inference, light CLI/API work and remote waits need no exclusive slot; a
 memory cap or elapsed-time record alone does not establish heavy work. For
 remote agent/model evaluations, record the timing regime and concurrent local

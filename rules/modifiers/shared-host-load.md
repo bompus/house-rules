@@ -19,8 +19,7 @@ concurrent local work for remote or shared evaluations.
 
 A local phase is heavy when its measured or expected CPU, memory or I/O use
 exceeds the host's declared budget for concurrent light work. When the budget
-or expected use is unknown, coordinate local builds, suites and indexers before
-launching them.
+or expected use is unknown, coordinate the local phase before launching it.
 
 Other sessions may continue light work within the job's resource limits:
 remote requests, targeted reads and edits in independent checkouts. Pause
