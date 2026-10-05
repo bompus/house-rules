@@ -23,7 +23,7 @@ Prefer the browser's unmodified focus indicator, which adapts to platform and fo
 
 ```tsx
 // Tailwind: use the project's focus token or established focus-ring utility
-<button className="focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--focus-ring)]">
+<button className="focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:[outline-style:solid] focus-visible:outline-[var(--focus-ring)]">
   Save
 </button>
 ```

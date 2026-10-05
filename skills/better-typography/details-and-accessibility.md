@@ -65,9 +65,9 @@ The two fixes differ in what they do to the design, not in correctness.
 
 ```tsx
 // 13px rendered from a 16px font-size: 13 / 16 = 0.8125
-<div className="flex h-10 items-center rounded-[10px] bg-gray-300 overflow-hidden px-2.5 focus-within:outline-2 focus-within:outline-offset-2">
+<div className="flex h-10 items-center rounded-[10px] bg-gray-300 overflow-hidden px-2.5 focus-within:outline-2 focus-within:outline-offset-2 focus-within:[outline-style:solid]">
   <input
-    className="h-full w-[calc(100%/0.8125)] shrink-0 origin-left scale-[0.8125] bg-transparent text-base leading-[calc(1.125/0.8125)] outline-none sm:w-full sm:scale-100 sm:text-[13px]"
+    className="h-full w-[calc(100%/0.8125)] shrink-0 origin-left rtl:origin-right scale-[0.8125] bg-transparent text-base leading-[calc(1.125/0.8125)] outline-none sm:w-full sm:scale-100 sm:text-[13px]"
     type="email"
   />
 </div>

@@ -91,7 +91,7 @@ Keep pointer events on any layer the user is meant to hit: a modal scrim that di
 - Set `touch-action: none` on a surface implementing its own pan, zoom, or drag gestures, so the browser stops claiming them for scrolling and pinch-zoom. Scope it to that surface; at page level it removes scrolling.
 - Set `touch-action: pan-y` on a horizontal carousel or swipe track that handles horizontal movement itself, so the browser keeps vertical page scrolling. A native `scroll-snap-type: x mandatory` track needs neither the gesture code nor the property.
 - Set `-webkit-tap-highlight-color` to match the design instead of the default gray flash.
-- Add `-webkit-touch-callout: none` to links and images that act as controls, so a long press does not open the copy and share callout. Content links and images keep it.
+- Use `-webkit-touch-callout: none` only when a specific control needs to suppress Safari's long-press callout. Preserve it on links and images where users need native copy, share or link actions, including content links.
 - Put hover-only styling behind `@media (hover: hover)`. On touch, `:hover` latches after a tap and holds until the user taps elsewhere, so it reads as a stuck selected state. Tailwind 4's `hover:` variant already compiles under this query.
 - Prefer generous targets and clear affordances over finicky interactions such as tiny drag handles and precise hover zones.
 
