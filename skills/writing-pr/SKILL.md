@@ -20,11 +20,13 @@ complexity achieves.
 ## Material changes to an existing PR
 
 When an existing PR needs major or material changes, replace it with a new
-PR in any repository. Changes to scope, the fix approach or resulting behavior
-can be material. Carry forward relevant evidence and unresolved review findings,
+PR in any repository. Compare the proposed revision with the published PR.
+A revision is material if it changes the scope, fix approach or promised behavior.
+Corrections within that scope and approach that preserve the promised behavior
+are routine. Carry forward relevant evidence and unresolved review findings,
 and link the old and new PRs both ways. Publish and verify the replacement
 before closing the old PR as superseded. Recheck its final diff and required
-checks; prior approval and CI results do not cover the new submission.
+checks; prior PR review approvals and CI results do not cover the new submission.
 Routine corrections that leave the PR materially unchanged stay in place.
 
 ## Read before writing
