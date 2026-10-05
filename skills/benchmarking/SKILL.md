@@ -53,8 +53,10 @@ host CPU and load average include it. Between arms, let cleanup settle and use
 a fresh sampling interval.
 
 Record observed contention; reject runs affected by competing work, resource
-pressure, swap or changed inputs. Actual stalls, swapping or OOM still invalidate
-measurements when the benchmark causes them. Investigate uncertain overlap and
+pressure, swap or changed inputs. Declare a stall-duration budget from the experiment's timing precision before
+running. Record smaller stalls without rejecting them. Stalls exceeding the
+budget, swapping or OOM invalidate measurements even when the benchmark
+causes them. Investigate uncertain overlap and
 repeat affected runs before using them for a decisive comparison. A light
 session's presence alone is not rejection evidence. Release reservations between
 jobs while awaiting remote work or a review; retain them for an active run.
