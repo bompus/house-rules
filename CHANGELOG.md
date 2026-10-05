@@ -9,6 +9,10 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   preserve the original failure, and separate suspected causes from confirmed
   ones. If reduction fails, ask before submitting the broader case.
 
+- Pull requests should try the simplest adequate fix first and use a focused,
+  reviewable diff. Larger performance changes need measurements explaining why
+  the simpler approach is insufficient.
+
 ## 0.6.0 - 2026-10-05
 
 - New `benchmarking` skill: portable comparison methodology and a focused

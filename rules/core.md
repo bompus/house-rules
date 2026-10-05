@@ -114,6 +114,13 @@ When reduction fails, report what you tried and what remains before asking
 whether to submit the broader case. Never silently substitute an entire
 application or a general claim that a library is broken or slow.
 
+For pull requests in any repository, try the simplest adequate fix first.
+Keep the diff focused and easy to review, with the fewest changed lines and
+files that solve the problem while preserving correctness, readability and
+required tests. Leave unrelated refactors and speculative abstractions out.
+When performance requires a larger change, show measurements explaining why
+the simpler approach is insufficient and what the added complexity achieves.
+
 Before submitting a GitHub issue or pull request, read its templates and contribution guidelines, including organization defaults.
 Complete the matching template and its required fields and checklists.
 Submit issue forms through the form or tooling that preserves its behavior, then verify required labels and routing.
