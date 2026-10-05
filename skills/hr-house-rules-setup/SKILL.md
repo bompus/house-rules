@@ -14,11 +14,12 @@ is a separate step the user approves.
 1. Find the house-rules checkout (the directory holding `compose.mjs`;
    `install.sh` puts it in `${XDG_DATA_HOME:-~/.local/share}/house-rules`,
    `install.ps1` in `%LOCALAPPDATA%\house-rules`).
-   When there is none, ask the user where to clone it. Done when
-   `node compose.mjs config catalog` prints the catalog. When only Bun is installed,
-   run this and the compose step below with `bun` in place of `node`.
-   If catalog fails with `unknown modifier` or
-   `question-cards requires coded-offers`, show the error and continue to step 2.
+   When there is none, ask the user where to clone it.
+   Run `node compose.mjs config catalog`. If it fails with `unknown modifier` or
+   `question-cards requires coded-offers`, show the error and run
+   `node compose.mjs --list` for modifier choices without reading the config.
+   Done when modifier choices are available. When only Bun is installed,
+   run these commands and the compose step below with `bun` in place of `node`.
 2. Inspect `node compose.mjs config status --config <path>`. If status reports
    legacy skill names, stop inspection. Read the config and follow
    `docs/skill-names.md` before continuing. If catalog or status reports either
@@ -44,8 +45,10 @@ is a separate step the user approves.
    - Which other modifiers should be on? Show the rest from the catalog with
      their descriptions; any combination is allowed.
    - Which skills should be enabled? They are all on by default. Show the
-     catalog and current exclusions; personal skills can override shipped
-     ones. Keep existing independent names and unrelated exclusions.
+     catalog and current exclusions. If catalog failed, use the README's Skills
+     table and the configured personal skill directories for available choices.
+     Personal skills can override shipped ones. Keep existing independent names
+     and unrelated exclusions.
    Done when the user has answered all four.
 3. Use `node compose.mjs config set --config <path>` with the selected
    modifier and skill toggles and `--questions plain|coded|cards`. It previews
