@@ -21,7 +21,8 @@ complexity achieves.
 
 When an existing PR needs major or material changes, replace it with a new
 PR in any repository. Compare the proposed revision with the published PR.
-A revision is material if it changes the scope, fix approach or promised behavior.
+A revision is major or material if it changes the scope, fix approach or
+promised behavior.
 Corrections within that scope and approach that preserve the promised behavior
 are routine. Carry forward relevant evidence and unresolved review findings,
 and link the old and new PRs both ways. Publish and verify the replacement

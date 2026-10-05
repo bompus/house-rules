@@ -38,8 +38,8 @@ the form, prepare the report and ask for access or user submission.
 
 When an issue needs major or material changes, replace it with a new issue
 in any repository. Compare the proposed revision with the published report.
-A revision is material if it changes the reported problem, scope, reproduction
-mechanism or main conclusion. Carry forward relevant evidence and unresolved
+A revision is major or material if it changes the reported problem, scope,
+reproduction mechanism or main conclusion. Carry forward relevant evidence and unresolved
 questions, and link the old and new reports both ways. Submit and verify the
 replacement before closing the old report as superseded, not fixed. Routine
 corrections and evidence that leave the report materially unchanged stay in place.
