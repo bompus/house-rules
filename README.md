@@ -229,6 +229,7 @@ want and explains these limits before changing the configuration.
 | `hr-maintainability-review` | Review a branch strictly for structure and maintainability. |
 | `hr-ordering-tests` | Enumerate event orderings through the real code to find race bugs. |
 | `hr-plain-prose` | Make text people read plain and specific. |
+| `hr-progress-report` | Report current task activity, milestone completion and remaining wall-clock time. |
 | `hr-read-reddit` | Read Reddit threads and searches through public feeds. |
 | `hr-read-x-links` | Read the full content of X posts. |
 | `hr-stock-ui-audit` | Find and triage template-default styling in frontend code. |

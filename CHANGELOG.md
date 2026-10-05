@@ -4,6 +4,9 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Add `hr-progress-report` for task activity, evidence-based milestone progress
+  and remaining wall-clock time, with blockers, waiting conditions and unknowns.
+
 - Use tables for comparisons and repeated records. Show scoped backlog and
   research items in priority order based on the task's goal, expected impact
   and decision value, with readiness and uncertainty stated separately.
