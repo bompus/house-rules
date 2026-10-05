@@ -14,6 +14,18 @@ relying on flags or interpreting output.
 | Command CPU and memory | [GNU time](https://www.gnu.org/software/time/manual/time.html), commonly `/usr/bin/time -v`: wall time, CPU and maximum RSS. | GNU options differ from shell `time` and BSD/macOS tools. RSS is a lifetime high-water mark for the observed process; it does not isolate retained cache memory. |
 | Host or process contention | Linux [mpstat/pidstat](https://github.com/sysstat/sysstat): processor utilization and process CPU, memory and I/O observations. | Sampling can miss short bursts; some counters need kernel support. These explain interference, not application latency. |
 
+On Linux with compressed swap enabled, observe compressed-swap activity as
+well as disk swap I/O. Unchanged `pswpin`/`pswpout` counters do not establish
+absence of swapping. For [zswap](https://www.kernel.org/doc/html/latest/admin-guide/mm/zswap.html),
+record available `zswpin`/`zswpout`/`zswpwb` deltas from the benchmark cgroup's
+`memory.stat` over the measured interval. Label host-wide deltas as system-wide;
+they cannot attribute activity to the workload.
+
+Use [cgroup swap and zswap accounting](https://www.kernel.org/doc/html/latest/admin-guide/cgroup-v2.html)
+(`memory.swap.current`, `memory.zswap.current`) to distinguish the workload
+from other jobs. These occupancy values do not measure activity by themselves.
+Record missing counters and preserve the run plan's declared pressure criteria.
+
 ## Profiling and debugging
 
 Use a separate diagnostic run; instrumentation changes the work it observes.

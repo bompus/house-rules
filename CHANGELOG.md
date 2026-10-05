@@ -2,6 +2,11 @@
 
 Notable changes to house-rules. Versions follow [semantic versioning](https://semver.org).
 
+## 0.9.1 - 2026-10-05
+
+- Observe compressed-swap activity and cgroup ownership when interpreting Linux
+  benchmark pressure. Stable disk swap counters alone do not prove no swapping.
+
 ## 0.9.0 - 2026-10-05
 
 - Rename all shipped skills with the `hr-` prefix. Update skill invocations,
