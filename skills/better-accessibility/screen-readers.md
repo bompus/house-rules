@@ -31,7 +31,7 @@ Use it for context sighted users get visually: `<span class="sr-only">Opens in n
 
 Work down this list and stop at the first match:
 
-1. **Focus moves there anyway**, as with an opened modal or the first invalid field. Nothing extra needed; the focus move is the announcement.
+1. **Focus moves to named content**, such as a modal with an accessible name and description. Focus exposes that associated content; no duplicate live announcement is needed. For custom field validation, use the next rule even when focus moves to the invalid field.
 2. **Tied to a specific control**, such as a field error or character count: `aria-describedby` on the control, announced with the field.
 3. **Non-urgent, not tied to a control**, such as a toast, "Saved", a result count, or a loading state: a polite live region, `role="status"`.
 4. **Urgent and not tied to a control**, such as a form-level failure or session expiry: `role="alert"`.

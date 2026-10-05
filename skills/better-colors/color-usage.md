@@ -113,6 +113,10 @@ Every custom color needs a light and a dark variant, derived per [palette-genera
 @media (prefers-contrast: more) {
   :root { --color-accent-solid: #1d4ed8; }
 }
+
+@media (prefers-color-scheme: dark) and (prefers-contrast: more) {
+  :root { --color-accent-solid: #bfdbfe; }
+}
 ```
 
-The increased-contrast variant widens the foreground/background gap by at least 15 points of perceived lightness over the default. Re-verify against APCA's preferred thresholds, Lc 90 body and Lc 75 non-body. Widening the gap without remeasuring is not fixing it.
+Check light, dark and each increased-contrast combination against its actual surfaces. The example values illustrate the cascade, not guaranteed contrast for an unspecified background. The increased-contrast variant widens the foreground/background gap by at least 15 points of perceived lightness over the default. Re-verify against APCA's preferred thresholds, Lc 90 body and Lc 75 non-body. Widening the gap without remeasuring is not fixing it.

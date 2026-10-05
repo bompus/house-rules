@@ -47,7 +47,7 @@ Bulk conversion is a migration, not cleanup. It shifts every rendered color by a
 
 Every sRGB color exists in Display P3, but not the reverse. P3 covers roughly 50% more colors, which matters only for the most saturated values. A color at 60% of maximum vividness looks the same on both.
 
-A color more vivid than its display can render gets clipped, and clipping is not graceful. It flattens neighbouring steps into one rendered color, so the top of a ramp can lose its distinctions on an sRGB screen. Maximum vividness varies by hue and lightness. Cyans top out far lower than reds and purples, so a clipping ramp clips at some steps and not others.
+Out-of-gamut colors are mapped into the display gamut. CSS gamut mapping reduces chroma while aiming to preserve lightness and hue; browser implementations can differ. Neighboring ramp steps may lose distinctions after mapping, so inspect the rendered palette on each target gamut. Maximum vividness varies by hue and lightness, so one chroma value can exceed the gamut at some steps and fit at others.
 
 The fix is to reduce vividness while holding hue and lightness. Generate ramps against sRGB unless the product is display-restricted, and add P3 as an enhancement:
 

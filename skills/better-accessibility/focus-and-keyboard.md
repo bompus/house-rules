@@ -86,23 +86,22 @@ Composite widgets, meaning tabs, menus, toolbars and radio groups, occupy one Ta
 
 ## Focus trapping and restoration
 
-Modals must trap focus. Put `inert` on everything behind the dialog, which removes background content from the tab order and from assistive tech in one move:
+Modals must trap focus. Prefer native `<dialog>` so the browser manages background inertness and initial focus:
 
 ```tsx
-// On open
-document.getElementById("app-content").inert = true;
-const dialog = dialogRef.current;
-(dialog.querySelector("[autofocus]") ??
-  dialog.querySelector("button, [href], input, select, textarea"))?.focus();
+// On open: the browser honors eligible autofocus targets and skips disabled controls.
+dialogRef.current?.showModal();
 
 // On close
-document.getElementById("app-content").inert = false;
-triggerRef.current?.focus(); // always return focus to the element that opened it
+dialogRef.current?.close();
+triggerRef.current?.focus(); // return focus to the element that opened it
 ```
+
+For a custom modal, make the background `inert` and use the project's tested focus-management utility. Prefer an eligible autofocus target, then a visible, enabled focusable control. Skip hidden, disabled and inert candidates. If none exists, focus the dialog container with `tabindex="-1"`. Restore background interactivity when closing.
 
 Prefer native `<dialog>` with `showModal()`, which gives you the trap, the `inert` background and Escape handling for free. A custom overlay that can't use it needs `role="dialog"`, `aria-modal="true"` and an accessible name via `aria-labelledby`. Either way:
 
-- On open, focus the first focusable element. For destructive confirmations, focus the least destructive action instead.
+- On open, prefer the eligible autofocus target, then a visible, enabled focusable control; use the container fallback when neither exists. For destructive confirmations, choose the least destructive action.
 - On close, return focus to the trigger, or to the nearest logical container if the trigger is gone.
 - Add `overscroll-behavior: contain` on the dialog so scrolling inside never scrolls the page behind it.
 

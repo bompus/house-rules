@@ -23,11 +23,13 @@ Make motion opt-in. Wrap animations in `@media (prefers-reduced-motion: no-prefe
 <div className="motion-safe:transition-transform motion-safe:hover:-translate-y-1" />
 ```
 
-For an existing codebase where opt-in isn't feasible, the global kill switch is the fallback. It also stops loading spinners and progress indicators, which the table below keeps, so exclude them from the selector with the project's spinner class:
+For an existing codebase where opt-in isn't feasible, a global reset is the fallback. Exclude loading spinners and progress indicators, including animated descendants and pseudo-elements. This example uses `.progress-indicator`; replace it with the project's existing indicator classes:
 
 ```css
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+  *:not(.progress-indicator, .progress-indicator *),
+  *:not(.progress-indicator, .progress-indicator *)::before,
+  *:not(.progress-indicator, .progress-indicator *)::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;

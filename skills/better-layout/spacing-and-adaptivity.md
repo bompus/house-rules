@@ -112,6 +112,9 @@ Sticky headers and floating action buttons account for safe areas:
   inset-inline-end: calc(16px + env(safe-area-inset-right));
   bottom: calc(16px + env(safe-area-inset-bottom));
 }
+.fab:dir(rtl) {
+  inset-inline-end: calc(16px + env(safe-area-inset-left));
+}
 ```
 
 `env(safe-area-inset-*)` reads `0px` unless the viewport meta includes `viewport-fit=cover`.
@@ -178,7 +181,7 @@ Layouts fail in two directions. Content grows, and viewports shrink.
 
 ```css
 /* Good: label defines the size */
-.button { padding-inline: 16px; white-space: nowrap; }
+.button { padding-inline: 16px; max-inline-size: 100%; white-space: normal; overflow-wrap: anywhere; }
 
 /* Bad: German will overflow or truncate */
 .button { width: 96px; overflow: hidden; }

@@ -12,7 +12,7 @@ Most products need three kinds of ramp and nothing else:
 | Accent | 1 | The brand hue. Interactive and selected states |
 | Status | 0–4 | `danger`, `warning`, `success`, `info`. Add one only when the product shows that state |
 
-A second accent hue must also never sit adjacent to the first. Where it would, the accent ramp's own steps provide the range.
+Add a second accent only when two things must be distinguishable, as required by `SKILL.md`. Check the rendered colors side by side in each appearance; if they are indistinguishable, use the existing accent ramp's steps or choose a distinct second hue.
 
 ## Every step has a job
 

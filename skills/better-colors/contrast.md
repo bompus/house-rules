@@ -14,10 +14,11 @@ APCA (Accessible Perceptual Contrast Algorithm) models perceived contrast more a
 | --- | --- | --- |
 | Body text (columns or blocks of text) | Lc 75 | Lc 90 |
 | Non-body text (labels, headlines) | Lc 60 | Lc 75 |
-| Large text (≥36px) | Lc 45 | Lc 60 |
-| UI components | Lc 30 | n/a |
+| Large text meeting APCA size/weight guidance (e.g. 36px at weight 400) | Lc 45 | Lc 60 |
+| Large solid semantic shapes | Lc 30 | n/a |
+| Fine-detail pictograms and small outline icons | Lc 45 | n/a |
 
-Lc 30 is also APCA's minimum for disabled and placeholder text. The floor for a non-text element to be discernible at all is Lc 15.
+Use [APCA's size and weight guidance](https://github.com/Myndex/SAPC-APCA/blob/master/documentation/APCA_in_a_Nutshell.md) for the actual typeface; 36px text at weight 300 needs Lc 60. Lc 30 is also APCA's minimum for disabled and placeholder text. Lc 15 applies only to sufficiently large, solid non-semantic elements.
 
 Lc is signed: positive means dark text on a light background, negative means light text on a dark background. Compare the absolute value against the threshold.
 

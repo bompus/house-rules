@@ -86,7 +86,7 @@ The transform shrinks the whole box, not only the glyphs, so let a wrapper draw 
 | `-webkit-text-stroke` | Outlines the letters; works across modern browsers despite the prefix |
 | `text-shadow` | Like `box-shadow` but follows the character shapes |
 
-A text stroke drawing lines inside the letters is the font. The stroke traces every contour, and variable fonts usually keep overlapping shapes unmerged. Static fonts do not have this issue.
+A text stroke can expose overlapping font contours inside the letters. Variable fonts may retain overlaps for interpolation, and static fonts can contain them too. Inspect the specific font before treating a static cut as a fix.
 
 ## Sizes
 
@@ -112,7 +112,7 @@ html {
 
 ```tsx
 <html lang="en">
-  <body class="font-sans antialiased">
+  <body className="font-sans antialiased">
     <main>{children}</main>
   </body>
 </html>

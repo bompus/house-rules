@@ -36,7 +36,7 @@ The product has one voice and its existing copy establishes it. A local edit doe
 
 ## Address the reader directly
 
-In instructional copy, write "you", not "the user". In errors, "we" invites ambiguity and reads as deflection, so prefer "Unable to load content" over "We're having trouble loading this content". An established first-person voice can stay in low-stakes copy where it still reads clearly.
+In instructional copy, write "you", not "the user". In errors, "we" invites ambiguity and reads as deflection, so prefer "Unable to load content" over "We're having trouble loading this content". In success, onboarding and empty-state copy, an established first-person voice can stay if it reads clearly.
 
 Use possessives sparingly: "Favorites" beats "Your Favorites". Hold one perspective throughout a flow.
 
@@ -119,7 +119,7 @@ A placeholder shows the expected format: `name@example.com`, `DD/MM/YYYY`. It va
 
 `Location` is `path/to/file:line`. `Why` names the principle and the user impact.
 
-Report `Block` when any `HIGH` remains, `Approve` otherwise, leaving the rest in the table as work to do. Never `Approve` coverage you did not inspect. With nothing to report, state "No actionable writing findings" and report verification.
+Report `Block` when any `HIGH` remains. With partial coverage and no `HIGH`, report the coverage gap without a verdict. With complete coverage and no `HIGH`, report `Approve`, leaving lower-severity findings in the table as work to do. With nothing to report, state "No actionable writing findings" and report verification.
 
 ## Sources
 
