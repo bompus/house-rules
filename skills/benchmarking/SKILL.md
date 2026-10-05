@@ -46,25 +46,38 @@ input. When the generator limits the result, report that limit.
 Coordinate resource use under the host's rules. The measuring session only
 monitors during the timed region. Other sessions may do light work within the
 run's resource limits, with measured files, toolchains and services unchanged.
-Check idle before a run. During measurements, attribute CPU, load and resident
-memory to the recorded benchmark process tree or resource scope before calling
-them competing work. Expected benchmark utilization is not contention; total
-host CPU and load average include it. Between arms, let cleanup settle and use
-a fresh sampling interval.
+Before each arm, inspect CPU outside the measuring scope, memory headroom and
+pressure, swap and competing CPU, memory or I/O jobs. Use the host's admission
+limits; when it has none, declare the metrics and pass/fail thresholds before
+collecting performance results. Start only when every admission condition passes.
+During measurements, attribute CPU, load and resident memory to the recorded
+benchmark process tree or resource scope before calling them competing work.
+Expected benchmark utilization is not contention; total host CPU and load
+average include it. Between arms, let cleanup settle and use a fresh interval.
 
-Record observed contention; reject runs affected by competing work, resource
-pressure, swap or changed inputs. Declare a stall-duration budget from the experiment's timing precision before
-running. Record smaller stalls without rejecting them. Stalls exceeding the
-budget, swapping or OOM invalidate measurements even when the benchmark
-causes them. Investigate uncertain overlap and
-repeat affected runs before using them for a decisive comparison. A light
-session's presence alone is not rejection evidence. Release reservations between
-jobs while awaiting remote work or a review; retain them for an active run.
+Reject a run when inputs change, competing work crosses a declared contention
+limit, or a declared pressure condition fails. Before collecting performance
+results, define pressure rejection using stall duration, swap activity and
+memory-limit/OOM events; name any additional signals and their thresholds.
+Set a stall-duration budget from the experiment's timing precision. Record
+smaller stalls without rejecting them. Stalls exceeding the budget, swapping
+or memory-limit/OOM events invalidate measurements even when the benchmark
+causes them. Investigate uncertain overlap and repeat affected runs before
+using them for a decisive comparison. A light session's presence alone is not
+rejection evidence. Release reservations between jobs while awaiting remote
+work or a review; retain them for an active run.
 
-Alternate arm order over at least five runs per arm. Capture raw results,
-exit status, elapsed time, CPU and memory observations. Report median and range;
-treat a gap within run-to-run variation as inconclusive. Profile separately
-from the runs used to claim a speed difference.
+Start with one run per arm. A correctness-only check can use one candidate run;
+report its coverage and make no performance claim.
+
+For a performance claim, add alternating runs to assess run-to-run variation.
+Before the first run used in that claim, set a repetition count or stopping
+rule and a reproducible variation criterion (statistic and threshold).
+Retain every result. Keep pilots that informed the plan separate from the
+claim's sample. Capture raw results, exit status, elapsed time, CPU and memory
+observations. Report the sample count, median and range; apply the preset
+criterion and treat a gap within run-to-run variation as inconclusive. Profile
+separately from the runs used to claim a speed difference.
 
 Record memory by what it measures. Whole-process peak RSS includes startup,
 inputs and dependencies. Heap snapshots describe retained objects; allocation
