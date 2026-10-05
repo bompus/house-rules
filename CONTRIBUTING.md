@@ -18,8 +18,9 @@ is one way to show it.
 ## Before you open a pull request
 
 1. Run the checks in the README's Development section. CI runs them too.
-2. Add a `CHANGELOG.md` entry under a new version for any change users will
-   notice.
+2. Add a `CHANGELOG.md` entry under `Unreleased` for any change users will
+   notice. The maintainer batches approved changes into versioned releases;
+   each pull request does not need its own version or tag.
 
 ## How changes land
 

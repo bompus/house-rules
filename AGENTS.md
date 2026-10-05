@@ -25,10 +25,27 @@ history.
 
 ## Releases
 
-A change users will notice gets a `CHANGELOG.md` entry under a new version,
-following semantic versioning, in the same commit. Once that commit is on
-`main`, tag it `v<version>` and publish a release whose notes are the entry:
+A change users will notice gets a `CHANGELOG.md` entry under `Unreleased`
+in the same commit. Land independently verified changes through the normal
+landing path; landing a pull request does not require a tag or release.
+
+Before publishing, review approved backlog items and open pull requests with
+their owners. Batch compatible changes that are ready or already intended for
+the next release. Record included changes, unfinished items and the release
+cutoff or readiness condition in the task plan. Pending backlog items do not
+authorize implementation or landing. Do not hold a ready batch for unrelated,
+unapproved or indefinite work. An urgent security, regression or compatibility
+fix can ship on its own.
+
+When the batch is ready, prepare one release commit that moves all `Unreleased`
+entries into a dated version section. Choose the semantic version for the
+combined changes, including any breaking change. Once that commit and every
+included change are verified on `main`, tag the release commit `v<version>`
+and publish notes containing that version's complete changelog entry:
 `gh release create v<version> --target <sha> --title v<version> --notes-file <entry>`.
+
+The installers follow the default branch, so batching tags does not defer
+updates for those consumers. Existing tags and releases stay unchanged.
 
 ## Public repository
 
