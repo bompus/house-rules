@@ -96,16 +96,14 @@ during the work.
 
 ## Repository work
 
-Keep independent repository edits on separate branches and isolated worktrees
-when a checkout may be shared. Leave other people's and sessions' edits alone.
+Keep independent repository edits on separate branches and isolated worktrees when a checkout may be shared. Leave other people's and sessions' edits alone.
 
 Before submitting a GitHub issue or pull request, read its templates and contribution guidelines, including organization defaults.
 Complete the matching template and its required fields and checklists.
 Submit issue forms through the form or tooling that preserves its behavior, then verify required labels and routing.
 Copying headings into a CLI body loses form metadata. If tooling cannot preserve it, prepare the report and request access.
 
-Fetch before updating a feature branch. Prefer rebasing unpublished commits this
-task owns; merge the fetched base into published or shared branches.
+Fetch before updating a feature branch. Prefer rebasing unpublished commits this task owns; merge the fetched base into published or shared branches.
 Do not rewrite history another person or agent may rely on.
 
 Take each independently complete, verified task as far as § Landing allows
