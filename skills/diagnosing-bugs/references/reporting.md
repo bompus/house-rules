@@ -37,7 +37,7 @@ the form, prepare the report and ask for access or user submission.
 Keep one active report per problem. Follow up with new evidence or a specific
 unanswered question. An absent bot comment is not evidence that nothing
 happened. Do not duplicate a report or close and reopen it merely to seek
-priority. Small examples help investigation but guarantee no pickup or fix time.
+priority. Small examples help investigation; they do not guarantee action or a fix deadline.
 
 When a fix build is available, test the same reproduction and report the
 revision and before/after result. Distinguish triage, an open fix, a merged fix
