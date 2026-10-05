@@ -2,6 +2,11 @@
 
 Notable changes to house-rules. Versions follow [semantic versioning](https://semver.org).
 
+## 0.7.4 - 2026-10-05
+
+- Observe compressed-swap activity and cgroup ownership when interpreting Linux
+  benchmark pressure. Stable disk swap counters alone do not prove no swapping.
+
 ## 0.7.3 - 2026-10-05
 
 - Align resource-counter boundaries with measured work. Keep post-run
