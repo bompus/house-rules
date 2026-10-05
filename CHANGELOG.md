@@ -4,6 +4,10 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Add an opt-in `release-batching` modifier to batch approved compatible changes
+  with a defined cutoff, preserve repository release requirements, and let
+  urgent fixes ship without waiting for unfinished work.
+
 - Add a configuration CLI for browsing and toggling modifiers and skills, choosing question preferences, and previewing validated changes before safe writes.
 
 - Prefer isolation over elevated benchmark priority. Record effective scheduling
