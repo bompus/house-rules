@@ -234,6 +234,7 @@ want and explains these limits before changing the configuration.
 | `hr-read-x-links` | Read the full content of X posts. |
 | `hr-stock-ui-audit` | Find and triage template-default styling in frontend code. |
 | `hr-test-audit` | Decide which new tests are worth keeping and which old ones to prune. |
+| `hr-what-next` | Reconcile remaining session work and recommend priorities when asked what comes next. |
 | `hr-writing-for-agents` | Write skills, rules and other documents agents read. |
 | `hr-writing-pr` | Write a pull request title and body from the final diff. |
 

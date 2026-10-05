@@ -4,6 +4,9 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Add `hr-what-next` for scoped remaining-work reconciliation and prioritized
+  decisions, including short next-work requests and full session audits.
+
 ## 0.10.0 - 2026-10-05
 
 - Add `hr-progress-report` for task activity, evidence-based milestone progress
