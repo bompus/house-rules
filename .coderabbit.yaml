@@ -43,8 +43,10 @@ reviews:
         mode: warning
         instructions: >-
           FAIL if the diff changes `rules/core.md`, a file under
-          `rules/modifiers/` or a `skills/*/SKILL.md` and does not add a new
-          version entry to `CHANGELOG.md`. Also FAIL if it adds, removes or
+          `rules/modifiers/` or a `skills/*/SKILL.md` and does not add a matching
+          entry to `CHANGELOG.md`. Completed changes may stay under `Unreleased`
+          until a release batch is ready; do not require a version or tag per
+          pull request. Also FAIL if it adds, removes or
           renames a modifier or a skill and does not update the matching table
           in `README.md`. PASS otherwise.
 
