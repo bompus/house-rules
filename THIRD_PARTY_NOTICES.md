@@ -9,11 +9,11 @@ the end.
 
 Source: https://github.com/mattpocock/skills (compared at revision `d81f3a1`)
 
-- `skills/writing-for-agents/`: adapted from `skills/productivity/writing-for-agents/`.
-- `skills/code-review/`: adapted from `skills/engineering/code-review/`.
-- `skills/handoff/`: adapted from `skills/productivity/handoff/`.
-- `skills/diagnosing-bugs/`: written for this repository after
-  `skills/engineering/diagnosing-bugs/`, which it shares a name and purpose with.
+- `skills/hr-writing-for-agents/`: adapted from `skills/productivity/writing-for-agents/`.
+- `skills/hr-code-review/`: adapted from `skills/engineering/code-review/`.
+- `skills/hr-handoff/`: adapted from `skills/productivity/handoff/`.
+- `skills/hr-diagnosing-bugs/`: written for this repository after
+  `skills/engineering/diagnosing-bugs/`, which it shares a purpose with.
 
 Copyright (c) 2026 Matt Pocock
 
@@ -21,9 +21,9 @@ Copyright (c) 2026 Matt Pocock
 
 Source: https://github.com/obra/superpowers (compared at revision `8ca22db`)
 
-- `skills/writing-for-agents/SKILL.md`: the instruction-form table is adapted
+- `skills/hr-writing-for-agents/SKILL.md`: the instruction-form table is adapted
   from `writing-skills`.
-- `skills/test-audit/SKILL.md`: cites `writing-good-tests.md`.
+- `skills/hr-test-audit/SKILL.md`: cites `writing-good-tests.md`.
 
 Copyright (c) 2025 Jesse Vincent
 
@@ -31,7 +31,7 @@ Copyright (c) 2025 Jesse Vincent
 
 Source: https://github.com/addyosmani/agent-skills (compared at revision `9d0c60d`)
 
-- `skills/test-audit/scripts/floor-guard.ts`: adapted from
+- `skills/hr-test-audit/scripts/floor-guard.ts`: adapted from
   constraint-driven-development.
 
 Copyright (c) 2025 Addy Osmani
@@ -40,7 +40,7 @@ Copyright (c) 2025 Addy Osmani
 
 Source: https://github.com/openclaw/openclaw (linked at revision `65f1e4d`, compared at `1fda703`)
 
-- `skills/test-audit/SKILL.md`: the authoring gate, junk patterns, retention
+- `skills/hr-test-audit/SKILL.md`: the authoring gate, junk patterns, retention
   bar and evidence fields are adapted from `.agents/skills/test-audit/`.
 
 Copyright (c) 2026 OpenClaw Foundation
@@ -49,7 +49,7 @@ Copyright (c) 2026 OpenClaw Foundation
 
 Source: https://github.com/no-human-ai/no_human (compared at revision `9b50bf6`)
 
-- `skills/test-audit/SKILL.md`: the rule that weakening a test counts as
+- `skills/hr-test-audit/SKILL.md`: the rule that weakening a test counts as
   removing it is adapted from its tamper guard.
 
 Copyright (c) 2026 Eyal Golan
@@ -58,7 +58,7 @@ Copyright (c) 2026 Eyal Golan
 
 Source: https://github.com/omkamal/pypict-claude-skill (compared at revision `fbda212`)
 
-- `skills/test-audit/SKILL.md`: the pairwise-coverage guidance is adapted from
+- `skills/hr-test-audit/SKILL.md`: the pairwise-coverage guidance is adapted from
   this skill.
 
 Copyright (c) 2025 pypict-claude-skill contributors
@@ -67,7 +67,7 @@ Copyright (c) 2025 pypict-claude-skill contributors
 
 Source: https://github.com/sickn33/antigravity-awesome-skills (compared at revision `7bb0ab4`)
 
-- `skills/writing-pr/SKILL.md`: selected ideas from
+- `skills/hr-writing-pr/SKILL.md`: selected ideas from
   `skills/git-pr-workflows-pr-enhance/`.
 
 Copyright (c) 2026 Antigravity User
@@ -79,9 +79,9 @@ Source: https://github.com/cursor/plugins (compared at revision `e43c7ee`)
 - `rules/core.md`: the § Implementation economy bullet on scripting changes
   that span more than three places is adapted from
   `pstack/skills/principle-build-the-lever/`.
-- `skills/diagnosing-bugs/SKILL.md`: § Question the premise is adapted from
+- `skills/hr-diagnosing-bugs/SKILL.md`: § Question the premise is adapted from
   `pstack/skills/principle-attack-the-premise/`.
-- `skills/benchmarking/SKILL.md`: the validity checks are adapted from
+- `skills/hr-benchmarking/SKILL.md`: the validity checks are adapted from
   `pstack/skills/benchmark-checklist/`.
 
 Copyright (c) 2026 Lauren Tan

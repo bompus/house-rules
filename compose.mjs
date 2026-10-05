@@ -156,16 +156,42 @@ export function loadFragments(config, configDir) {
 
 // Later layers' skills shadow base skills of the same name.
 export function skillSources(config, configDir) {
+  const base = join(BASE, "skills");
+  const legacyNames = new Map(
+    readdirSync(base)
+      .filter((name) => name.startsWith("hr-") && existsSync(join(base, name, "SKILL.md")))
+      .map((name) => [name.slice(3), name]),
+  );
   const exclude = new Set(config.skills?.exclude ?? []);
+  const independent = new Set(config.skills?.independent ?? []);
+  for (const name of exclude) {
+    if (legacyNames.has(name) && !independent.has(name))
+      throw new Error(
+        `legacy skill name "${name}" in skills.exclude; replace it with "${legacyNames.get(name)}"`,
+      );
+  }
   const sources = new Map();
   for (const root of [
-    join(BASE, "skills"),
+    base,
     ...layersOf(config).map((l) => join(resolve(configDir, l), "skills")),
   ]) {
     if (!existsSync(root)) continue;
     for (const name of readdirSync(root)) {
-      if (existsSync(join(root, name, "SKILL.md")) && !exclude.has(name))
-        sources.set(name, join(root, name));
+      if (!existsSync(join(root, name, "SKILL.md"))) continue;
+      if (legacyNames.has(name) && !independent.has(name))
+        throw new Error(
+          `legacy skill name "${name}" in a personal layer; rename its directory and frontmatter name to "${legacyNames.get(name)}", or list "${name}" in skills.independent to keep it as an independent skill`,
+        );
+      if (root !== base && legacyNames.get(name.slice(3)) === name) {
+        const declaredName = parseFragment(readFileSync(join(root, name, "SKILL.md"), "utf8"), name)
+          .meta.name?.replace(/\s+#.*$/, "")
+          .replace(/^(['"])(.*)\1$/, "$2");
+        if (legacyNames.has(declaredName))
+          throw new Error(
+            `legacy skill name "${declaredName}" in frontmatter; set name to "${name}" to match its renamed override directory`,
+          );
+      }
+      if (!exclude.has(name)) sources.set(name, join(root, name));
     }
   }
   return sources;

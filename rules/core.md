@@ -98,10 +98,10 @@ during the work.
 
 Keep independent repository edits on separate branches and isolated worktrees when a checkout may be shared. Leave other people's and sessions' edits alone.
 
-Before filing a bug in any repository, follow the `diagnosing-bugs` skill's
+Before filing a bug in any repository, follow the `hr-diagnosing-bugs` skill's
 `references/reporting.md`: reduce and verify the reproduction before submitting.
 For fixes intended for pull requests, try the simplest adequate change first;
-keep the diff focused, and follow `writing-pr` for scope and submission checks.
+keep the diff focused, and follow `hr-writing-pr` for scope and submission checks.
 
 Fetch before updating a feature branch. Prefer rebasing unpublished commits this task owns; merge the fetched base into published or shared branches.
 Do not rewrite history another person or agent may rely on.

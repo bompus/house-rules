@@ -192,8 +192,8 @@ test("a config's own directory is its layer, and layer skills replace base skill
   const dir = scratch();
   mkdirSync(join(dir, "rules"));
   writeFileSync(join(dir, "rules", "mine.md"), "---\nafter: Writing\n---\n## Mine\n\nmine");
-  mkdirSync(join(dir, "skills", "handoff"), { recursive: true });
-  writeFileSync(join(dir, "skills", "handoff", "SKILL.md"), "my handoff");
+  mkdirSync(join(dir, "skills", "hr-handoff"), { recursive: true });
+  writeFileSync(join(dir, "skills", "hr-handoff", "SKILL.md"), "my handoff");
   writeFileSync(join(dir, "house-rules.json"), "{}");
   composeCli([
     "--config",
@@ -204,9 +204,9 @@ test("a config's own directory is its layer, and layer skills replace base skill
     join(dir, "out"),
   ]);
   assert.match(readFileSync(join(dir, "rules.md"), "utf8"), /## Mine/);
-  assert.equal(readFileSync(join(dir, "out", "handoff", "SKILL.md"), "utf8"), "my handoff");
+  assert.equal(readFileSync(join(dir, "out", "hr-handoff", "SKILL.md"), "utf8"), "my handoff");
   assert.equal(
-    existsSync(join(dir, "out", "read-reddit", "test")),
+    existsSync(join(dir, "out", "hr-read-reddit", "test")),
     false,
     "skill tests stay in the checkout",
   );
@@ -223,3 +223,81 @@ test("the README lists every modifier with its description, and every skill", ()
   for (const s of readdirSync(join(root, "skills")))
     assert.match(readme, new RegExp("`" + s + "`"), s);
 });
+
+for (const kind of ["exclusion", "override", "frontmatter"]) {
+  test(`legacy skill ${kind} fails before writing output`, () => {
+    const dir = scratch();
+    try {
+      const config = kind === "exclusion" ? { skills: { exclude: ["handoff"] } } : {};
+      if (kind !== "exclusion") {
+        const folder = kind === "frontmatter" ? "hr-handoff" : "handoff";
+        mkdirSync(join(dir, "skills", folder), { recursive: true });
+        writeFileSync(
+          join(dir, "skills", folder, "SKILL.md"),
+          "---\nname: handoff\n---\nmy handoff",
+        );
+      }
+      writeFileSync(join(dir, "house-rules.json"), JSON.stringify(config));
+      writeFileSync(join(dir, "rules.md"), "keep previous rules");
+      assert.throws(
+        () =>
+          composeCli([
+            "--config",
+            join(dir, "house-rules.json"),
+            "--out",
+            join(dir, "rules.md"),
+            "--skills-out",
+            join(dir, "out"),
+          ]),
+        /legacy skill name "handoff".*"hr-handoff"/,
+      );
+      assert.equal(readFileSync(join(dir, "rules.md"), "utf8"), "keep previous rules");
+      assert.equal(existsSync(join(dir, "out")), false);
+    } finally {
+      rmSync(dir, { recursive: true });
+    }
+  });
+}
+
+for (const excludeIndependent of [false, true]) {
+  test(`independent generic exclusion ${excludeIndependent} preserves the prefixed skill`, () => {
+    const dir = scratch();
+    try {
+      for (const name of ["handoff", "vendor-helper"]) {
+        mkdirSync(join(dir, "skills", name), { recursive: true });
+        writeFileSync(join(dir, "skills", name, "SKILL.md"), `personal ${name}`);
+      }
+      writeFileSync(
+        join(dir, "house-rules.json"),
+        JSON.stringify({
+          skills: {
+            independent: ["handoff"],
+            exclude: ["hr-read-reddit", ...(excludeIndependent ? ["handoff"] : [])],
+          },
+        }),
+      );
+      composeCli([
+        "--config",
+        join(dir, "house-rules.json"),
+        "--out",
+        join(dir, "rules.md"),
+        "--skills-out",
+        join(dir, "out"),
+      ]);
+      assert.equal(existsSync(join(dir, "out", "handoff")), !excludeIndependent);
+      if (!excludeIndependent)
+        assert.equal(
+          readFileSync(join(dir, "out", "handoff", "SKILL.md"), "utf8"),
+          "personal handoff",
+        );
+      assert.equal(
+        readFileSync(join(dir, "out", "vendor-helper", "SKILL.md"), "utf8"),
+        "personal vendor-helper",
+      );
+      assert.equal(existsSync(join(dir, "out", "hr-handoff", "SKILL.md")), true);
+      assert.equal(existsSync(join(dir, "out", "hr-read-reddit")), false);
+    } finally {
+      rmSync(dir, { recursive: true });
+    }
+  });
+}

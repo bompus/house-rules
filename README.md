@@ -36,7 +36,8 @@ don't install or copy anything on your own.
    `skills/` holds your own skills. A skill there replaces the house-rules
    skill of the same name. The config's other keys are optional: `layers`
    lists layer directories relative to the config (default `["."]`, its own
-   directory), and `skills.exclude` names house-rules skills to leave out.
+   directory), and `skills.exclude` names skills to leave out. `skills.independent` records
+   generic personal names you intend to keep beside renamed house-rules skills.
 4. **The repository** (`AGENTS.md`, `CLAUDE.md` or your host's equivalent):
    its commands, branch names, safeguards, required checks and landing path.
    It adds to your rules and does not replace them. See
@@ -97,7 +98,7 @@ Then connect the composed file to your agent. Claude Code reads
 `@~/.config/house-rules/rules.md` on its own line in `~/.claude/CLAUDE.md`;
 other hosts take a copy in their user-level rules file. To change modifiers,
 edit `~/.config/house-rules/house-rules.json` and run the script again. The
-`house-rules-setup` skill walks through choosing modifiers and connecting
+`hr-house-rules-setup` skill walks through choosing modifiers and connecting
 hosts, and asks before it touches a host file.
 
 ### Manual steps
@@ -117,6 +118,13 @@ node compose.mjs --config ~/.config/house-rules/house-rules.json \
 To recompose later, move or remove the old `composed-skills` directory first,
 because `--skills-out` must be empty or absent. `compose.mjs` itself writes
 only the paths you give it and never deletes anything.
+
+## Upgrading skill names
+
+All shipped skill names use `hr-`. Before updating an older installation,
+follow [the skill name upgrade guide](docs/skill-names.md) to preserve exclusions
+and personal overrides. Composition stops on ambiguous old names before
+writing output. Host links and copies need a separate update.
 
 ## Evaluate it with your agent
 

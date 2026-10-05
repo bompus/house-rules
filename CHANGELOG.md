@@ -2,6 +2,16 @@
 
 Notable changes to house-rules. Versions follow [semantic versioning](https://semver.org).
 
+## 0.9.0 - 2026-10-05
+
+- Rename all shipped skills with the `hr-` prefix. Update skill invocations,
+  personal override directories and frontmatter names, exclusions and host
+  links. Rule headings and modifier names are unchanged. No old-name aliases
+  are shipped. See [the upgrade guide](docs/skill-names.md).
+- Refuse legacy exclusion names and ambiguous personal override names before
+  composition writes output. `skills.independent` records generic personal
+  skills intentionally kept alongside their prefixed counterparts.
+
 ## 0.8.0 - 2026-10-05
 
 - Add five web UI skills for accessibility, colors, layout, typography and

@@ -6,7 +6,7 @@ body:
     id: rule
     attributes:
       label: Rule or skill
-      description: The file and section, such as `rules/core.md` § Offers or the `handoff` skill.
+      description: The file and section, such as `rules/core.md` § Offers or the `hr-handoff` skill.
     validations:
       required: true
   - type: input
