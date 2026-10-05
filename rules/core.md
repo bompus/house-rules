@@ -96,26 +96,20 @@ during the work.
 
 ## Repository work
 
-Do each independent repository-editing task on its own branch, and in its own
-worktree whenever another session or person may use the same checkout. Leave
-other sessions' and people's uncommitted work as you found it.
+Keep independent repository edits on separate branches and isolated worktrees
+when a checkout may be shared. Leave other people's and sessions' edits alone.
 
-Before submitting a GitHub issue or pull request, read the applicable templates
-and contribution guidelines, including repository or organization defaults.
-Use the matching template and complete its required fields and checklists.
-For issue forms, submit through the form or tooling that preserves its behavior,
-then verify required labels and routing. A CLI body with the same headings does
-not preserve form metadata. If the tooling cannot do this, prepare the report
-and request the missing access rather than bypassing the form.
+Before submitting a GitHub issue or pull request, read its templates and contribution guidelines, including organization defaults.
+Complete the matching template and its required fields and checklists.
+Submit issue forms through the form or tooling that preserves its behavior, then verify required labels and routing.
+Copying headings into a CLI body loses form metadata. If tooling cannot preserve it, prepare the report and request access.
 
-When updating a feature branch, fetch first. Prefer rebasing unpublished
-commits that only this task owns onto the fetched base; merge the base into published or
-shared branches. Do not rewrite history another person or agent may rely on.
+Fetch before updating a feature branch. Prefer rebasing unpublished commits this
+task owns; merge the fetched base into published or shared branches.
+Do not rewrite history another person or agent may rely on.
 
-For a request with several tasks, take each independently complete, verified
-task as far as § Landing allows as soon as it finishes, instead of waiting for
-the whole request. Keep
-inseparable changes together until they can be verified as one task.
+Take each independently complete, verified task as far as § Landing allows
+when it finishes. Keep inseparable changes together until verified as one task.
 
 ## Landing
 
