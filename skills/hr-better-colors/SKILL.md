@@ -1,5 +1,5 @@
 ---
-name: better-colors
+name: hr-better-colors
 description: "Color rules for web UI: palette ramps, semantic color tokens, color notation and gamut, and measured contrast of rendered pairs. Use when choosing, reviewing or fixing colors, color tokens, themes or text contrast in web UI."
 license: MIT
 metadata:
@@ -16,7 +16,7 @@ A color system is a small set of ramps, named by role and verified against the b
 
 Never report a contrast value you did not measure, and never estimate a color you could compute. Colors are one of the few interface concerns with an exact answer, so produce the exact answer.
 
-Contrast requirements belong to `better-accessibility`. Surfaces, shadows and icon color are outside this skill.
+Contrast requirements belong to `hr-better-accessibility`. Surfaces, shadows and icon color are outside this skill.
 
 ## Match the project's color system
 
@@ -57,7 +57,7 @@ Both ends stop short of pure black and white, which cannot carry hue at all. Use
 
 ## One color, one meaning
 
-Use a color for one purpose across the whole interface, treating anything within `15°` of hue as the same color. If the accent means interactive, that hue on static text tells users to click something that is not clickable, and an interactive element rendered neutral misleads just as badly. Color is never the only carrier of meaning, which `better-accessibility` owns.
+Use a color for one purpose across the whole interface, treating anything within `15°` of hue as the same color. If the accent means interactive, that hue on static text tells users to click something that is not clickable, and an interactive element rendered neutral misleads just as badly. Color is never the only carrier of meaning, which `hr-better-accessibility` owns.
 
 ## Fill exactly one action per view
 

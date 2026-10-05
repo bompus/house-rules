@@ -29,7 +29,7 @@ Borderless controls need more clearance, because nothing marks where one target 
 </div>
 ```
 
-WCAG target-size requirements, larger usability targets and pseudo-element expansion belong to `better-accessibility`; these clearances are in addition, so expanded hit areas never overlap.
+WCAG target-size requirements, larger usability targets and pseudo-element expansion belong to `hr-better-accessibility`; these clearances are in addition, so expanded hit areas never overlap.
 
 ## Inset buttons from the edges
 
@@ -60,7 +60,7 @@ Hiding complexity is good; hiding it without a cue is a trap. Every piece of off
 
 - **Peeking items.** In a horizontal scroller or carousel, size items so the next one peeks `16–32px` past the container edge. A row of cards that ends exactly at the edge looks complete, and nobody scrolls it.
 - **Disclosure controls.** Collapsed sections get a chevron or "Show more", labelled with what is hidden: "Show 12 more results", not "More".
-- **Truncation cues.** Clamped text shows an ellipsis and a way to expand. Truncation mechanics are `better-typography`'s.
+- **Truncation cues.** Clamped text shows an ellipsis and a way to expand. Truncation mechanics are `hr-better-typography`'s.
 
 In the peeking-scroller recipe, the container's padding creates the peek and snap points stay on the content edge. A percentage basis resolves against the content box, which already excludes that padding, so each item subtracts only the gap and the next item shows through the `24px` inline padding.
 

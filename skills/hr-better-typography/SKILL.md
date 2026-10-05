@@ -1,5 +1,5 @@
 ---
-name: better-typography
+name: hr-better-typography
 description: "Typography rules for web UI: type scale, line-height, wrapping, truncation, tabular numbers, font loading and mobile input text size. Use when styling or reviewing how text renders in web UI CSS."
 license: MIT
 metadata:
@@ -19,7 +19,7 @@ When reviewing, read the rendered page instead of scanning the code. Bad wrappin
 
 Write every fix in the project's styling system, and use the exact values below rather than familiar-looking equivalents. The [cheat sheet](css-cheat-sheet.md) maps each declaration to its Tailwind equivalent.
 
-The words themselves belong to `better-writing`. Semantic heading structure belongs to `better-accessibility`. Spatial RTL layout and logical properties belong to `better-layout`. Contrast measurement belongs to `better-colors`. This skill owns how text renders, wraps and behaves in mixed-direction content.
+The words themselves belong to `hr-better-writing`. Semantic heading structure belongs to `hr-better-accessibility`. Spatial RTL layout and logical properties belong to `hr-better-layout`. Contrast measurement belongs to `hr-better-colors`. This skill owns how text renders, wraps and behaves in mixed-direction content.
 
 ## Serve the right format
 
@@ -51,7 +51,7 @@ Solo, default names like `text-sm` are fine when the usage rules are clear. On a
 
 ## Heading sizes descend with level
 
-Map heading levels to descending steps of the type scale, so a visually subordinate heading never overpowers its parent. Adjacent levels may share a size toward the small end of the scale, as long as weight or spacing keeps them distinct. The semantic element is `better-accessibility`'s; this skill sets only the visual treatment.
+Map heading levels to descending steps of the type scale, so a visually subordinate heading never overpowers its parent. Adjacent levels may share a size toward the small end of the scale, as long as weight or spacing keeps them distinct. The semantic element is `hr-better-accessibility`'s; this skill sets only the visual treatment.
 
 ## Line-height by role
 
@@ -123,7 +123,7 @@ Start long-form body text at `16px`, the browser default. Move off it only for a
 
 UI text can go smaller. `14px` is a useful starting point for inputs and menus, `13px` for captions and rarely below `12px`. Inputs still need `16px` on mobile.
 
-When text looks low-contrast, use `better-colors` to measure the rendered pair and `better-accessibility` to classify the requirement. Leave the colors alone unless asked.
+When text looks low-contrast, use `hr-better-colors` to measure the rendered pair and `hr-better-accessibility` to classify the requirement. Leave the colors alone unless asked.
 
 ## Font smoothing on the root
 
@@ -131,7 +131,7 @@ On macOS, text renders heavier than intended. Apply `-webkit-font-smoothing: ant
 
 ## Language and bidi behavior
 
-Set `lang` so browsers and assistive technology pick the right pronunciation, quotes and hyphenation. Set `dir` at the document or at the content boundary where direction changes. Preserve digit order, and use `<bdi>` to isolate a mixed-direction value. Spatial mirroring and logical CSS properties belong to `better-layout`.
+Set `lang` so browsers and assistive technology pick the right pronunciation, quotes and hyphenation. Set `dir` at the document or at the content boundary where direction changes. Preserve digit order, and use `<bdi>` to isolate a mixed-direction value. Spatial mirroring and logical CSS properties belong to `hr-better-layout`.
 
 ## Keep useful text selectable
 

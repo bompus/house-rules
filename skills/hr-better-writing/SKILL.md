@@ -1,6 +1,6 @@
 ---
-name: better-writing
-description: "Interface copy rules: button and link labels, error messages, empty states, placeholders, toggles and consistent terminology. Use when writing or reviewing text users see in a web UI; commit messages, PRs, docs and replies belong to plain-prose."
+name: hr-better-writing
+description: "Interface copy rules: button and link labels, error messages, empty states, placeholders, toggles and consistent terminology. Use when writing or reviewing text users see in a web UI; commit messages, PRs, docs and replies belong to hr-plain-prose."
 license: MIT
 metadata:
   upstream: https://github.com/jakubkrehel/skills
@@ -15,7 +15,7 @@ metadata:
 
 Clear and brief beats clever; consistent beats varied. The best error message is the interaction redesigned so the error cannot happen.
 
-How copy renders (capitalization via `text-transform`, truncation, smart punctuation) belongs to `better-typography`. Error markup and announcements (`aria-invalid`, live regions) belong to `better-accessibility`. Room for translated strings belongs to `better-layout`.
+How copy renders (capitalization via `text-transform`, truncation, smart punctuation) belongs to `hr-better-typography`. Error markup and announcements (`aria-invalid`, live regions) belong to `hr-better-accessibility`. Room for translated strings belongs to `hr-better-layout`.
 
 ## Recon the existing voice
 

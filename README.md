@@ -196,33 +196,33 @@ in name order, after the modifiers.
 
 | Skill | Use it to |
 |---|---|
-| `agent-guidance-audit` | Audit a repository's agent guidance for stale, duplicated or conflicting rules. |
-| `agent-guidance-refresh` | Re-read guidance that changed since the session started. |
-| `api-exposure-check` | Keep API responses to the fields a consumer reads and the caller may see. |
-| `audit-choices` | List and check the decisions made while implementing a task. |
-| `benchmarking` | Design, run and assess timing, CPU and memory comparisons; choose tools by the question they answer. |
-| `better-accessibility` | Build and review keyboard access, semantics, forms, focus, motion and reflow in web UI. |
-| `better-colors` | Choose and check palettes, semantic tokens, themes, gamut and rendered contrast. |
-| `better-layout` | Build and review grouping, alignment, spacing, responsive layout and clipping. |
-| `better-typography` | Style and review type scales, wrapping, spacing, truncation and font loading. |
-| `better-writing` | Write and review interface labels, errors, empty states and product terminology. |
-| `change-impact` | Check what a change can break beyond its diff before merging. |
-| `code-review` | Review a diff against the repository's standards and the originating request. |
-| `diagnosing-bugs` | Work a hard bug or regression to a confirmed cause. |
-| `explain-code` | Trace how existing code works, read-only, before changing it. |
-| `extract-shared-steps` | Move operations repeated across workflows into shared functions. |
-| `handoff` | Write a handoff a fresh session can resume from. |
-| `house-rules-setup` | Choose modifiers, create your layer and connect your hosts. |
-| `lean-plan` | Write or tighten an implementation plan with the fewest moving parts. |
-| `maintainability-review` | Review a branch strictly for structure and maintainability. |
-| `ordering-tests` | Enumerate event orderings through the real code to find race bugs. |
-| `plain-prose` | Make text people read plain and specific. |
-| `read-reddit` | Read Reddit threads and searches through public feeds. |
-| `read-x-links` | Read the full content of X posts. |
-| `stock-ui-audit` | Find and triage template-default styling in frontend code. |
-| `test-audit` | Decide which new tests are worth keeping and which old ones to prune. |
-| `writing-for-agents` | Write skills, rules and other documents agents read. |
-| `writing-pr` | Write a pull request title and body from the final diff. |
+| `hr-agent-guidance-audit` | Audit a repository's agent guidance for stale, duplicated or conflicting rules. |
+| `hr-agent-guidance-refresh` | Re-read guidance that changed since the session started. |
+| `hr-api-exposure-check` | Keep API responses to the fields a consumer reads and the caller may see. |
+| `hr-audit-choices` | List and check the decisions made while implementing a task. |
+| `hr-benchmarking` | Design, run and assess timing, CPU and memory comparisons; choose tools by the question they answer. |
+| `hr-better-accessibility` | Build and review keyboard access, semantics, forms, focus, motion and reflow in web UI. |
+| `hr-better-colors` | Choose and check palettes, semantic tokens, themes, gamut and rendered contrast. |
+| `hr-better-layout` | Build and review grouping, alignment, spacing, responsive layout and clipping. |
+| `hr-better-typography` | Style and review type scales, wrapping, spacing, truncation and font loading. |
+| `hr-better-writing` | Write and review interface labels, errors, empty states and product terminology. |
+| `hr-change-impact` | Check what a change can break beyond its diff before merging. |
+| `hr-code-review` | Review a diff against the repository's standards and the originating request. |
+| `hr-diagnosing-bugs` | Work a hard bug or regression to a confirmed cause. |
+| `hr-explain-code` | Trace how existing code works, read-only, before changing it. |
+| `hr-extract-shared-steps` | Move operations repeated across workflows into shared functions. |
+| `hr-handoff` | Write a handoff a fresh session can resume from. |
+| `hr-house-rules-setup` | Choose modifiers, create your layer and connect your hosts. |
+| `hr-lean-plan` | Write or tighten an implementation plan with the fewest moving parts. |
+| `hr-maintainability-review` | Review a branch strictly for structure and maintainability. |
+| `hr-ordering-tests` | Enumerate event orderings through the real code to find race bugs. |
+| `hr-plain-prose` | Make text people read plain and specific. |
+| `hr-read-reddit` | Read Reddit threads and searches through public feeds. |
+| `hr-read-x-links` | Read the full content of X posts. |
+| `hr-stock-ui-audit` | Find and triage template-default styling in frontend code. |
+| `hr-test-audit` | Decide which new tests are worth keeping and which old ones to prune. |
+| `hr-writing-for-agents` | Write skills, rules and other documents agents read. |
+| `hr-writing-pr` | Write a pull request title and body from the final diff. |
 
 ## Checking the rules against your models
 

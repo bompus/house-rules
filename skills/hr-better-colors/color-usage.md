@@ -18,7 +18,7 @@ a { color: var(--color-accent-text); }
 
 The rule runs both ways. A color must not be *absent* where its meaning occurs. If the accent means interactive, an interactive element rendered neutral is just as misleading.
 
-Color is never the only carrier of meaning. Pair it with an icon, a label, or a shape. `better-accessibility` owns that requirement.
+Color is never the only carrier of meaning. Pair it with an icon, a label, or a shape. `hr-better-accessibility` owns that requirement.
 
 ## Use tokens in their role
 

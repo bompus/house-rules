@@ -55,7 +55,7 @@ In Tailwind the same mapping is utility classes per level (`text-2xl`, `text-xl`
 
 When reviewing, compare the computed size of headings within each semantic section. A child rendering more prominently than its parent breaks the hierarchy. Deep levels may share a size where the scale runs out of comfortable steps, as long as weight or letter-spacing keeps them distinct. A heading is never smaller than body text unless it is deliberately a label-style overline.
 
-Heading semantics and outline quality belong to `better-accessibility`. Pick the element from the document structure, then use this skill to make that structure visually legible. Never pick a heading element for its browser-default size.
+Heading semantics and outline quality belong to `hr-better-accessibility`. Pick the element from the document structure, then use this skill to make that structure visually legible. Never pick a heading element for its browser-default size.
 
 ## Kerning and letter-spacing
 

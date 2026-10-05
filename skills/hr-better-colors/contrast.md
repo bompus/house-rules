@@ -4,7 +4,7 @@ Contrast is measured between a **foreground color**, meaning text, an icon, or a
 
 **Report, don't repaint.** When a check fails, report the pair, its measured value and the threshold it misses, and leave the colors unchanged. They are a design decision. Apply the fix below only when asked.
 
-`better-accessibility` decides when contrast is required and whether a given pair must pass. This file covers measuring the pair and, on request, changing it.
+`hr-better-accessibility` decides when contrast is required and whether a given pair must pass. This file covers measuring the pair and, on request, changing it.
 
 ## APCA thresholds (recommended)
 

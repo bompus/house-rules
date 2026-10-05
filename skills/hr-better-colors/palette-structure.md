@@ -61,7 +61,7 @@ Two rules govern them:
 - **Keep every status hue distinct from the accent.** If the brand is red, the danger ramp cannot also be red. Move danger toward a deeper crimson and check the two side by side, or the destructive and primary actions are the same button.
 - **Status ramps need fewer steps than the accent.** Most render four roles: a background, a border, a solid fill and text. Generate the full ramp only where the product styles status components across the whole range.
 
-Status color is never the only signal of a state change; pair it with an icon or text. `better-accessibility` owns that requirement.
+Status color is never the only signal of a state change; pair it with an icon or text. `hr-better-accessibility` owns that requirement.
 
 ## Auditing an existing palette
 

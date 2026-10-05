@@ -1,5 +1,5 @@
 ---
-name: better-layout
+name: hr-better-layout
 description: "Layout rules for web UI: grouping, alignment, spacing, reading order, responsive breakpoints, logical properties and clipping at narrow widths. Use when building or reviewing page or component layout CSS."
 license: MIT
 metadata:
@@ -18,7 +18,7 @@ Position, spacing and alignment carry hierarchy before a word is read. This skil
 
 Write every fix in the project's styling system. The numbers below are starting points for interfaces with no established density system, and where one applies, use it as written rather than a familiar-looking substitute. Keep deliberate platform chrome, compact professional tools and project tokens where they still pass the stress tests.
 
-Hit areas and focus behavior belong to `better-accessibility`. Radius, shadows and animation are outside this skill. Line length and text spacing belong to `better-typography`.
+Hit areas and focus behavior belong to `hr-better-accessibility`. Radius, shadows and animation are outside this skill. Line length and text spacing belong to `hr-better-typography`.
 
 ## Group with space, not lines
 
@@ -44,7 +44,7 @@ Progressive disclosure needs a visible affordance. Use the project's established
 
 ## Breathing room between targets
 
-Without an established density system, start with `12px` between adjacent bordered or filled controls and `24px` around borderless text- and icon-only ones. Compact layouts may use less, as long as `better-accessibility` hit areas don't overlap and the controls stay distinct. Layout margins and breakpoint recipes are in [spacing-and-adaptivity.md](spacing-and-adaptivity.md).
+Without an established density system, start with `12px` between adjacent bordered or filled controls and `24px` around borderless text- and icon-only ones. Compact layouts may use less, as long as `hr-better-accessibility` hit areas don't overlap and the controls stay distinct. Layout margins and breakpoint recipes are in [spacing-and-adaptivity.md](spacing-and-adaptivity.md).
 
 ## Inset buttons from the edges
 

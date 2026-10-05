@@ -52,7 +52,7 @@ Pick a small set of alignment edges and put everything on them, because the eye 
 
 - Every stray edge reads as noise even when nobody can name it: an icon 2px off the text edge, a card padded unlike its neighbor.
 - Use one project spacing step to express hierarchy. `16px` is a useful default where no scale exists, and deeper nesting repeats the same step.
-- Numbers in tables align to the trailing edge, text to the leading edge. Tabular figures are `better-typography`'s.
+- Numbers in tables align to the trailing edge, text to the leading edge. Tabular figures are `hr-better-typography`'s.
 
 ```css
 /* Good: one shared leading edge, one indent step */
@@ -87,7 +87,7 @@ Express direction-dependent horizontal position as leading/trailing so the layou
 
 Reserve physical properties for things that refer to physical screen sides whatever the language, such as positioning against a device notch or matching a gesture direction.
 
-Where arrangement encodes progression, as in star ratings, step indicators and progress bars, the sequence mirrors in RTL and stars fill from the trailing side. Flexbox and grid with logical properties mirror automatically; hand-positioned elements do not. Digit order inside numbers never reverses, which with other bidi rules belongs to `better-typography`.
+Where arrangement encodes progression, as in star ratings, step indicators and progress bars, the sequence mirrors in RTL and stars fill from the trailing side. Flexbox and grid with logical properties mirror automatically; hand-positioned elements do not. Digit order inside numbers never reverses, which with other bidi rules belongs to `hr-better-typography`.
 
 ## Order by importance
 
@@ -118,6 +118,6 @@ With logical properties, the same hierarchy mirrors correctly in RTL locales.
 
 The first screenful is a table of contents, not the whole book. If everything is prominent, nothing is:
 
-- One primary action per view. `better-colors` owns how color enforces it.
+- One primary action per view. `hr-better-colors` owns how color enforces it.
 - Group secondary actions behind a menu once they exceed two or three.
 - Prefer a short view that links deeper over a long view that shows everything at level one.
