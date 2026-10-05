@@ -47,6 +47,7 @@ Coordinate resource use under the host's rules. During isolated local performanc
 measurements, the measuring session only monitors. Other sessions may do light
 work within the run's resource limits. Keep measured files, toolchains and
 services unchanged.
+
 Classify the timed region first. Reserve the host only for heavy local phases
 or deliberately isolated local performance measurements. Remote model
 inference, light CLI/API work and remote waits need no exclusive slot; a
@@ -54,6 +55,7 @@ memory cap or elapsed-time record alone does not establish heavy work. For
 remote agent/model evaluations, record the timing regime and concurrent local
 work. Apply the local admission and pressure rules below when measuring local
 performance, rather than treating every model call as a CPU benchmark.
+
 Before each arm, inspect CPU outside the measuring scope, memory headroom and
 pressure, swap and competing CPU, memory or I/O jobs. Use the host's admission
 limits; when it has none, declare the metrics and pass/fail thresholds before
