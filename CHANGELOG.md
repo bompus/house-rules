@@ -4,6 +4,8 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Add a configuration CLI for browsing and toggling modifiers and skills, choosing question preferences, and previewing validated changes before safe writes.
+
 - Batch approved changes into releases instead of publishing a version for each
   pull request. Record changes under `Unreleased` until the batch is ready;
   urgent fixes can still ship independently.

@@ -48,7 +48,7 @@ jobs:
         with:
           bun-version: 1.4.2
       - name: Composer, eval runner and grader, and install.ps1
-        run: node --test test/compose.test.mjs test/grade.test.mjs test/run.test.mjs test/install.test.mjs test/install-ps1.test.mjs
+        run: node --test test/*.test.mjs
       - name: The same under Bun
         run: bun test test/
       - name: Skill scripts
