@@ -126,7 +126,11 @@ export function renderConfig(report) {
     }
     lines.push("");
     if (!report.applied) {
-      detail(`To save, repeat with --apply --expect ${report.revision}`);
+      detail(
+        report.command === "set"
+          ? `To save, repeat with --apply --expect ${report.revision}`
+          : `To save, run config set with the same selection flags plus --apply --expect ${report.revision}`,
+      );
       detail("Review personal rule overrides below before choosing a question format.");
     } else
       detail(

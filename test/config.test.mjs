@@ -103,6 +103,7 @@ test("invalid requests and invalid composition never write config", (t) => {
     ["--questions", "plain", "--enable-modifier", "coded-offers"],
     ["--enable-modifier", "question-cards"],
     ["--questions", "unknown"],
+    ["--questions", "", "--enable-modifier", "swarmail"],
     ["--typo"],
   ]) {
     assert.throws(() =>
@@ -118,6 +119,7 @@ test("invalid requests and invalid composition never write config", (t) => {
     );
     assert.equal(readFileSync(path, "utf8"), original);
   }
+  assert.throws(() => cli(["status", "--config", path, "--expect", ""]), /selection flags/);
   assert.throws(
     () => cli(["set", "--config", path, "--enable-modifier", "swarmail", "--apply"]),
     /requires --expect/,
@@ -229,11 +231,12 @@ test("enumerated preview and apply orderings preserve every successful edit", (t
   const { path } = fixture(t);
   const failures = [];
   const events = ["preview A", "preview B", "apply A", "apply B", "external edit"];
-  function walk(sequence, depth) {
-    writeFileSync(path, "{}");
-    const previews = {};
-    let expected = {};
-    for (const event of sequence) {
+  function walk(sequence, depth, state = { text: "{}", previews: {}, expected: {} }) {
+    writeFileSync(path, state.text);
+    const previews = { ...state.previews };
+    let expected = state.expected;
+    const event = sequence.at(-1);
+    if (event) {
       const [operation, actor] = event.split(" ");
       if (operation === "preview") {
         const snapshot = readConfiguration(path);
@@ -260,7 +263,8 @@ test("enumerated preview and apply orderings preserve every successful edit", (t
       if (JSON.stringify(JSON.parse(readFileSync(path, "utf8"))) !== JSON.stringify(expected))
         failures.push(`successful edit lost after ${sequence.join(" -> ")}`);
     }
-    if (depth) for (const event of events) walk([...sequence, event], depth - 1);
+    const nextState = { text: readFileSync(path, "utf8"), previews, expected };
+    if (depth) for (const event of events) walk([...sequence, event], depth - 1, nextState);
   }
   walk([], 4);
   assert.deepEqual(failures, []);
@@ -286,6 +290,11 @@ test("human output is grouped; JSON and NO_COLOR output contain no terminal esca
   assert.match(human, /Host loading unverified/);
   assert.equal(human.includes("\u001b"), false);
   assert.equal(cli(["catalog", "--config", path, "--json"]).includes("\u001b"), false);
+  const preview = cli(["preview", "--config", path, "--enable-modifier", "swarmail"]);
+  assert.match(
+    preview.replace(/\s+/g, " "),
+    /To save, run config set with the same selection flags/,
+  );
   const old = process.stdout.columns;
   try {
     process.stdout.columns = 40;

@@ -150,7 +150,7 @@ export function changeSelection(config, options, path) {
         throw new Error(`cannot enable and disable "${name}" together`);
       if (
         kind === "modifier" &&
-        options.questions &&
+        options.questions !== undefined &&
         ["coded-offers", "question-cards"].includes(name)
       )
         throw new Error("use --questions or explicit question modifiers, not both");
@@ -164,7 +164,7 @@ export function changeSelection(config, options, path) {
       else choices.add(name);
     }
   }
-  if (options.questions) {
+  if (options.questions !== undefined) {
     if (!["plain", "coded", "cards"].includes(options.questions))
       throw new Error("--questions must be plain, coded or cards");
     if (options.questions === "plain") modifiers.delete("coded-offers");
@@ -248,11 +248,16 @@ export function configCommand(argv) {
     },
   });
   if (values.help) return console.log(renderHelp());
-  const changing = Boolean(values.questions || TOGGLES.some((key) => values[key]?.length));
-  if ((changing || values.apply || values.expect) && !["set", "preview"].includes(command))
+  const changing = Boolean(
+    values.questions !== undefined || TOGGLES.some((key) => values[key]?.length),
+  );
+  if (
+    (changing || values.apply || values.expect !== undefined) &&
+    !["set", "preview"].includes(command)
+  )
     throw new Error("selection flags belong to config set or preview");
   if (values.apply && command !== "set") throw new Error("--apply belongs to config set");
-  if (values.expect && !values.apply) throw new Error("--expect requires --apply");
+  if (values.expect !== undefined && !values.apply) throw new Error("--expect requires --apply");
   if (values.rules && values.json) throw new Error("choose --rules or --json, not both");
   if (values.rules && command !== "preview") throw new Error("--rules belongs to config preview");
   const snapshot = readConfiguration(configurationPath(values.config));
