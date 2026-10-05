@@ -8,6 +8,8 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   observations diagnostic and report admission and monitoring overhead
   separately from workload time. Batch compatible probes when they dominate
   elapsed time.
+- When a local phase has unknown resource use or budget, contact the reservation
+  owner, host coordinator or operator and record agreed limits before launch.
 
 ## 0.7.2 - 2026-10-05
 

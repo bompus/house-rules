@@ -50,7 +50,11 @@ services unchanged.
 
 Classify the timed region against the host's budget for concurrent light work.
 A local phase is heavy when measured or expected CPU, memory or I/O exceeds
-that budget. When either is unknown, coordinate the local phase before launch.
+that budget. When either is unknown, contact the active reservation owner or
+host coordinator. If neither is identified, ask the operator. Launch only after
+recording agreement on a bounded trial with CPU, memory and I/O limits, or an
+exclusive run window.
+
 Reserve the host only for heavy local phases or deliberately isolated local
 performance measurements. Remote model
 inference, light CLI/API work and remote waits need no exclusive slot; a
