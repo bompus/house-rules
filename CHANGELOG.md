@@ -4,6 +4,8 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Add a configuration CLI for browsing and toggling modifiers and skills, choosing question preferences, and previewing validated changes before safe writes.
+
 - Prefer isolation over elevated benchmark priority. Record effective scheduling
   settings equally across comparison arms, preserve deployment settings for
   representative results, and test priority changes in separate sensitivity

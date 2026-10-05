@@ -15,10 +15,12 @@ is a separate step the user approves.
    `install.sh` puts it in `${XDG_DATA_HOME:-~/.local/share}/house-rules`,
    `install.ps1` in `%LOCALAPPDATA%\house-rules`).
    When there is none, ask the user where to clone it. Done when
-   `node compose.mjs --list` prints the modifiers. When only Bun is installed,
+   `node compose.mjs config catalog` prints the catalog. When only Bun is installed,
    run this and the compose step below with `bun` in place of `node`.
-2. Read the existing `house-rules.json` if there is one. Ask these three
-   questions in one message, showing the current choice for each:
+2. Inspect `node compose.mjs config status --config <path>`. If status reports
+   legacy skill names, stop inspection. Read the config and follow
+   `docs/skill-names.md` before continuing. Ask these four questions in one message, showing the current
+   choice for each:
    - Do you run Swarmail, local mail between agent sessions? Yes enables
      `swarmail`. When the Swarmail MCP tools are not available, point the
      user to its install steps (https://github.com/bompus/swarmail) and ask
@@ -34,17 +36,23 @@ is a separate step the user approves.
      exposes them. On a later run, remove `question-cards` for a text-only
      choice. If personal rules still request cards, show the conflict and
      get direction before changing those rules or composing.
-   - Which other modifiers should be on? Show the rest from `--list` with
+   - Which other modifiers should be on? Show the rest from the catalog with
      their descriptions; any combination is allowed.
-   Done when the user has answered all three.
-3. Write `house-rules.json` with the chosen `modifiers`. On a later run, keep
-   existing `layers` and `skills` settings. For legacy shipped skill names,
-   follow `docs/skill-names.md` in the checkout before composing. Migrate each
-   shipped-skill exclusion to its matching `hr-` name, preserving which skill
-   it excludes. Keep unrelated exclusions and names declared in
-   `skills.independent` unchanged. If an exclusion's intended skill is unclear,
-   ask the user before changing it. Create `rules/` and `skills/` beside it.
-   Explain the file format once: a rules file starts with frontmatter naming
+   - Which skills should be enabled? They are all on by default. Show the
+     catalog and current exclusions; personal skills can override shipped
+     ones. Keep existing independent names and unrelated exclusions.
+   Done when the user has answered all four.
+3. Use `node compose.mjs config set --config <path>` with the selected
+   modifier and skill toggles and `--questions plain|coded|cards`. It previews
+   without saving. Read every change and personal rule override; resolve any
+   conflict before writing. Repeat those flags with `--apply --expect <revision>`
+   using the preview's revision. Done when it exits 0 and status confirms the
+   selection. A stale revision requires a fresh preview, not a blind retry.
+   The CLI preserves layers, custom settings and unrelated exclusions; it
+   does not edit personal rule prose or connect hosts. Read
+   `docs/configuration.md` for flags, write safeguards and lock recovery.
+   Create `rules/` and `skills/` beside the config when the user needs them.
+   Explain the file format once. A rules file starts with frontmatter naming
    `replaces:`, `after:`, `before:` or `removes:` and a core heading, then its
    own `## ` heading; without frontmatter it is appended at the end. A skill in
    the personal `skills/` replaces the house-rules skill of the same name.
