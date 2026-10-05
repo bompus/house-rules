@@ -226,8 +226,11 @@ export function writeConfiguration(snapshot, next, expected) {
     try {
       if (existsSync(temporary)) unlinkSync(temporary);
     } finally {
-      closeSync(lockFd);
-      unlinkSync(lock);
+      try {
+        closeSync(lockFd);
+      } finally {
+        unlinkSync(lock);
+      }
     }
   }
 }

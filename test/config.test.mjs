@@ -227,21 +227,36 @@ test("lock contention and stale preview cannot overwrite another writer", (t) =>
   assert.equal(existsSync(`${path}.lock`), false);
 });
 
-test("temporary cleanup errors release the lock and allow a later write", (t) => {
+test("cleanup errors release the lock and allow a later write", (t) => {
   const { path } = fixture(t);
   const source = `
     import assert from "node:assert/strict";
     import fs from "node:fs";
     let fail = true;
+    let failure;
+    let lockFd;
     const rename = fs.renameSync;
     const unlink = fs.unlinkSync;
+    const open = fs.openSync;
+    const close = fs.closeSync;
     const faults = {
+      openSync: (...args) => {
+        const fd = open(...args);
+        if (typeof args[0] === "string" && args[0].endsWith(".lock")) lockFd = fd;
+        return fd;
+      },
+      closeSync: (fd) => {
+        close(fd);
+        if (fail && failure === "lock close" && fd === lockFd)
+          throw new Error("lock close cleanup fault");
+      },
       renameSync: (...args) => {
         if (fail) throw new Error("rename fault");
         return rename(...args);
       },
       unlinkSync: (file) => {
-        if (fail && file.endsWith(".tmp")) throw new Error("temporary cleanup fault");
+        if (fail && failure === "temporary" && file.endsWith(".tmp"))
+          throw new Error("temporary cleanup fault");
         return unlink(file);
       },
     };
@@ -256,14 +271,22 @@ test("temporary cleanup errors release the lock and allow a later write", (t) =>
     const { readConfiguration, changeSelection, writeConfiguration } =
       await import(${JSON.stringify(new URL("../config.mjs", import.meta.url).href)});
     const path = ${JSON.stringify(path)};
-    const snapshot = readConfiguration(path);
-    const next = changeSelection(snapshot.config, { "enable-modifier": ["swarmail"] }, path);
-    assert.throws(() => writeConfiguration(snapshot, next, snapshot.revision), /temporary cleanup fault/);
-    assert.equal(fs.readFileSync(path, "utf8"), "{}");
-    assert.equal(fs.existsSync(path + ".lock"), false);
-    fail = false;
-    assert.equal(writeConfiguration(snapshot, next, snapshot.revision).changed, true);
-    assert.deepEqual(JSON.parse(fs.readFileSync(path, "utf8")).modifiers, ["swarmail"]);
+    for (failure of ["temporary", "lock close"]) {
+      fs.writeFileSync(path, "{}");
+      const snapshot = readConfiguration(path);
+      const next = changeSelection(snapshot.config, { "enable-modifier": ["swarmail"] }, path);
+      fail = true;
+      if (failure === "temporary") {
+        assert.throws(() => writeConfiguration(snapshot, next, snapshot.revision), /temporary cleanup fault/);
+      } else {
+        assert.throws(() => writeConfiguration(snapshot, next, snapshot.revision), /lock close cleanup fault/);
+      }
+      assert.equal(fs.readFileSync(path, "utf8"), "{}");
+      assert.equal(fs.existsSync(path + ".lock"), false);
+      fail = false;
+      assert.equal(writeConfiguration(snapshot, next, snapshot.revision).changed, true);
+      assert.deepEqual(JSON.parse(fs.readFileSync(path, "utf8")).modifiers, ["swarmail"]);
+    }
   `;
   execFileSync(process.execPath, ["--input-type=module", "--eval", source], { stdio: "pipe" });
 });
