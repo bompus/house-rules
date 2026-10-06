@@ -4,6 +4,10 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Swarmail sender guidance now omits routine and courtesy mail, narrows resource
+  notices to remaining dependencies, and uses supported quiet delivery for
+  normal/low informational mail while preserving actionable wake delivery.
+
 - Benchmark guidance now records candidate inventories and subset coverage,
   and keeps cache owners reachable through the final retention observation.
 
