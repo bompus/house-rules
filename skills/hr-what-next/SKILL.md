@@ -32,7 +32,7 @@ not cancel selected work or authorize a new task.
 5. Lead with what is complete, what remains and the next unfinished selected
    step. Show one row per remaining item with rank, state, expected impact
    and its reason, next action or decision, and owner/source where needed.
-   For a large inventory, put the full individual table in a durable report
+   For a full audit, put the full individual table in a durable report
    and link it beside the immediate decisions. Answer whether items are
    accounted for separately from whether selected work is complete.
 6. Continue work that can advance under existing authorization. Ask only for
