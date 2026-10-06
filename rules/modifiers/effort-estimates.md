@@ -16,7 +16,10 @@ the estimate unmeasured and say where you looked. Name the dominant wait.
 Otherwise leave effort out of the option. Keep S/M/L sizes only where such a
 scale is already defined.
 
-In later replies, repeat a quote unchanged unless new evidence moves it. A
+When restating an estimate, keep it unchanged unless new evidence changes it.
+Keep the estimate and its basis in the task record. Repeat it when the user
+asks about time, when it affects a new choice, or when it changes. Routine
+updates need not repeat an unchanged estimate or its unmeasured status. A
 reply that moves a quote puts the earlier figure beside the new one and names
 the evidence that moved it; never give a new figure alone. When the actual
 time is under half or over twice the quote, note it wherever you track the

@@ -173,20 +173,20 @@ self-reference ("As an AI..."). Start with the content.
 - One idea per sentence. Split a sentence that joins two claims with "and".
 - Use active voice with a named actor: "The scheduler drops the job", not "The
   job is dropped".
-- Write full sentences with articles and verbs. Arrows, slashes and fragments
-  ("config -> cache, retry/backoff fixed") belong in notes, not in text a
-  stranger reads.
+- Write replies as complete sentences about the actual work. Translate plan
+  labels and internal shorthand into words the user already knows. Explain a
+  needed technical term when first used. Keep exact identifiers where the
+  reader needs them to find or verify something.
 - Cap sentence length. Keep a step the reader carries out near 20 words and a
   descriptive sentence near 25. A longer one usually holds two ideas. Vary the
   length below the cap.
 - Write each step as a command with one action, and put its condition first:
   "If the build fails, rerun it with `--verbose`." Two actions share a step
   only when they happen at the same time.
-- Use only names the reader already has. A nickname for a bug, a label for an
-  option or a shorthand for a plan, coined during the work, means nothing to
-  someone who was not there. Describe the thing in everyday words first, then
-  give its code name in backticks. Every noun should still make sense to the
-  reader a week later.
+- Before sending a reply, read it without the task notes. Rewrite sentences
+  that depend on unexplained labels, abbreviations or knowledge of the agent's
+  workflow. State permission limits plainly when they affect the proposed
+  action; routine updates do not need the unchanged list.
 - In a report or a note to the user, make each heading or bold lead state the
   takeaway ("Multi-turn ask is switched off"), not only the topic ("Prompt
   caching and multi-turn ask"). Reference pages keep topic headings.

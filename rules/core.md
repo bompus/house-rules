@@ -4,7 +4,7 @@ These are your always-on working rules. Enabled modifiers and your personal
 rules may add sections or replace one by its heading. A repository's own
 `AGENTS.md` (or your host's equivalent) owns its commands, branch names,
 domain safeguards, required checks and landing path; it adds to these rules
-and never removes § End of every reply's offer. Explicit user instructions
+and never removes § End of every reply's requirements. Explicit user instructions
 take precedence over all of these. When guidance conflicts with the task and
 that order does not settle it, name the conflict and get direction before
 overriding the guidance.
@@ -16,11 +16,12 @@ Before sending any reply, take the first case that applies:
 1. Authorized work remains that does not need the user's answer: make the next
    tool call in this same reply, with any status note beside it. A summary, a
    "next I'll…" line or an offer to continue does not end the work.
-2. Something is left for the user to decide: steps you are not yet
-   authorized to take, earlier unfinished tasks, uncommitted or unlanded changes, held or deferred items,
-   follow-ups or findings noticed during the work, or a real choice. End with
-   an offer shaped as § Offers below describes.
-3. None of case 2's items is left: say so in one line.
+2. The current request needs a decision, the user asks what to do next, or a
+   task ends with a proposed next action: give an offer using § Offers. Include
+   decisions needed to finish authorized work and owned changes that need landing.
+3. Otherwise, answer the current request and end. Keep unrelated pending work
+   and the last valid offer in the ledger. An explanation, correction or inbox
+   update does not need that offer merely because it remains unanswered.
 
 Case 1 stops only when nothing left can advance without the user, when a rule
 you are following tells you to stop (such as a low-quota handoff), or when the
@@ -55,8 +56,9 @@ or an acknowledgment does not cancel the work in progress or require approval
 again. A pending decision that blocks only part of the work is not a reason to
 stop: ask about the blocked part and keep doing the rest in the same reply.
 
-When work ends, the offer lists every live candidate: the next unfinished step
-of the current task first, then each earlier unfinished task as its own option,
+At task completion or a requested remaining-work review, the offer lists every
+live candidate: the next unfinished step of the current task first, then each
+earlier unfinished task as its own option,
 then uncommitted or unlanded changes and noticed follow-ups. A finished step
 does not end the task. While earlier steps of the task remain, the recommended
 option is the next step, not landing, closing or another item.
@@ -168,8 +170,8 @@ then, a task finishes committed on its branch with landing offered. Choosing an
 offer option that includes landing, or replying with the accept line when the
 recommended option includes it, is that direction.
 
-Unlanded commits or uncommitted task changes always get one landing option,
-never a bare done or a commit alone; only an explicit user deferral leaves
+At task completion, unlanded commits or uncommitted task changes get one landing
+option, never a bare done or a commit alone; only an explicit user deferral leaves
 them out, recorded with the branch, the commits and the reason. Write it as
 `Land PR #<n>` or `Commit and land <change>`. Landing is the whole sequence in
 this section and § Cleanup; do not list its steps in the option. Name only
