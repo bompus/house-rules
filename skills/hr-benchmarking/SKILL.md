@@ -109,9 +109,11 @@ explore timing and resource behavior. Preserve screened-out results and their
 reasons. Label screening exploratory; one run does not support a performance
 claim. A correctness-only check can use one candidate run; report its coverage.
 
-Choose promising or decision-critical comparisons for repeated confirmation;
-keep necessary controls. Set the confirmation plan before its runs and update
-the explicit run count when the scope changes. Repetition counts depend on the
+Before exploratory runs, define the decision-relevant signal for selecting
+comparisons for confirmation. Choose comparisons that meet that signal, plus
+decision-critical comparisons, for repeated confirmation; keep necessary controls.
+Set the confirmation plan before its runs and update the explicit run count
+when the scope changes. Repetition counts depend on the
 decision and observed variation; there is no universal minimum.
 For a performance claim, add alternating runs to assess run-to-run variation.
 Before the first run used in that claim, set a repetition count or stopping
