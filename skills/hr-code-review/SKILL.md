@@ -38,7 +38,12 @@ Look for the originating spec in this order:
 
 Anything in the repo that documents how code should be written, such as `CODING_STANDARDS.md` or `CONTRIBUTING.md`.
 
-When the diff adds or changes what an API returns (a handler, serializer, DTO, response schema or webhook payload), ask the Standards reviewer to check each new or changed field: does a current caller need it, and could it expose data that caller should not see?
+When the diff adds or changes what an API returns (a handler, serializer, DTO,
+response schema or webhook payload), load `hr-api-exposure-check` and give its
+Two answers per field test to the Standards reviewer, or apply it in a local
+review. If that skill is missing or excluded, report the limit on response-field
+assessment and use the available project standards. Do not claim the skill was
+applied or install it without authorization.
 
 Use the design heuristics below when relevant to the changed code. They are prompts to investigate maintenance problems, not a checklist that must produce findings or automatic refactoring prescriptions.
 

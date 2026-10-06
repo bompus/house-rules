@@ -4,6 +4,13 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Strengthen API response checks for real caller/path cases and supported output
+  schemas; require explain-code traces to identify runtime roles and guarded
+  writes in both main and helper guidance. Change-impact checks now include
+  relevant history, local dependency patches, supported surfaces and reverse
+  operations. Lean plans check module coupling and shared-path feature leakage;
+  API response reviews use the owning exposure skill and report its absence.
+
 - Benchmarking guidance now requires justified run matrices and exploratory
   screening before preset repeated confirmation of selected comparisons.
 

@@ -19,6 +19,10 @@ For every field a response returns, at every depth, write down:
 2. **Why this caller may see it.** The rule that lets this caller, in this
    role, read this value on this object.
 
+Client behavior counts as a use, including pagination cursors, concurrency
+ETags or version numbers, and retry timing. Metadata still needs a consumer
+and an access rule; its transport role alone does not justify disclosure.
+
 A field with both answers stays. A field missing either one is removed. When
 removal might break a consumer you cannot see (a public API, a third-party
 integration, an old mobile build still in use), do not remove it silently:
@@ -70,6 +74,8 @@ should not send it.
   parameters, sparse fieldsets), intersect its request with a server-side
   allowlist for that caller. A client request never widens what the caller
   may see.
+- When the stack supports runtime output validation, use a closed schema that
+  rejects undeclared properties. Keep the explicit output allowlist either way.
 - Give errors their own minimal shape: a stable code, a short message safe to
   show, and a request or correlation ID. Stack traces, SQL, internal paths,
   upstream responses and validation internals go to the server log.
@@ -93,11 +99,15 @@ Treat these as exposure by default and require a strong second answer:
 
 ## Tests
 
-For each caller type, assert the exact set of keys, or validate against a
-closed schema that rejects unknown properties. Include:
+Test the endpoint's real response, not only its mapping function. For each
+caller type the endpoint supports, assert the exact set of keys or validate
+against a closed schema that rejects unknown properties. Cover anonymous,
+owner, other-user, other-tenant, admin and reduced-access callers where those
+cases apply. Include:
 
 - fields that must be absent for this caller, named explicitly
 - nested objects and list items, not only the top level
+- supported detail, list and search paths, including empty results
 - error responses, for each status the endpoint returns
 - a guard that adding a field to the underlying model does not change the
   response; a closed schema or exact key set does this for free

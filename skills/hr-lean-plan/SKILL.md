@@ -45,6 +45,11 @@ Look for a framing that deletes work before ordering it:
   requires it, and say which.
 - Would a narrower done-state, agreed with the user, remove a whole phase?
   Offer it rather than assuming it.
+- Does a step increase coupling or state in a cohesive module, or move work
+  across its boundary? Name the payoff and the behavior it could affect.
+  Route cross-cutting concerns such as auth, caching and error handling through
+  their existing owning layer. A new layer needs a reason the current one
+  cannot meet the goal.
 
 Count the moving parts the plan adds: new files, modules, services,
 dependencies, config keys, flags, migrations, background jobs and parallel
@@ -76,7 +81,11 @@ steps for the chosen branch only.
   still cheap.
 - Slice the work into pieces that can each merge on their own and leave the
   system working. A slice that only makes sense once the next one lands is half
-  of a larger slice.
+  of a larger slice. Splitting the same coupling across pull requests does not
+  remove it.
+- Check whether feature-specific behavior leaks into shared runtime paths.
+  Keep unrelated callers' behavior intact and name the boundary that does so;
+  isolation does not automatically require a new service or wrapper.
 - Mark steps with no dependency between them as parallel.
 - Make each cutover atomic. When it cannot be, name the intermediate state the
   system will sit in, how long it may stay there, and how to roll back from it.

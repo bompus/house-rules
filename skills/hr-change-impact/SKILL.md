@@ -18,6 +18,10 @@ a new default, a reordered side effect, a changed error type, a value that is
 now computed lazily or cached. If you cannot explain the change yet, read the
 code first (see `hr-explain-code`) before judging its impact.
 
+When the reason for old behavior affects the risk, inspect relevant history.
+Use a scoped `git log -p` or `git log -S<symbol>` where it can answer that
+question; a literal symbol search may miss renames or indirect behavior.
+
 ## Look past the call sites
 
 List direct callers quickly; a compiler or a symbol search usually covers them,
@@ -30,13 +34,19 @@ symbol search does not see:
 - **Other readers.** Another process, service, job, script or client that
   consumes the output, the queue message, the log line or the API response.
   Search for the literal strings, not only the symbol.
+- **Supported surfaces.** Other screens, entry points, clients, providers and
+  connection modes that reach the behavior. Check reverse operations and
+  state transitions too, such as enabling/disabling or connecting/disconnecting,
+  when the feature supports them. Use the project's actual supported cases;
+  do not invent surfaces or expand its verification commands.
 - **Timing.** Startup order, background workers, scheduled jobs, retries,
   timeouts and shutdown. A change that is correct on the request path can
   break a job that runs once a night.
 - **Configuration.** Environment variables, feature flags, defaults that
   differ between environments, and code paths only one flag value reaches.
 - **Dependencies as pinned.** How the library behaves at the version in the
-  lockfile, not the version in its current docs. Check the installed source or
+  lockfile, including local patches the project applies, not the version in
+  current upstream docs. Check the effective installed source, patch files or
   changelog when the change relies on a specific behavior.
 
 Each search is a finding. "No other reader of `order_status` found in this

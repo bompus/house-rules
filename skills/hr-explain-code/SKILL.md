@@ -38,7 +38,12 @@ or a value returned.
   it is the reason the path is hard to see.
 - Separate the normal path from code that exists but is not wired in: dead
   branches, disabled flags, handlers nobody registers, fallbacks that only
-  fire on a specific error. Say which is which.
+  fire on a specific error. An exported or configured function not called on
+  the normal path is an optional capability, not a step in that flow.
+- Distinguish a configured provider, an injected adapter, a local stub and a
+  durable service. Name only the runtime role the wiring and code support.
+- For a state change, trace to the line that performs the write and the
+  conditions that permit it. Finding a caller alone does not prove a write.
 - Check configuration and environment that change the path, and say which
   values you assumed.
 - When you cannot close a gap (generated code, a closed dependency, runtime
