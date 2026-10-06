@@ -4,6 +4,8 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+## 0.11.0 - 2026-10-06
+
 - Prepare `@bompus/house-rules` npm distribution with the existing composition CLI and release-triggered trusted publication.
 
 - Remove test fixtures after successful and failed tests, and support
