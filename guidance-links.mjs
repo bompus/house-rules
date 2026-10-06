@@ -45,7 +45,8 @@ export function remoteLocalLinks(text, repositories) {
       if (/^[0-9a-f]{7,40}$/i.test(ref) || /^v?\d+\.\d+\.\d+(?:[-+].*)?$/.test(ref)) continue;
       // An inline image is a rendering resource, rather than a context pointer.
       if (/!\[[^\]]*\]\(\s*$/.test(line.slice(0, match.index))) continue;
-      const [file, anchor] = path.split("#", 2);
+      const [pathAndQuery, anchor] = path.split("#", 2);
+      const [file] = pathAndQuery.split("?", 1);
       let decoded;
       try {
         decoded = decodeURIComponent(file);

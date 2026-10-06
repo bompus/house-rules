@@ -4,6 +4,9 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Resolve GitHub guidance links with URL queries to their local file paths,
+  including raw Markdown URLs, while preserving encoded filename characters.
+
 - Explain-code and PR-writing guidance now choose compact code views and
   structural diffs when clearer than prose, preserving source references,
   guards, ordering, verification and uncertainty.

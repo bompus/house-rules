@@ -1,4 +1,7 @@
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
+import { writeFileSync } from "node:fs";
+import { scratch } from "./fixture.mjs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { test } from "node:test";
@@ -90,6 +93,61 @@ test("all remote exceptions need a stated reason", () => {
       [],
     );
   }
+});
+
+test("audit CLI separates URL queries from paths without stripping encoded filename characters", (t) => {
+  const dir = scratch(t, "house-rules-link-queries-");
+  execFileSync("git", ["init", "--quiet", dir]);
+  const cases = [
+    ["https://github.com/example/project/blob/main/README.md?plain=1#intro", "README.md", "intro"],
+    [
+      "https://raw.githubusercontent.com/example/project/main/README.md?cache=1",
+      "README.md",
+      undefined,
+    ],
+    [
+      "https://raw.githubusercontent.com/example/project/main/README.md?cache=1#intro",
+      "README.md",
+      "intro",
+    ],
+    ["https://github.com/example/project/blob/main/README.md?value=%", "README.md", undefined],
+    [
+      "https://github.com/example/project/blob/main/what%3F.md?plain=1#section?detail",
+      "what?.md",
+      "section?detail",
+    ],
+    [
+      "https://raw.githubusercontent.com/example/project/main/hash%23.md?cache=1",
+      "hash#.md",
+      undefined,
+    ],
+  ];
+  writeFileSync(resolve(dir, "links.md"), cases.map(([url]) => url).join("\n"));
+  const findings = JSON.parse(
+    execFileSync(
+      process.execPath,
+      [
+        resolve(root, "guidance-links.mjs"),
+        "--root",
+        dir,
+        "--repository",
+        `example/project=${dir}`,
+      ],
+      { encoding: "utf8" },
+    ),
+  );
+  assert.deepEqual(
+    findings,
+    cases.map(([url, path, anchor], index) => ({
+      file: "links.md",
+      line: index + 1,
+      url,
+      repository: "example/project",
+      path,
+      ...(anchor === undefined ? {} : { anchor }),
+      target: resolve(dir, path),
+    })),
+  );
 });
 
 test("repository guidance keeps its operational pointers local", () => {
