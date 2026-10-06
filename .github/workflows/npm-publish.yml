@@ -38,7 +38,11 @@ jobs:
           const { version } = JSON.parse(readFileSync('package.json', 'utf8'));
           assert.equal(process.env.RELEASE_TAG, `v${version}`);
           assert.match(version, /^\d+\.\d+\.\d+$/);
-          assert(readFileSync('CHANGELOG.md', 'utf8').includes(`## ${version} - `), 'Missing dated release entry');
+          const prefix = `## ${version} - `;
+          const entry = readFileSync('CHANGELOG.md', 'utf8').split(/\r?\n/).find(line => line.startsWith(prefix));
+          const date = entry?.slice(prefix.length);
+          assert.match(date ?? '', /^\d{4}-\d{2}-\d{2}$/, 'Missing complete dated release heading');
+          assert.equal(new Date(`${date}T00:00:00Z`).toISOString().slice(0, 10), date, 'Invalid release date');
           JS
       - name: Verify tarball
         env:
