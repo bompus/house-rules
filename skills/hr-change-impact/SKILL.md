@@ -38,7 +38,9 @@ symbol search does not see:
   connection modes that reach the behavior. Check reverse operations and
   state transitions too, such as enabling/disabling or connecting/disconnecting,
   when the feature supports them. Use the project's actual supported cases;
-  do not invent surfaces or expand its verification commands.
+  do not invent surfaces or expand project-mandated verification to cover
+  unsupported cases. Keep the focused probe below when existing tests do not
+  exercise a load-bearing assumption.
 - **Timing.** Startup order, background workers, scheduled jobs, retries,
   timeouts and shutdown. A change that is correct on the request path can
   break a job that runs once a night.
