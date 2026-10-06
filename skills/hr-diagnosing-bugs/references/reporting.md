@@ -1,6 +1,8 @@
 # Reporting a bug
 
-Before filing, apply the [repository-work submission search](https://github.com/bompus/house-rules/blob/main/rules/core.md#repository-work).
+Before filing, apply the submission search in your loaded agent guidance's "Repository work" section.
+If that section is unavailable, locate the local house-rules checkout and read
+`rules/core.md` there. Report an unavailable local source before submitting.
 Inspect labels, linked changes and timeline actions as well as comments.
 For the same problem and scope, add new evidence to a matching open issue.
 When a closed report still reproduces and remains materially unchanged,

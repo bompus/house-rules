@@ -32,7 +32,9 @@ Routine corrections that leave the PR materially unchanged stay in place.
 
 ## Read before writing
 
-Before creating a PR, apply the [repository-work submission search](https://github.com/bompus/house-rules/blob/main/rules/core.md#repository-work).
+Before creating a PR, apply the submission search in your loaded agent guidance's "Repository work" section.
+If that section is unavailable, locate the local house-rules checkout and read
+`rules/core.md` there. Report an unavailable local source before submitting.
 
 Inspect the actual diff against the intended target branch, the linked issue or request, and available validation results. For an existing PR, confirm its current base and head. Commit messages can provide context; the final diff determines what the PR claims.
 

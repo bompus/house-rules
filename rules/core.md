@@ -322,6 +322,11 @@ history belongs in changelogs, findings ledgers, receipts and git history,
 unless the user asks for it elsewhere. Text a person will read (commit
 messages, pull requests, docs, replies) uses plain, specific language.
 
+Operational references to available repository guidance use local files.
+For installed skills, bundle the reference or locate its owning checkout;
+verify the path works after installation and in worktrees. Keep remote links
+for external sources, pinned history, downloads and explicit upstream refreshes.
+
 Before settling a name for anything public (a project, repository, package,
 command or MCP server), search where it would appear: the package registries
 it could publish to and GitHub, and for an MCP server also the official MCP
