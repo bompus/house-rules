@@ -4,6 +4,10 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Guidance refresh now checks approved deployed revisions at session boundaries,
+  rereads affected rules and skills once, and distinguishes installed or delivered
+  updates from loaded-context evidence while preserving frozen evaluations.
+
 - Clarify dependency selection by comparing supported features, integration and
   maintenance costs, transitive requirements and shipped size; distinguish
   build-time generation from runtime compilation and measure performance
