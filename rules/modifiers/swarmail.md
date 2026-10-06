@@ -27,9 +27,9 @@ skip this section.
   resource dependency, handoff, requested result or blocker. Omit routine progress,
   courtesy and no-overlap notices; keep them in your own chat and plan. Send short standalone messages directly.
   For resource notices, drop recipients who explicitly released or confirmed no remaining dependency.
-  When supported, use `notification_policy: quiet` for normal/low informational mail.
-  Preserve actionable handoffs/results/blockers and urgent steering with wake delivery;
-  never combine quiet with high/urgent priority or `ack_required`.
+  Use `notification_policy: quiet` for normal/low informational mail only if the connected tool
+  contract documents the option and its no-wake effect; otherwise omit the setting.
+  Preserve actionable handoffs/results/blockers and urgent steering with wake delivery; never combine quiet with high/urgent priority or `ack_required`.
 - Address recipients by name; broadcasts are rejected. Continue with `reply_message` or `thread_id`.
   Acknowledge requests with `acknowledge_message`; do not reply merely to thanks or acknowledgements.
   An `idempotency_key` makes a retry return the original message instead of sending twice.
