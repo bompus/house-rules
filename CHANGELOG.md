@@ -4,6 +4,9 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Give every `hr-` skill an explicit `HR: ` display label while preserving
+  command identifiers and invocation policies.
+
 - Clarify `hr-what-next` discovery for full-session tasks and unanswered or past
   questions.
 

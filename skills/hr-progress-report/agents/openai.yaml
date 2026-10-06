@@ -1,5 +1,5 @@
 interface:
-  display_name: "Progress report"
+  display_name: "HR: Progress report"
   short_description: "Report task progress and remaining wall-clock time"
 policy:
   allow_implicit_invocation: true

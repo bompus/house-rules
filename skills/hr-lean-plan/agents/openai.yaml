@@ -1,5 +1,5 @@
 interface:
-  display_name: "Lean plan"
+  display_name: "HR: Lean plan"
   short_description: "Plan or tighten work with the fewest moving parts"
 policy:
   allow_implicit_invocation: false

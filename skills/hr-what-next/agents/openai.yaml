@@ -1,4 +1,4 @@
 interface:
-  display_name: "What next"
+  display_name: "HR: What next"
   short_description: "Reconcile remaining work and recommend priorities"
   default_prompt: "Use $hr-what-next to reconcile remaining work and recommend the next decision."
