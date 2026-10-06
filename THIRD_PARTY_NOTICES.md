@@ -90,8 +90,8 @@ Copyright (c) 2026 Lauren Tan
 
 Source: https://github.com/jakubkrehel/skills (compared at revision `267330e1adfc66a718fb65fa6918c1f06d0a689e`)
 
-- `skills/hr-better-accessibility/`, `skills/better-colors/`, `skills/better-layout/`,
-  `skills/better-typography/` and `skills/better-writing/`: adapted skill bundles,
+- `skills/hr-better-accessibility/`, `skills/hr-better-colors/`, `skills/hr-better-layout/`,
+  `skills/hr-better-typography/` and `skills/hr-better-writing/`: adapted skill bundles,
   including their supporting references and discovery metadata.
 
 Copyright (c) 2026 Jakub Krehel
@@ -100,9 +100,9 @@ Copyright (c) 2026 Jakub Krehel
 
 Source: https://github.com/emilkowalski/skills (compared at revision `e8a175de22ae1e49370fc144c1f3bb9aeedf988d`)
 
-- `skills/hr-better-accessibility/` and `skills/better-layout/`: mobile behavior and
+- `skills/hr-better-accessibility/` and `skills/hr-better-layout/`: mobile behavior and
   viewport guidance adapted from `skills/mobile-native/SKILL.md`.
-- `skills/hr-better-layout/`, `skills/better-typography/` and `skills/better-writing/`:
+- `skills/hr-better-layout/`, `skills/hr-better-typography/` and `skills/hr-better-writing/`:
   clipping, truncation and plural-form guidance adapted from `skills/break-ui/SKILL.md`.
 
 Copyright (c) 2026 Emil Kowalski
