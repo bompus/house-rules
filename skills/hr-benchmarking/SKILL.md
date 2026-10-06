@@ -15,6 +15,11 @@ profiler or correctness check, or interpreting its measurements.
 State the question, baseline, candidate, representative input and timed region.
 Exercise ordinary supported inputs and cases that disable an optimization.
 State any restrictions behind a performance claim.
+Before running, list the selected engines, workloads, metrics, controls and
+repetitions. Count the planned runs explicitly, including controls and stages;
+state which decision each retained dimension helps make. Choose combinations
+for that decision rather than automatically running every combination. Use a
+broader matrix when its required coverage is stated.
 Name the measurement unit: request, operation, batch or whole command. State
 whether setup, startup, compilation, input loading, retries and cleanup count.
 
@@ -99,9 +104,15 @@ rejection evidence. Hold reservations during heavy local phases or declared
 isolated local performance measurements. Release them during remote waits,
 light work and reviews.
 
-Start with one run per arm. A correctness-only check can use one candidate run;
-report its coverage and make no performance claim.
+Screen correctness and quality first, then use one run per selected arm to
+explore timing and resource behavior. Preserve screened-out results and their
+reasons. Label screening exploratory; one run does not support a performance
+claim. A correctness-only check can use one candidate run; report its coverage.
 
+Choose promising or decision-critical comparisons for repeated confirmation;
+keep necessary controls. Set the confirmation plan before its runs and update
+the explicit run count when the scope changes. Repetition counts depend on the
+decision and observed variation; there is no universal minimum.
 For a performance claim, add alternating runs to assess run-to-run variation.
 Before the first run used in that claim, set a repetition count or stopping
 rule and a reproducible variation criterion (statistic and threshold).

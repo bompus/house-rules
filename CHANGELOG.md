@@ -4,6 +4,9 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Benchmarking guidance now requires justified run matrices and exploratory
+  screening before preset repeated confirmation of selected comparisons.
+
 - Clarify reporting guidance to use compact tables for multiple benefits,
   tradeoffs and differences from current behavior, one item per row, with
   evidence and uncertainty.
