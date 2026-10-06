@@ -258,8 +258,12 @@ docs included, yourself.
   contract fit, integration and maintenance cost, runtime/development/transitive
   requirements and shipped size. Distinguish build-time generation from runtime
   compilation. Measure performance uncertainties that could change the choice;
-  otherwise label performance unmeasured. Add a maintained dependency when its
-  total cost is lower than adequate alternatives.
+  otherwise label performance unmeasured.
+
+  Adequate alternatives meet the stated requirements. Use project priorities
+  to weigh conflicting costs; ask when a material tradeoff remains unresolved.
+  Add a maintained dependency when the comparison favors it over adequate
+  alternatives, and record the rationale.
 - Pick the simplest solution that meets the requirements, with no speculative
   abstraction, never at the cost of security, validation or stated
   requirements.
