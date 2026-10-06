@@ -4,6 +4,9 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Benchmark guidance now records candidate inventories and subset coverage,
+  and keeps cache owners reachable through the final retention observation.
+
 - Guidance refresh now checks approved deployed revisions at session boundaries,
   rereads affected rules and skills once, and distinguishes installed or delivered
   updates from loaded-context evidence while preserving frozen evaluations.

@@ -15,6 +15,12 @@ profiler or correctness check, or interpreting its measurements.
 State the question, baseline, candidate, representative input and timed region.
 Exercise ordinary supported inputs and cases that disable an optimization.
 State any restrictions behind a performance claim.
+
+For a requested candidate set, record its inventory and distinguish
+configurations or capacity modes. Keep untested, invalid and unsupported
+candidates visible with reasons. A subset comparison establishes results only
+for its tested scope, not a winner across the full inventory.
+
 Before running, list the selected engines, workloads, metrics, controls and
 repetitions. Count the planned runs explicitly, including controls and stages;
 state which decision each retained dimension helps make. Choose combinations
@@ -133,6 +139,9 @@ inputs and dependencies. Heap snapshots describe retained objects; allocation
 profiles describe allocation activity. Forced-GC probes are separate from
 ordinary latency measurements. Match retention semantics and payloads when
 comparing caches; equal requested capacities need not mean equal memory use.
+For cache-retention probes, keep the cache owner reachable through the final
+observation; otherwise collection of the owner can be mistaken for release by
+the cache operation.
 Batch latency percentiles describe batches, not individual requests.
 
 ## Report and decide
