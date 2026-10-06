@@ -4,6 +4,10 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Clarify that logic fixes permit a focused follow-up review without requiring
+  one. Record its scope and round limit before starting; further fixes do not
+  restart the limit or trigger another whole-change review.
+
 - Search open and closed issues and pull requests before creating either; reuse
   applicable work or explain and link a distinct scope, regression or replacement.
 
