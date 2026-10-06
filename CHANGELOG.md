@@ -4,6 +4,11 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Clarify dependency selection by comparing supported features, integration and
+  maintenance costs, transitive requirements and shipped size; distinguish
+  build-time generation from runtime compilation and measure performance
+  uncertainty only when it could change the choice.
+
 - Resolve GitHub guidance links with URL queries to their local file paths,
   including raw Markdown URLs, while preserving encoded filename characters.
 

@@ -252,8 +252,14 @@ docs included, yourself.
   and supported extension points over forks or rewrites. Before adding a
   script, timer, service, hook or skill, search the repository and what is
   already installed for one doing that job; extend or install that one instead.
-- Add a dependency only when it is maintained and cheaper than the code it
-  replaces.
+- Before adding a dependency, compare suitable maintained alternatives with
+  existing code and, for bounded logic, a small direct implementation. Inspect
+  supported APIs and required features before ruling out an option. Compare
+  contract fit, integration and maintenance cost, runtime/development/transitive
+  requirements and shipped size. Distinguish build-time generation from runtime
+  compilation. Measure performance uncertainties that could change the choice;
+  otherwise label performance unmeasured. Add a maintained dependency when its
+  total cost is lower than adequate alternatives.
 - Pick the simplest solution that meets the requirements, with no speculative
   abstraction, never at the cost of security, validation or stated
   requirements.
