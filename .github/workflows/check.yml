@@ -28,6 +28,8 @@ jobs:
           bun test test/
           bun compose.mjs --config examples/person/house-rules.json \
             --out "$RUNNER_TEMP/rules.md" --skills-out "$RUNNER_TEMP/composed-skills"
+      - name: npm tarball
+        run: npm run check:package -- --bun
       - name: Skill scripts
         run: bun test skills/
       - name: Lint
@@ -51,5 +53,7 @@ jobs:
         run: node --test test/*.test.mjs
       - name: The same under Bun
         run: bun test test/
+      - name: npm tarball
+        run: npm run check:package -- --bun
       - name: Skill scripts
         run: bun test skills/

@@ -1,0 +1,39 @@
+{
+  "name": "@bompus/house-rules",
+  "version": "0.10.0",
+  "description": "Composable working rules and skills for AI coding agents",
+  "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bompus/house-rules.git"
+  },
+  "homepage": "https://github.com/bompus/house-rules#readme",
+  "bin": {
+    "house-rules": "compose.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "files": [
+    "compose.mjs",
+    "composition.mjs",
+    "config.mjs",
+    "config-view.mjs",
+    "rules/",
+    "skills/",
+    "!skills/*/test/",
+    "docs/",
+    "examples/",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md",
+    "CONTRIBUTING.md"
+  ],
+  "scripts": {
+    "check:package": "node scripts/check-package.mjs"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
+}

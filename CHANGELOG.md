@@ -4,6 +4,8 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Prepare `@bompus/house-rules` npm distribution with the existing composition CLI and release-triggered trusted publication.
+
 - Remove test fixtures after successful and failed tests, and support
   `HOUSE_RULES_TEST_TMP` across composer, configuration, installer and eval tests.
 

@@ -105,6 +105,26 @@ question preferences and safe writes. The
 `hr-house-rules-setup` skill walks through choosing modifiers and connecting
 hosts, and asks before it touches a host file.
 
+### npm distribution
+
+The next release will also publish `@bompus/house-rules` to npm. The package
+provides the `house-rules` composition and configuration commands. Installation
+has no lifecycle hooks and does not connect an agent host or change its settings.
+After the package is published:
+
+```bash
+npm install --global @bompus/house-rules
+house-rules --list
+house-rules config help
+house-rules --config ./house-rules.json --out ./rules.md --skills-out ./composed-skills
+```
+
+Create your configuration before composing. The
+[configuration guide](docs/configuration.md) describes the available choices.
+The package bundles rules, skills, their resources and documentation. Git-based
+installers continue to follow the default branch; npm follows published versions.
+See [npm release setup](docs/npm-release.md) for the first-publish prerequisite.
+
 ### Manual steps
 
 To keep the checkout somewhere else, run the same steps by hand. The commands use `node`; `bun` runs them the same way.
