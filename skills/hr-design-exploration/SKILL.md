@@ -35,7 +35,7 @@ preview or image tools. Include interaction states when they distinguish the
 directions. If rendering is unavailable, label the output as concepts and name
 what remains unverified. Never claim an unseen design was visually checked.
 
-Give each direction a stable ID and a short descriptive name. Present all four
+Give each direction a stable ID and a short descriptive name. Present the directions
 in recommendation order, strongest first. Mark the strongest choices
 "(Recommended)" and explain why they fit the stated goal. Recommendations are
 judgments; do not invent usability results, performance gains or scores.
@@ -61,7 +61,7 @@ By default, show four options again:
 
 Give variations new IDs and name their parent IDs. Explain what changed and
 which feedback it addresses. Keep the inherited strengths visible and the
-variation distinct enough to assess. Rerank all four against the goal and
+variation distinct enough to assess. Rerank the round against the goal and
 latest feedback, mark recommended choices, and ask for the next top two with
 feedback on each.
 
