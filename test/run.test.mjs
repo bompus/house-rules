@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { writeFileSync } from "node:fs";
+import { scratch } from "./fixture.mjs";
 import { join } from "node:path";
 import { test } from "node:test";
 
@@ -17,8 +17,8 @@ const fakeModel = (dir, reply) => {
   return `"${process.execPath}" "${file}"`;
 };
 
-const baseline = (reply) => {
-  const dir = mkdtempSync(join(tmpdir(), "house-rules-eval-"));
+const baseline = (t, reply) => {
+  const dir = scratch(t, "house-rules-eval-");
   const rules = join(dir, "rules.md");
   writeFileSync(rules, "RULES-MARKER\n");
   return spawnSync(
@@ -28,8 +28,8 @@ const baseline = (reply) => {
   );
 };
 
-test("--baseline reports each arm and warns about scenarios every arm passes", () => {
-  const r = baseline(`() => "TOOL_CALL: Bash run tests\\n"`);
+test("--baseline reports each arm and warns about scenarios every arm passes", (t) => {
+  const r = baseline(t, `() => "TOOL_CALL: Bash run tests\\n"`);
   assert.equal(r.status, 1, r.stderr);
   assert.match(r.stdout, /^rules 2\/3, one-line 2\/3, no-rules 2\/3$/m);
   assert.match(r.stdout, /^WARN continue\.md /m);
@@ -37,9 +37,10 @@ test("--baseline reports each arm and warns about scenarios every arm passes", (
   assert.doesNotMatch(r.stdout, /WARN needs-approval\.md/);
 });
 
-test("--baseline exits on the rules arm alone and stays quiet when only the rules pass", () => {
+test("--baseline exits on the rules arm alone and stays quiet when only the rules pass", (t) => {
   const offer = "Apply the change?\\n\\n1. Apply it (Recommended)\\n2. Wait\\n\\nReply 1 to apply.";
   const r = baseline(
+    t,
     `(p) => !p.includes("RULES-MARKER") ? "Done. Nothing is left." : /approv/i.test(p) ? "${offer}" : "TOOL_CALL: Bash run tests\\n"`,
   );
   assert.equal(r.status, 0, r.stdout);

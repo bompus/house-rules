@@ -1,15 +1,7 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import {
-  cpSync,
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  readdirSync,
-  realpathSync,
-  writeFileSync,
-} from "node:fs";
-import { tmpdir } from "node:os";
+import { cpSync, existsSync, mkdirSync, readdirSync, realpathSync, writeFileSync } from "node:fs";
+import { scratch } from "./fixture.mjs";
 import { basename, dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
@@ -48,10 +40,10 @@ const DROP = new Set(
     ]),
 );
 
-function scratch() {
+function homeFixture(t) {
   // The long form of the path: TEMP can be an 8.3 short name (C:\Users\RUNNER~1),
   // while the script reports the long names Get-ChildItem returns.
-  const home = realpathSync.native(mkdtempSync(join(tmpdir(), "house-rules-ps1-")));
+  const home = realpathSync.native(scratch(t, "house-rules-ps1-"));
   mkdirSync(join(home, "AppData", "Local"), { recursive: true });
   mkdirSync(join(home, "AppData", "Roaming"), { recursive: true });
   return home;
@@ -105,23 +97,23 @@ for (const shell of shells) {
     return r.stdout.trim();
   };
 
-  it(`${name}: prefers Bun 1.4 or newer over any Node`, slow, () => {
-    const home = scratch();
+  it(`${name}: prefers Bun 1.4 or newer over any Node`, slow, (t) => {
+    const home = homeFixture(t);
     const bun = stub(home, "a\\bun.cmd", "1.4.2");
     const node = stub(home, "b\\node.cmd", "v24.1.0");
     assert.equal(picked(home, [node, bun]), join(bun, "bun.cmd"));
   });
 
-  it(`${name}: picks the newest Bun across PATH and version managers`, slow, () => {
-    const home = scratch();
+  it(`${name}: picks the newest Bun across PATH and version managers`, slow, (t) => {
+    const home = homeFixture(t);
     const onPath = stub(home, "a\\bun.cmd", "1.4.2");
     stub(home, ".bun\\bin\\bun.cmd", "1.5.0-canary.3");
     stub(home, "AppData\\Local\\mise\\installs\\bun\\1.4.9\\bun.cmd", "1.4.9");
     assert.equal(picked(home, [onPath]), join(home, ".bun", "bin", "bun.cmd"));
   });
 
-  it(`${name}: falls back to the newest Node 22 or newer when Bun is older than 1.4`, slow, () => {
-    const home = scratch();
+  it(`${name}: falls back to the newest Node 22 or newer when Bun is older than 1.4`, slow, (t) => {
+    const home = homeFixture(t);
     const bun = stub(home, "a\\bun.cmd", "1.3.9");
     const node = stub(home, "b\\node.cmd", "v22.11.0");
     stub(home, "AppData\\Roaming\\nvm\\v24.2.0\\node.cmd", "v24.2.0");
@@ -132,23 +124,23 @@ for (const shell of shells) {
     );
   });
 
-  it(`${name}: compares version fields as numbers`, slow, () => {
-    const home = scratch();
+  it(`${name}: compares version fields as numbers`, slow, (t) => {
+    const home = homeFixture(t);
     const nine = stub(home, "a\\node.cmd", "v22.9.0");
     const ten = stub(home, "b\\node.cmd", "v22.10.0");
     assert.equal(picked(home, [nine, ten]), join(ten, "node.cmd"));
   });
 
-  it(`${name}: fails with install pointers when no runtime is new enough`, slow, () => {
-    const home = scratch();
+  it(`${name}: fails with install pointers when no runtime is new enough`, slow, (t) => {
+    const home = homeFixture(t);
     const node = stub(home, "a\\node.cmd", "v20.18.0");
     const r = run(shell, home, [node], ["-PrintRuntime"]);
     assert.notEqual(r.status, 0);
     assert.match(plain(r), /Bun 1\.4 or newer .* Node\.js 22 or newer/);
   });
 
-  it(`${name}: refuses a non-empty directory that is not a checkout`, slow, () => {
-    const home = scratch();
+  it(`${name}: refuses a non-empty directory that is not a checkout`, slow, (t) => {
+    const home = homeFixture(t);
     const dir = join(home, "stuff");
     mkdirSync(dir);
     writeFileSync(join(dir, "notes.txt"), "mine\n");
@@ -164,8 +156,8 @@ for (const shell of shells) {
   it(
     `${name}: installs from a checkout, then recomposes without deleting the old skills`,
     slow,
-    () => {
-      const home = scratch();
+    (t) => {
+      const home = homeFixture(t);
       const checkout = join(home, "house-rules");
       cpSync(root, checkout, { recursive: true, filter: (src) => basename(src) !== ".git" });
       const env = { HOUSE_RULES_DIR: checkout, HOUSE_RULES_RUNTIME: process.execPath };

@@ -255,6 +255,11 @@ bun test skills/    # skill scripts
 npx oxlint . && npx oxfmt --check .
 ```
 
+Tests remove their own fixture directories after each test, including failures.
+Set `HOUSE_RULES_TEST_TMP` to an existing directory to choose their scratch root;
+otherwise they use the operating system temporary directory. Choose a disk-backed
+location when the system temporary directory is RAM-backed.
+
 CI runs the same checks on every push and pull request. See
 [CONTRIBUTING.md](CONTRIBUTING.md) before opening one.
 

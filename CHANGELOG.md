@@ -4,6 +4,9 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Remove test fixtures after successful and failed tests, and support
+  `HOUSE_RULES_TEST_TMP` across composer, configuration, installer and eval tests.
+
 - Add `hr-design-exploration` for four ranked visual directions, top-two feedback
   and rounds retaining the two selections alongside one variation of each.
 

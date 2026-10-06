@@ -1,15 +1,7 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import {
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  readdirSync,
-  readFileSync,
-  rmSync,
-  writeFileSync,
-} from "node:fs";
-import { tmpdir } from "node:os";
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { scratch } from "./fixture.mjs";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
@@ -21,7 +13,6 @@ const frag = (meta, body, source = "t") => ({ meta, body, source });
 const headings = (text) => [...text.matchAll(/^## (.+)$/gm)].map((m) => m[1]);
 const composeCli = (args) =>
   execFileSync(process.execPath, [join(root, "compose.mjs"), ...args], { stdio: "pipe" });
-const scratch = () => mkdtempSync(join(tmpdir(), "house-rules-"));
 
 test("a replacement keeps the section's position and drops the old text", () => {
   const out = compose(core, [frag({ replaces: "Offers" }, "## Offers\n\nNew offer rules.")]);
@@ -131,8 +122,8 @@ test("Windows line endings and headings inside code fences do not change the res
   assert.match(out, /## Mine\n\nText\./);
 });
 
-test("a failed run writes nothing, and unknown flags are refused", () => {
-  const dir = scratch();
+test("a failed run writes nothing, and unknown flags are refused", (t) => {
+  const dir = scratch(t);
   const out = join(dir, "rules.md");
   mkdirSync(join(dir, "skills"));
   writeFileSync(join(dir, "skills", "keep"), "");
@@ -151,7 +142,6 @@ test("a failed run writes nothing, and unknown flags are refused", () => {
     /Unknown option '--confg'/,
   );
   assert.equal(existsSync(out), false);
-  rmSync(dir, { recursive: true });
 });
 
 test("every shipped modifier composes, alone and all together", () => {
@@ -167,8 +157,8 @@ test("every shipped modifier composes, alone and all together", () => {
   );
 });
 
-test("the example person layer composes with its skills", () => {
-  const dir = scratch();
+test("the example person layer composes with its skills", (t) => {
+  const dir = scratch(t);
   const out = join(dir, "rules.md");
   composeCli([
     "--config",
@@ -188,8 +178,8 @@ test("the example person layer composes with its skills", () => {
   );
 });
 
-test("a config's own directory is its layer, and layer skills replace base skills", () => {
-  const dir = scratch();
+test("a config's own directory is its layer, and layer skills replace base skills", (t) => {
+  const dir = scratch(t);
   mkdirSync(join(dir, "rules"));
   writeFileSync(join(dir, "rules", "mine.md"), "---\nafter: Writing\n---\n## Mine\n\nmine");
   mkdirSync(join(dir, "skills", "hr-handoff"), { recursive: true });
@@ -210,7 +200,6 @@ test("a config's own directory is its layer, and layer skills replace base skill
     false,
     "skill tests stay in the checkout",
   );
-  rmSync(dir, { recursive: true });
 });
 
 test("the README lists every modifier with its description, and every skill", () => {
@@ -225,79 +214,68 @@ test("the README lists every modifier with its description, and every skill", ()
 });
 
 for (const kind of ["exclusion", "override", "frontmatter"]) {
-  test(`legacy skill ${kind} fails before writing output`, () => {
-    const dir = scratch();
-    try {
-      const config = kind === "exclusion" ? { skills: { exclude: ["handoff"] } } : {};
-      if (kind !== "exclusion") {
-        const folder = kind === "frontmatter" ? "hr-handoff" : "handoff";
-        mkdirSync(join(dir, "skills", folder), { recursive: true });
-        writeFileSync(
-          join(dir, "skills", folder, "SKILL.md"),
-          "---\nname: handoff\n---\nmy handoff",
-        );
-      }
-      writeFileSync(join(dir, "house-rules.json"), JSON.stringify(config));
-      writeFileSync(join(dir, "rules.md"), "keep previous rules");
-      assert.throws(
-        () =>
-          composeCli([
-            "--config",
-            join(dir, "house-rules.json"),
-            "--out",
-            join(dir, "rules.md"),
-            "--skills-out",
-            join(dir, "out"),
-          ]),
-        /legacy skill name "handoff".*"hr-handoff"/,
-      );
-      assert.equal(readFileSync(join(dir, "rules.md"), "utf8"), "keep previous rules");
-      assert.equal(existsSync(join(dir, "out")), false);
-    } finally {
-      rmSync(dir, { recursive: true });
+  test(`legacy skill ${kind} fails before writing output`, (t) => {
+    const dir = scratch(t);
+    const config = kind === "exclusion" ? { skills: { exclude: ["handoff"] } } : {};
+    if (kind !== "exclusion") {
+      const folder = kind === "frontmatter" ? "hr-handoff" : "handoff";
+      mkdirSync(join(dir, "skills", folder), { recursive: true });
+      writeFileSync(join(dir, "skills", folder, "SKILL.md"), "---\nname: handoff\n---\nmy handoff");
     }
+    writeFileSync(join(dir, "house-rules.json"), JSON.stringify(config));
+    writeFileSync(join(dir, "rules.md"), "keep previous rules");
+    assert.throws(
+      () =>
+        composeCli([
+          "--config",
+          join(dir, "house-rules.json"),
+          "--out",
+          join(dir, "rules.md"),
+          "--skills-out",
+          join(dir, "out"),
+        ]),
+      /legacy skill name "handoff".*"hr-handoff"/,
+    );
+    assert.equal(readFileSync(join(dir, "rules.md"), "utf8"), "keep previous rules");
+    assert.equal(existsSync(join(dir, "out")), false);
   });
 }
 
 for (const excludeIndependent of [false, true]) {
-  test(`independent generic exclusion ${excludeIndependent} preserves the prefixed skill`, () => {
-    const dir = scratch();
-    try {
-      for (const name of ["handoff", "vendor-helper"]) {
-        mkdirSync(join(dir, "skills", name), { recursive: true });
-        writeFileSync(join(dir, "skills", name, "SKILL.md"), `personal ${name}`);
-      }
-      writeFileSync(
-        join(dir, "house-rules.json"),
-        JSON.stringify({
-          skills: {
-            independent: ["handoff"],
-            exclude: ["hr-read-reddit", ...(excludeIndependent ? ["handoff"] : [])],
-          },
-        }),
-      );
-      composeCli([
-        "--config",
-        join(dir, "house-rules.json"),
-        "--out",
-        join(dir, "rules.md"),
-        "--skills-out",
-        join(dir, "out"),
-      ]);
-      assert.equal(existsSync(join(dir, "out", "handoff")), !excludeIndependent);
-      if (!excludeIndependent)
-        assert.equal(
-          readFileSync(join(dir, "out", "handoff", "SKILL.md"), "utf8"),
-          "personal handoff",
-        );
-      assert.equal(
-        readFileSync(join(dir, "out", "vendor-helper", "SKILL.md"), "utf8"),
-        "personal vendor-helper",
-      );
-      assert.equal(existsSync(join(dir, "out", "hr-handoff", "SKILL.md")), true);
-      assert.equal(existsSync(join(dir, "out", "hr-read-reddit")), false);
-    } finally {
-      rmSync(dir, { recursive: true });
+  test(`independent generic exclusion ${excludeIndependent} preserves the prefixed skill`, (t) => {
+    const dir = scratch(t);
+    for (const name of ["handoff", "vendor-helper"]) {
+      mkdirSync(join(dir, "skills", name), { recursive: true });
+      writeFileSync(join(dir, "skills", name, "SKILL.md"), `personal ${name}`);
     }
+    writeFileSync(
+      join(dir, "house-rules.json"),
+      JSON.stringify({
+        skills: {
+          independent: ["handoff"],
+          exclude: ["hr-read-reddit", ...(excludeIndependent ? ["handoff"] : [])],
+        },
+      }),
+    );
+    composeCli([
+      "--config",
+      join(dir, "house-rules.json"),
+      "--out",
+      join(dir, "rules.md"),
+      "--skills-out",
+      join(dir, "out"),
+    ]);
+    assert.equal(existsSync(join(dir, "out", "handoff")), !excludeIndependent);
+    if (!excludeIndependent)
+      assert.equal(
+        readFileSync(join(dir, "out", "handoff", "SKILL.md"), "utf8"),
+        "personal handoff",
+      );
+    assert.equal(
+      readFileSync(join(dir, "out", "vendor-helper", "SKILL.md"), "utf8"),
+      "personal vendor-helper",
+    );
+    assert.equal(existsSync(join(dir, "out", "hr-handoff", "SKILL.md")), true);
+    assert.equal(existsSync(join(dir, "out", "hr-read-reddit")), false);
   });
 }

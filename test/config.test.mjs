@@ -3,14 +3,13 @@ import { execFileSync } from "node:child_process";
 import {
   existsSync,
   mkdirSync,
-  mkdtempSync,
   readFileSync,
   rmSync,
   statSync,
   symlinkSync,
   writeFileSync,
 } from "node:fs";
-import { tmpdir } from "node:os";
+import { scratch } from "./fixture.mjs";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
@@ -27,10 +26,7 @@ const cli = (args, env = {}) =>
 const report = (path, args = []) =>
   JSON.parse(cli(["preview", "--config", path, "--json", ...args]));
 function fixture(t, config = {}) {
-  const dir = mkdtempSync(
-    join(process.env.HOUSE_RULES_TEST_TMP ?? tmpdir(), "house-rules-config-"),
-  );
-  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  const dir = scratch(t, "house-rules-config-");
   const path = join(dir, "house-rules.json");
   writeFileSync(path, JSON.stringify(config));
   return { dir, path };
