@@ -1,6 +1,6 @@
 # Reporting a bug
 
-Before filing in any repository, search existing issues and fix pull requests.
+Before filing, apply the [repository-work submission search](https://github.com/bompus/house-rules/blob/main/rules/core.md#repository-work).
 Inspect labels, linked changes and timeline actions as well as comments.
 For the same problem and scope, add new evidence to a matching open issue.
 When a closed report still reproduces and remains materially unchanged,

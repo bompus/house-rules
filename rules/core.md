@@ -140,6 +140,14 @@ with the current conversation.
 
 Keep independent repository edits on separate branches and isolated worktrees when a checkout may be shared. Leave other people's and sessions' edits alone.
 
+Before creating an issue or pull request, search the target repository's open
+and closed issues and pull requests for the same problem or intended change.
+Read relevant matches and linked fixes; check their scope and status. Reuse an
+applicable issue or coordinate with the owner of an overlapping pull request
+within existing authorization. When a new submission is needed, explain the
+distinct scope, regression or replacement and link related work. If search is
+unavailable, report that gap before submitting; do not claim no matches.
+
 Before filing a bug in any repository, follow the `hr-diagnosing-bugs` skill's
 `references/reporting.md`: reduce and verify the reproduction before submitting.
 For fixes intended for pull requests, try the simplest adequate change first;

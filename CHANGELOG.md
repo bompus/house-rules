@@ -4,6 +4,9 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Search open and closed issues and pull requests before creating either; reuse
+  applicable work or explain and link a distinct scope, regression or replacement.
+
 - Give every `hr-` skill an explicit `HR: ` display label while preserving
   command identifiers and invocation policies.
 

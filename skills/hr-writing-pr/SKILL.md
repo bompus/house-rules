@@ -32,6 +32,8 @@ Routine corrections that leave the PR materially unchanged stay in place.
 
 ## Read before writing
 
+Before creating a PR, apply the [repository-work submission search](https://github.com/bompus/house-rules/blob/main/rules/core.md#repository-work).
+
 Inspect the actual diff against the intended target branch, the linked issue or request, and available validation results. For an existing PR, confirm its current base and head. Commit messages can provide context; the final diff determines what the PR claims.
 
 Resolve mismatches between the description and the implementation before calling the description complete. If evidence is unavailable, state the specific gap rather than inventing a result.
