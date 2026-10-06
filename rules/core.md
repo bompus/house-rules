@@ -252,19 +252,8 @@ docs included, yourself.
   and supported extension points over forks or rewrites. Before adding a
   script, timer, service, hook or skill, search the repository and what is
   already installed for one doing that job; extend or install that one instead.
-- Before adding a dependency, compare suitable maintained alternatives with
-  existing code and, for bounded logic, a small direct implementation. Inspect
-  supported APIs and required features before ruling out an option. Compare
-  contract fit, integration and maintenance cost, runtime/development/transitive
-  requirements and shipped size. Distinguish build-time generation from runtime
-  compilation. Measure performance uncertainties that could change the choice;
-  otherwise label performance unmeasured.
-
-  Adequate alternatives meet the stated requirements. Use project priorities
-  to weigh conflicting costs. Ask only when an unresolved tradeoff could change
-  which adequate alternative the comparison selects.
-  Add a maintained dependency when the comparison favors it over adequate
-  alternatives, and record the rationale.
+- Before adding a dependency, compare suitable maintained alternatives, existing code and bounded direct logic against stated requirements. Inspect supported APIs and required features; weigh integration/maintenance costs, runtime/development/transitive requirements and shipped size using project priorities.
+  Distinguish build-time generation from runtime compilation; measure performance uncertainty that could change the choice, otherwise label performance unmeasured. Ask only if an unresolved tradeoff could change the chosen adequate alternative. Add a maintained dependency when the comparison favors it, and record the rationale.
 - Pick the simplest solution that meets the requirements, with no speculative
   abstraction, never at the cost of security, validation or stated
   requirements.
