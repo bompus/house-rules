@@ -1,0 +1,4 @@
+interface:
+  display_name: "HR: Design exploration"
+  short_description: "Compare four design directions and refine the top two"
+  default_prompt: "Use $hr-design-exploration to show four ranked visual directions and refine my top two toward a final design."

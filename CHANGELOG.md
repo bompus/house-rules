@@ -4,6 +4,9 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Add `hr-design-exploration` for four ranked visual directions, top-two feedback
+  and rounds retaining the two selections alongside one variation of each.
+
 - Explain internal shorthand in ordinary language; require offers for decisions
   and for live candidates at task completion. Repeat estimates when requested,
   relevant or changed.

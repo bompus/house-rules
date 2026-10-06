@@ -220,6 +220,7 @@ want and explains these limits before changing the configuration.
 | `hr-better-writing` | Write and review interface labels, errors, empty states and product terminology. |
 | `hr-change-impact` | Check what a change can break beyond its diff before merging. |
 | `hr-code-review` | Review a diff against the repository's standards and the originating request. |
+| `hr-design-exploration` | Compare four visual directions and refine the selected two toward one final design. |
 | `hr-diagnosing-bugs` | Work a hard bug or regression to a confirmed cause. |
 | `hr-explain-code` | Trace how existing code works, read-only, before changing it. |
 | `hr-extract-shared-steps` | Move operations repeated across workflows into shared functions. |
