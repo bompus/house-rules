@@ -115,6 +115,7 @@ decision-critical comparisons, for repeated confirmation; keep necessary control
 Set the confirmation plan before its runs and update the explicit run count
 when the scope changes. Repetition counts depend on the
 decision and observed variation; there is no universal minimum.
+
 For a performance claim, add alternating runs to assess run-to-run variation.
 Before the first run used in that claim, set a repetition count or stopping
 rule and a reproducible variation criterion (statistic and threshold).
