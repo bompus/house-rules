@@ -27,7 +27,7 @@ export function remoteLocalLinks(text, repositories) {
     }
     if (fence || /^(?: {4}|\t)/.test(line)) continue;
     // Explicit upstream refresh instructions may need a newer remote document.
-    if (/<!-- local-reference: (?:remote-refresh|source|download) \S.+ -->/.test(line)) continue;
+    if (/<!-- local-reference: (?:remote-refresh|source|download) \S.*? -->/.test(line)) continue;
     const definition = /^\s*\[([^\]]+)\]:/.exec(line);
     if (
       definition &&
@@ -46,7 +46,21 @@ export function remoteLocalLinks(text, repositories) {
       // An inline image is a rendering resource, rather than a context pointer.
       if (/!\[[^\]]*\]\(\s*$/.test(line.slice(0, match.index))) continue;
       const [file, anchor] = path.split("#", 2);
-      const decoded = decodeURIComponent(file);
+      let decoded;
+      try {
+        decoded = decodeURIComponent(file);
+      } catch {
+        findings.push({
+          line: index + 1,
+          url: match[0],
+          repository,
+          path: file,
+          anchor,
+          target: null,
+          error: "Malformed percent-encoding",
+        });
+        continue;
+      }
       if (rawRepository && !/\.mdx?$/.test(decoded)) continue;
       const target = resolve(checkout, decoded);
       const local = relative(resolve(checkout), target);

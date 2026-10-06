@@ -63,6 +63,35 @@ test("an image reference reused for guidance is still checked", () => {
   );
 });
 
+test("malformed URL escapes report their line and leave the rest of the audit available", () => {
+  const found = remoteLocalLinks(
+    "https://github.com/example/project/blob/main/100%.md\nhttps://github.com/example/project/blob/main/AGENTS.md",
+    repositories,
+  );
+  assert.equal(found.length, 2);
+  assert.equal(found[0].line, 1);
+  assert.equal(found[0].error, "Malformed percent-encoding");
+  assert.equal(found[0].target, null);
+  assert.equal(found[1].target, resolve(root, "AGENTS.md"));
+});
+
+test("all remote exceptions need a stated reason", () => {
+  for (const marker of ["source", "download", "remote-refresh"]) {
+    const url = "https://github.com/example/project/blob/main/AGENTS.md";
+    assert.equal(
+      remoteLocalLinks(`${url} <!-- local-reference: ${marker} -->`, repositories).length,
+      1,
+    );
+    assert.deepEqual(
+      remoteLocalLinks(
+        `${url} <!-- local-reference: ${marker} Explicit upstream source. -->`,
+        repositories,
+      ),
+      [],
+    );
+  }
+});
+
 test("repository guidance keeps its operational pointers local", () => {
   assert.deepEqual(auditLocalLinks(root, { "bompus/house-rules": root }), []);
 });

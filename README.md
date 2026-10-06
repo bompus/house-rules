@@ -262,8 +262,13 @@ checkout with `node guidance-links.mjs --root <checkout> --repository
 owner/repo=<local-checkout>`; repeat `--repository` for other available sources.
 Its JSON report identifies GitHub file pointers to replace. When a remote
 link deliberately cites current provenance, downloads a file or refreshes
-upstream guidance, put `<!-- local-reference: source <reason> -->`,
-`download` or `remote-refresh` on that line. Pinned history and images are exempt.
+upstream guidance, use one of these comments on that line. Each needs a reason:
+
+- `<!-- local-reference: source <reason> -->`
+- `<!-- local-reference: download <reason> -->`
+- `<!-- local-reference: remote-refresh <reason> -->`
+
+Pinned history and images are exempt.
 
 ## Sponsoring
 
