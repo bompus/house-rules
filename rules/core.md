@@ -17,10 +17,12 @@ Before sending any reply, take the first case that applies:
    tool call in this same reply, with any status note beside it. A summary, a
    "next I'll…" line or an offer to continue does not end the work.
 2. The current request needs a decision, the user asks what to do next, or a
-   task ends with a proposed next action: give an offer using § Offers. Include
-   decisions needed to finish authorized work and owned changes that need landing.
-3. Otherwise, answer the current request and end. Keep unrelated pending work
-   and the last valid offer in the ledger. An explanation, correction or inbox
+   task completes with a live candidate from § Finishing work: give an offer
+   using § Offers. Include decisions needed to finish authorized work and owned
+   changes that need landing.
+3. Otherwise, answer the current request and end. At completion with nothing
+   pending, say so in one line. Keep unrelated pending work and the last valid
+   offer in the ledger. An explanation, correction or inbox
    update does not need that offer merely because it remains unanswered.
 
 Case 1 stops only when nothing left can advance without the user, when a rule

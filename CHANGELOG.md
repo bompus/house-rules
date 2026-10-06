@@ -4,8 +4,9 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
-- Explain internal shorthand in ordinary language; require offers at decision and
-  completion boundaries, and repeat estimates when requested, relevant or changed.
+- Explain internal shorthand in ordinary language; require offers for decisions
+  and for live candidates at task completion. Repeat estimates when requested,
+  relevant or changed.
 
 - Use loaded local submission guidance in PR and bug-report skills; add local-reference guidance and a source audit that catches GitHub pointers to known checkouts.
 
