@@ -7,7 +7,10 @@ description: "Explore visual design or redesign alternatives through four ranked
 
 Use the user's requested scope and constraints. The default is four initial
 directions, then rounds containing the two selected designs and one variation
-of each. A requested count or method takes precedence.
+of each. A requested count applies to the initial comparison unless the user
+also specifies refinement rounds. Refinement defaults to four options. Before
+a differently sized refinement round, agree which selected designs to retain
+and how many variations to show. The user's chosen method takes precedence.
 
 ## Establish the comparison
 
@@ -20,9 +23,9 @@ Keep the same real content, states and viewport sizes across previews. Hold
 accessibility and required behavior constant. If content is unavailable, label
 placeholder content and the assumptions it introduces.
 
-## Show four directions
+## Show the initial directions
 
-Create four meaningfully different approaches to the same goal. Differences
+Create four meaningfully different approaches by default to the same goal. Differences
 should affect hierarchy, layout, navigation, interaction or density. Color
 swaps alone do not make distinct directions. Stay within the authorized
 prototype scope; keep the current implementation available for comparison.
@@ -49,7 +52,7 @@ Record the chosen IDs and feedback in the task's durable design notes. Keep
 eliminated directions there so later rounds do not revive rejected ideas by
 accident. If the user chooses one as final, move to final selection below.
 
-Show four options again:
+By default, show four options again:
 
 1. The first selected design, unchanged as a comparison.
 2. The second selected design, unchanged as a comparison.
