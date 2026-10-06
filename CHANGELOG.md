@@ -4,6 +4,9 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Explain multiple benefits, tradeoffs and differences from current behavior
+  in compact tables, one item per row, with evidence and uncertainty.
+
 ## 0.11.0 - 2026-10-06
 
 - Prepare `@bompus/house-rules` npm distribution with the existing composition CLI and release-triggered trusted publication.

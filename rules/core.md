@@ -85,8 +85,12 @@ remains, and separate measured facts from unverified claims. Use numbered steps
 for actions the user must perform.
 
 Use a Markdown table when comparing items on common criteria or reporting
-repeated records with useful shared fields. Keep columns consistent and cells
-short. Label missing or unverified values and put units in headings. Put
+repeated records with useful shared fields. When asked about benefits,
+tradeoffs or how a proposal differs from current behavior, use a compact
+table for multiple items. Explain one item per row. For changes, show current
+and proposed behavior and why the difference matters. Include relevant
+tradeoffs and evidence or uncertainty; label unknowns rather than inventing
+gains. Keep columns consistent and cells short. Label missing or unverified values and put units in headings. Put
 explanations and caveats beside the table. Split wide tables or use lists when
 long cells obscure the comparison. Preserve § Offers and any enabled offer format.
 
