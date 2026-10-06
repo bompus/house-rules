@@ -4,6 +4,10 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Explain-code and PR-writing guidance now choose compact code views and
+  structural diffs when clearer than prose, preserving source references,
+  guards, ordering, verification and uncertainty.
+
 - Clarify benchmark evaluation contracts and labels, invalidate specificity
   estimates for defective clean controls, and separate completion, format and
   artifact acceptance from verification costs and attributable account charges.

@@ -76,8 +76,11 @@ subsystem gets the full shape below.
   numbers, so the reader can open each one.
 - Quote code only when the exact line carries the point: an off-by-one
   boundary, an unusual default, a condition that decides the branch.
-- Draw a diagram only when prose fails, such as several actors exchanging
-  messages or a state machine with many transitions. Keep it small.
+- Choose the smallest view that explains the behavior clearly. Use pseudocode
+  for decisions, a call tree for execution order, or a component/file tree for
+  ownership. Use a diagram for interactions or state transitions when it is
+  clearer than prose. Keep the conditions, side effects and unverified links
+  that affect the answer, with source references beside them.
 
 ## Shape the answer
 
@@ -87,8 +90,9 @@ when it has nothing to say.
 1. **Purpose.** What the code is for and who or what triggers it.
 2. **Terms.** The few names, types or ideas the reader must know to follow
    the rest. Three to five is usually enough.
-3. **The flow.** The path from trigger to effect, told as prose, one step per
-   sentence or short paragraph, each step citing where it happens.
+3. **The flow.** The path from trigger to effect, using prose or the selected
+   view, with a source reference for each step. Explain any assumption or
+   omitted branch that changes the reader's understanding.
 4. **Where to start reading.** The two or three files that repay opening
    first, and in what order.
 5. **Surprises.** Behavior a careful reader would not expect: side effects,
@@ -104,3 +108,7 @@ bug, mention it once as a fact with its location and move on. For a critique
 of the design, point to `hr-maintainability-review`. For what a planned change
 would affect, point to `hr-change-impact`. For a failure being chased, point to
 `hr-diagnosing-bugs`.
+
+## Sources
+
+Visual explanation guidance adapts [HumanLayer's show-me skill](https://github.com/humanlayer/skills/blob/bba9d13ab34f0a87f1cc33df4dd196372393ddfc/plugins/show-me/skills/show-me/SKILL.md).

@@ -58,7 +58,13 @@ Describe the final combined change. Leave out intermediate attempts, commit resh
 
 Report relevant checks and their actual outcomes, including material failures and unverified behavior. Name the tests or commands run and their scope; a suite-wide pass count alone is not evidence for the changed behavior. When generated files dominate the diff, give the authored line count alongside the headline number so the size does not mislead review. Distinguish newly introduced failures from established baseline failures only when a comparison supports that claim. Keep detailed logs in a linked artifact when the short result is sufficient.
 
-Use a small code example when it makes behavior concrete. For visual changes, use comparable before/after images when available. When the change replaces an existing procedure, state the prior and new procedure in one line each. For measured performance claims, identify the baseline and candidate, measurement conditions, and variability. Use a diagram only when it explains relationships more clearly than prose.
+Use a small code example when it makes behavior concrete. For visual changes, use comparable before/after images when available. When the change replaces an existing procedure, state the prior and new procedure in one line each. For measured performance claims, identify the baseline and candidate, measurement conditions, and variability.
+
+When the existing shape is familiar, use a focused diff of calls, components
+or files to show the change. Use a diagram when it explains relationships more
+clearly than prose. Show the whole relevant block when omitted context would
+hide ownership, order or a guard. Keep verification and uncertainty beside
+the view; brevity does not remove required evidence.
 
 Scale structure to the change. Omit empty optional sections, placeholder text, guessed risk scores or review times, and coverage percentages that were not measured. Complete a required checklist with this PR's specifics rather than omitting it, and mark non-applicable items N/A with a reason. Preserve required template sections and mark unavailable evidence honestly.
 
@@ -69,3 +75,5 @@ Every factual claim must be supported by inspected code, the originating request
 ## Sources
 
 Original synthesis of selected ideas from [Luke Parker's writing-pr post](https://x.com/LukeParkerDev/status/2096769160021979571) and [git-pr-workflows-pr-enhance](https://github.com/sickn33/antigravity-awesome-skills/tree/main/skills/git-pr-workflows-pr-enhance). Relevant validation stays in the description; extensive templates and review automation are outside this skill.
+
+Visual explanation guidance adapts [HumanLayer's show-me skill](https://github.com/humanlayer/skills/blob/bba9d13ab34f0a87f1cc33df4dd196372393ddfc/plugins/show-me/skills/show-me/SKILL.md).

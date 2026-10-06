@@ -107,6 +107,16 @@ Source: https://github.com/emilkowalski/skills (compared at revision `e8a175de22
 
 Copyright (c) 2026 Emil Kowalski
 
+## humanlayer/skills
+
+Source: https://github.com/humanlayer/skills (compared at revision `bba9d13ab34f0a87f1cc33df4dd196372393ddfc`)
+
+- `skills/hr-explain-code/SKILL.md` and `skills/hr-writing-pr/SKILL.md`: compact
+  visual explanation and focused structural-diff guidance adapted from
+  `plugins/show-me/skills/show-me/SKILL.md`.
+
+Copyright (c) 2026 HumanLayer
+
 ## MIT License text
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
