@@ -261,7 +261,8 @@ docs included, yourself.
   otherwise label performance unmeasured.
 
   Adequate alternatives meet the stated requirements. Use project priorities
-  to weigh conflicting costs; ask when a material tradeoff remains unresolved.
+  to weigh conflicting costs. Ask only when an unresolved tradeoff could change
+  which adequate alternative the comparison selects.
   Add a maintained dependency when the comparison favors it over adequate
   alternatives, and record the rationale.
 - Pick the simplest solution that meets the requirements, with no speculative
