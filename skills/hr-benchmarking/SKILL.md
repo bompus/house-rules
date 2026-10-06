@@ -149,6 +149,17 @@ setup and retry costs visible. Before collecting results, define a per-case
 contribution threshold. If a case exceeds it, report results both with and
 without that case.
 
+For bug-review evaluations, freeze the supported input contract and label
+procedure before calls. A passing reference suite does not certify a clean
+control. Adjudicate additional findings against that contract. A confirmed extra
+defect makes the affected specificity estimate unavailable; retain earlier
+receipts and introduce a new control version. Leave disputed domains unresolved.
+
+Report provider completion, output-format compliance and independently checked
+artifact acceptance separately. Distinguish observed call time from verification
+and rework time. Keep returned usage units separate from attributable account
+charges; unknown attribution remains unknown.
+
 Record every experiment, rejected ones included, with the observed result and
 disposition. End with adopt, reject or inconclusive, and the evidence for that
 decision. Any implementation or publication still follows the user's scope.

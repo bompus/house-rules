@@ -4,6 +4,10 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Clarify benchmark evaluation contracts and labels, invalidate specificity
+  estimates for defective clean controls, and separate completion, format and
+  artifact acceptance from verification costs and attributable account charges.
+
 - Strengthen API response checks for real caller/path cases and supported output
   schemas; require explain-code traces to identify runtime roles and guarded
   writes in both main and helper guidance. Change-impact checks now include
