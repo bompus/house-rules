@@ -95,6 +95,21 @@ reject evidence with unexplained observer failures or insufficient coverage.
 Require empty stderr only when the observer's declared contract requires it;
 documented harmless diagnostics alone do not invalidate observation.
 
+Declare observer CPU, resident-memory and I/O budgets separately from foreign-load
+and pressure gates. Include every collector and reader, with process birth
+identities and aligned intervals. Record CPU time, average core-equivalent use,
+workload-relative CPU, resident peaks, logical log bytes and attributable storage
+I/O. Separate setup from collection; disclose missing platform counters and
+shared provider or writeback costs. A log-byte count is not physical disk I/O.
+
+Choose budgets for the host, workload duration and decision precision; there is
+no universal workload-relative CPU percentage. A budget permits collection but
+does not prove unchanged latency. Before claiming negligible observer impact or
+a small decisive gain, test sensitivity to observation separately with balanced
+controls and a preset precision criterion. Retain inconclusive controls; do not
+subtract observer CPU from workload wall time. Changed budgets apply only to a
+new protocol version, never to historical rejection verdicts.
+
 Before each arm, inspect CPU outside the measuring scope, memory headroom and
 pressure, swap and competing CPU, memory or I/O jobs. Use the host's admission
 limits; when it has none, declare the metrics and pass/fail thresholds before

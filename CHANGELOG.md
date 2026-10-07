@@ -7,6 +7,10 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 - Add independently written PR splitting and follow-up skills, with recovery
   coverage, per-slice verification and existing-authority landing behavior.
 
+- Separate observer cost budgets from contention and pressure gates, account for
+  all collectors, and require sensitivity evidence for claims of negligible
+  observation effects. Budget changes preserve historical rejection verdicts.
+
 - Explicit maintainability reviews now support entire repositories and
   subsystems, account for coverage gaps, use maintenance-priority verdicts for
   those scopes, and distinguish structure from correctness, UI, tests and
