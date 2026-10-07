@@ -4,6 +4,10 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Clarify demand-based inspection of competing jobs, diagnostic uncalibrated
+  activity counters and finite resource reservations with productive light work
+  while waiting.
+
 - Clarify that lean planning drafts and critiques plans in the conversation
   without changing files or writing code; preserve explicit-only invocation.
 

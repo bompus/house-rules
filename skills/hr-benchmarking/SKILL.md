@@ -80,6 +80,11 @@ host coordinator. If neither is identified, ask the operator. Launch only after
 recording agreement on a bounded trial with CPU, memory and I/O limits, or an
 exclusive run window.
 
+For an unknown competing job, inspect its process identity, actual demand and
+access to measured inputs within a bounded check. A cap, service name or active
+state alone does not establish incompatible work. Keep unresolved overlap or
+observer gaps unqualified; input mutation remains incompatible even at low demand.
+
 Reserve the host only for heavy local phases or deliberately isolated local
 performance measurements. Remote model
 inference, light CLI/API work and remote waits need no exclusive slot; a
@@ -108,6 +113,11 @@ overhead. A counter interval extending past completion cannot by itself
 establish overlap. Keep post-run observations diagnostic and use a fresh
 settled interval before the next arm.
 
+Keep uncalibrated activity counters diagnostic. Before using an activity cutoff
+to reject measurements, establish its relevance through separate sensitivity
+evidence. Preserve declared pressure and observer checks; distinguish a
+conservative limit from evidence that interference occurred.
+
 Reject a run when inputs change, competing work crosses a declared contention
 limit, or a declared pressure condition fails. Before collecting performance
 results, define pressure rejection using stall duration, swap activity and
@@ -128,6 +138,11 @@ and the failure cannot invalidate shared controls. Otherwise hold affected cases
 
 Hold reservations during heavy local phases or declared isolated local performance
 measurements. Release them during remote waits, light work and reviews.
+Declare finite phase boundaries or stopping conditions, release at those
+boundaries and seek fresh admission for the next phase. While waiting, keep the
+blocked phase in the ledger and advance already-authorized independent light
+work within the active measurement's allowance. Preserve measured inputs;
+backlog presence does not authorize new implementation.
 
 Screen correctness and quality first, then use one run per selected arm to
 explore timing and resource behavior. Preserve screened-out results and their
