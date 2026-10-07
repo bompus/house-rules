@@ -96,6 +96,10 @@ export function selectionReport(config, path) {
     source,
     origin: source === join(SHIPPED_SKILLS, name) ? "shipped" : relative(dirname(path), source),
     enabled: result.skills.has(name),
+    explicitOnly:
+      parseFragment(readFileSync(join(source, "SKILL.md"), "utf8"), source).meta[
+        "disable-model-invocation"
+      ] === "true",
     description:
       parseFragment(readFileSync(join(source, "SKILL.md"), "utf8"), source).meta.description ?? "",
   }));
@@ -240,6 +244,17 @@ export function writeConfiguration(snapshot, next, expected) {
   }
 }
 
+export function selectionChanges(beforeConfig, afterConfig) {
+  return [
+    { key: "modifiers", before: beforeConfig.modifiers ?? [], after: afterConfig.modifiers ?? [] },
+    {
+      key: "skills.exclude",
+      before: beforeConfig.skills?.exclude ?? [],
+      after: afterConfig.skills?.exclude ?? [],
+    },
+  ].filter(({ before, after }) => JSON.stringify(before) !== JSON.stringify(after));
+}
+
 export function configCommand(argv) {
   const command = argv[0] ?? "help";
   if (command === "help" || command === "--help") return console.log(renderHelp());
@@ -274,14 +289,7 @@ export function configCommand(argv) {
   const snapshot = readConfiguration(configurationPath(values.config));
   const next = changing ? changeSelection(snapshot.config, values, snapshot.path) : snapshot.config;
   const report = selectionReport(next, snapshot.path);
-  const changes = [
-    { key: "modifiers", before: snapshot.config.modifiers ?? [], after: next.modifiers ?? [] },
-    {
-      key: "skills.exclude",
-      before: snapshot.config.skills?.exclude ?? [],
-      after: next.skills?.exclude ?? [],
-    },
-  ].filter(({ before, after }) => JSON.stringify(before) !== JSON.stringify(after));
+  const changes = selectionChanges(snapshot.config, next);
   const applied = values.apply ? writeConfiguration(snapshot, next, values.expect) : null;
   const output = {
     command,

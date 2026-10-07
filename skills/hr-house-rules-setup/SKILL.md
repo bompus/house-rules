@@ -14,6 +14,12 @@ is a separate step the user approves.
 The commands below use `node`. If only Bun is installed, replace `node` with
 `bun` in every `compose.mjs` command.
 
+For a user working directly in a terminal, use `node compose.mjs setup` for
+numbered selection, review and explicit save. Read `docs/configuration.md`
+for commands and safeguards. Saving completes only configuration selection;
+composition and approved host connection remain separate steps below.
+For an agent running without a terminal, use the preview/apply workflow below.
+
 1. Find the house-rules checkout (the directory holding `compose.mjs`;
    `install.sh` puts it in `${XDG_DATA_HOME:-~/.local/share}/house-rules`,
    `install.ps1` in `%LOCALAPPDATA%\house-rules`).
