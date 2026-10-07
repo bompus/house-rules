@@ -45,6 +45,10 @@ After the head changes, refresh the evidence before reporting readiness.
 Name the exact revision, failed or unfinished gates and unresolved decisions.
 Clean CI alone is not evidence that every review finding was handled.
 
+Immediately before landing, re-read the head, base, checks, review bodies and
+unresolved threads. If the head or base changed, discard readiness and repeat
+the evidence and gate checks. Use the repository's revision guard when landing.
+
 When landing is authorized, every required gate passes, and all enabled landing
 conditions are satisfied, finish through the repository's landing and
 synchronization procedure. Otherwise report the
