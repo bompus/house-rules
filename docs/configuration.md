@@ -55,6 +55,10 @@ node compose.mjs config status --config <config-path>
 node compose.mjs config validate --config <config-path>
 ```
 
+`setup` initially shows current selections. Search for relevant additions or
+use `show all` to browse the complete catalog. Review and saving do not require
+a catalog-wide decision.
+
 `catalog` shows modifiers, skills and rule sections. `status` shows enabled
 selections and effective personal sources. Both use aligned tables, with color
 in a terminal and stacked rows on narrow screens. `NO_COLOR` disables color.

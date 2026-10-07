@@ -370,3 +370,33 @@ syncBuiltinESMExports();`,
     }
   },
 );
+
+test(
+  "explicit selection stays bounded until search and include-only edits can be saved",
+  interactive,
+  async (t) => {
+    const original = {
+      modifiers: [],
+      skills: { include: ["hr-code-review"], custom: "keep" },
+      custom: true,
+    };
+    const { path } = fixture(t, original);
+    const session = terminal(t, path);
+    await session.wait();
+    assert.doesNotMatch(session.output, /\[off\] swarmail/);
+    await session.command("next");
+    assert.match(session.output, /\[on\] hr-code-review/);
+    assert.doesNotMatch(session.output, /\[off\] hr-handoff/);
+    await session.command("search hr-handoff");
+    assert.match(session.output, /\[off\] hr-handoff/);
+    await session.command("toggle hr-handoff");
+    await session.command("next");
+    assert.match(session.output, /skills.include/);
+    assert.equal(readFileSync(path, "utf8"), JSON.stringify(original));
+    assert.equal((await session.finish("save")).code, 0);
+    assert.deepEqual(JSON.parse(readFileSync(path, "utf8")), {
+      ...original,
+      skills: { ...original.skills, include: ["hr-code-review", "hr-handoff"] },
+    });
+  },
+);

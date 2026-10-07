@@ -69,7 +69,7 @@ export async function setupCommand(argv) {
   let questions,
     stage = 0,
     query = "",
-    selectedOnly = false,
+    selectedOnly = true,
     stale = false;
   let saveAttempted = false;
   const options = () => {
@@ -181,11 +181,11 @@ export async function setupCommand(argv) {
       print("save / back / cancel");
       return;
     }
-    print("Core rules: always on. Modifiers are opt-in; skills are on unless excluded.");
+    print("Core rules: always on. Modifiers are opt-in; skill selection follows your config.");
     if (stage === 1) {
       const skills = rows().filter((row) => row.kind === "skill");
       print(
-        `${skills.filter((row) => !row.enabled).length} of ${skills.length} available skills excluded.`,
+        `${skills.filter((row) => row.enabled).length} of ${skills.length} available skills selected.`,
       );
     }
     print(`Question format: ${questions ?? baseline.questions}. Use questions plain|coded|cards.`);
@@ -203,6 +203,8 @@ export async function setupCommand(argv) {
     }
     if (!visible.length)
       print(`No matches for ${JSON.stringify(query)}. Use clear search or show all.`);
+    if (selectedOnly)
+      print("Showing current selections. Search for relevant additions or use show all.");
     if (baseline.unavailable.length)
       print(`Retained unavailable exclusions: ${baseline.unavailable.join(", ")}`);
     print("toggle N [N ...] / search TEXT / help N / next / back / cancel");
@@ -251,13 +253,15 @@ export async function setupCommand(argv) {
           if (stage === 1 && draft().error) throw draft().error;
           stage = Math.min(2, stage + 1);
           query = "";
-          selectedOnly = false;
+          selectedOnly = true;
         } else if (command === "back") {
           stage = Math.max(0, stage - 1);
           query = "";
+          selectedOnly = true;
+        } else if (command.startsWith("search ")) {
+          query = command.slice(7);
           selectedOnly = false;
-        } else if (command.startsWith("search ")) query = command.slice(7);
-        else if (command === "clear search") query = "";
+        } else if (command === "clear search") query = "";
         else if (command === "show selected") selectedOnly = true;
         else if (command === "show all") {
           query = "";
