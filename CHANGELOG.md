@@ -7,6 +7,9 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 - Notify affected sessions after agent-component updates and refresh subagent,
   configuration, script and tool discovery alongside deployed rules and skills.
 
+- Prefer useful visual explanations, comparable actual interface captures and
+  accessible equivalents while labeling illustrations and respecting task scope.
+
 - Add independently written PR splitting and follow-up skills, with recovery
   coverage, per-slice verification and existing-authority landing behavior.
 
