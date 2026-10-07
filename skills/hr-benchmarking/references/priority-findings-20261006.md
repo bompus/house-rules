@@ -50,8 +50,49 @@ timed-region or all-GC-thread scheduling effects.
 Bun +10, -10 and -20 failed the variation criterion. Node -10 overlapped nice 0;
 Node -20 was slower. These three-process samples support no confirmed negative
 priority gain. The small quiet-host cohort does not predict behavior under
-contention or on another scheduler. Raw process evidence is not bundled here;
-this versioned table retains the reported aggregate values and limits.
+contention or on another scheduler. The per-process measurement values below
+make the reported aggregates auditable; their scope limits still apply.
+
+## Per-process measurement values
+
+These are the 24 retained output measurements used above, with path and process
+identity fields omitted. Repetition numbers identify each process within its
+runtime/priority cell; they are not execution order. CPU is in microseconds and
+peak RSS in KiB to retain the source units. Wall values retain nine decimal
+places for aggregate recalculation, not a claim of clock accuracy.
+
+Recalculation from these samples matches every aggregate before display rounding.
+Each source output passed correctness and effective-control checks before and
+after the workload. No process was rejected. The broader host-admission receipts
+remain outside this bundle; this table provides sample-level auditability for
+the reported wall, CPU, RSS and variation values, not complete host reproduction.
+
+| Runtime | Nice | Repetition | Wall ms | CPU us | Peak RSS KiB |
+|---|---:|---:|---:|---:|---:|
+| bun | +10 | 1 | 1195.596419000 | 1505936 | 196116 |
+| bun | +10 | 2 | 1445.887323000 | 1812345 | 190948 |
+| bun | +10 | 3 | 1467.863081000 | 1852217 | 197132 |
+| bun | +0 | 1 | 1326.456355000 | 1659644 | 195900 |
+| bun | +0 | 2 | 1412.394017000 | 1778913 | 189540 |
+| bun | +0 | 3 | 1356.414170000 | 1779749 | 199772 |
+| bun | -10 | 1 | 1291.186539000 | 1638686 | 190644 |
+| bun | -10 | 2 | 1468.095042000 | 1847875 | 195332 |
+| bun | -10 | 3 | 1416.096128000 | 1781215 | 193692 |
+| bun | -20 | 1 | 1287.427399000 | 1628746 | 194676 |
+| bun | -20 | 2 | 1497.167736000 | 1893806 | 191196 |
+| bun | -20 | 3 | 1346.090557000 | 1691437 | 195036 |
+| node | +10 | 1 | 1083.811791000 | 1655921 | 200988 |
+| node | +10 | 2 | 1196.507378000 | 1849814 | 198100 |
+| node | +10 | 3 | 1231.812016000 | 1913550 | 197184 |
+| node | +0 | 1 | 1138.547173000 | 1717254 | 196524 |
+| node | +0 | 2 | 1136.151985000 | 1735839 | 197480 |
+| node | +0 | 3 | 1133.265512000 | 1736305 | 196716 |
+| node | -10 | 1 | 1097.328563000 | 1684817 | 196008 |
+| node | -10 | 2 | 1152.692612000 | 1789165 | 197780 |
+| node | -10 | 3 | 1148.141853000 | 1746972 | 196516 |
+| node | -20 | 1 | 1277.348138000 | 1994581 | 196600 |
+| node | -20 | 2 | 1191.670413000 | 1825925 | 197344 |
+| node | -20 | 3 | 1189.945316000 | 1821113 | 198976 |
 
 ## Omitting nice versus requesting zero
 
