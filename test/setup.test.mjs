@@ -26,14 +26,14 @@ function fixture(t, config) {
 }
 
 // A real terminal drives the shipped entry point; prompts are deterministic barriers.
-function terminal(t, path) {
+function terminal(t, path, runtimeArgs = []) {
   const child = spawn(
     "script",
     [
       "-q",
       "-e",
       "-c",
-      [process.execPath, executable, "setup", "--plain", "--config", path]
+      [process.execPath, ...runtimeArgs, executable, "setup", "--plain", "--config", path]
         .map(shellQuote)
         .join(" "),
       "/dev/null",
@@ -329,5 +329,44 @@ test(
       custom: "repaired",
       modifiers: ["swarmail"],
     });
+  },
+);
+
+test(
+  "post-commit verification failure requires reconciliation and truthful cancellation",
+  {
+    ...interactive,
+    skip: interactive.skip || (process.versions.bun ? "Node built-in fault injection" : false),
+  },
+  async (t) => {
+    for (const replacement of [
+      "{broken",
+      JSON.stringify({ custom: "after", modifiers: ["swarmail"] }),
+    ]) {
+      const { path, dir } = fixture(t, { custom: "keep" });
+      const preload = join(dir, "post-commit.mjs");
+      writeFileSync(
+        preload,
+        `import fs from "node:fs"; import { syncBuiltinESMExports } from "node:module";
+const rename = fs.renameSync;
+fs.renameSync = (...args) => { rename(...args); if (args[1] === ${JSON.stringify(path)}) fs.writeFileSync(args[1], ${JSON.stringify(replacement)}); };
+syncBuiltinESMExports();`,
+      );
+      const session = terminal(t, path, ["--import", preload]);
+      await session.wait();
+      await session.command("toggle swarmail");
+      await session.command("next");
+      await session.command("next");
+      await session.command("save");
+      assert.match(session.output, /Save completed but verification failed/);
+      assert.match(session.output, /Configuration changed\. Use refresh/);
+      await session.command("save");
+      assert.match(session.output, /Use refresh and review the new comparison/);
+      const result = await session.finish();
+      assert.equal(result.code, 0);
+      assert.match(result.output, /Cancelled; inspect config status for the last save attempt/);
+      assert.doesNotMatch(result.output, /Cancelled; no selections saved/);
+      assert.equal(readFileSync(path, "utf8"), replacement);
+    }
   },
 );
