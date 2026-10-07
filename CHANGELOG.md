@@ -4,6 +4,9 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Clarify that lean planning drafts and critiques plans in the conversation
+  without changing files or writing code; preserve explicit-only invocation.
+
 - Prefer useful visual explanations, comparable actual interface captures and
   accessible equivalents while labeling illustrations and respecting task scope.
 
