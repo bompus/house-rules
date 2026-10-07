@@ -4,6 +4,10 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Explicit maintainability reviews now support entire repositories and
+  subsystems, account for coverage gaps, and distinguish structure from
+  correctness, UI, tests and measured performance.
+
 - Share review evidence assessment, weakened-test accounting and verification
   limits through the existing code-review skill.
 

@@ -1,18 +1,26 @@
 ---
 name: hr-maintainability-review
-description: Strict review of a branch's changes for maintainability and structure, not correctness, looking for restructurings that remove complexity while behavior stays the same. Use when the user explicitly asks for a strict, deep or harsh structure or maintainability review.
+description: "Review a diff or an entire codebase for maintainability and structure, preserving behavior. Use when explicitly requested for a strict, deep, harsh or thermo-nuclear maintainability review. Report-only; correctness, UI quality, test coverage and measured performance need separate assessments."
 disable-model-invocation: true
 ---
 
 # Maintainability review
 
-A demanding read of one branch's changes, asking a single question: is this
+A demanding read of the requested code, asking a single question: is this
 the simplest shape the code could take while doing exactly what it does now?
 Correctness is out of scope. For a routine review against repository
 standards, use `hr-code-review`; for hunting a bug, use `hr-diagnosing-bugs`. This
 review changes no code; it reports findings and a verdict.
 
-## Gather the change
+## Choose the scope
+
+Use the user's requested scope: a diff, a subsystem or the entire repository.
+Record the revision and whether working-tree and untracked files are included.
+For a whole-codebase review, recent changes may inform priority but never narrow
+coverage to touched files. If the request names no scope, use the current
+branch's changes against the repository's default branch.
+
+### Diff review
 
 1. Find the branch's base with the repository's default branch, not a guessed
    name, and read the full diff against it.
@@ -24,6 +32,21 @@ review changes no code; it reports findings and a verdict.
 
 Done when you can explain, for every touched file, what it owned before the
 change and what it owns now.
+
+### Whole-repository or subsystem review
+
+1. Inventory the in-scope packages, modules, entry points and shared code.
+   Record generated and vendor code, exclusions and inaccessible areas.
+2. Review each area and trace its consumers and cross-module boundaries.
+   Read candidate files whole; inspect callers, tests and configuration before
+   declaring a layer, branch or helper unnecessary. Search dynamic and string
+   references too when proposing deletion.
+3. Record each area's assessment, supporting files and remaining gaps. Mark
+   an area assessed only after inspecting its implementation and relevant
+   consumers; inventory or file counts alone do not establish coverage.
+
+Done when every inventoried area has an assessment or an explicit unreviewed
+disposition. Report gaps rather than claiming a complete audit from a sample.
 
 ## What to challenge
 
@@ -102,7 +125,10 @@ For each finding, give in order:
 
 ## Verdict
 
-End with a verdict on structure in three parts:
+Include the scope and coverage limits with the verdict. A whole-repository
+review uses **Priority fixes**, **Optional** and **Overall**: rank current
+maintenance costs and state what was assessed, rather than judging whether
+existing code is ready to merge. For a diff, use these three parts:
 
 - **Before merge**: findings whose shape will be expensive to undo once other
   code depends on it, each with its restructure.
@@ -112,7 +138,7 @@ End with a verdict on structure in three parts:
 
 If nothing must change, the "Before merge" list says "none".
 
-Working behavior alone does not make the structure ready. Each of these
+For diff reviews, working behavior alone does not make the structure ready. Each of these
 goes under "Before merge" unless the author gives a clear reason to keep it:
 
 - a visible restructure that would delete much of the change's incidental
@@ -123,6 +149,26 @@ goes under "Before merge" unless the author gives a clear reason to keep it:
   without paying for it;
 - a near-copy of an existing helper, or logic placed outside the module
   that owns the concept.
+
+## Other assessments
+
+For a request combining several kinds of review, account for each separately:
+
+- **Correctness:** `hr-code-review` assesses a diff against requirements;
+  `hr-diagnosing-bugs` investigates a concrete suspected failure. Neither a
+  structural verdict nor a diff review establishes whole-codebase correctness.
+- **UI:** use the available `hr-better-*` skills for the requested layout,
+  typography, colors, accessibility or interface copy; `hr-stock-ui-audit`
+  targets template-default styling.
+- **Tests:** `hr-test-audit` assesses test value and duplication. Record test
+  execution and coverage separately; do not infer coverage from test count.
+- **Performance:** `hr-benchmarking` measures an authorized workload; inspect
+  build artifacts when bundle size is requested. Label unmeasured claims.
+- **Agent guidance:** `hr-agent-guidance-audit` checks rules, skills and their
+  references for duplication, contradictions and stale instructions.
+
+Use these workflows only for the requested dimensions and within their
+invocation policies. Report unavailable or unassessed dimensions explicitly.
 
 ## Tone
 
