@@ -193,6 +193,12 @@ test("ranking ignores stale explanations and finds late diagnostics without coun
       output: "Example:\n```text\ncat: docs/x.md: No such file or directory\n```",
     }),
     JSON.stringify({ output: "cat: docs/x.md: No such file or directory" }),
+    ...["~~~", "```", "````text"].map((inner) =>
+      JSON.stringify({
+        chunk_id: "example",
+        output: "````text\n" + inner + "\ncat: docs/x.md: No such file or directory\n````",
+      }),
+    ),
   ];
   jsonl(join(home, "session.jsonl"), [
     { type: "session_meta", payload: { cwd: join(home, "myrepo") } },
@@ -212,7 +218,7 @@ test("ranking ignores stale explanations and finds late diagnostics without coun
     }),
   ]);
   expect(ranked(home)[0]).toMatchObject({
-    tools: 6,
+    tools: 9,
     misses: 2,
     widen: 1,
     rereads: 1,

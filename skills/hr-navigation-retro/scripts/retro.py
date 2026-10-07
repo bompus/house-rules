@@ -303,13 +303,16 @@ def missing_path(text, is_error=False):
     """Inspect complete result diagnostics, including serialized shell outputs."""
     lines = text.splitlines()
     decoder = json.JSONDecoder()
-    fenced = False
+    fence = None
     for line in lines:
         rest = line.lstrip()
-        if rest.startswith(('```', '~~~')):
-            fenced = not fenced
+        marker = re.match(r'(`{3,}|~{3,})(.*)$', rest)
+        if fence:
+            if marker and marker[1][0] == fence[0] and len(marker[1]) >= len(fence) and not marker[2].strip():
+                fence = None
             continue
-        if fenced:
+        if marker:
+            fence = marker[1]
             continue
         while rest.startswith('{'):
             try:
