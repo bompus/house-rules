@@ -318,7 +318,11 @@ export async function setupCommand(argv) {
           try {
             writeConfiguration(snapshot, current.next, snapshot.revision);
           } catch (error) {
-            if (readConfiguration(snapshot.path).revision !== snapshot.revision) stale = true;
+            try {
+              if (readConfiguration(snapshot.path).revision !== snapshot.revision) stale = true;
+            } catch {
+              stale = true;
+            }
             throw error;
           }
           const saved = readConfiguration(snapshot.path);
