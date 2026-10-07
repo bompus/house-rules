@@ -1,6 +1,6 @@
 ---
 name: hr-lean-plan
-description: Write or critique an implementation plan so it reaches the goal with the fewest moving parts, before any code is written. Use when the user asks for an implementation plan, or asks to review or tighten an existing one.
+description: "Draft or critique an implementation plan in the conversation, with the fewest moving parts, before implementation. Use when asked to plan, review or tighten an approach without changing files or writing code; saving a plan file or implementing the work falls outside this read-only mode."
 disable-model-invocation: true
 ---
 
