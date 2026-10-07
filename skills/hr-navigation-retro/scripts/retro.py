@@ -224,7 +224,9 @@ def events(path):
             yield emit(("meta", None, record.get("aiTitle", ""), False))
         if record.get("cwd"):
             yield emit(("meta", record["cwd"], "", False))
-        message = record.get("message") or {}
+        message = record.get("message")
+        if not isinstance(message, dict):
+            continue
         content = message.get("content")
         role = message.get('role', record.get('type'))
         if isinstance(content, str):
@@ -232,12 +234,16 @@ def events(path):
                 yield emit((role, content))
             continue
         for part in content if isinstance(content, list) else []:
+            if not isinstance(part, dict):
+                continue
             kind = part.get("type")
             if kind == "text":
                 if role in ('user', 'assistant'):
                     yield emit((role, part.get("text", "")))
             elif kind == "tool_use":
-                inp = part.get("input") or {}
+                inp = part.get("input")
+                if not isinstance(inp, dict):
+                    continue
                 arg = inp.get("command") or inp.get("file_path") or inp.get("pattern") or inp.get("query") or inp.get("prompt") or json.dumps(inp)
                 yield emit(("call", part.get("name") or "", str(arg), part.get("id")))
             elif kind == "tool_result":

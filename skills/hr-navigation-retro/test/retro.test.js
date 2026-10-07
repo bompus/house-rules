@@ -570,3 +570,28 @@ test("non-object JSON records do not discard valid neighboring events", () => {
   expect(row.misses).toBe(baseline.misses);
   expect(retro(home, "timeline", path)).toContain("#1 Grep");
 });
+
+for (const malformed of [
+  { message: "x" },
+  { message: { role: "assistant", content: ["x", null, 7] } },
+  { message: { role: "assistant", content: [{ type: "tool_use", name: "Read", input: "x" }] } },
+  { message: { role: "assistant", content: [{ type: "tool_use", name: "Read", input: [] }] } },
+]) {
+  test(`malformed Claude fields preserve neighboring valid events: ${JSON.stringify(malformed)}`, () => {
+    const home = fixtureHome();
+    const path = join(home, ".claude/projects/-myrepo/claude-session.jsonl");
+    const original = readFileSync(path, "utf8");
+    const baseline = ranked(home).find((row) => row.path === path);
+    writeFileSync(
+      path,
+      `${JSON.stringify({ timestamp: new Date().toISOString(), type: "assistant", ...malformed })}\n${original}`,
+    );
+    const row = ranked(home).find((entry) => entry.path === path);
+    expect(row).toMatchObject({
+      tools: baseline.tools,
+      misses: baseline.misses,
+      rereads: baseline.rereads,
+    });
+    expect(retro(home, "timeline", path)).toContain("!! No matches found");
+  });
+}
