@@ -4,6 +4,10 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Relay guidance now clarifies whether a handoff informs or requests work, names
+  its action, repository and owner, and distinguishes source changes, installation
+  and guidance additions while preserving verified authority and scope.
+
 - Release batching now audits documentation, comparisons, performance claims,
   announcement materials and release notes against verified state before
   releases or public announcements.
