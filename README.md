@@ -150,9 +150,12 @@ and reconcile existing notice files before replacing them. A full
 skill, keep its entire directory, including any `NOTICE.md` and `LICENSE`.
 Personal layers must also carry notices required by their own sources.
 
-The `hr-navigation-retro` skill analyzes selected Claude Code and Codex raw
-transcripts to find navigation failures, then proposes fixes verified against
-current source. It is explicit-only and requires Python 3.11+. Its reports stay local.
+The `hr-navigation-retro` skill finds navigation failures in selected tool-call
+transcripts, then proposes fixes verified against current source. Any agent with
+file and shell access can run it. Supported inputs include Claude Code, Codex,
+OpenCode exports, Cursor CLI streams and ACP v1 recordings from other agents.
+See its [input limits](skills/hr-navigation-retro/references/inputs.md).
+It is explicit-only, requires Python 3.11+ and keeps reports local.
 
 ## Upgrading skill names
 

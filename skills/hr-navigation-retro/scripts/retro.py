@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Navigation analysis of explicitly selected Claude Code and Codex transcripts.
+"""Navigation analysis of explicitly selected coding-agent transcripts.
 
   retro.py rank --repo-root NAME=ROOT ... [--since-days 30] [--repo NAME ...]
                [--top 8] [--subagents] [--json PATH] TRANSCRIPT ...
@@ -30,8 +30,9 @@ Per-session metrics:
             score) among sessions with at least --min-tools calls, so a long
             session does not outrank a short one by length alone.
 
-Limits: only the supported Claude and Codex JSONL event formats. Missing or malformed event
-timestamps are excluded from rank; timeline stays complete. Repository names
+Limits: Claude/Codex JSONL, OpenCode JSON exports, Cursor stream JSON and ACP v1
+recordings. All recorded events are included unless --since-days is requested;
+missing or malformed timestamps are excluded from dated rank. Repository names
 come from explicit root mappings and each command's working directory, falling
 back to session metadata. Unmapped paths remain unknown.
 One batched call counts once in each participating repository, so summed rows
@@ -50,13 +51,16 @@ import re
 import sys
 import time
 import shlex
+import math
 from datetime import datetime, timezone
+from transcripts import records, opencode, acp_update, acp_calls, acp, cursor
 
 if sys.version_info < (3, 11):
     sys.exit("retro.py requires Python 3.11 or newer")
 
 HOME = os.path.expanduser("~")
 REPO_ROOTS = []
+DEFAULT_CWD = None
 NAV_TOOLS = {"Read", "Grep", "Glob", "LS"}
 EDIT_TOOLS = {"Edit", "Write", "MultiEdit", "NotebookEdit", "apply_patch"}
 NAV_SHELL = re.compile(
@@ -77,7 +81,7 @@ STALE = re.compile(
 
 
 def repo_of(cwd):
-    if not cwd or not os.path.isabs(cwd):
+    if not isinstance(cwd, str) or not cwd or not os.path.isabs(cwd):
         return "?"
     path = os.path.normcase(os.path.normpath(cwd))
     for name, root in REPO_ROOTS:
@@ -146,6 +150,8 @@ def shell_commands(name, arg, cwd):
             return [(arg, cwd)]
         value = parsed.get("cmd") or parsed.get("command") if isinstance(parsed, dict) else None
         if isinstance(value, list):
+            if not all(isinstance(part, str) for part in value):
+                return [(None, parsed.get('workdir', cwd))]
             command = value[-1] if len(value) >= 3 and value[1] in ('-c', '-lc') else ' '.join(value)
             return [(command, parsed.get('workdir', cwd))]
         return [(value if isinstance(value, str) else arg, parsed.get('workdir', cwd) if isinstance(parsed, dict) else cwd)]
@@ -180,28 +186,49 @@ def command_context(command, cwd):
 
 def timestamp(value):
     try:
+        if isinstance(value, (int, float)) and not isinstance(value, bool):
+            return (value / 1000 if value > 100_000_000_000 else value) if math.isfinite(value) else None
         date = datetime.fromisoformat(value)
         return date.replace(tzinfo=timezone.utc).timestamp() if date.tzinfo is None else date.timestamp()
     except (TypeError, ValueError, OverflowError):
         return None
 
 
-def events(path):
+def raw_events(path):
     """Normalized events from a Claude or Codex transcript.
 
     ("meta", cwd, title, sub) | ("context", cwd) | ("user", text) | ("assistant", text)
     | ("call", name, arg, id) | ("result", id, text, is_error), each followed
     by its record timestamp in seconds, or None when unavailable.
     """
-    for line in open(path, errors="replace"):
-        try:
-            record = json.loads(line)
-        except ValueError:
+    if DEFAULT_CWD:
+        yield ('meta', DEFAULT_CWD, '', False, None)
+    calls, seen, finished, cursor_seen = None, set(), set(), set()
+    session_ids = set()
+    for record in records(path):
+        if isinstance(record.get('messages'), list) and isinstance(record.get('info'), dict):
+            yield from opencode(record, timestamp)
             continue
-        if not isinstance(record, dict):
+        session, update = acp_update(record)
+        if isinstance(update, dict):
+            if isinstance(session, str) and session:
+                session_ids.add(session)
+                if len(session_ids) > 1:
+                    raise ValueError('select one ACP session per transcript')
+            if calls is None:
+                calls = acp_calls(path)
+            yield from acp(record, calls, seen, finished, timestamp)
+            continue
+        if record.get('method') in ('session/new', 'session/load', 'session/resume'):
+            params = record.get('params')
+            if isinstance(params, dict) and isinstance(params.get('cwd'), str):
+                yield ('context', params['cwd'], timestamp(record.get('timestamp')))
+            continue
+        if record.get('type') == 'tool_call' and isinstance(record.get('tool_call'), dict):
+            yield from cursor(record, cursor_seen, timestamp)
             continue
         payload = record.get("payload")
-        stamp = timestamp(record.get('timestamp'))
+        stamp = timestamp(record.get('timestamp_ms')) or timestamp(record.get('timestamp'))
         emit = lambda event: (*event, stamp)
         if isinstance(payload, dict):
             kind = payload.get("type")
@@ -250,11 +277,34 @@ def events(path):
                 yield emit(("result", part.get("tool_use_id"), text_of(part.get("content")), bool(part.get("is_error"))))
 
 
-def scan(path, sub=False, cutoff=0):
+def events(path):
+    chunks = []
+    role, stamp = None, None
+    for event in raw_events(path):
+        kind = event[0]
+        if kind in ('user_chunk', 'assistant_chunk'):
+            next_role = kind.removesuffix('_chunk')
+            if role and next_role != role:
+                yield (role, ''.join(chunks), stamp)
+                chunks = []
+            if not chunks:
+                role, stamp = next_role, event[-1]
+            chunks.append(event[1])
+            continue
+        if chunks:
+            yield (role, ''.join(chunks), stamp)
+            chunks, role = [], None
+        yield event
+    if chunks:
+        yield (role, ''.join(chunks), stamp)
+
+
+def scan(path, sub=False, cutoff=None):
     rows = {}
     cwd, title, prompt, index = None, '', '', 0
     last_repos = set()
     pending = {}
+    total_calls, undated = 0, 0
     def state(repo):
         if repo not in rows:
             rows[repo] = dict(path=path, repo=repo, sub=sub, title=title, prompt=prompt,
@@ -279,7 +329,9 @@ def scan(path, sub=False, cutoff=0):
             continue
         if kind == 'call':
             index += 1  # Same full-transcript numbering as timeline.
-        if stamp is None or stamp < cutoff:
+            total_calls += 1
+            undated += stamp is None
+        if cutoff is not None and (stamp is None or stamp < cutoff):
             continue
         elif kind == "user":
             text = event[1].strip()
@@ -336,6 +388,11 @@ def scan(path, sub=False, cutoff=0):
                 s['last_miss'] = call_index
                 if len(s["missExamples"]) < 8:
                     s["missExamples"].append([call_index, name, arg[:160]])
+    if not total_calls:
+        print(f'warning: no supported tool-call evidence in {path}', file=sys.stderr)
+    if undated:
+        action = 'excluded from dated ranking' if cutoff is not None else 'included without date filtering'
+        print(f'warning: {undated} undated tool calls {action} in {path}', file=sys.stderr)
     for s in rows.values():
         reads = s.pop('reads')
         s.pop('last_miss')
@@ -348,7 +405,7 @@ def scan(path, sub=False, cutoff=0):
 
 
 def rank(args):
-    cutoff = time.time() - args.since_days * 86400
+    cutoff = time.time() - args.since_days * 86400 if args.since_days is not None else None
     sessions = [row for path in args.transcripts
                 for row in scan(path, "/subagents/" in path.replace("\\", "/"), cutoff)]
     sessions = [s for s in sessions if s["tools"] and (args.subagents or not s["sub"])]
@@ -404,21 +461,30 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     commands = parser.add_subparsers(dest="command", required=True)
     r = commands.add_parser("rank", help="summarize repositories and rank sessions by friction")
-    r.add_argument("--since-days", type=float, default=30)
+    r.add_argument("--since-days", type=float, help="rank only this recent window; excludes undated events (default: all recorded events)")
     r.add_argument("--repo", action="append", help="filter output by repository name; does not limit input access")
     r.add_argument("--repo-root", action="append", required=True, metavar="NAME=ROOT",
                    help="repository name and absolute recorded root; repeat for multiple checkouts")
-    r.add_argument("transcripts", nargs="+", metavar="TRANSCRIPT", help="explicit JSONL inputs; no store discovery")
+    r.add_argument("transcripts", nargs="+", metavar="TRANSCRIPT", help="explicit JSON/JSONL inputs; no store discovery")
     r.add_argument("--top", type=int, default=8)
     r.add_argument("--min-sessions", type=int, default=3)
     r.add_argument("--min-tools", type=int, default=100, help="shortest session the top list ranks")
     r.add_argument("--sort", choices=("rate", "score"), default="rate")
-    r.add_argument("--subagents", action="store_true", help="include Claude subagent and Codex exec transcripts")
+    r.add_argument("--subagents", action="store_true", help="include transcripts identified as subagent sessions")
     r.add_argument("--json", help="also write every session's metrics to this file")
     t = commands.add_parser("timeline", help="print one transcript compactly")
     t.add_argument("transcript")
     t.add_argument("--width", type=int, default=240)
+    for command in (r, t):
+        command.add_argument('--cwd', help='fallback absolute recorded session cwd when the transcript omits it')
     args = parser.parse_args()
+    if args.command == 'rank' and args.since_days is not None and (not math.isfinite(args.since_days) or args.since_days < 0):
+        parser.error('--since-days requires a finite nonnegative number')
+    global DEFAULT_CWD
+    if args.cwd:
+        if not os.path.isabs(args.cwd):
+            parser.error('--cwd requires an absolute recorded session directory')
+        DEFAULT_CWD = args.cwd
     if args.command == "rank":
         roots = {}
         for mapping in args.repo_root:
@@ -441,7 +507,10 @@ def main():
                              (os.path.exists(args.json) and os.path.samefile(args.json, path))):
                 parser.error("--json cannot overwrite an input transcript")
         args.transcripts = paths
-    (rank if args.command == "rank" else timeline)(args)
+    try:
+        (rank if args.command == "rank" else timeline)(args)
+    except (OSError, ValueError) as error:
+        parser.error(str(error))
 
 
 if __name__ == "__main__":

@@ -191,6 +191,256 @@ test("timeline flags the empty search and the missing file", () => {
   expect(codex).toContain("!! ls: cannot access 'missing'");
 });
 
+test.each(["opencode", "cursor", "acp"])(
+  "%s navigation evidence retains call counts, misses and read paths",
+  (format) => {
+    const home = mkdtempSync(join(process.env.HOUSE_RULES_TEST_TMP ?? tmpdir(), "retro-native-"));
+    homes.push(home);
+    const cwd = join(home, "repo");
+    const path = join(home, "session.json");
+    const now = Date.now();
+    const calls = [
+      ["grep", { pattern: "oldName" }, "No matches found"],
+      ["glob", { pattern: "**/oldName*" }, "No files found"],
+      ...[1, 2, 3].map(() => ["read", { filePath: join(cwd, "README.md") }, "content"]),
+      ["bash", { command: "cat missing.txt", workdir: cwd }, "ENOENT"],
+      ["edit", { filePath: join(cwd, "README.md") }, "ok"],
+    ];
+    if (format === "opencode") {
+      writeFileSync(
+        path,
+        JSON.stringify(
+          {
+            info: { directory: cwd, title: "Find oldName", time: { created: now } },
+            messages: [
+              {
+                info: { role: "assistant", path: { cwd }, time: { created: now } },
+                parts: calls.map(([tool, input, output], i) => ({
+                  type: "tool",
+                  callID: String(i),
+                  tool,
+                  state: { status: "completed", input, output, time: { start: now, end: now } },
+                })),
+              },
+            ],
+          },
+          null,
+          2,
+        ),
+      );
+    } else if (format === "cursor") {
+      jsonl(path, [
+        { type: "system", cwd },
+        ...calls.flatMap(([name, args, content], i) => {
+          const body =
+            name === "read"
+              ? {
+                  readToolCall: { args: { path: args.filePath }, result: { success: { content } } },
+                }
+              : {
+                  function: { name, arguments: JSON.stringify(args) },
+                  result: { success: content },
+                };
+          return ["started", "completed"].map((subtype) => ({
+            type: "tool_call",
+            subtype,
+            call_id: String(i),
+            timestamp_ms: now,
+            tool_call: body,
+          }));
+        }),
+      ]);
+    } else {
+      jsonl(path, [
+        { method: "session/load", params: { sessionId: "s", cwd } },
+        ...calls.flatMap(([name, rawInput, rawOutput], i) => [
+          {
+            method: "session/update",
+            params: {
+              sessionId: "s",
+              update: {
+                sessionUpdate: "tool_call",
+                toolCallId: String(i),
+                status: "pending",
+                name,
+              },
+            },
+          },
+          {
+            method: "session/update",
+            params: {
+              sessionId: "s",
+              update: {
+                sessionUpdate: "tool_call_update",
+                toolCallId: String(i),
+                rawInput,
+                status: "in_progress",
+                content: [{ type: "content", content: { type: "text", text: "progress" } }],
+              },
+            },
+          },
+          {
+            method: "session/update",
+            params: {
+              sessionId: "s",
+              update: {
+                sessionUpdate: "tool_call_update",
+                toolCallId: String(i),
+                rawInput: null,
+                status: "completed",
+                rawOutput,
+              },
+            },
+          },
+        ]),
+      ]);
+    }
+    const out = join(home, "metrics.json");
+    execFileSync("python3", [script, "rank", "--repo-root", `app=${cwd}`, "--json", out, path]);
+    expect(JSON.parse(readFileSync(out, "utf8"))).toEqual([
+      expect.objectContaining({
+        repo: "app",
+        tools: 7,
+        nav: 6,
+        navEdit: 6,
+        misses: 3,
+        widen: 2,
+        rereads: 1,
+      }),
+    ]);
+    const timeline = execFileSync("python3", [script, "timeline", path], { encoding: "utf8" });
+    expect(timeline).toContain("#7 Edit:");
+    expect(timeline).toContain("!! No matches found");
+    expect(timeline).not.toContain("#8");
+  },
+);
+
+test("undated ACP evidence needs an explicit cwd and warns when a date window excludes it", () => {
+  const home = mkdtempSync(join(process.env.HOUSE_RULES_TEST_TMP ?? tmpdir(), "retro-undated-"));
+  homes.push(home);
+  const path = join(home, "acp.jsonl");
+  writeFileSync(
+    path,
+    [
+      {
+        sessionUpdate: "tool_call",
+        toolCallId: "a",
+        kind: "read",
+        locations: [{ path: "README.md" }],
+      },
+      { sessionUpdate: "tool_call_update", toolCallId: "a", status: "failed", rawOutput: "ENOENT" },
+    ]
+      .map(JSON.stringify)
+      .join("\n"),
+  );
+  const out = join(home, "metrics.json");
+  const args = [script, "rank", "--cwd", home, "--repo-root", `app=${home}`, "--json", out, path];
+  const all = spawnSync("python3", args, { encoding: "utf8" });
+  expect(all.status).toBe(0);
+  expect(all.stderr).toContain("1 undated tool calls included without date filtering");
+  expect(JSON.parse(readFileSync(out, "utf8"))).toEqual([
+    expect.objectContaining({ repo: "app", tools: 1, misses: 1 }),
+  ]);
+  const dated = spawnSync("python3", [...args, "--since-days", "30"], { encoding: "utf8" });
+  expect(dated.status).toBe(0);
+  expect(dated.stderr).toContain("excluded from dated ranking");
+  expect(JSON.parse(readFileSync(out, "utf8"))).toEqual([]);
+  writeFileSync(path, JSON.stringify({ type: "result", result: "Done" }));
+  const textOnly = spawnSync("python3", args, { encoding: "utf8" });
+  expect(textOnly.stderr).toContain("no supported tool-call evidence");
+});
+
+test("ACP replacement content and duplicate completions do not invent search misses", () => {
+  const home = mkdtempSync(join(process.env.HOUSE_RULES_TEST_TMP ?? tmpdir(), "retro-acp-state-"));
+  homes.push(home);
+  const path = join(home, "session.jsonl");
+  const update = (data) => ({ update: { toolCallId: "a", ...data } });
+  jsonl(path, [
+    update({ sessionUpdate: "tool_call", kind: "search" }),
+    update({
+      sessionUpdate: "tool_call_update",
+      content: [{ type: "content", content: { type: "text", text: "No matches found" } }],
+    }),
+    update({
+      sessionUpdate: "tool_call_update",
+      status: "completed",
+      content: [{ type: "terminal", terminalId: "ENOENT" }],
+    }),
+    update({ sessionUpdate: "tool_call_update", status: "completed" }),
+  ]);
+  const out = join(home, "metrics.json");
+  execFileSync("python3", [
+    script,
+    "rank",
+    "--cwd",
+    home,
+    "--repo-root",
+    `app=${home}`,
+    "--json",
+    out,
+    path,
+  ]);
+  expect(JSON.parse(readFileSync(out, "utf8"))).toEqual([
+    expect.objectContaining({ tools: 1, nav: 1, misses: 0 }),
+  ]);
+  jsonl(path, [
+    { sessionId: "one", update: { sessionUpdate: "tool_call", toolCallId: "a", kind: "read" } },
+    { sessionId: "two", update: { sessionUpdate: "tool_call", toolCallId: "a", kind: "read" } },
+  ]);
+  const mixed = spawnSync("python3", [script, "rank", "--repo-root", `app=${home}`, path], {
+    encoding: "utf8",
+  });
+  expect(mixed.status).not.toBe(0);
+  expect(mixed.stderr).toContain("select one ACP session per transcript");
+});
+
+test("ACP fragments and unresolved inputs preserve evidence without inventing read paths", () => {
+  const home = mkdtempSync(join(process.env.HOUSE_RULES_TEST_TMP ?? tmpdir(), "retro-acp-gaps-"));
+  homes.push(home);
+  const path = join(home, "session.jsonl");
+  const chunk = (sessionUpdate, value) => ({
+    update: { sessionUpdate, content: { type: "text", text: value } },
+  });
+  jsonl(path, [
+    chunk("user_message_chunk", "Find "),
+    chunk("user_message_chunk", "the config"),
+    ...["1", "2", "3"].map((toolCallId) => ({
+      update: { sessionUpdate: "tool_call", kind: "read", toolCallId },
+    })),
+    {
+      update: {
+        sessionUpdate: "tool_call",
+        toolCallId: "4",
+        kind: "execute",
+        rawInput: { command: [1] },
+      },
+    },
+    chunk("agent_message_chunk", "The README "),
+    chunk("agent_message_chunk", "still says oldName."),
+  ]);
+  const out = join(home, "metrics.json");
+  execFileSync("python3", [
+    script,
+    "rank",
+    "--cwd",
+    home,
+    "--repo-root",
+    `app=${home}`,
+    "--json",
+    out,
+    path,
+  ]);
+  expect(JSON.parse(readFileSync(out, "utf8"))).toEqual([
+    expect.objectContaining({
+      prompt: "Find the config",
+      tools: 4,
+      rereads: 0,
+      rereadFiles: [],
+      stale: 1,
+    }),
+  ]);
+});
+
 function ranked(home) {
   const out = join(home, "rank.json");
   retro(

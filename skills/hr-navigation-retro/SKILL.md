@@ -1,13 +1,14 @@
 ---
 name: hr-navigation-retro
-description: "Audit agent navigation using selected Claude Code and Codex raw transcripts: rank misses, widened searches, re-reads and stale-doc remarks, verify findings against current repositories, and propose findability fixes. Use for agent-navigation retrospectives or re-measuring navigation fixes; general project retrospectives are outside this scope."
+description: "Audit agent navigation using selected tool-call transcripts: rank misses, widened searches, re-reads and stale-doc remarks, verify findings against current repositories, and propose findability fixes. Use for agent-navigation retrospectives or re-measuring navigation fixes; general project retrospectives are outside this scope."
 argument-hint: "<transcript ...> --repo-root NAME=ROOT"
 disable-model-invocation: true
 ---
 
 # Navigation retro
 
-Find navigation failures in raw tool-call evidence, then verify their causes
+Any coding agent with file and shell access can run this workflow. Find
+navigation failures in recorded tool-call evidence, then verify their causes
 against current source. Ordinary guidance audits belong to
 `hr-agent-guidance-audit`. Changes need their existing implementation authority;
 a request for a retrospective alone authorizes the investigation and proposals.
@@ -23,9 +24,10 @@ a request for a retrospective alone authorizes the investigation and proposals.
    prompts, commands, assistant text and paths. Truncation is not redaction.
 
 The bundled [parser](scripts/retro.py) requires Python 3.11 or newer and uses only
-the standard library. It handles
-supported Claude Code and Codex JSONL events. Its header defines metrics and
-limitations. It reads selected files, executes no recorded commands and makes
+the standard library. It accepts Claude Code and Codex JSONL, OpenCode JSON
+exports, Cursor CLI stream JSON and recorded ACP v1 updates.
+Read [input formats and limits](references/inputs.md) before selecting evidence.
+Its header defines metrics and limitations. It reads selected files, executes no recorded commands and makes
 no network calls. `--json` overwrites its output; choose a task-owned output file.
 `--repo` filters results after analysis and does not restrict which inputs are read.
 
@@ -37,9 +39,13 @@ these commands. Pass actual selected paths for the placeholders:
 ```bash
 python3 <skill-directory>/scripts/retro.py rank \
   --repo-root app=<absolute-recorded-repository-root> \
-  --since-days 30 --json <task-scratch>/retro.json \
+  --json <task-scratch>/retro.json \
   <selected-transcript.jsonl> <another-selected-transcript.jsonl>
 ```
+
+All selected events are included by default. Use `--since-days 30` for a dated
+window; undated events are excluded with a warning. If a recording omits its
+working directory, pass its actual recorded directory with `--cwd`.
 
 Repeat `--repo-root` for multiple repositories or checkouts. The most specific
 matching root owns a command; unmapped or unresolved paths remain unknown.

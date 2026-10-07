@@ -7,6 +7,10 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 - Clarify that agent guidance audits cover the requested repository scope,
   including skill description accuracy.
 
+- Extend navigation retrospectives to OpenCode JSON exports, Cursor CLI stream
+  JSON and ACP v1 recordings. Include undated events by default, warn about
+  missing tool evidence and require timestamps only for explicit date windows.
+
 - Add an explicit-only navigation retrospective with selected transcript inputs,
   repository-root mappings, supported Claude/Codex metrics and synthetic tests.
   Transcript discovery and sensitive findings stay with the host.
