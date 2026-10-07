@@ -17,7 +17,8 @@ and 2 when coverage cannot be verified. It checks unresolved threads, pending
 CodeRabbit review, skipped review statuses and a missing check when the head
 contains `.coderabbit.yaml`. It also checks bot review bodies with outside-diff,
 nitpick or duplicate findings. A completed CodeRabbit CheckRun must conclude SUCCESS;
-failed, cancelled, skipped or missing conclusions block the gate. It does not
+failed, cancelled, skipped or missing conclusions block the gate. A CodeRabbit status also requires SUCCESS
+and a description starting with "Review completed". It does not
 check every CI result or authorize landing.
 
 To acknowledge a bot review body, post one PR conversation comment using the

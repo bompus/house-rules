@@ -379,7 +379,10 @@ export function openFeedback(pr: ReviewState): string[] {
       open.push(`${RUNNING}${name}`);
     } else if (ctx.name !== undefined && ctx.conclusion !== "SUCCESS") {
       open.push(`${name} review concluded ${ctx.conclusion ?? "(missing conclusion)"}: ${ASK}`);
-    } else if (ctx.context !== undefined && !REVIEWED.test(ctx.description ?? "")) {
+    } else if (
+      ctx.context !== undefined &&
+      (ctx.state !== "SUCCESS" || !REVIEWED.test(ctx.description ?? ""))
+    ) {
       open.push(`${name} did not review the head commit ("${ctx.description ?? ""}"): ${ASK}`);
     }
   }

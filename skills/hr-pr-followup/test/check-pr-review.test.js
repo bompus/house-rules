@@ -118,6 +118,15 @@ test("blocks a CodeRabbit status that is not a completed review", () => {
   expect(openFeedback(pr({ contexts: [otherCheck] }))).toEqual([]);
 });
 
+test("failed review statuses cannot pass with a completion description", () => {
+  for (const state of ["FAILURE", "ERROR"]) {
+    const ctx = { context: "CodeRabbit", state, description: "Review completed" };
+    expect(openFeedback(pr({ contexts: [ctx] }))).toHaveLength(1);
+  }
+  const ctx = { context: "CodeRabbit", state: "SUCCESS", description: "Review completed" };
+  expect(openFeedback(pr({ contexts: [ctx] }))).toEqual([]);
+});
+
 // Hand-written wait loops read a field that stays blank and never stopped; --wait polls this way.
 test("waitForReview polls while the review runs and stops when it finishes or time runs out", async () => {
   const running = pr({ contexts: [{ context: "CodeRabbit", state: "PENDING" }] });
