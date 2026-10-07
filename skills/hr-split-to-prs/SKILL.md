@@ -1,6 +1,6 @@
 ---
 name: hr-split-to-prs
-description: Split a branch, working tree or proposed change into coherent pull requests when the user asks to divide the work.
+description: Split a branch, chat or set of changes into small reviewable PRs when the user asks to divide the work.
 ---
 
 # Split work into pull requests
