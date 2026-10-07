@@ -45,8 +45,9 @@ After the head changes, refresh the evidence before reporting readiness.
 Name the exact revision, failed or unfinished gates and unresolved decisions.
 Clean CI alone is not evidence that every review finding was handled.
 
-When landing is authorized and every required gate passes, finish through the
-repository's landing and synchronization procedure. Otherwise report the
+When landing is authorized, every required gate passes, and all enabled landing
+conditions are satisfied, finish through the repository's landing and
+synchronization procedure. Otherwise report the
 verified readiness and the landing decision needed under the user's rules.
 Do not enable automatic merging or change draft/review state unless that action
 is authorized. Release publication remains a separate decision.
