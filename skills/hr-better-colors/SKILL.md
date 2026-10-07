@@ -48,7 +48,7 @@ Never borrow a token because its value is right today. A separator used as a tex
 
 Four properties define a well-formed ramp:
 
-- Steps follow a deliberate *perceived* lightness progression, with denser spacing at the light end ([palette-generation.md](palette-generation.md)).
+- Steps follow a deliberate *perceived* lightness progression ([palette-generation.md](palette-generation.md)).
 - Hue stays constant end to end.
 - Vividness peaks mid-ramp and falls off at both ends.
 - Steps sit denser at the light end than at the dark end.

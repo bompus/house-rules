@@ -20,7 +20,7 @@ When a review bot reviews pull requests, merge only after its check finishes
 and each finding is fixed or answered with a reason, threads resolved. Read
 the review body too: findings outside the diff arrive there, not as threads.
 
-Landing never switches, resets or removes the session's own checkout: no
+During integration, never switch, reset or remove the session's own checkout: no
 `checkout` or `switch` to another ref, no `reset` or branch force-move, and no
 `worktree remove` on it. Updating the default branch it has checked out
 (`merge --squash`, `merge --ff-only`, or `pull --ff-only` after a remote merge)
