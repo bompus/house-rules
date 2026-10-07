@@ -256,6 +256,16 @@ up only leftovers your current authorization covers.
 A coordination roster may omit sessions. Check checkout and branch ownership
 independently before treating them as free.
 
+After an authorized push changes inherited or installed agent guidance, skills,
+subagent definitions, configuration, supporting scripts or tooling, notify
+affected active sessions through an existing authorized update channel. Name
+the component, exact revision or fingerprint, affected paths and actions, and
+whether the change is pushed source or deployed. A source notice does not
+prove deployment. Use the host's supported update procedure and
+`hr-agent-guidance-refresh`; keep pending notices for idle or offline sessions
+until their next boundary or resume. Preserve held evaluation inputs. If no
+channel is authorized or reachable, record the missing delivery and report it.
+
 Stop only processes you started, by the PID you recorded when starting them.
 Never kill by pattern (`pkill -f`, `pgrep | kill`, or a PID found by matching
 a name or path): other sessions' servers and your own agent can match. Prefer
