@@ -8,6 +8,9 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   mocking examples. Keep red-green cycles separate from review-stage simplification
   and preserve fresh-install skill selections.
 
+- Document the Reddit reader's announced November 13, 2026 RSS cutoff,
+  potentially incomplete comment output and partial web-search fallback.
+
 - Add optional GitHub review-feedback and single-thread resolution helpers to
   `hr-pr-followup`, with complete-read checks, dry-run resolution and
   lost-response verification.

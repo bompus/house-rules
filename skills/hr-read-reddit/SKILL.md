@@ -7,8 +7,16 @@ description: Read Reddit threads (post plus comments) and search subreddits in f
 
 Reddit usually answers agent fetches of pages and `.json` with 403, and its
 mirrors are unreliable. Pullpush's archive answers agents with 429 and asks for a
-paid plan, so do not scrape it. Reddit's own Atom feeds still serve full post and comment
-bodies without a key. The bundled script reads them:
+paid plan, so do not scrape it. The bundled script reads post and comment bodies
+returned by Reddit's public Atom feeds without a key. Feed output can omit
+comments; do not present it as an exhaustive thread.
+
+[Reddit's announcement](https://www.reddit.com/r/modnews/comments/1wubgvt/continuing_our_infrastructure_updates_whats/)
+says RSS support ends November 13, 2026. Until then, try the feeds below and
+report any retrieval failure. After the cutoff, use the partial search fallback
+below rather than assuming the feeds remain supported.
+
+Read feeds with:
 
 ```bash
 bun scripts/reddit.ts thread <reddit or redd.it URL>... [--json]
