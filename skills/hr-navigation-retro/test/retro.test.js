@@ -191,6 +191,98 @@ test("timeline flags the empty search and the missing file", () => {
   expect(codex).toContain("!! ls: cannot access 'missing'");
 });
 
+function writeNativeTranscript(path, format, cwd, calls, now) {
+  if (format === "opencode") {
+    writeFileSync(
+      path,
+      JSON.stringify(
+        {
+          info: { directory: cwd, title: "Find oldName", time: { created: now } },
+          messages: [
+            {
+              info: { role: "assistant", path: { cwd }, time: { created: now } },
+              parts: calls.map(([tool, input, output], i) => ({
+                type: "tool",
+                callID: String(i),
+                tool,
+                state: { status: "completed", input, output, time: { start: now, end: now } },
+              })),
+            },
+          ],
+        },
+        null,
+        2,
+      ),
+    );
+  } else if (format === "cursor") {
+    jsonl(path, [
+      { type: "system", cwd },
+      ...calls.flatMap(([name, args, content], i) => {
+        const body =
+          name === "read"
+            ? {
+                readToolCall: { args: { path: args.filePath }, result: { success: { content } } },
+              }
+            : {
+                function: { name, arguments: JSON.stringify(args) },
+                result: { success: content },
+              };
+        return ["started", "completed"].map((subtype) => ({
+          type: "tool_call",
+          subtype,
+          call_id: String(i),
+          timestamp_ms: now,
+          tool_call: body,
+        }));
+      }),
+    ]);
+  } else {
+    jsonl(path, [
+      { method: "session/load", params: { sessionId: "s", cwd } },
+      ...calls.flatMap(([name, rawInput, rawOutput], i) => [
+        {
+          method: "session/update",
+          params: {
+            sessionId: "s",
+            update: {
+              sessionUpdate: "tool_call",
+              toolCallId: String(i),
+              status: "pending",
+              name,
+            },
+          },
+        },
+        {
+          method: "session/update",
+          params: {
+            sessionId: "s",
+            update: {
+              sessionUpdate: "tool_call_update",
+              toolCallId: String(i),
+              rawInput,
+              status: "in_progress",
+              content: [{ type: "content", content: { type: "text", text: "progress" } }],
+            },
+          },
+        },
+        {
+          method: "session/update",
+          params: {
+            sessionId: "s",
+            update: {
+              sessionUpdate: "tool_call_update",
+              toolCallId: String(i),
+              rawInput: null,
+              status: "completed",
+              rawOutput,
+            },
+          },
+        },
+      ]),
+    ]);
+  }
+}
+
 test.each(["opencode", "cursor", "acp"])(
   "%s navigation evidence retains call counts, misses and read paths",
   (format) => {
@@ -206,95 +298,7 @@ test.each(["opencode", "cursor", "acp"])(
       ["bash", { command: "cat missing.txt", workdir: cwd }, "ENOENT"],
       ["edit", { filePath: join(cwd, "README.md") }, "ok"],
     ];
-    if (format === "opencode") {
-      writeFileSync(
-        path,
-        JSON.stringify(
-          {
-            info: { directory: cwd, title: "Find oldName", time: { created: now } },
-            messages: [
-              {
-                info: { role: "assistant", path: { cwd }, time: { created: now } },
-                parts: calls.map(([tool, input, output], i) => ({
-                  type: "tool",
-                  callID: String(i),
-                  tool,
-                  state: { status: "completed", input, output, time: { start: now, end: now } },
-                })),
-              },
-            ],
-          },
-          null,
-          2,
-        ),
-      );
-    } else if (format === "cursor") {
-      jsonl(path, [
-        { type: "system", cwd },
-        ...calls.flatMap(([name, args, content], i) => {
-          const body =
-            name === "read"
-              ? {
-                  readToolCall: { args: { path: args.filePath }, result: { success: { content } } },
-                }
-              : {
-                  function: { name, arguments: JSON.stringify(args) },
-                  result: { success: content },
-                };
-          return ["started", "completed"].map((subtype) => ({
-            type: "tool_call",
-            subtype,
-            call_id: String(i),
-            timestamp_ms: now,
-            tool_call: body,
-          }));
-        }),
-      ]);
-    } else {
-      jsonl(path, [
-        { method: "session/load", params: { sessionId: "s", cwd } },
-        ...calls.flatMap(([name, rawInput, rawOutput], i) => [
-          {
-            method: "session/update",
-            params: {
-              sessionId: "s",
-              update: {
-                sessionUpdate: "tool_call",
-                toolCallId: String(i),
-                status: "pending",
-                name,
-              },
-            },
-          },
-          {
-            method: "session/update",
-            params: {
-              sessionId: "s",
-              update: {
-                sessionUpdate: "tool_call_update",
-                toolCallId: String(i),
-                rawInput,
-                status: "in_progress",
-                content: [{ type: "content", content: { type: "text", text: "progress" } }],
-              },
-            },
-          },
-          {
-            method: "session/update",
-            params: {
-              sessionId: "s",
-              update: {
-                sessionUpdate: "tool_call_update",
-                toolCallId: String(i),
-                rawInput: null,
-                status: "completed",
-                rawOutput,
-              },
-            },
-          },
-        ]),
-      ]);
-    }
+    writeNativeTranscript(path, format, cwd, calls, now);
     const out = join(home, "metrics.json");
     execFileSync("python3", [script, "rank", "--repo-root", `app=${cwd}`, "--json", out, path]);
     expect(JSON.parse(readFileSync(out, "utf8"))).toEqual([
