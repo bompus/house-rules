@@ -125,8 +125,8 @@ For each finding, give in order:
 
 ## Verdict
 
-Include the scope and coverage limits with the verdict. A whole-repository
-review uses **Priority fixes**, **Optional** and **Overall**: rank current
+Include the scope and coverage limits with the verdict. Whole-repository and
+subsystem reviews use **Priority fixes**, **Optional** and **Overall**: rank current
 maintenance costs and state what was assessed, rather than judging whether
 existing code is ready to merge. For a diff, use these three parts:
 
