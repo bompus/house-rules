@@ -66,7 +66,7 @@ NAV_SHELL = re.compile(
 EMPTY_SEARCH = re.compile(r"\s*(No matches found|No files found)")
 MISSING_FILE = re.compile(r"No such file or directory|File does not exist|does not exist|ENOENT")
 NOISE = re.compile(r"\.codegraph/\*|opencode\*|^select:")
-READ_PATH = re.compile(r"(?:sed -n \S+ |cat |head (?:-n ?\d+ |-\d+ )?|tail (?:-n ?\d+ |-\d+ )?)([~\w./-]+\.\w+)")
+READ_PATH = re.compile(r"(?:sed -n \S+ |cat |head (?:-n ?\d+ |-\d+ )?|tail (?:-n ?\d+ |-\d+ )?)((?:[A-Za-z]:)?[~\w./\\-]+\.\w+)")
 STALE = re.compile(
     r"out of date|out-of-date|\bstale\b|outdated|no longer (?:exists?|there|true|accurate)"
     r"|doesn'?t (?:match|exist)|does not (?:match|exist)|wrong path|moved to"
