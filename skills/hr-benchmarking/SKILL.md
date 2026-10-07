@@ -1,6 +1,6 @@
 ---
 name: hr-benchmarking
-description: Benchmark equivalent work with repeated timing, CPU and RSS.
+description: Benchmark equivalent work with repeated timing, CPU and memory measurements under stated inputs and controls, and check whether saved results support a performance claim. Use when asked to benchmark, to measure which option is faster or uses less memory, or to time agent or model runs. Public model leaderboard research is outside this measurement workflow.
 ---
 
 # Benchmarking

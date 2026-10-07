@@ -1,6 +1,6 @@
 ---
 name: hr-stock-ui-audit
-description: Find template-default styling in frontend code that nobody chose for this product (stock violet accents, purple-to-blue gradients, one stock font, emoji icons, glow and blur effects), triage each hit in context and fix the real ones. Use when asked to remove generic or AI-looking styling, or for a focused design-quality pass on existing UI. It does not set a visual direction.
+description: Find template-default styling in frontend code that nobody chose for this product (stock violet accents, purple-to-blue gradients, one stock font, emoji icons, glow and blur effects), triage each hit in context, and report or fix the real ones as the request asks. Use when asked to audit or remove generic or AI-looking styling in existing UI. It does not set a visual direction.
 ---
 
 # Stock UI audit

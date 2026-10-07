@@ -1,0 +1,86 @@
+[
+  {
+    "id": "ui-cleanup",
+    "target": "hr-stock-ui-audit",
+    "should_select": true,
+    "request": "Remove the generic purple-to-blue gradients, emoji navigation icons and glow effects from this page."
+  },
+  {
+    "id": "ui-report",
+    "target": "hr-stock-ui-audit",
+    "should_select": true,
+    "request": "Audit this page for AI-looking template styling. Report findings only; edit nothing."
+  },
+  {
+    "id": "ui-font",
+    "target": "hr-stock-ui-audit",
+    "should_select": true,
+    "request": "This frontend uses the same stock font and violet accent everywhere. Find unchosen template defaults."
+  },
+  {
+    "id": "ui-design-quality",
+    "target": "hr-stock-ui-audit",
+    "should_select": false,
+    "request": "Do a focused design-quality pass on this existing settings screen: its layout, hierarchy and typography."
+  },
+  {
+    "id": "ui-brand-contrast",
+    "target": "hr-stock-ui-audit",
+    "should_select": false,
+    "request": "Violet is our chosen brand color. Check button and text contrast."
+  },
+  {
+    "id": "ui-directions",
+    "target": "hr-stock-ui-audit",
+    "should_select": false,
+    "request": "Propose and compare four visual design directions for this dashboard."
+  },
+  {
+    "id": "bm-runtime",
+    "target": "hr-benchmarking",
+    "should_select": true,
+    "request": "Compare Bun and Node on this script using repeated timing and memory measurements."
+  },
+  {
+    "id": "bm-memory",
+    "target": "hr-benchmarking",
+    "should_select": true,
+    "request": "Measure whether the new cache uses less memory than the old one on equivalent work."
+  },
+  {
+    "id": "bm-saved-evidence",
+    "target": "hr-benchmarking",
+    "should_select": true,
+    "request": "Check whether last week's archived results support our claim that this version is 20% faster; qualify the saved evidence without running new measurements."
+  },
+  {
+    "id": "bm-model-time",
+    "target": "hr-benchmarking",
+    "should_select": true,
+    "request": "Time two model runs on the same task under stated inputs and repeated runs."
+  },
+  {
+    "id": "bm-public-models",
+    "target": "hr-benchmarking",
+    "should_select": false,
+    "request": "Which models lead current public coding benchmarks? Research their published results."
+  },
+  {
+    "id": "bm-routing-quality",
+    "target": "hr-benchmarking",
+    "should_select": false,
+    "request": "Test whether these two skill descriptions choose the correct workflow. Compare selection accuracy only, not timing or resources."
+  },
+  {
+    "id": "bm-regression",
+    "target": "hr-benchmarking",
+    "should_select": false,
+    "request": "Latency regressed after the upgrade. Investigate why it is now slow."
+  },
+  {
+    "id": "bm-host-availability",
+    "target": "hr-benchmarking",
+    "should_select": false,
+    "request": "Is the shared host free to run this test suite now? Check session reservations, not performance."
+  }
+]
