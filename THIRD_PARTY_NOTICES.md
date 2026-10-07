@@ -5,6 +5,18 @@ License. Each source's copyright notice and the licence text follow.
 `CODE_OF_CONDUCT.md` is the Contributor Covenant, under CC BY 4.0, noted at
 the end.
 
+## Cursor workflow ideas
+
+Source: https://cursor.com/docs/skills
+
+- `skills/hr-split-to-prs/`: independently written workflow informed by the
+  purpose of Cursor's built-in `split-to-prs` skill.
+- `skills/hr-pr-followup/`: independently written workflow informed by the
+  purpose of Cursor's built-in `autopilot` skill.
+
+These bundles distribute no Cursor instruction text. Their MIT licence applies
+to newly written house-rules material, not to the Cursor skills.
+
 ## mattpocock/skills
 
 Source: https://github.com/mattpocock/skills (compared at revision `d81f3a1`)

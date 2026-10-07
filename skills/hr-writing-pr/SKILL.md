@@ -42,7 +42,7 @@ Resolve mismatches between the description and the implementation before calling
 
 ## Title and body
 
-Write a title naming the resulting behavior or fixed failure. Use the repository's title convention when it has one. Check the title's type and scope against the diff's dominant change, not the author's intent: a `docs:` title on a diff that adds an executable installer misfiles the record the squash message becomes. When no PR template exists, the title convention is the only template; default to Conventional Commits `type(scope):` unless the repository's recent history uses another style. Flag a mixed diff as a possible split into separate PRs (the `split-to-prs` skill, where installed) instead of stretching the title to cover it.
+Write a title naming the resulting behavior or fixed failure. Use the repository's title convention when it has one. Check the title's type and scope against the diff's dominant change, not the author's intent: a `docs:` title on a diff that adds an executable installer misfiles the record the squash message becomes. When no PR template exists, the title convention is the only template; default to Conventional Commits `type(scope):` unless the repository's recent history uses another style. Flag a mixed diff as a possible split into separate PRs (the `hr-split-to-prs` skill, where installed) instead of stretching the title to cover it.
 
 Lead the body with the concrete problem and resulting behavior. A small change may need only a paragraph and a validation sentence. Expand only where the reviewer needs more context:
 

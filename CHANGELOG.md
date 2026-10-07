@@ -4,6 +4,9 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Add independently written PR splitting and follow-up skills, with recovery
+  coverage, per-slice verification and existing-authority landing behavior.
+
 - Share review evidence assessment, weakened-test accounting and verification
   limits through the existing code-review skill.
 
