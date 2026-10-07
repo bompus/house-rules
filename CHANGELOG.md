@@ -4,6 +4,10 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Swarmail coordination now points to product-owned instructions, tool contracts
+  and approved local documentation instead of copying operational recipes.
+  Shared coordination rules retain independent checkout ownership checks.
+
 - Benchmark guidance now freezes artifact and historical evidence identities,
   qualifies required observers, and bounds independent-case continuation and
   retries while preserving admission and pressure gates.

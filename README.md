@@ -215,7 +215,7 @@ in name order, after the modifiers.
 | `shared-host-load` | Run one heavy job at a time with capped CPU and memory; other sessions may continue light work within its resource limits. |
 | `solo-operator` | For repositories with one maintainer, the user's direction is the review; no review-gated steps. |
 | `squash-landing` | Pull requests land by squash merge after review-bot findings are handled, and the session's checkout moves off the landed branch. |
-| `swarmail` | Sessions on one machine coordinate through Swarmail messages instead of the user relaying between them. |
+| `swarmail` | Locate Swarmail-owned instructions and tool contracts for local session coordination. |
 
 Questions use text by default, with plain options or `coded-offers`. Text-only
 setups do not call question-card tools merely because a host exposes them.

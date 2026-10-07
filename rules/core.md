@@ -235,6 +235,9 @@ up only leftovers your current authorization covers.
 
 ## Coordination and isolation
 
+A coordination roster may omit sessions. Check checkout and branch ownership
+independently before treating them as free.
+
 Stop only processes you started, by the PID you recorded when starting them.
 Never kill by pattern (`pkill -f`, `pgrep | kill`, or a PID found by matching
 a name or path): other sessions' servers and your own agent can match. Prefer
