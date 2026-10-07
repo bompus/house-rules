@@ -4,6 +4,9 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Clarify that agent guidance audits cover the requested repository scope,
+  including skill description accuracy.
+
 - Add an explicit-only navigation retrospective with selected transcript inputs,
   repository-root mappings, supported Claude/Codex metrics and synthetic tests.
   Transcript discovery and sensitive findings stay with the host.
