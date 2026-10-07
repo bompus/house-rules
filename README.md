@@ -150,6 +150,10 @@ and reconcile existing notice files before replacing them. A full
 skill, keep its entire directory, including any `NOTICE.md` and `LICENSE`.
 Personal layers must also carry notices required by their own sources.
 
+The `hr-navigation-retro` skill analyzes selected Claude Code and Codex raw
+transcripts to find navigation failures, then proposes fixes verified against
+current source. It is explicit-only and requires Python 3.11+. Its reports stay local.
+
 ## Upgrading skill names
 
 All shipped skill names use `hr-`. Before updating an older installation,
@@ -258,6 +262,7 @@ want and explains these limits before changing the configuration.
 | `hr-lean-plan` | Write or tighten an implementation plan with the fewest moving parts. |
 | `hr-maintainability-review` | Review a diff or entire codebase strictly for structure and maintainability. |
 | `hr-manual-qa` | Give reproducible human checks after reporting agent verification results. |
+| `hr-navigation-retro` | Audit navigation failures in selected transcripts and propose verified findability fixes; explicit-only. |
 | `hr-ordering-tests` | Enumerate event orderings through the real code to find race bugs. |
 | `hr-plain-prose` | Make text people read plain and specific. |
 | `hr-progress-report` | Report current task activity, milestone completion and remaining wall-clock time. |

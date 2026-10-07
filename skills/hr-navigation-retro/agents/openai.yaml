@@ -1,0 +1,4 @@
+interface:
+  display_name: "HR: Navigation retro"
+policy:
+  allow_implicit_invocation: false
