@@ -45,6 +45,10 @@ After the head changes, refresh the evidence before reporting readiness.
 Name the exact revision, failed or unfinished gates and unresolved decisions.
 Clean CI alone is not evidence that every review finding was handled.
 
+When the repository or user selects these GitHub helper policies, use
+[the review gate and one-thread resolver](references/review-helpers.md).
+The gate does not replace other required checks or the caller's judgment.
+
 Immediately before landing, re-read the head, base, checks, review bodies and
 unresolved threads. If the head or base changed, discard readiness and repeat
 the evidence and gate checks. If the target repository documents a revision
