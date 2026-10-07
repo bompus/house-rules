@@ -4,6 +4,10 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Add optional GitHub review-feedback and single-thread resolution helpers to
+  `hr-pr-followup`, with complete-read checks, dry-run resolution and
+  lost-response verification.
+
 - Keep unverified stale-text matches out of navigation ranking scores and detect
   missing-path diagnostics beyond result prefixes without counting source quotes.
 - Start fresh installs with eight skills and no modifiers. Add explicit shipped
