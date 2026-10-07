@@ -4,6 +4,9 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- The opt-in shared-load modifier now follows host-defined resource budgets
+  instead of prescribing fixed concurrency, memory limits or platform commands.
+
 - Completion and blocked checkpoints now check the task ledger and offer the
   highest-priority ready next step without waiting for a "next?" prompt.
 
