@@ -71,6 +71,7 @@ export async function setupCommand(argv) {
     query = "",
     selectedOnly = false,
     stale = false;
+  let saveAttempted = false;
   const options = () => {
     const result = {};
     if (questions !== undefined) result.questions = questions;
@@ -229,13 +230,21 @@ export async function setupCommand(argv) {
       process.stdout.write("setup> ");
       const line = await lines.next();
       if (line.done || interrupted) {
-        print("Cancelled; no selections saved.");
+        print(
+          saveAttempted
+            ? "Cancelled; inspect config status for the last save attempt."
+            : "Cancelled; no selections saved.",
+        );
         return;
       }
       const command = line.value.trim();
       try {
         if (command === "cancel") {
-          print("Cancelled; no selections saved.");
+          print(
+            saveAttempted
+              ? "Cancelled; inspect config status for the last save attempt."
+              : "Cancelled; no selections saved.",
+          );
           return;
         }
         if (command === "next") {
@@ -304,7 +313,7 @@ export async function setupCommand(argv) {
           baseline = catalog();
           stale = false;
           print(
-            "Fresh configuration loaded; retained selection intent is shown for review. Nothing saved.",
+            "Fresh configuration loaded; retained selection intent is shown for review. Refresh did not write configuration.",
           );
         } else if (command === "save") {
           if (stage !== 2) throw new Error("Use next to reach Review before saving.");
@@ -315,6 +324,7 @@ export async function setupCommand(argv) {
             print("No selection changes; configuration was not written.");
             return;
           }
+          saveAttempted = true;
           try {
             writeConfiguration(snapshot, current.next, snapshot.revision);
           } catch (error) {
@@ -325,10 +335,18 @@ export async function setupCommand(argv) {
             }
             throw error;
           }
-          const saved = readConfiguration(snapshot.path);
-          if (JSON.stringify(saved.config) !== JSON.stringify(current.next))
-            throw new Error("Saved configuration changed; inspect config status.");
-          selectionReport(saved.config, saved.path);
+          let saved;
+          try {
+            saved = readConfiguration(snapshot.path);
+            if (JSON.stringify(saved.config) !== JSON.stringify(current.next))
+              throw new Error("Saved configuration changed; inspect config status.");
+            selectionReport(saved.config, saved.path);
+          } catch (error) {
+            stale = true;
+            throw new Error(
+              `Save completed but verification failed; inspect config status or refresh: ${error.message}`,
+            );
+          }
           print(`Selections saved: ${saved.path}`);
           print(
             "Output was not regenerated and hosts were not connected by setup. Recompose with:",

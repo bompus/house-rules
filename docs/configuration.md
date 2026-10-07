@@ -22,7 +22,8 @@ copy. Exclusions without a current source remain in the configuration.
 Use `questions plain|coded|cards` for question preferences; these modifiers
 are handled together rather than as individual toggles. `next` moves from
 modifiers to skills, then review. `back` keeps the draft. Only `save` on review
-writes configuration. `cancel`, end of input or Ctrl-C leaves it unchanged.
+writes configuration. Before a save attempt, `cancel`, end of input or Ctrl-C
+leaves it unchanged.
 A new config with no selection changes is not created.
 
 Review includes personal rule origins and an equivalent `config set` command.
@@ -38,6 +39,10 @@ draft intent and refuses the stale write. Use `refresh` to compare that intent
 with the fresh configuration, then explicitly save again. It never saves a
 fresh comparison automatically. Saving preserves custom keys and their meaning;
 the writer formats JSON, so existing whitespace is not preserved.
+
+If verification fails after saving, configuration may already have changed.
+Inspect `config status` or use `refresh` before another save. Cancelling ends
+the session without undoing an earlier save attempt.
 
 Setup saves selections only. Recompose output separately, then connect the
 chosen hosts. It does not install, update, repair or remove managed output.
