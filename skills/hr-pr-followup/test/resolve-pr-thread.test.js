@@ -92,7 +92,6 @@ mock.module("node:child_process", () => ({spawnSync: (command, args, options) =>
       env: {
         ...process.env,
         FIXTURE: join(root, "fixture.json"),
-        PATH: `${root}:${process.env.PATH}`,
         GH_HOST: "wrong.example",
       },
     },

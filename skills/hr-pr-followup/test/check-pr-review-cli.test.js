@@ -84,7 +84,7 @@ mock.module("node:child_process", () => ({spawnSync: (command, args, options) =>
       ...(options.defaultRepo ? [] : ["--repo", "owner/app"]),
     ],
     {
-      env: { ...process.env, REVIEW_FIXTURE: fixture, PATH: `${root}:${process.env.PATH}` },
+      env: { ...process.env, REVIEW_FIXTURE: fixture },
     },
   );
   return { code: r.exitCode, err: r.stderr.toString(), out: r.stdout.toString() };
