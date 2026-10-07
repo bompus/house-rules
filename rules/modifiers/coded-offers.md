@@ -4,56 +4,36 @@ replaces: Offers
 ---
 ## Offers
 
-Use text for questions. Unless § Question cards is enabled, do not call
-multiple-choice question tools, even when your host exposes them.
+Use § Finishing work to select displayed candidates. Each offer stands alone:
 
-Write every offer as a normal text reply that stands alone (a tool-rendered
-card may not display on every host), with these parts in order:
+1. Brief context and the recommendation beside the result the user needs.
+2. One numbered question per independent decision, such as
+   `**Question 1: Next step?**`. If all options combine, add "Pick any combination."
+3. One paragraph per option, separated by a blank line. Start with its inline-code
+   code (`1A`, `1B`; Question 2 uses `2A`, `2B`). Put the recommendation first,
+   with "(Recommended)" immediately after its code. Mark options you would not pick
+   "(Not Recommended)"; name partial combinations, such as "(Combinable with 1A)".
+4. The exact acceptance line. One question uses "Recommended: reply `<code>` or `go`".
+   Several use "Recommended combination: reply `<code>, <code>` or `go`".
 
-1. Context and the recommendation, in the same reply as any due report.
-2. One numbered question per independent decision, e.g.
-   `**Question 1: Next step?**`; a lone question is still Question 1. When
-   every option in it combines, add "Pick any combination." to that line.
-3. Its options, one per paragraph with a blank line between, each starting
-   with its inline-code code (`1A`, `1B`; Question 2 offers `2A`, `2B`),
-   highest recommended priority first. The literal "(Recommended)" goes right
-   after the code; any listed option you would not pick carries
-   "(Not Recommended)". Leave such options out unless the user raised them or
-   dropping them hides a real trade-off. Tag options that combine with only
-   some others, e.g. `(Combinable with 1A)`. Every live candidate from
-   § Finishing work is listed; the leave-out rule covers new ideas, not
-   candidates. When candidates remain, include an `All done` option, which
-   closes them: record each as dropped or deferred wherever you track work.
-4. The exact reply line, built from the codes you actually recommend:
-   "Recommended: reply `<code>` or `go`" for a lone question, "Recommended
-   combination: reply `<code>, <code>` or `go`" for several (for example
-   "Recommended combination: reply `1B, 2A` or `go`").
+Include alternatives the user raised or needed to explain a material tradeoff.
+Routine offers include an option to defer displayed proposals; say other ledger
+items remain pending. Full backlog offers include `All done`, which drops or defers
+every listed candidate. Record dispositions; deferral never means completion.
 
-Close tracked work, an implementation or review report, or unlanded commits with
-an offer, and answer a bare "what next" or "what remains" the same way. Its
-candidates come from the plan ledger when there is one, this session's findings,
-open items of a resumed handoff, uncommitted or unlanded changes and untriaged
-review feedback; re-check each and drop stale ones. A candidate held by a "don't
-start until asked" safeguard stays listed as "(Not Recommended)", naming the
-safeguard.
+Name implementation and landing scope in applicable options. Selection authorizes
+it; questions authorize nothing. Implementation after analysis needs selection.
+The coded list makes an offer; a prose recommendation alone does not.
+`go` or `continue` selects the recommendation in the latest open offer. Keep that
+offer and its scope in the ledger; status or inbox updates leave it open. Record
+replacements. Accepted, completed, deferred or superseded offers cannot authorize
+new work. If the open offer is unclear, ask which work to resume.
 
-The offer exists only when the coded option list is present; a prose
-recommendation is not one. `go` (or `continue`) always means the stated
-recommended code or combination. Plain numbers stay for ordered action steps;
-codes are only for options the user picks. For mutually exclusive options,
-recommend exactly one; combinable options may each carry "(Recommended)".
-Recommend by merit and state authorization separately. After an analysis-only
-request, implementation may be recommended as proposed work that needs
-selecting. When an option includes implementation, state its implementation
-and landing scope: choosing it authorizes that scope, and asking about a
-recommendation authorizes nothing.
+Use plain numbers for steps and codes for options. Recommend one mutually
+exclusive option. Independent options may each be recommended; state their
+combined scope in the acceptance line. For sequential landing phases, label
+options "(Recommended, phase 1)" and "(Recommended, phase 2)". `go` covers phase 1
+only; offer phase 2 after phase 1 lands. Record conditional work with its trigger.
 
-When recommended work lands in sequenced phases, label it "(Recommended,
-phase 1)", "(Recommended, phase 2)"; `go` covers phase 1 only, and the next
-phase is offered again once phase 1 lands. Work that waits on a condition
-rather than earlier work is not a phase: record it with its trigger wherever
-you track follow-ups, or list it as "(Deferred until <condition>)" when the
-user should see it.
-
-When § Question cards is enabled, follow it to send a card beside
-the complete text offer. Tool availability alone does not enable cards.
+Use text for questions unless § Question cards is enabled. Tool availability
+alone does not enable it. When enabled, follow it beside the complete text offer.

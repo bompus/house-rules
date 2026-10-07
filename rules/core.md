@@ -41,8 +41,8 @@ Write the offer as normal text that stands alone, with these parts in order:
 1. One or two lines of context and your recommendation.
 2. One numbered question per independent decision, ending in a question mark.
 3. Its options, one per line, starting with the one you recommend, marked
-   "(Recommended)". Each live candidate from § Finishing work is its own
-   option. Add any other alternative only when the user raised it or leaving
+   "(Recommended)". Use § Finishing work to select displayed candidates.
+   Add any other alternative only when the user raised it or leaving
    it out hides a real trade-off, and mark it "(Not Recommended)".
 4. One line saying exactly what to reply to accept the recommendation.
 
@@ -53,44 +53,47 @@ about it authorizes nothing.
 
 ## Finishing work
 
-Finish already authorized work before asking what to do next. A status question
-or an acknowledgment does not cancel the work in progress or require approval
-again. A pending decision that blocks only part of the work is not a reason to
-stop: ask about the blocked part and keep doing the rest in the same reply.
+Finish authorized work before asking what to do next. Status questions and
+acknowledgments do not cancel work or require approval again. If a decision
+blocks only part, ask about it and continue the rest in the same reply.
 
-Before ending at task completion or because remaining work needs the user's
-answer or an external dependency, reconcile this conversation's task list and
-ledger. Continue authorized work that can advance. Otherwise, automatically
-offer the highest-priority ready candidate needing selection; do not wait for
-the user to ask "next?". If none is ready, name remaining blockers or deferral
-triggers; if nothing remains, say so. Explicit pauses and stop-work instructions
-take precedence.
+Before ending at task completion or because work needs the user's answer or an
+external dependency, reconcile this conversation's task list and ledger.
+Continue authorized work that can advance. Otherwise, automatically offer the
+highest-priority ready candidate needing selection; do not wait for "next?".
+If none is ready, name blockers or deferral triggers; if nothing remains, say so.
+Explicit pauses and stop-work instructions take precedence.
 
-When a correction disproves an assumption, check this task's owned completed
-and planned work for the same dependency and update the existing task record.
-Honor explicit stop or undo instructions; otherwise fix affected work within
-current authorization and ask only about unresolved decisions.
+When a correction disproves an assumption, check owned completed and planned
+work for that dependency and update the task record. Honor explicit stop or undo
+instructions; otherwise fix affected work within authorization and ask only
+about unresolved decisions.
 (Idea informed by Jeanno's `realign`; see `THIRD_PARTY_NOTICES.md`.)
 
-At task completion or a requested remaining-work review, the offer lists every
-live candidate: the next unfinished step of the current task first, then each
-earlier unfinished task as its own option,
-then uncommitted or unlanded changes and noticed follow-ups. A finished step
-does not end the task. While earlier steps of the task remain, the recommended
-option is the next step, not landing, closing or another item.
+Keep every live candidate and disposition in the plan ledger, or a durable list
+when no plan exists. Include this task, earlier unfinished work, findings, resumed
+handoffs, owned changes and untriaged feedback. Re-check before offering; explain stale removals.
 
-Keep a list of the checkouts you touch, adding each when you first touch it,
-outside ones included (sibling worktrees, other repositories, shared paths).
-Before ending a task, check every one once, with one command each:
-`git status --short --branch; git log --oneline <yours> --not --remotes`,
-where `<yours>` names the branches you committed to there (`HEAD` only when you
-committed on a detached `HEAD`). Checkouts share their branches, and another
-session's branch may be checked out, so `--branches` or a bare `HEAD` would
-list its commits too. Report your own uncommitted files, unpushed commits and
-new local-only branches by path. Leave other sessions' and people's work as it
-is and out of the report; mention it only when it blocks yours, naming its
-owner or saying the owner is unknown. Never commit, push or merge it to clear
-the list.
+- Completion, blocked checkpoints and "what next" replies show the recommended
+  next step and every decision needed to finish authorized work, including owned
+  uncommitted changes, unlanded changes and ready landings. Keep unrelated
+  follow-ups and the latest valid offer in the ledger. Informational updates do
+  not repeat offers or replace this check. Link the ledger; "what remains" shows
+  the full list.
+- For "what remains", "all options", backlog reviews or full close-outs, list each
+  live candidate by next unfinished step, earlier tasks, owned changes and follow-ups.
+
+Recommend the current task's next unfinished step first. A finished step does
+not end the task. Keep "don't start until asked" candidates in the ledger; offer them as
+"(Not Recommended)" and name the safeguard. Full backlog offers show deferred
+work and its unmet trigger. Keep schedules unless the user directs a change.
+
+List each checkout when first touched, including shared paths. Before ending a task,
+check each once: `git status --short --branch; git log --oneline <yours> --not --remotes`.
+`<yours>` names branches you committed to there; use `HEAD` only for detached
+commits. Report owned uncommitted files, unpushed commits and new local-only
+branches by path. Leave others' work alone unless it blocks yours; name its owner
+or say unknown. Never commit, push or merge it to clear the list.
 
 ## Reporting
 

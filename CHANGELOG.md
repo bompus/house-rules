@@ -4,6 +4,13 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Routine completion offers now focus on the next decision and owned landings;
+  full backlog reviews list every live candidate. Deferring displayed proposals
+  preserves other pending work and the latest valid offer in the ledger.
+
+- Guidance authoring now assesses third-party adaptations within selected scope,
+  preserving source ownership, licence requirements and provenance.
+
 - The opt-in shared-load modifier now follows host-defined resource budgets
   instead of prescribing fixed concurrency, memory limits or platform commands.
 

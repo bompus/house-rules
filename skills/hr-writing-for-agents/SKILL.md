@@ -7,6 +7,21 @@ Reference for writing any document an agent consumes: a skill, an `AGENTS.md` / 
 
 When the document you're writing is a skill, read [`SKILL-MECHANICS.md`](SKILL-MECHANICS.md) for frontmatter, invocation choice, testing a description or a skill's output, and router skills.
 
+## Source ownership and adaptations
+
+Choose the owning source within the selected scope. Keep portable shared guidance
+with its shared owner, host settings and personal selections with their host,
+and product commands, contracts and safeguards with their product. For mixed
+content, split only the portions the user authorized. An ownership lookup does
+not authorize edits, installation or publication.
+
+Reusable third-party guidance may be contributed upstream or published as a
+clearly identified adaptation within the selected scope. Check its licence before
+copying or adapting it. Preserve required notices and source provenance, including
+the revision when known. A vendor label identifies its source; assess permitted
+adaptations rather than excluding them by that label alone. For house-rules
+contributions, locate its checkout and follow `CONTRIBUTING.md` for notice placement.
+
 ## Context pointers
 
 Use local files for operational pointers to available guidance. In a skill,
