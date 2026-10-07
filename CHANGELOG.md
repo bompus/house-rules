@@ -4,6 +4,10 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Six existing skills now clarify API field access and change reports, runnable
+  impact evidence, explanation sources, planning blockers, structural review
+  findings and stock UI candidates. Invocation metadata stays unchanged.
+
 - Routine completion offers now focus on the next decision and owned landings;
   full backlog reviews list every live candidate. Deferring displayed proposals
   preserves other pending work and the latest valid offer in the ledger.

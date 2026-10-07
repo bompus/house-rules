@@ -22,6 +22,8 @@ For every field a response returns, at every depth, write down:
 Client behavior counts as a use, including pagination cursors, concurrency
 ETags or version numbers, and retry timing. Metadata still needs a consumer
 and an access rule; its transport role alone does not justify disclosure.
+Where a consumer needs only to identify a related object, use a small summary
+or an opaque reference instead of the full object.
 
 A field with both answers stays. A field missing either one is removed. When
 removal might break a consumer you cannot see (a public API, a third-party
@@ -76,6 +78,10 @@ should not send it.
   may see.
 - When the stack supports runtime output validation, use a closed schema that
   rejects undeclared properties. Keep the explicit output allowlist either way.
+- Fetch only the columns the response needs where practical. The explicit
+  output type stays the boundary either way.
+- In GraphQL, check access on every sensitive field that stays queryable,
+  not only on the parent object.
 - Give errors their own minimal shape: a stable code, a short message safe to
   show, and a request or correlation ID. Stack traces, SQL, internal paths,
   upstream responses and validation internals go to the server log.
@@ -114,6 +120,18 @@ cases apply. Include:
 
 A test that only checks that expected fields are present will pass while
 extra fields leak.
+
+## Scope
+
+Keep the work to the response surface. Do not widen it into general input
+validation or security cleanup unless asked, and leave unrelated
+working-tree changes alone.
+
+## Reporting changes
+
+After changing responses, report the endpoints changed, the fields removed
+and why, the fields kept with the consumer that needs each, the access rules
+added or kept, and the tests run with any unresolved compatibility risk.
 
 ## Reporting findings
 

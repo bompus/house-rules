@@ -33,6 +33,7 @@ Return:
 5. Anything surprising.
 6. Gaps you could not close, each next to the step it affects, and what
    would close it.
+7. Every file you read.
 
 Facts only, with references. No suggestions for changes.
 ```

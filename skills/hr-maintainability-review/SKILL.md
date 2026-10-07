@@ -64,6 +64,10 @@ or leans on what the architecture already provides. Examples of the move:
 - the wrapper goes away if callers use the underlying API directly;
 - the retry layer goes away if the operation is made idempotent.
 
+Aim past a tidier copy of the same design. When a different framing would
+make a whole branch, mode or layer unnecessary, argue for that framing
+rather than for local cleanup.
+
 Propose such a restructure only when you can name the files, the parts that
 go, and what replaces them. A vague "this could be simpler" is not a finding.
 Moving code between files without removing anything is weaker than deleting
@@ -107,6 +111,18 @@ End with a verdict on structure in three parts:
 - **Overall**: one line stating whether the structure is ready to merge.
 
 If nothing must change, the "Before merge" list says "none".
+
+Working behavior alone does not make the structure ready. Each of these
+goes under "Before merge" unless the author gives a clear reason to keep it:
+
+- a visible restructure that would delete much of the change's incidental
+  complexity, left untaken;
+- new special-case branches that tangle a shared flow;
+- feature checks spread across shared code to solve a local problem;
+- a new wrapper, cast or loosely typed contract that adds indirection
+  without paying for it;
+- a near-copy of an existing helper, or logic placed outside the module
+  that owns the concept.
 
 ## Tone
 

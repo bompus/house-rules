@@ -97,7 +97,7 @@ when it has nothing to say.
    first, and in what order.
 5. **Surprises.** Behavior a careful reader would not expect: side effects,
    ordering dependencies, silent fallbacks, caching, code that looks live but
-   is not.
+   is not, and history that explains why code looks odd.
 6. **Unverified.** What you could not confirm and what would confirm it,
    if any of it is not already noted next to its claim.
 

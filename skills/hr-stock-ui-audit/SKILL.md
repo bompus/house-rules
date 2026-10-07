@@ -39,7 +39,9 @@ Node 22 or later works too. It walks directories, skips dependency, build and
 coverage output and minified files, and reads `.html .css .scss .js .ts .jsx
 .tsx .vue .svelte .astro`. It prints the number of files scanned. Exit 0 means
 nothing reached the failing severity (high by default), 1 means something did,
-2 means bad usage or zero files scanned. A 2 is never a clean result.
+2 means bad usage or zero files scanned. A 2 is never a clean result. Pass
+`--fail-on medium` when violet accents, a single stock font or emoji icons
+should fail the run. Do not add the scanner as a CI gate unless asked.
 
 | Rule | Severity | Catches |
 |---|---|---|
@@ -95,6 +97,11 @@ Check these by reading the rendered page, since no pattern match finds them:
 
 - every section built from the same centered headline, subtitle and two buttons
 - a three-card feature grid with an icon, title and line of text in each card
+- a small badge or pill sitting above the main heading
+- cards marked by a thick colored left border
+- a stat banner of large numbers ("10k+ users", "99.9% uptime")
+- numbered "1, 2, 3" step sections
+- a dark theme forced on with no light option the brief asked for
 - the same large corner radius and soft shadow on every surface
 - spacing and type sizes that ignore the project's scale
 - copy that could describe any product

@@ -27,9 +27,19 @@ Before drafting steps, write down four things:
 
 Read the code, docs and config that touch the goal before asking anything. Ask
 only questions whose answer would change the plan's shape; a detail you can
-choose sensibly, choose and record as an assumption. When an answer that
-decides the shape is missing, stop there: return the questions and an outline
-headed **Provisional, pending answers**, with each open question marked where
+choose sensibly, choose and record as an assumption.
+
+Push back on an unclear request before planning around it. Name what is
+unclear, why it blocks a good plan and what would settle it. Common causes:
+a scope verb such as "improve" or "clean up" with no measurable result;
+constraints that conflict; no named owner for the change; a solution stated
+before the problem; a load-bearing decision (schema, API, flag strategy)
+left for implementation; a term with no settled meaning in this codebase;
+several goals with no priority between them.
+
+When an answer that decides the shape is missing, stop there: return the
+questions and an outline headed **Provisional, pending answers**, with each
+open question marked where
 it would change a step.
 
 ## Shrink before you sequence
@@ -120,7 +130,9 @@ lists cover the rest.
 Read the plan against the sections above, then report three things in order:
 
 1. **Blocks starting**: missing goal slots, undecided branches, steps with no
-   checkable outcome or owner, and cutovers with no rollback.
+   checkable outcome or owner, cutovers with no rollback, feature work routed
+   through shared paths with no isolation, and the same complexity split
+   across several PRs without reducing the number of concepts.
 2. **Would make it smaller**: steps, layers, flags, migrations or parallel paths
    that can go, each with the reason and the moving-part count before and after.
 3. **Revised outline**: the plan rewritten in the layout above, short enough to

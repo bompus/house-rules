@@ -76,9 +76,10 @@ say. Next to each important claim, state in a few words what backs it: "the
 only reader is `billing/export.py:88`", "traced: a missing key falls through
 to the default", "ran `test_legacy_payload`, passes".
 
-Get the load-bearing assumption to something that ran. A careful trace is
-enough for lesser claims. A claim with nothing behind it is a gap; report it
-as one instead of dressing it up.
+When feasible within the selected scope, reproduce the behavior in the
+running application for the strongest backing. Get the load-bearing assumption
+at least to something that ran. A careful trace is enough for lesser claims.
+A claim with nothing behind it is a gap; report it as one instead of dressing it up.
 
 Prefer evidence that already exists: run the tests that cover the changed code
 and read what they actually assert. When none exercise the assumption, write
@@ -101,7 +102,7 @@ Use these parts, in order:
    is one, or "none needed" with the reason.
 
 Keep the list of risks short. Three real ones with locations beat fifteen
-possibilities.
+possibilities. Remove private details before the report goes anywhere public.
 
 ## Related skills
 
