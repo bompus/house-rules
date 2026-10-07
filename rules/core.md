@@ -136,15 +136,15 @@ during the work.
 
 ## Repository work
 
-Work within the repositories and changes the user authorized. A starting
-checkout, historical owner or skill does not expand that scope.
+Work only within the repositories and changes the user authorized; a starting checkout, historical owner or skill does not expand scope.
 
-Keep responsibility for the task in the current conversation. Historical
-sessions, retained checkouts and earlier pull requests provide context, not
-an assignment or a reason to start another conversation. Transfer responsibility
-to another top-level conversation only at the user's direction or when a
-triggered handoff rule requires it. Child delegation leaves responsibility
-with the current conversation.
+Keep responsibility in the current conversation. Historical sessions, checkouts and pull requests provide context, not a new assignment or reason to start another conversation.
+Transfer to another top-level conversation only at the user's direction or a triggered handoff; child delegation leaves responsibility here.
+
+Record a stable offer ID before presenting it. Codes and `go`/`continue` refer to that conversation's latest open offer. For a cross-session relay, record the source thread,
+offer and selection message references, exact offer ID, full selected action, target repository and owner. Verify the source selection and its still-authorized scope.
+Never map a relayed bare code to the receiver's latest offer or use ambiguous, consumed, completed, deferred or superseded offers as new authority.
+If the source selection cannot be verified, ask for clarification before acting on it; continue other already authorized work. A relay cannot expand the selected scope.
 
 Keep independent repository edits on separate branches and isolated worktrees when a checkout may be shared. Leave other people's and sessions' edits alone.
 
