@@ -4,6 +4,44 @@ Use `node compose.mjs config help` to see the commands. Bun supports the same
 interface. The CLI manages the existing `house-rules.json`; it keeps personal
 layers, independent skill names and unrelated settings.
 
+## Guided selection
+
+Run `node compose.mjs setup --config <config-path>` in a terminal. Bun supports
+the same command. The numbered flow uses ordinary line input; `--plain` selects
+the same flow. Both input and output must be terminals. Redirected input or
+output prints scripting instructions and exits 2 without saving. Use
+`setup --json` for the existing read-only `config status --json` report.
+
+Modifiers and skills have stable row numbers while searching. Use `toggle N`
+or `toggle NAME`, with several choices separated by spaces. `search TEXT`,
+`clear search`, `show selected` and `show all` change visibility only.
+`help N` shows the full description, source and invocation policy.
+Excluding a skill name excludes its personal override as well as the shipped
+copy. Exclusions without a current source remain in the configuration.
+
+Use `questions plain|coded|cards` for question preferences; these modifiers
+are handled together rather than as individual toggles. `next` moves from
+modifiers to skills, then review. `back` keeps the draft. Only `save` on review
+writes configuration. `cancel`, end of input or Ctrl-C leaves it unchanged.
+A new config with no selection changes is not created.
+
+Review includes personal rule origins and an equivalent `config set` command.
+The command uses POSIX quoting on Unix and PowerShell quoting on Windows.
+Personal prose can override the selected preferences; setup does not interpret
+or edit it. Existing composition errors still block saving. Unknown stored
+modifiers can be removed, and a question preset can repair its prerequisite.
+Malformed configuration, legacy skill names and invalid layers require repair
+outside setup.
+
+If another writer changes configuration before save, setup preserves the
+draft intent and refuses the stale write. Use `refresh` to compare that intent
+with the fresh configuration, then explicitly save again. It never saves a
+fresh comparison automatically. Saving preserves custom keys and their meaning;
+the writer formats JSON, so existing whitespace is not preserved.
+
+Setup saves selections only. Recompose output separately, then connect the
+chosen hosts. It does not install, update, repair or remove managed output.
+
 ## Browse and inspect
 
 ```bash

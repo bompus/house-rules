@@ -38,6 +38,7 @@ try {
     "composition.mjs",
     "config.mjs",
     "config-view.mjs",
+    "setup.mjs",
     "rules/core.md",
     "LICENSE",
     "THIRD_PARTY_NOTICES.md",
@@ -87,6 +88,16 @@ try {
       run(runtime, [join(installed, "compose.mjs"), "config", "help"], scratch),
       /status/,
     );
+    const setup = JSON.parse(
+      run(
+        runtime,
+        [join(installed, "compose.mjs"), "setup", "--json", "--config", config],
+        scratch,
+      ),
+    );
+    assert.equal(setup.command, "status");
+    assert.equal(setup.applied, null);
+    assert(setup.skills.some((skill) => skill.explicitOnly));
     const output = join(scratch, `skills-${index}`);
     run(
       runtime,
