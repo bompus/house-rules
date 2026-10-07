@@ -117,6 +117,17 @@ Source: https://github.com/humanlayer/skills (compared at revision `bba9d13ab34f
 
 Copyright (c) 2026 HumanLayer
 
+## Jeanno/jeanno-skills (ideas)
+
+Source: https://github.com/Jeanno/jeanno-skills (compared at revision `db4e8fd66197ece38d622ca8b527dbe821843df2`)
+
+- `skills/hr-manual-qa/SKILL.md`: independently written instructions informed by
+  the reproducible-checklist idea in `skills/qa-checklist/SKILL.md`.
+- `rules/core.md`: independently written correction handling informed by the
+  dependent-work sweep in `skills/realign/SKILL.md`.
+
+No source text from this repository is copied here.
+
 ## MIT License text
 
 Permission is hereby granted, free of charge, to any person obtaining a copy

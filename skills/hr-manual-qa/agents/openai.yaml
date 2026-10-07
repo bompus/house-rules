@@ -1,0 +1,3 @@
+interface:
+  display_name: "HR: Manual QA"
+  short_description: "Reproducible checks needing human access or judgment"

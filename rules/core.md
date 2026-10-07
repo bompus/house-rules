@@ -58,6 +58,12 @@ or an acknowledgment does not cancel the work in progress or require approval
 again. A pending decision that blocks only part of the work is not a reason to
 stop: ask about the blocked part and keep doing the rest in the same reply.
 
+When a correction disproves an assumption, check this task's owned completed
+and planned work for the same dependency and update the existing task record.
+Honor explicit stop or undo instructions; otherwise fix affected work within
+current authorization and ask only about unresolved decisions.
+(Idea informed by Jeanno's `realign`; see `THIRD_PARTY_NOTICES.md`.)
+
 At task completion or a requested remaining-work review, the offer lists every
 live candidate: the next unfinished step of the current task first, then each
 earlier unfinished task as its own option,

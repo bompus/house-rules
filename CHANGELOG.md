@@ -8,6 +8,9 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   announcement materials and release notes against verified state before
   releases or public announcements.
 
+- Add manual QA guidance for reproducible human checks after agent verification,
+  and revisit related owned work when a correction disproves a shared assumption.
+
 - Benchmark guidance now verifies saved run identities and qualification from raw
   evidence, and limits observer-induced retention in WeakRef memory probes.
 
