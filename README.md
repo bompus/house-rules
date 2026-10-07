@@ -260,8 +260,10 @@ want and explains these limits before changing the configuration.
 | `hr-ordering-tests` | Enumerate event orderings through the real code to find race bugs. |
 | `hr-plain-prose` | Make text people read plain and specific. |
 | `hr-progress-report` | Report current task activity, milestone completion and remaining wall-clock time. |
+| `hr-pr-followup` | Address conflicts, feedback and failing checks for a requested PR; honor existing landing authority. |
 | `hr-read-reddit` | Read Reddit threads and searches through public feeds. |
 | `hr-read-x-links` | Read the full content of X posts. |
+| `hr-split-to-prs` | Divide work into coherent PRs while preserving recovery points and verifying each slice. |
 | `hr-stock-ui-audit` | Find and triage template-default styling in frontend code. |
 | `hr-test-audit` | Decide which new tests are worth keeping and which old ones to prune. |
 | `hr-what-next` | Reconcile remaining session work and recommend priorities when asked what comes next. |

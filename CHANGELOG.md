@@ -4,6 +4,9 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Add independently written PR splitting and follow-up skills, with recovery
+  coverage, per-slice verification and existing-authority landing behavior.
+
 - Explicit maintainability reviews now support entire repositories and
   subsystems, account for coverage gaps, use maintenance-priority verdicts for
   those scopes, and distinguish structure from correctness, UI, tests and
