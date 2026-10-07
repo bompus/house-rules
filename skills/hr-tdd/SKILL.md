@@ -19,7 +19,7 @@ See [tests.md](tests.md) for examples and [mocking.md](mocking.md) for mocking g
 
 A **seam** is the public boundary you test at: the interface where you observe behavior without reaching inside. Tests live at seams, never against internals.
 
-Use the existing or already approved public boundary. Ask only when choosing a different boundary materially changes scope. Focus testing effort on the critical paths and complex logic.
+Use the existing or already approved public boundary. Ask only when choosing a different boundary materially changes scope. Identify the critical paths and complex logic in the change. Map each to a selected seam, and state any uncovered behavior.
 
 When boundary limits affect a coverage decision, give each proposed boundary a one-line note on what it catches and misses.
 
