@@ -44,10 +44,8 @@ procedure and authorization before changing files. Upstream/source drift alone
 is not a newer deployed target. Report changed behavior or a blocker when it
 needs attention; an unchanged check stays quiet.
 
-When the host supplies Swarmail updates, inspect `swarmail updates --session
---json`. After actually rereading a component or completing its supported
-reload, use `--ack COMPONENT --revision EXACT` to attest that exact revision.
-Do not attest from file equality or notice delivery. Honor held components;
-`--reset-context` invalidates context-dependent attestations after an explicit
-context reset. Without a configured approved-target manifest, this mechanism
-is inactive; another host may supply a different qualified update signal.
+When the host supplies Swarmail updates, follow the connected product
+instructions and `swarmail updates --help`. If those instructions are hidden
+or omit needed detail, locate the owning checkout's `docs/updates.md` at the
+installed or approved revision. Keep unsupported details unverified. Other
+hosts may supply a different qualified update signal.

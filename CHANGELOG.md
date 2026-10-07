@@ -4,6 +4,9 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Guidance refresh now discovers optional Swarmail update procedures through
+  product instructions, CLI help and approved local documentation.
+
 - Swarmail coordination now points to product-owned instructions, tool contracts
   and approved local documentation instead of copying operational recipes.
   Shared coordination rules retain independent checkout ownership checks.
