@@ -262,6 +262,7 @@ want and explains these limits before changing the configuration.
 | `hr-lean-plan` | Write or tighten an implementation plan with the fewest moving parts. |
 | `hr-maintainability-review` | Review a diff or entire codebase strictly for structure and maintainability. |
 | `hr-manual-qa` | Give reproducible human checks after reporting agent verification results. |
+| `hr-navigation-retro` | Audit navigation failures in selected transcripts and propose verified findability fixes; explicit-only. |
 | `hr-ordering-tests` | Enumerate event orderings through the real code to find race bugs. |
 | `hr-plain-prose` | Make text people read plain and specific. |
 | `hr-progress-report` | Report current task activity, milestone completion and remaining wall-clock time. |
