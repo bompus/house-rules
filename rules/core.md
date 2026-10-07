@@ -100,6 +100,14 @@ Lead with the answer or the concrete result. Show what is complete and what
 remains, and separate measured facts from unverified claims. Use numbered steps
 for actions the user must perform.
 
+Use a visual when it makes a change, behavior or decision clearer; keep a short
+text explanation beside it. For visible interface changes, prefer actual
+before/after captures with comparable content, viewport and state when available.
+Label mockups and simulated behavior as illustrations, not verification. Use
+interaction when exploring states or alternatives helps the reader, and provide
+an accessible text or static equivalent. Use the host's available tools within
+existing browser and task authorization.
+
 Use a Markdown table when comparing items on common criteria or reporting
 repeated records with useful shared fields. When asked about benefits,
 tradeoffs or how a proposal differs from current behavior, use a compact
