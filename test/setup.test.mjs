@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawn, spawnSync } from "node:child_process";
-import { existsSync, readFileSync, statSync, writeFileSync, symlinkSync } from "node:fs";
+import { existsSync, rmSync, readFileSync, statSync, writeFileSync, symlinkSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { test } from "node:test";
@@ -302,3 +302,32 @@ test("Ctrl-C and terminal end of input discard a changed draft", interactive, as
     assert.equal(readFileSync(path, "utf8"), before);
   }
 });
+
+test(
+  "write failure keeps its original cause when recovery cannot read the config",
+  interactive,
+  async (t) => {
+    const { path } = fixture(t, { custom: "keep" });
+    const session = terminal(t, path);
+    await session.wait();
+    await session.command("toggle swarmail");
+    await session.command("next");
+    await session.command("next");
+    const lock = `${path}.lock`;
+    writeFileSync(lock, JSON.stringify({ pid: process.pid }));
+    writeFileSync(path, "{broken");
+    await session.command("save");
+    assert.match(session.output, /Cannot continue: configuration is locked/);
+    assert.match(session.output, /Configuration changed\. Use refresh/);
+    assert.equal(readFileSync(path, "utf8"), "{broken");
+    assert.equal(existsSync(lock), true);
+    writeFileSync(path, JSON.stringify({ custom: "repaired" }));
+    rmSync(lock);
+    await session.command("refresh");
+    assert.equal((await session.finish("save")).code, 0);
+    assert.deepEqual(JSON.parse(readFileSync(path, "utf8")), {
+      custom: "repaired",
+      modifiers: ["swarmail"],
+    });
+  },
+);
