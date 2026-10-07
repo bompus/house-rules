@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 // Refuses to land a pull request while review feedback is open: an unresolved review thread, a
 // review bot (CodeRabbit) whose check is still running, or a bot review whose body carries findings
-// GitHub cannot show as threads ("Outside diff range comments", "Nitpick comments") with no human
+// GitHub cannot show as threads ("Outside diff range comments", "Nitpick comments", "Duplicate comments") with no human
 // explicit acknowledgement for that review and the current head. Run only when the repository
 // selects this gate. It also refuses when CodeRabbit's status on the
 // head commit says anything but "Review completed": CodeRabbit marks a skipped review (for example
@@ -33,7 +33,7 @@ import { parseArgs } from "node:util";
 
 const REVIEW_BOTS = /coderabbit/i;
 const REVIEW_BOT_CONFIG = ".coderabbit.yaml";
-const BODY_FINDINGS = /Outside diff range comments|Nitpick comments/;
+const BODY_FINDINGS = /Outside diff range comments|Nitpick comments|Duplicate comments/;
 const REVIEWED = /^Review completed/;
 const ASK = 'comment "@coderabbitai full review"';
 const RUNNING = "review still running: ";

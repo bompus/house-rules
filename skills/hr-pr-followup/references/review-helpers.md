@@ -15,8 +15,8 @@ bun scripts/check-pr-review.ts 123 --repo OWNER/REPO
 The gate exits 0 when its selected feedback checks pass, 1 for open feedback,
 and 2 when coverage cannot be verified. It checks unresolved threads, pending
 CodeRabbit review, skipped review statuses and a missing check when the head
-contains `.coderabbit.yaml`. It also checks bot review bodies with outside-diff
-or nitpick findings. A completed CodeRabbit CheckRun must conclude SUCCESS;
+contains `.coderabbit.yaml`. It also checks bot review bodies with outside-diff,
+nitpick or duplicate findings. A completed CodeRabbit CheckRun must conclude SUCCESS;
 failed, cancelled, skipped or missing conclusions block the gate. It does not
 check every CI result or authorize landing.
 

@@ -60,6 +60,16 @@ test("blocks nitpicks and unrelated later human reviews", () => {
   expect(openFeedback(pr({ reviews: [nitpick, reply] }))).toHaveLength(1);
 });
 
+test("duplicate body findings still need acknowledgement after the earlier thread resolves", () => {
+  const duplicate = { ...outsideDiff, body: "♻️ Duplicate comments (1)" };
+  const state = pr({
+    threads: [{ isResolved: true, comments: { nodes: [{ url: "u1" }] } }],
+    reviews: [duplicate],
+  });
+  expect(openFeedback(state)).toEqual([`unanswered findings in a review body: ${duplicate.url}`]);
+  expect(openFeedback({ ...state, comments: { nodes: [ack()] } })).toEqual([]);
+});
+
 test("blocks unresolved threads and a review bot still running, but not other pending checks", () => {
   const state = pr({
     threads: [{ isResolved: false, comments: { nodes: [{ url: "https://example.test/t1" }] } }],
