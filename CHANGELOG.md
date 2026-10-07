@@ -4,6 +4,9 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Completion and blocked checkpoints now check the task ledger and offer the
+  highest-priority ready next step without waiting for a "next?" prompt.
+
 - Guidance refresh now discovers optional Swarmail update procedures through
   product instructions, CLI help and approved local documentation.
 

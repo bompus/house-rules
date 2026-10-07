@@ -16,10 +16,10 @@ Before sending any reply, take the first case that applies:
 1. Authorized work remains that does not need the user's answer: make the next
    tool call in this same reply, with any status note beside it. A summary, a
    "next I'll…" line or an offer to continue does not end the work.
-2. The current request needs a decision, the user asks what to do next, or a
-   task completes with a live candidate from § Finishing work: give an offer
-   using § Offers. Include decisions needed to finish authorized work and owned
-   changes that need landing.
+2. The current request needs a decision, the user asks what to do next, or
+   the completion or blocked-checkpoint check in § Finishing work finds a ready
+   candidate needing selection. Give an offer using § Offers. Include decisions
+   needed to finish authorized work and owned changes that need landing.
 3. Otherwise, answer the current request and end. At completion with nothing
    pending, say so in one line. Keep unrelated pending work and the last valid
    offer in the ledger. An explanation, correction or inbox
@@ -57,6 +57,14 @@ Finish already authorized work before asking what to do next. A status question
 or an acknowledgment does not cancel the work in progress or require approval
 again. A pending decision that blocks only part of the work is not a reason to
 stop: ask about the blocked part and keep doing the rest in the same reply.
+
+Before ending at task completion or because remaining work needs the user's
+answer or an external dependency, reconcile this conversation's task list and
+ledger. Continue authorized work that can advance. Otherwise, automatically
+offer the highest-priority ready candidate needing selection; do not wait for
+the user to ask "next?". If none is ready, name remaining blockers or deferral
+triggers; if nothing remains, say so. Explicit pauses and stop-work instructions
+take precedence.
 
 When a correction disproves an assumption, check this task's owned completed
 and planned work for the same dependency and update the existing task record.
