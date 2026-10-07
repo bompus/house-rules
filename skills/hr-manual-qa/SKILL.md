@@ -22,8 +22,9 @@ can reproduce. Follow the project's verification and domain safeguards.
    investigation and `hr-change-impact` is available, use it for that risk;
    otherwise name the uncertainty. A checklist does not require a full impact
    assessment.
-5. Present agent results first, then a quick smoke check of the changed flow
-   and any further required checks. Each manual check names:
+5. Present agent results first. When a manual observation remains, include a
+   quick smoke check of the changed flow and any further required user checks.
+   When none remains, do not request a user smoke check. Each manual check names:
    - **Setup**: device, account, data and navigation needed to reach the state.
    - **Action**: the interaction to perform.
    - **Expected observation**: the visible result that distinguishes success
