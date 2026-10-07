@@ -7,6 +7,13 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 - Add an explicit-only project tracker setup skill that reuses existing issue,
   domain-term and ADR conventions without imposing unrelated setup.
 
+- Notify affected sessions after agent-component updates and refresh subagent,
+  configuration, script and tool discovery alongside deployed rules and skills.
+
+- Clarify demand-based inspection of competing jobs, diagnostic uncalibrated
+  activity counters and finite resource reservations with productive light work
+  while waiting.
+
 - Clarify that lean planning drafts and critiques plans in the conversation
   without changing files or writing code; preserve explicit-only invocation.
 
