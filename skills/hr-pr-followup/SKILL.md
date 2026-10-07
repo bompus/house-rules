@@ -1,6 +1,6 @@
 ---
 name: hr-pr-followup
-description: Address conflicts, review feedback and failing checks when the user requests continued follow-up on a named pull request.
+description: Follow up on a named PR when asked to monitor or babysit it, resolving conflicts, review comments and failing CI.
 ---
 
 # Follow a pull request through its blockers
