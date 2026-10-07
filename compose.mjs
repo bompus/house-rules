@@ -16,6 +16,7 @@ import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { composeConfiguration, configurationPath, modifierList } from "./composition.mjs";
 import { configCommand } from "./config.mjs";
+import { setupCommand } from "./setup.mjs";
 export {
   compose,
   composeConfiguration,
@@ -30,6 +31,7 @@ const BASE = dirname(fileURLToPath(import.meta.url));
 const NOTICES = ["LICENSE", "THIRD_PARTY_NOTICES.md"];
 
 function main(argv) {
+  if (argv[0] === "setup") return setupCommand(argv.slice(1));
   if (argv[0] === "config") {
     return configCommand(argv.slice(1));
   }
@@ -77,9 +79,9 @@ if (
   realpathSync(resolve(process.argv[1])) === realpathSync(fileURLToPath(import.meta.url))
 ) {
   try {
-    main(process.argv.slice(2));
+    await main(process.argv.slice(2));
   } catch (e) {
     console.error(`house-rules: ${e.message}`);
-    process.exit(1);
+    process.exit(e.exitCode ?? 1);
   }
 }
