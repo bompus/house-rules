@@ -67,7 +67,9 @@ criteria and retained raw results. Verify that the controls apply and that
 dependencies and monitoring still progress before adopting them for the
 declared experiment. Priority changes never replace admission checks, resource
 caps or pressure rejection. Read [scheduling controls](references/tools.md#scheduling-controls)
-before choosing them.
+before choosing them. For questions about negative, zero or positive nice values,
+read the [recorded priority findings](references/priority-findings-20261006.md)
+before proposing another experiment.
 
 Classify the timed region against the host's budget for concurrent light work.
 A local phase is heavy when measured or expected CPU, memory or I/O exceeds

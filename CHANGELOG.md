@@ -4,6 +4,9 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+The benchmarking skill now links a dated priority experiment record, including
+positive, zero and negative nice results, inheritance behavior and scope limits.
+
 - Cross-session selection guidance now binds relayed offer choices to verified
   source messages and exact scope instead of the receiving session's offer codes.
 
