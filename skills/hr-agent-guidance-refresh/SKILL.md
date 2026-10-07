@@ -39,6 +39,10 @@ changes, model calls or provider restarts.
    repeating its notice; report blockers when action is needed. Never treat an
    acknowledgement as proof of loaded context.
 
+When guidance verification is selected, read
+[the verification method](references/verification.md) for evidence layers,
+answer-blind probes and scoped adoption checks.
+
 For an explicit source-update request, follow the owning checkout's adoption
 procedure and authorization before changing files. Upstream/source drift alone
 is not a newer deployed target. Report changed behavior or a blocker when it

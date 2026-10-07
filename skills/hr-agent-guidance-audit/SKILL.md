@@ -54,6 +54,11 @@ Verify effects before changing:
   Linked-but-unloaded files cost repo bloat rather than tokens; delete them
   for drift risk, not savings.
 
+When reviewing research records, staged lessons or guidance overrides, read
+[the record-maintenance method](references/records-and-lessons.md). For selected
+loading or behavior verification, locate the `hr-agent-guidance-refresh` bundle
+and read its `references/verification.md`; keep unavailable evidence unverified.
+
 ## Change
 
 Apply justified changes unless the user requested report-only. Use

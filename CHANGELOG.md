@@ -4,6 +4,9 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Share guidance-verification methods and research, lesson and override
+  maintenance through the existing audit and refresh skills.
+
 - Move pure source credit into distributed notices, carry notices in affected
   standalone skill bundles, and document notice carriage for rules-only exports.
 
