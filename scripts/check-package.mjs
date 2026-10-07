@@ -9,6 +9,7 @@ import {
   readFileSync,
   readdirSync,
   rmSync,
+  writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
@@ -79,8 +80,10 @@ try {
     ),
   );
   const config = join(scratch, "house-rules.json");
-  // No personal layer: compare every shipped skill and its bundled resources.
   cpSync(join(root, "examples", "person", "house-rules.json"), config);
+  // Keep full resource coverage separate from the bounded fresh selection.
+  const allSkillsConfig = join(scratch, "all-skills.json");
+  writeFileSync(allSkillsConfig, "{}");
   const runtimes = [process.execPath, ...(process.argv.includes("--bun") ? ["bun"] : [])];
   for (const [index, runtime] of runtimes.entries()) {
     assert.match(run(runtime, [join(installed, "compose.mjs"), "--list"], scratch), /coded-offers/);
@@ -104,7 +107,7 @@ try {
       [
         join(installed, "compose.mjs"),
         "--config",
-        config,
+        allSkillsConfig,
         "--out",
         join(scratch, `rules-${index}.md`),
         "--skills-out",
