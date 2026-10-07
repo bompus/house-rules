@@ -6,6 +6,11 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 - Keep unverified stale-text matches out of navigation ranking scores and detect
   missing-path diagnostics beyond result prefixes without counting source quotes.
+- Start fresh installs with eight skills and no modifiers. Add explicit shipped
+  skill selection while preserving existing configs and personal layers. Setup
+  introduces relevant additions without requiring a catalog-wide decision.
+- Require new guidance proposals to explain their need, existing alternatives,
+  evidence, activation limits and setup or maintenance cost.
 
 - Clarify that agent guidance audits cover the requested repository scope,
   including skill description accuracy.

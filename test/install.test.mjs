@@ -5,6 +5,7 @@ import {
   cpSync,
   existsSync,
   mkdirSync,
+  readFileSync,
   readdirSync,
   symlinkSync,
   writeFileSync,
@@ -126,9 +127,23 @@ it("installs from a checkout, then recomposes without deleting the old skills", 
   assert.ok(existsSync(join(config, "rules.md")));
   assert.ok(readdirSync(join(config, "composed-skills")).length > 0);
   assert.match(first.stdout, /@~\/\.config\/house-rules\/rules\.md/);
+  assert.equal(
+    JSON.parse(readFileSync(join(config, "house-rules.json"), "utf8")).skills.include.length,
+    8,
+  );
+  assert.equal(existsSync(join(config, "composed-skills", "hr-handoff")), false);
+  const existing = JSON.stringify({
+    modifiers: ["no-attribution"],
+    skills: { exclude: ["hr-read-reddit"] },
+    custom: "keep",
+  });
+  writeFileSync(join(config, "house-rules.json"), existing);
 
   const second = run(home, [], [], env);
   assert.equal(second.status, 0, second.stderr);
+  assert.equal(readFileSync(join(config, "house-rules.json"), "utf8"), existing);
+  assert.equal(existsSync(join(config, "composed-skills", "hr-handoff", "SKILL.md")), true);
+  assert.equal(existsSync(join(config, "composed-skills", "hr-read-reddit")), false);
   const kept = readdirSync(config).filter((f) => f.startsWith("composed-skills.previous-"));
   assert.equal(kept.length, 1);
   assert.ok(readdirSync(join(config, "composed-skills")).length > 0);

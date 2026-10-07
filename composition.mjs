@@ -139,13 +139,28 @@ export function loadFragments(config, configDir) {
 // Later layers' skills shadow base skills of the same name.
 export function skillSources(config, configDir) {
   const base = join(BASE, "skills");
+  const shipped = new Set(
+    readdirSync(base).filter((name) => existsSync(join(base, name, "SKILL.md"))),
+  );
   const legacyNames = new Map(
-    readdirSync(base)
-      .filter((name) => name.startsWith("hr-") && existsSync(join(base, name, "SKILL.md")))
-      .map((name) => [name.slice(3), name]),
+    [...shipped].filter((name) => name.startsWith("hr-")).map((name) => [name.slice(3), name]),
   );
   const exclude = new Set(config.skills?.exclude ?? []);
   const independent = new Set(config.skills?.independent ?? []);
+  const included = config.skills?.include;
+  if (included !== undefined) {
+    if (
+      !Array.isArray(included) ||
+      included.some((name) => typeof name !== "string" || !name.trim())
+    )
+      throw new Error("skills.include must be an array of non-empty strings");
+    if (new Set(included).size !== included.length)
+      throw new Error("skills.include contains duplicates");
+    for (const name of included) {
+      if (!shipped.has(name))
+        throw new Error(`unknown shipped skill "${name}" in skills.include (see config catalog)`);
+    }
+  }
   for (const name of exclude) {
     if (legacyNames.has(name) && !independent.has(name))
       throw new Error(
@@ -173,7 +188,11 @@ export function skillSources(config, configDir) {
             `legacy skill name "${declaredName}" in frontmatter; set name to "${name}" to match its renamed override directory`,
           );
       }
-      if (!exclude.has(name)) sources.set(name, join(root, name));
+      if (
+        !exclude.has(name) &&
+        (root !== base || included === undefined || included.includes(name))
+      )
+        sources.set(name, join(root, name));
     }
   }
   return sources;

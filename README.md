@@ -11,10 +11,10 @@
   <a href="LICENSE"><img src="https://img.shields.io/github/license/bompus/house-rules" alt="MIT license"></a>
 </p>
 
-Working rules and skills for AI coding agents, written to be read the same way
-by every model family. Use them as they are, or treat them as a base: turn on
-the modifiers you want, add your own rules and skills on top, and let each
-repository add its own.
+A practical starting point for ordinary development with AI coding agents.
+Fresh installs select eight skills for setup, review, diagnosis, explanation,
+planning, tests, writing and remaining work. Modifiers start off. Add guidance
+when a task needs it, and let each repository supply its own safeguards.
 
 <p align="center"><img src="docs/assets/overview.png" alt="The four layers composed into one rules file (core, opt-in modifiers, your layer, each repository's AGENTS.md), and the end-of-reply eval: 2/10 before the rewrite to 42/42 with the shipped wording, on an agent that reads only the first 80 lines." width="100%"></p>
 
@@ -36,7 +36,9 @@ don't install or copy anything on your own.
    `skills/` holds your own skills. A skill there replaces the house-rules
    skill of the same name. The config's other keys are optional: `layers`
    lists layer directories relative to the config (default `["."]`, its own
-   directory), and `skills.exclude` names skills to leave out. `skills.independent` records
+   directory). `skills.include` selects shipped skills; omitting it keeps the
+   full shipped set for existing configs. Personal skills remain included.
+   `skills.exclude` leaves names out of every layer. `skills.independent` records
    generic personal names you intend to keep beside renamed house-rules skills.
 4. **The repository** (`AGENTS.md`, `CLAUDE.md` or your host's equivalent):
    its commands, branch names, safeguards, required checks and landing path.
@@ -52,7 +54,7 @@ unknown target or any attempt to replace the end-of-reply check.
 ## Quick start
 
 Requires `git` and either [Bun](https://bun.sh) 1.4 or newer or Node.js 22 or
-newer. On Linux, macOS or WSL, one line installs or updates everything:
+newer. On Linux, macOS or WSL, one line installs or updates the selected guidance:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/bompus/house-rules/main/install.sh | sh
@@ -88,6 +90,11 @@ Those are the default paths: a set `XDG_DATA_HOME` replaces `~/.local/share`,
 and a set `XDG_CONFIG_HOME` replaces `~/.config`. On Windows the checkout goes
 to `%LOCALAPPDATA%\house-rules` and the config to
 `%USERPROFILE%\.config\house-rules`.
+The fresh config selects the eight skills named above and no modifiers.
+Updates preserve your existing config. An explicit `skills.include` list keeps
+later shipped additions off until selected. Browse the full catalog only when
+you want more choices.
+
 On a later run it keeps the previous skills directory under a dated name
 instead of deleting it. It never edits an agent host's files. The comment at
 the top of `install.sh` lists the environment variables that change its paths
@@ -103,7 +110,7 @@ choices and use `save` to change only the configuration. Then run the
 installer again.
 The [configuration CLI guide](docs/configuration.md) covers status, previews,
 question preferences and safe writes. The
-`hr-house-rules-setup` skill walks through choosing modifiers and connecting
+`hr-house-rules-setup` skill preserves selections, offers relevant additions and connects
 hosts, and asks before it touches a host file.
 
 ### npm distribution

@@ -520,3 +520,176 @@ test(
     );
   },
 );
+
+test("explicit shipped selection preserves personal layers and excludes future additions", (t) => {
+  const { dir, path } = fixture(t, {
+    skills: {
+      include: ["hr-code-review", "hr-handoff"],
+      exclude: ["hr-handoff"],
+      independent: ["handoff"],
+    },
+  });
+  for (const name of ["hr-code-review", "hr-explain-code", "handoff", "my-helper"]) {
+    mkdirSync(join(dir, "skills", name), { recursive: true });
+    writeFileSync(
+      join(dir, "skills", name, "SKILL.md"),
+      `---\nname: ${name}\n---\nPersonal ${name}`,
+    );
+  }
+  const out = report(path);
+  assert.deepEqual(
+    out.skills
+      .filter((s) => s.enabled)
+      .map((s) => s.name)
+      .sort(),
+    ["hr-code-review", "hr-explain-code", "handoff", "my-helper"].sort(),
+  );
+  assert.equal(
+    out.skills.find((s) => s.name === "hr-code-review").source,
+    join(dir, "skills", "hr-code-review"),
+  );
+  assert.equal(out.skills.find((s) => s.name === "hr-handoff").enabled, false);
+  assert.equal(out.skills.find((s) => s.name === "hr-read-reddit").enabled, false);
+  assert.equal(
+    report(path, ["--enable-skill", "hr-handoff"]).skills.find((s) => s.name === "hr-handoff")
+      .enabled,
+    true,
+  );
+});
+
+test("include selection toggles preview every change and apply without changing unrelated settings", (t) => {
+  const original = {
+    skills: { include: [], exclude: ["hr-code-review"], custom: "keep" },
+    custom: true,
+  };
+  const { path } = fixture(t, original);
+  const args = ["--enable-skill", "hr-code-review", "--disable-skill", "hr-handoff"];
+  const preview = report(path, args);
+  assert.deepEqual(preview.changes, [
+    { key: "skills.include", before: [], after: ["hr-code-review"] },
+    { key: "skills.exclude", before: ["hr-code-review"], after: ["hr-handoff"] },
+  ]);
+  assert.equal(readFileSync(path, "utf8"), JSON.stringify(original));
+  const applied = JSON.parse(
+    cli(["set", "--config", path, "--json", ...args, "--apply", "--expect", preview.revision]),
+  );
+  assert.deepEqual(JSON.parse(readFileSync(path, "utf8")), {
+    ...original,
+    skills: { ...original.skills, include: ["hr-code-review"], exclude: ["hr-handoff"] },
+  });
+  assert.equal(
+    JSON.parse(
+      cli(["set", "--config", path, "--json", ...args, "--apply", "--expect", applied.revision]),
+    ).applied.changed,
+    false,
+  );
+});
+
+test("empty include selects only personal skills and personal toggles never enter shipped selection", (t) => {
+  const { dir, path } = fixture(t, { skills: { include: [] } });
+  mkdirSync(join(dir, "skills", "mine"), { recursive: true });
+  writeFileSync(join(dir, "skills", "mine", "SKILL.md"), "---\nname: mine\n---\nMine");
+  assert.deepEqual(
+    report(path)
+      .skills.filter((s) => s.enabled)
+      .map((s) => s.name),
+    ["mine"],
+  );
+  const off = changeSelection(readConfiguration(path).config, { "disable-skill": ["mine"] }, path);
+  assert.deepEqual(off.skills, { include: [], exclude: ["mine"] });
+  assert.deepEqual(changeSelection(off, { "enable-skill": ["mine"] }, path).skills, {
+    include: [],
+    exclude: [],
+  });
+});
+
+test("invalid shipped selections fail through both CLIs before any write", (t) => {
+  for (const include of [
+    null,
+    "hr-code-review",
+    [""],
+    ["hr-code-review", "hr-code-review"],
+    ["not-shipped"],
+    ["../skills/hr-code-review"],
+  ]) {
+    const { dir, path } = fixture(t, { skills: { include } });
+    const original = readFileSync(path, "utf8");
+    assert.throws(() => report(path), /skills.include/);
+    assert.throws(
+      () =>
+        cli([
+          "set",
+          "--config",
+          path,
+          "--enable-skill",
+          "hr-code-review",
+          "--apply",
+          "--expect",
+          "unused",
+        ]),
+      /skills.include/,
+    );
+    assert.throws(
+      () =>
+        execFileSync(
+          process.execPath,
+          [
+            join(root, "compose.mjs"),
+            "--config",
+            path,
+            "--out",
+            join(dir, "rules.md"),
+            "--skills-out",
+            join(dir, "out"),
+          ],
+          { stdio: "pipe" },
+        ),
+      /skills.include/,
+    );
+    assert.equal(readFileSync(path, "utf8"), original);
+    assert.equal(existsSync(join(dir, "out")), false);
+    assert.equal(existsSync(join(dir, "rules.md")), false);
+  }
+});
+
+test("fresh sample composes exactly the selected routine skills and no modifiers", (t) => {
+  const { dir } = fixture(t);
+  const path = join(root, "examples/person/house-rules.json");
+  const out = report(path);
+  const expected = [
+    "hr-house-rules-setup",
+    "hr-code-review",
+    "hr-diagnosing-bugs",
+    "hr-explain-code",
+    "hr-lean-plan",
+    "hr-test-audit",
+    "hr-plain-prose",
+    "hr-what-next",
+  ].sort();
+  assert.deepEqual(
+    out.skills
+      .filter((s) => s.enabled)
+      .map((s) => s.name)
+      .sort(),
+    expected,
+  );
+  assert.equal(
+    out.modifiers.some((m) => m.enabled),
+    false,
+  );
+  execFileSync(
+    process.execPath,
+    [
+      join(root, "compose.mjs"),
+      "--config",
+      path,
+      "--skills-out",
+      join(dir, "out"),
+      "--out",
+      join(dir, "rules.md"),
+    ],
+    { stdio: "pipe" },
+  );
+  for (const name of expected) assert.equal(existsSync(join(dir, "out", name, "SKILL.md")), true);
+  assert.equal(existsSync(join(dir, "out", "hr-handoff")), false);
+});

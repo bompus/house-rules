@@ -46,7 +46,8 @@ function validateStructure(config) {
   for (const key of ["modifiers", "layers"]) stringList(config[key], key);
   if (config.skills !== undefined && !object(config.skills))
     throw new Error("skills must be an object");
-  for (const key of ["exclude", "independent"]) stringList(config.skills?.[key], `skills.${key}`);
+  for (const key of ["include", "exclude", "independent"])
+    stringList(config.skills?.[key], `skills.${key}`);
 }
 
 function validateSelection(config) {
@@ -86,7 +87,7 @@ export function selectionReport(config, path) {
   validateSelection(config);
   const result = composeConfiguration(config, dirname(path));
   const allSkills = skillSources(
-    { ...config, skills: { ...config.skills, exclude: [] } },
+    { ...config, skills: { ...config.skills, include: undefined, exclude: [] } },
     dirname(path),
   );
   const selected = new Set(config.modifiers ?? []);
@@ -141,10 +142,14 @@ export function changeSelection(config, options, path) {
   const next = structuredClone(config);
   const modifiers = new Set(next.modifiers ?? []);
   const excluded = new Set(next.skills?.exclude ?? []);
+  const included = next.skills?.include === undefined ? null : new Set(next.skills.include);
   const knownModifiers = new Set(modifierList().map((m) => m.name));
   // Use discovery even for excluded skills; preserve unrelated existing exclusions.
   const knownSkills = new Set(
-    skillSources({ ...next, skills: { ...next.skills, exclude: [] } }, dirname(path)).keys(),
+    skillSources(
+      { ...next, skills: { ...next.skills, include: undefined, exclude: [] } },
+      dirname(path),
+    ).keys(),
   );
   for (const [kind, known, choices] of [
     ["modifier", knownModifiers, modifiers],
@@ -166,7 +171,10 @@ export function changeSelection(config, options, path) {
     }
     for (const name of enable) {
       if (kind === "modifier") choices.add(name);
-      else choices.delete(name);
+      else {
+        choices.delete(name);
+        if (included && existsSync(join(SHIPPED_SKILLS, name, "SKILL.md"))) included.add(name);
+      }
     }
     for (const name of disable) {
       if (kind === "modifier") choices.delete(name);
@@ -185,6 +193,7 @@ export function changeSelection(config, options, path) {
     next.modifiers = [...modifiers];
   if (JSON.stringify([...excluded]) !== JSON.stringify(next.skills?.exclude ?? []))
     next.skills = { ...next.skills, exclude: [...excluded] };
+  if (included) next.skills.include = [...included];
   selectionReport(next, path); // Composition and legacy-name errors precede every write.
   return next;
 }
@@ -247,6 +256,11 @@ export function writeConfiguration(snapshot, next, expected) {
 export function selectionChanges(beforeConfig, afterConfig) {
   return [
     { key: "modifiers", before: beforeConfig.modifiers ?? [], after: afterConfig.modifiers ?? [] },
+    {
+      key: "skills.include",
+      before: beforeConfig.skills?.include ?? [],
+      after: afterConfig.skills?.include ?? [],
+    },
     {
       key: "skills.exclude",
       before: beforeConfig.skills?.exclude ?? [],

@@ -6,6 +6,27 @@ Everyone taking part follows the [code of conduct](CODE_OF_CONDUCT.md).
 
 ## What fits
 
+House-rules is a practical starting point for ordinary development with AI
+coding agents. Include guidance for common work or a recurring failure with a
+clear benefit over existing rules, tools and skills.
+
+For a new rule, modifier or skill, show:
+
+1. The concrete problem and representative developer task.
+2. The existing alternative and why it is insufficient.
+3. Evidence for the behavior, including when it should stay inactive.
+4. Its cost in setup choices, loaded context, dependencies and maintenance.
+5. Why it belongs here rather than in personal or project guidance.
+
+Portability and explicit invocation alone do not establish a reason to include
+a workflow. Prefer improving existing guidance or tools. Keep speculative
+procedures and personal operating habits in their own layers.
+
+Always-on rules must be broadly useful and preserve project choices. Default
+skills must support routine work with little setup. Specialist additions need
+a concrete shared use case and stay out of fresh defaults. Introduce them when
+the relevant task arises; setup should not require choosing from the catalog.
+
 Everything here must work for anyone's projects. Leave out names of private
 projects or repositories, local paths, home directories and credentials. A
 preference only some users want belongs in an opt-in modifier, not in

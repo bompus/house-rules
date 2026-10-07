@@ -160,14 +160,9 @@ test("every shipped modifier composes, alone and all together", () => {
 test("the example person layer composes with its skills", (t) => {
   const dir = scratch(t);
   const out = join(dir, "rules.md");
-  composeCli([
-    "--config",
-    join(root, "examples/person/house-rules.json"),
-    "--out",
-    out,
-    "--skills-out",
-    join(dir, "skills"),
-  ]);
+  const config = join(dir, "house-rules.json");
+  writeFileSync(config, JSON.stringify({ layers: [join(root, "examples/person")] }));
+  composeCli(["--config", config, "--out", out, "--skills-out", join(dir, "skills")]);
   const text = readFileSync(out, "utf8");
   assert.match(text, /## My tooling/);
   assert.match(text, /Keep reports under 15 lines/);

@@ -1,3 +1,15 @@
 {
-  "modifiers": ["coded-offers", "effort-estimates", "plan-files", "squash-landing", "no-attribution"]
+  "modifiers": [],
+  "skills": {
+    "include": [
+      "hr-house-rules-setup",
+      "hr-code-review",
+      "hr-diagnosing-bugs",
+      "hr-explain-code",
+      "hr-lean-plan",
+      "hr-test-audit",
+      "hr-plain-prose",
+      "hr-what-next"
+    ]
+  }
 }

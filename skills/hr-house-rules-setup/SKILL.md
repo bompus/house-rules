@@ -24,9 +24,7 @@ For an agent running without a terminal, use the preview/apply workflow below.
    `install.sh` puts it in `${XDG_DATA_HOME:-~/.local/share}/house-rules`,
    `install.ps1` in `%LOCALAPPDATA%\house-rules`).
    When there is none, ask the user where to clone it.
-   Run `node compose.mjs config catalog`. If it fails, show the error and run
-   `node compose.mjs --list` for modifier choices without reading the config.
-   Done when modifier choices are available.
+   Done when the checkout and the user's config path are known.
 2. Inspect `node compose.mjs config status --config <path>`.
    If status reports legacy skill names, stop inspection. Read the config and follow
    `docs/skill-names.md` before continuing. If catalog or status reports
@@ -41,32 +39,27 @@ For an agent running without a terminal, use the preview/apply workflow below.
    path. For `config must be a regular file, not a symlink or directory`, ask
    them to select or create a regular config file. Resume this step after the
    agreed repair or selected path passes `config validate`.
-   Ask these four questions in one message, showing the current choice for each:
-   - Do you run Swarmail, local mail between agent sessions? Yes enables
-     `swarmail`. When the Swarmail MCP tools are not available, point the
-     user to its install steps (https://github.com/bompus/swarmail) and ask
-     before installing anything.
-   - How should questions appear? Text only with plain options enables
-     neither offer modifier. Text only with coded options enables
-     `coded-offers`. Text plus question cards enables `coded-offers` and
-     `question-cards`; every card still has a complete text offer beside it.
-     Explain before choosing: card availability, invocation and presentation
-     can vary by host, provider and model. Cards may be unavailable, skipped
-     or shown unexpectedly, so this is an opt-in preference, not a guarantee.
-     Both text-only choices prohibit question-card tools even when the host
-     exposes them. On a later run, remove `question-cards` for a text-only
-     choice. If personal rules still request cards, show the conflict and
-     get direction before changing those rules or composing.
-   - Which other modifiers should be on? Show the rest from the catalog with
-     their descriptions; any combination is allowed.
-   - Which skills should be enabled? They are all on by default. Show the
-     catalog and current exclusions. If catalog failed, use the README's Skills
-     table and the configured personal skill directories for available choices.
-     Personal skills can override shipped ones. Keep existing independent names
-     and unrelated exclusions.
-   Done when the user has answered all four.
+   Preserve existing selections. Fresh installers use the sample config's small
+   skill set with no modifiers. When initializing a missing config manually,
+   show `examples/person/house-rules.json` and get the user's selection before
+   creating it; the CLI treats a missing config as the legacy full skill set.
+   Explain the current selection briefly. Ask about additions only when the
+   user's stated workflow needs them, or they ask to customize it. Use
+   `config catalog` to find those choices; show the full catalog only on request.
+   Personal skills override shipped ones. Keep independent names, layers,
+   unrelated settings and exclusions.
+
+   If the user wants Swarmail, offer its modifier. When its MCP tools are absent,
+   point to https://github.com/bompus/swarmail and ask before installing it.
+   If they want different question presentation, offer plain text, coded text,
+   or coded text with cards using `--questions plain|coded|cards`. Cards still
+   require a complete text offer. Explain that host, provider and model behavior
+   varies; card availability and presentation are unverified until checked.
+   Both text-only choices prohibit card tools. If personal rules still request
+   cards, resolve that conflict before changing those rules or composing.
+   Done when the user selects relevant changes or keeps the current setup.
 3. Use `node compose.mjs config set --config <path>` with the selected
-   modifier and skill toggles and `--questions plain|coded|cards`. It previews
+   modifier and skill toggles or question preset. It previews
    without saving. Read every change and personal rule override; resolve any
    conflict before writing. Repeat those flags with `--apply --expect <revision>`
    using the preview's revision. Done when it exits 0 and status confirms the
@@ -95,7 +88,8 @@ For an agent running without a terminal, use the preview/apply workflow below.
    does not exist yet or is empty; when the previous run's directory is in the
    way, ask before removing it. Then point or copy each host's skills
    directory at it, again with approval.
-7. Offer to run `evals/end-of-reply/run.mjs` against the user's models.
+7. When the user asks to evaluate reply behavior, use `evals/end-of-reply/run.mjs`
+   against their selected models.
 
 For a repository, suggest the pointer pattern in `examples/project/AGENTS.md`:
 point at § End of every reply and § Offers instead of restating them, and add

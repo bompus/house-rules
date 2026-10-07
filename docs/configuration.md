@@ -61,8 +61,18 @@ in a terminal and stacked rows on narrow screens. `NO_COLOR` disables color.
 Use `--json` for structured output without terminal styling.
 
 A missing config is treated as an empty selection without creating files.
-Modifiers are opt-in; shipped skills are included unless excluded. The default
-config path is the same as the composer uses. Pass `--config` to choose another.
+Modifiers are opt-in. Fresh installers copy the sample config with eight skills
+and no modifiers. A missing config or an existing config without `skills.include`
+keeps the full shipped set. The default config path is the same as the composer
+uses. Pass `--config` to choose another.
+
+`skills.include` is an optional list of shipped skill names. An empty list selects
+no shipped skills; later shipped additions stay off unless listed. Unknown names,
+malformed lists and duplicates are errors. Personal layer skills still load and
+override shipped skills, even when the shipped name is absent from the list.
+`skills.exclude` takes precedence across every layer. Existing independent names,
+layers and custom settings retain their behavior. The catalog remains complete
+so you can discover additions without enabling them.
 
 Status distinguishes configured question preferences from effective rule
 sources. Personal rules can override those preferences. Neither status nor
@@ -82,8 +92,11 @@ from the result before another write.
 
 Toggle flags can repeat. Enable or disable modifiers with `--enable-modifier`
 and `--disable-modifier`; skills use `--enable-skill` and `--disable-skill`.
-Enabling a skill removes its exclusion. Disabling one adds an exclusion, while
-retaining unrelated exclusions and custom skill settings.
+Enabling a skill removes its exclusion. When `skills.include` exists, enabling
+a shipped skill also adds it to that list. Enabling a personal-only skill does
+not add a shipped name. Disabling adds an exclusion, retaining the include list,
+unrelated exclusions and custom settings. Configs without an include list keep
+their existing selection behavior.
 
 | Question preset | Enabled offer modifiers |
 |---|---|
