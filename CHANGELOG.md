@@ -4,6 +4,9 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Benchmark guidance now verifies saved run identities and qualification from raw
+  evidence, and limits observer-induced retention in WeakRef memory probes.
+
 The benchmarking skill now links a dated priority experiment record, including
 positive, zero and negative nice results, inheritance behavior and scope limits.
 

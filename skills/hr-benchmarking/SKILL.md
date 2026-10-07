@@ -136,6 +136,12 @@ threshold, sample count, median and range. Apply the preset
 criterion and treat a gap within run-to-run variation as inconclusive. Profile
 separately from the runs used to claim a speed difference.
 
+When using saved evidence for a performance claim, verify run identities and
+stages against the declared plan. Recompute qualification from recorded raw
+counters and preset limits; an accepted summary or changed label is insufficient.
+Reject missing, duplicate or misclassified required observations. When an
+evidence reader exists, put these checks and focused corruption regressions there.
+
 Record memory by what it measures. Whole-process peak RSS includes startup,
 inputs and dependencies. Heap snapshots describe retained objects; allocation
 profiles describe allocation activity. Forced-GC probes are separate from
@@ -144,6 +150,14 @@ comparing caches; equal requested capacities need not mean equal memory use.
 For cache-retention probes, keep the cache owner reachable through the final
 observation; otherwise collection of the owner can be mistaken for release by
 the cache operation.
+
+For WeakRef-based retention probes, use bounded allocation batches and calibrated
+collection boundaries after creating or dereferencing targets. Avoid observer
+arrays or locals that keep measured values strongly reachable; preserve the
+intended owner lifetime. Report live payload, cache occupancy and process RSS
+separately. Keep this collection protocol outside ordinary latency runs; yielding
+or forced collection alone does not guarantee that a target is reclaimed.
+
 Batch latency percentiles describe batches, not individual requests.
 
 ## Report and decide
