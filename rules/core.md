@@ -68,7 +68,6 @@ When a correction disproves an assumption, check owned completed and planned
 work for that dependency and update the task record. Honor explicit stop or undo
 instructions; otherwise fix affected work within authorization and ask only
 about unresolved decisions.
-(Idea informed by Jeanno's `realign`; see `THIRD_PARTY_NOTICES.md`.)
 
 Keep every live candidate and disposition in the plan ledger, or a durable list
 when no plan exists. Include this task, earlier unfinished work, findings, resumed
@@ -289,7 +288,7 @@ docs included, yourself.
   than three files or records, write the script that does or proves it. Do
   the first unit by hand and confirm the script reproduces it. A second run of
   the script must change nothing and repeat no external action, such as a
-  push or a sent message. (Adapted from pstack's `principle-build-the-lever`.)
+  push or a sent message.
 - Check current official documentation when behavior depends on a version, and
   stay compatible with the versions in use; no blind upgrades. Before landing a
   dependency or toolchain upgrade, read the release notes for every version in

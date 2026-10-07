@@ -170,7 +170,3 @@ Keep text selectable by default. `::selection` can carry brand into the reading 
 `Location` is `path/to/file:line`. `Why` names the principle and the user impact.
 
 Report `Block` when any `HIGH` remains, `Approve` otherwise, leaving the rest in the table as work to do. Never `Approve` coverage you did not inspect. With nothing to report, state "No actionable typography findings" and report verification.
-
-## Sources
-
-Adapted from [Jakub Krehel](https://github.com/jakubkrehel/skills/tree/267330e1adfc66a718fb65fa6918c1f06d0a689e/skills/better-typography). Truncation guidance also comes from [Emil Kowalski](https://github.com/emilkowalski/skills/tree/e8a175de22ae1e49370fc144c1f3bb9aeedf988d/skills). Both sources are MIT-licensed; their notices are in `LICENSE`.

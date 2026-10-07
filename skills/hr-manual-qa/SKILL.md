@@ -35,7 +35,3 @@ can reproduce. Follow the project's verification and domain safeguards.
 
 Done when each required manual observation has a reproducible check or a named
 coverage gap. Distinguish agent verification from user checks still pending.
-
-Checklist ideas were informed by Jeanno's
-[`qa-checklist`](https://github.com/Jeanno/jeanno-skills/blob/db4e8fd66197ece38d622ca8b527dbe821843df2/skills/qa-checklist/SKILL.md).
-The instructions here are independently written.

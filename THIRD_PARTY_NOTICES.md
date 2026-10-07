@@ -22,7 +22,8 @@ Copyright (c) 2026 Matt Pocock
 Source: https://github.com/obra/superpowers (compared at revision `8ca22db`)
 
 - `skills/hr-writing-for-agents/SKILL.md`: the instruction-form table is adapted
-  from `writing-skills`.
+  from `writing-skills`. Its wording tests found that a recipe beat a prohibition
+  for shape failures.
 - `skills/hr-test-audit/SKILL.md`: cites `writing-good-tests.md`.
 
 Copyright (c) 2025 Jesse Vincent
@@ -68,7 +69,8 @@ Copyright (c) 2025 pypict-claude-skill contributors
 Source: https://github.com/sickn33/antigravity-awesome-skills (compared at revision `7bb0ab4`)
 
 - `skills/hr-writing-pr/SKILL.md`: selected ideas from
-  `skills/git-pr-workflows-pr-enhance/`.
+  `skills/git-pr-workflows-pr-enhance/`. Selected ideas also come from
+  [Luke Parker's writing-pr post](https://x.com/LukeParkerDev/status/2096769160021979571).
 
 Copyright (c) 2026 Antigravity User
 

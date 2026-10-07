@@ -108,7 +108,3 @@ bug, mention it once as a fact with its location and move on. For a critique
 of the design, point to `hr-maintainability-review`. For what a planned change
 would affect, point to `hr-change-impact`. For a failure being chased, point to
 `hr-diagnosing-bugs`.
-
-## Sources
-
-Visual explanation guidance adapts [HumanLayer's show-me skill](https://github.com/humanlayer/skills/blob/bba9d13ab34f0a87f1cc33df4dd196372393ddfc/plugins/show-me/skills/show-me/SKILL.md).

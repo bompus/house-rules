@@ -143,6 +143,13 @@ To recompose later, move or remove the old `composed-skills` directory first,
 because `--skills-out` must be empty or absent. `compose.mjs` itself writes
 only the paths you give it and never deletes anything.
 
+When distributing a rules-only output, carry this checkout's `LICENSE` and
+`THIRD_PARTY_NOTICES.md` alongside it. Copy them into an explicit destination
+and reconcile existing notice files before replacing them. A full
+`--skills-out` export already includes both at its root. When copying one
+skill, keep its entire directory, including any `NOTICE.md` and `LICENSE`.
+Personal layers must also carry notices required by their own sources.
+
 ## Upgrading skill names
 
 All shipped skill names use `hr-`. Before updating an older installation,
@@ -170,12 +177,13 @@ If I run several agent sessions on one machine at once, also look at
 Swarmail (https://github.com/bompus/swarmail); house-rules has an opt-in
 modifier for it.
 Read only: don't install, compose or edit anything until I choose. When I
-adopt a section or idea, add a one-line credit beside it, such as
-"Adapted from house-rules (https://github.com/bompus/house-rules)".
+adopt a section or idea, record its source in distributed notices, such as
+"Adapted from house-rules (https://github.com/bompus/house-rules)". Keep required
+licence notices with copied text and standalone skill bundles.
 ```
 
 Taking individual ideas is welcome. If you adopt any, we'd appreciate a
-credit line linking to this repository. Copying substantial text also needs
+source credit in your distributed notices. Copying substantial text also needs
 the MIT notice kept (see `LICENSE`).
 
 ## Writing your own sections

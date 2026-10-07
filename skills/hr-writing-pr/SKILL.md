@@ -72,8 +72,4 @@ Scale structure to the change. Omit empty optional sections, placeholder text, g
 
 Every factual claim must be supported by inspected code, the originating request, or observed results. The opening explains what changes and why; the remaining text helps review it. Deliver the title and body in the form requested. Apply them to a remote PR only within the user's authorized scope. When the user's rules turn attribution off (the `no-attribution` modifier, for example), include no `Made with` or other host attribution, and after `gh pr create` or `gh pr edit`, reread the published body and strip any footer a harness appended.
 
-## Sources
-
-Original synthesis of selected ideas from [Luke Parker's writing-pr post](https://x.com/LukeParkerDev/status/2096769160021979571) and [git-pr-workflows-pr-enhance](https://github.com/sickn33/antigravity-awesome-skills/tree/main/skills/git-pr-workflows-pr-enhance). Relevant validation stays in the description; extensive templates and review automation are outside this skill.
-
-Visual explanation guidance adapts [HumanLayer's show-me skill](https://github.com/humanlayer/skills/blob/bba9d13ab34f0a87f1cc33df4dd196372393ddfc/plugins/show-me/skills/show-me/SKILL.md).
+Relevant validation stays in the description; extensive templates and review automation are outside this skill.

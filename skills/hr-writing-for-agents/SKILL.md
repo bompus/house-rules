@@ -21,6 +21,8 @@ copying or adapting it. Preserve required notices and source provenance, includi
 the revision when known. A vendor label identifies its source; assess permitted
 adaptations rather than excluding them by that label alone. For house-rules
 contributions, locate its checkout and follow `CONTRIBUTING.md` for notice placement.
+Put pure credit in distributed notices; retain instruction references that help
+the task. Standalone bundles must carry their required notices.
 
 ## Context pointers
 
@@ -94,7 +96,7 @@ Choose the instruction's form from the failure it fixes:
 | Leaves out a required element | A required slot in the template it fills in | A prose reminder near the template |
 | Behavior depends on a condition | A conditional on something the agent can observe | An unconditional rule with exemption clauses |
 
-Exemption and nuance clauses leak: "don't X unless it matters" reopens the decision, and "this limit doesn't apply to code blocks" still suppresses code blocks. Express a real exception as its own conditional, or restructure so the rule cannot reach the exempt part. (Adapted from obra/superpowers `writing-skills`, whose wording tests found a recipe beat a prohibition for shape failures.)
+Exemption and nuance clauses leak: "don't X unless it matters" reopens the decision, and "this limit doesn't apply to code blocks" still suppresses code blocks. Express a real exception as its own conditional, or restructure so the rule cannot reach the exempt part.
 
 ## Pruning
 

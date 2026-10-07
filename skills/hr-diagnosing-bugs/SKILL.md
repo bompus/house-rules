@@ -79,7 +79,7 @@ show the sentence false, such as a count per input, actor or run, and keep it
 as a script that can be rerun. If the evidence contradicts the sentence, find
 what made it false and fix that, instead of compensating for it on every run.
 If the evidence supports the sentence, keep it as a record and look for the
-cause elsewhere. (Adapted from pstack's `principle-attack-the-premise`.)
+cause elsewhere.
 
 ## Fix and verify
 

@@ -4,6 +4,9 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Move pure source credit into distributed notices, carry notices in affected
+  standalone skill bundles, and document notice carriage for rules-only exports.
+
 - Six existing skills now clarify API field access and change reports, runnable
   impact evidence, explanation sources, planning blockers, structural review
   findings and stock UI candidates. Invocation metadata stays unchanged.

@@ -27,4 +27,7 @@ is one way to show it.
 The maintainer lands pull requests by rebasing them onto `main` and
 fast-forwarding, so your commits keep you as their author. Contributions are
 licensed under the MIT licence in `LICENSE`. When you adapt someone else's
-work, credit it in `THIRD_PARTY_NOTICES.md` and beside the adapted text.
+work, record its source and applicable licence notices in `THIRD_PARTY_NOTICES.md`.
+A skill copied on its own must carry those notices inside its bundle, such as
+`NOTICE.md` or `LICENSE`. Keep source references in instructions when they help
+the task; pure credit belongs in the notices.

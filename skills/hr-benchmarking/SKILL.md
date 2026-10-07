@@ -45,8 +45,6 @@ A reused service needs equivalent state across arms, not an arbitrary restart.
 
 ## Confirm the work
 
-These validity checks adapt [pstack's benchmark checklist](https://github.com/cursor/plugins/blob/main/pstack/skills/benchmark-checklist/SKILL.md).
-
 Validate outputs, consumed results and error counts outside the timed region
 where practical. Confirm requests arrived and asynchronous work was awaited.
 Include failures, timeouts and unresolved attempts in both arms' denominators.

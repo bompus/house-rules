@@ -120,7 +120,3 @@ A placeholder shows the expected format: `name@example.com`, `DD/MM/YYYY`. It va
 `Location` is `path/to/file:line`. `Why` names the principle and the user impact.
 
 Report `Block` when any `HIGH` remains. With partial coverage and no `HIGH`, report the coverage gap without a verdict. With complete coverage and no `HIGH`, report `Approve`, leaving lower-severity findings in the table as work to do. With nothing to report, state "No actionable writing findings" and report verification.
-
-## Sources
-
-Adapted from [Jakub Krehel](https://github.com/jakubkrehel/skills/tree/267330e1adfc66a718fb65fa6918c1f06d0a689e/skills/better-writing). Plural-form guidance also comes from [Emil Kowalski](https://github.com/emilkowalski/skills/tree/e8a175de22ae1e49370fc144c1f3bb9aeedf988d/skills). Both sources are MIT-licensed; their notices are in `LICENSE`.

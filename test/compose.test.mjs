@@ -176,6 +176,39 @@ test("the example person layer composes with its skills", (t) => {
     readdirSync(join(dir, "skills")).sort(),
     [...readdirSync(join(root, "skills")), "LICENSE", "THIRD_PARTY_NOTICES.md"].sort(),
   );
+  for (const notice of ["LICENSE", "THIRD_PARTY_NOTICES.md"])
+    assert.equal(
+      readFileSync(join(dir, "skills", notice), "utf8"),
+      readFileSync(join(root, notice), "utf8"),
+    );
+  const standalone = [
+    "hr-benchmarking",
+    "hr-better-accessibility",
+    "hr-better-colors",
+    "hr-better-layout",
+    "hr-better-typography",
+    "hr-better-writing",
+    "hr-diagnosing-bugs",
+    "hr-explain-code",
+    "hr-manual-qa",
+    "hr-writing-for-agents",
+    "hr-writing-pr",
+  ];
+  for (const name of standalone) {
+    const notice = readFileSync(join(dir, "skills", name, "NOTICE.md"), "utf8");
+    assert.equal(notice, readFileSync(join(root, "skills", name, "NOTICE.md"), "utf8"), name);
+    assert.ok(
+      notice.includes(readFileSync(join(root, "LICENSE"), "utf8")),
+      `${name} keeps the full MIT notice`,
+    );
+    assert.match(notice, /Source: https:\/\/github\.com\//, `${name} keeps source provenance`);
+    if (existsSync(join(root, "skills", name, "LICENSE")))
+      assert.equal(
+        readFileSync(join(dir, "skills", name, "LICENSE"), "utf8"),
+        readFileSync(join(root, "skills", name, "LICENSE"), "utf8"),
+        name,
+      );
+  }
 });
 
 test("a config's own directory is its layer, and layer skills replace base skills", (t) => {
