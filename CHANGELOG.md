@@ -4,6 +4,9 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Share review evidence assessment, weakened-test accounting and verification
+  limits through the existing code-review skill.
+
 - Share guidance-verification methods and research, lesson and override
   maintenance through the existing audit and refresh skills.
 

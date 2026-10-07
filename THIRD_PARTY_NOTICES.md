@@ -52,6 +52,8 @@ Source: https://github.com/no-human-ai/no_human (compared at revision `9b50bf6`)
 
 - `skills/hr-test-audit/SKILL.md`: the rule that weakening a test counts as
   removing it is adapted from its tamper guard.
+- `skills/hr-code-review/references/evidence.md`: test-weakening assessment and
+  refuting completion claims are informed by its verification approach.
 
 Copyright (c) 2026 Eyal Golan
 
