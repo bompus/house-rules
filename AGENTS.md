@@ -31,17 +31,8 @@ landing path; landing a pull request does not require a tag or release.
 Changelog entries describe completed changes. Keep unfinished work in the
 task plan rather than the changelog.
 
-Before a release or public announcement, follow the factual accuracy audit in
+Before a release or public announcement, follow the full release procedure in
 [`rules/modifiers/release-batching.md`](rules/modifiers/release-batching.md).
-
-Before publishing, review approved backlog items and open pull requests with
-their owners. Batch compatible changes that are ready or already intended for
-the next release. Record included changes, unfinished items and the release
-cutoff or readiness condition in the task plan. Pending backlog items do not
-authorize implementation or landing. Do not hold a ready batch for unrelated,
-unapproved or indefinite work. An urgent security, regression or compatibility
-fix can ship without waiting for unfinished backlog work. Its release notes
-still cover every unreleased change present in the tagged commit.
 
 When the batch is ready, prepare one release commit that moves all `Unreleased`
 entries into a dated version section. Choose the semantic version for the

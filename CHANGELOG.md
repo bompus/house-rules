@@ -4,6 +4,10 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Clarify checkout protection during integration and retain the guarded move
+  after landing. Point release guidance to the full shared procedure, align the
+  handoff picker with resumable handoffs and remove repeated palette wording.
+
 - Add `hr-tdd` for requested test-first implementation, with bundled test and
   mocking examples. Keep red-green cycles separate from review-stage simplification
   and preserve fresh-install skill selections.
