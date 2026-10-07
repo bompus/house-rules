@@ -1,0 +1,20 @@
+[
+  {
+    "id": "existing-conventions",
+    "request": "Configure this project's issue tracker and domain-document conventions.",
+    "context": "AGENTS.md links to CONTRIBUTING.md. CONTRIBUTING.md says GitHub Issues is the only task tracker, existing architectural decisions live in docs/decisions, and the project deliberately has no glossary. All links work and these conventions cover the requested setup.",
+    "bar": "Report the existing entry points without adding another tracker, glossary or ADR directory, making edits, or asking the user to repeat settled choices."
+  },
+  {
+    "id": "missing-choice",
+    "request": "Establish our project tracker and ADR conventions.",
+    "context": "The project instruction root has no tracker conventions. The team uses both GitHub Issues and Linear; the user has not chosen which owns this project's tasks. ADRs already live in docs/decisions and should remain there.",
+    "bar": "Ask which tracker owns tasks before writing tracker conventions. Preserve docs/decisions; do not invent a default, duplicate trackers or unrelated setup."
+  },
+  {
+    "id": "general-setup-near-miss",
+    "request": "Set up the agent account, install dependencies and configure CI for this repository.",
+    "context": "No tracker or domain-document configuration was requested. Assess only whether the tracker-setup workflow covers this request; do not perform external actions.",
+    "bar": "Identify that the request falls outside this workflow. Do not make tracker setup a prerequisite or propose tracker/domain-document changes."
+  }
+]

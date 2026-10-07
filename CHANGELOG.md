@@ -4,6 +4,9 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Add an explicit-only project tracker setup skill that reuses existing issue,
+  domain-term and ADR conventions without imposing unrelated setup.
+
 - Clarify that lean planning drafts and critiques plans in the conversation
   without changing files or writing code; preserve explicit-only invocation.
 
