@@ -4,6 +4,10 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Benchmark guidance now freezes artifact and historical evidence identities,
+  qualifies required observers, and bounds independent-case continuation and
+  retries while preserving admission and pressure gates.
+
 - Relay guidance now clarifies whether a handoff informs or requests work, names
   its action, repository and owner, and distinguishes source changes, installation
   and guidance additions while preserving verified authority and scope.

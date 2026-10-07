@@ -30,10 +30,14 @@ Name the measurement unit: request, operation, batch or whole command. State
 whether setup, startup, compilation, input loading, retries and cleanup count.
 
 Record exact runtime, compiler, dependency and runner versions, build flags,
-input identity and source revisions. Keep these fixed across repeated arms;
-reject mixed versions when resuming a checkpoint. Compare runtime knobs within
-the same build. Use equivalent outputs, release settings and comparable tuning.
-An untuned arm compares configurations rather than implementations.
+input identity and source revisions. Freeze copied quality and control artifacts;
+record their hashes and the executed artifact's identity. Agreement across
+runtimes alone does not verify the intended artifact. Keep these fixed across
+repeated arms; reject mixed versions when resuming a checkpoint.
+
+Compare runtime knobs within the same build. Use equivalent outputs, release
+settings and comparable tuning. An untuned arm compares configurations rather
+than implementations.
 
 Keep warm and cold conditions explicit. Reset state or use fresh processes
 where the question requires independence. Record warmup and cache conditions.
@@ -86,6 +90,13 @@ remote agent/model evaluations, record the timing regime and concurrent local
 work. Apply the local admission and pressure rules below when measuring local
 performance, rather than treating every model call as a CPU benchmark.
 
+Before collecting results, declare required observers, their measurement interval
+and coverage criteria. Require successful execution and recorded coverage that
+meets those criteria. Preserve observer exit status, errors and missing samples;
+reject evidence with unexplained observer failures or insufficient coverage.
+Require empty stderr only when the observer's declared contract requires it;
+documented harmless diagnostics alone do not invalidate observation.
+
 Before each arm, inspect CPU outside the measuring scope, memory headroom and
 pressure, swap and competing CPU, memory or I/O jobs. Use the host's admission
 limits; when it has none, declare the metrics and pass/fail thresholds before
@@ -106,11 +117,19 @@ memory-limit/OOM events; name any additional signals and their thresholds.
 Set a stall-duration budget from the experiment's timing precision. Record
 smaller stalls without rejecting them. Stalls exceeding the budget, swapping
 or memory-limit/OOM events invalidate measurements even when the benchmark
-causes them. Investigate uncertain overlap and repeat affected runs before
-using them for a decisive comparison. A light session's presence alone is not
-rejection evidence. Hold reservations during heavy local phases or declared
-isolated local performance measurements. Release them during remote waits,
-light work and reviews.
+causes them. Resource rejection invalidates the measurement; it alone does not
+establish an implementation defect. Investigate uncertain overlap and repeat
+affected runs within authorized retry budgets before a decisive comparison.
+A light session's presence alone is not rejection evidence.
+
+Declare per-case retry budgets before attempts; a budget grants no retry
+authority. Retain rejected attempts outside accepted samples. A later qualifying
+attempt neither erases a rejection nor relaxes its gates. After rejecting a case,
+continue other independently selected cases only when their admission passes
+and the failure cannot invalidate shared controls. Otherwise hold affected cases.
+
+Hold reservations during heavy local phases or declared isolated local performance
+measurements. Release them during remote waits, light work and reviews.
 
 Screen correctness and quality first, then use one run per selected arm to
 explore timing and resource behavior. Preserve screened-out results and their
@@ -136,11 +155,16 @@ threshold, sample count, median and range. Apply the preset
 criterion and treat a gap within run-to-run variation as inconclusive. Profile
 separately from the runs used to claim a speed difference.
 
-When using saved evidence for a performance claim, verify run identities and
-stages against the declared plan. Recompute qualification from recorded raw
-counters and preset limits; an accepted summary or changed label is insufficient.
-Reject missing, duplicate or misclassified required observations. When an
-evidence reader exists, put these checks and focused corruption regressions there.
+When using saved evidence for a performance claim, bind archived inputs, source,
+cohort and results to their recorded identities and artifact hashes. Validate
+historical reports against that frozen archive; later changes in the live
+checkout alone do not invalidate historical evidence. Verify run identities and
+stages against the declared plan.
+
+Recompute qualification from recorded raw counters and preset limits; an accepted
+summary or changed label is insufficient. Reject missing, duplicate or
+misclassified required observations. When an evidence reader exists, put these
+checks and focused corruption regressions there.
 
 Record memory by what it measures. Whole-process peak RSS includes startup,
 inputs and dependencies. Heap snapshots describe retained objects; allocation
