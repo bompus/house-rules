@@ -131,8 +131,8 @@ Read the plan against the sections above, then report three things in order:
 
 1. **Blocks starting**: missing goal slots, undecided branches, steps with no
    checkable outcome or owner, cutovers with no rollback, feature work routed
-   through shared paths with no isolation, and the same complexity split
-   across several PRs without reducing the number of concepts.
+   through shared paths with no isolation, and PR splits that leave the same
+   coupling in place and cannot merge independently.
 2. **Would make it smaller**: steps, layers, flags, migrations or parallel paths
    that can go, each with the reason and the moving-part count before and after.
 3. **Revised outline**: the plan rewritten in the layout above, short enough to

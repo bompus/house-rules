@@ -102,7 +102,9 @@ Use these parts, in order:
    is one, or "none needed" with the reason.
 
 Keep the list of risks short. Three real ones with locations beat fifteen
-possibilities. Remove private details before the report goes anywhere public.
+possibilities. Before sharing publicly, follow the project's data-classification
+policy. Remove credentials, personal data, private project names and URLs,
+and local paths.
 
 ## Related skills
 
