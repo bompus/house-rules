@@ -4,6 +4,9 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Keep unverified stale-text matches out of navigation ranking scores and detect
+  missing-path diagnostics beyond result prefixes without counting source quotes.
+
 - Clarify that agent guidance audits cover the requested repository scope,
   including skill description accuracy.
 

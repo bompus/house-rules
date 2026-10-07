@@ -51,7 +51,9 @@ Repeat `--repo-root` for multiple repositories or checkouts. The most specific
 matching root owns a command; unmapped or unresolved paths remain unknown.
 Use `--subagents` only when the selected subagent transcripts are in scope.
 Report missing inputs and rows omitted by `--min-sessions` or `--min-tools`.
-A heuristic score prioritizes reading; it does not prove an agent made a mistake.
+A heuristic score prioritizes misses, widening and repeated reads. Stale-text
+matches remain visible but do not affect ranking; discussion and quoted examples
+can match. Neither the score nor a repeated read proves a navigation mistake.
 
 Read each top session through its timeline:
 

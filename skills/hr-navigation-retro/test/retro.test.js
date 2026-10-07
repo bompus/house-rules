@@ -159,7 +159,7 @@ test("rank measures misses, widening, re-reads and stale remarks in both host fo
     widen: 1,
     rereads: 1,
     stale: 1,
-    score: 9,
+    score: 6,
   });
   expect(sessions.codex).toMatchObject({
     repo: "myrepo",
@@ -173,6 +173,103 @@ test("rank measures misses, widening, re-reads and stale remarks in both host fo
   expect(printed).toContain("myrepo");
   expect(printed).toContain(sessions.claude.path);
 });
+
+test("ranking ignores stale explanations and finds late diagnostics without counting source quotes", () => {
+  const home = mkdtempSync(
+    join(process.env.HOUSE_RULES_TEST_TMP ?? tmpdir(), "retro-diagnostics-"),
+  );
+  homes.push(home);
+  const item = (payload) => ({ type: "response_item", payload });
+  const cases = [
+    "progress\n".repeat(100) + "cat: docs/absent.md: No such file or directory",
+    JSON.stringify({
+      chunk_id: "result",
+      output: "progress\n".repeat(100) + "rg: docs/absent.md: No such file or directory",
+    }),
+    'MISSING_FILE = re.compile("No such file or directory|ENOENT")',
+    JSON.stringify({ output: 'const example = "cat: docs/x.md: No such file or directory";' }),
+    JSON.stringify({
+      chunk_id: "example",
+      output: "Example:\n```text\ncat: docs/x.md: No such file or directory\n```",
+    }),
+    JSON.stringify({ output: "cat: docs/x.md: No such file or directory" }),
+  ];
+  jsonl(join(home, "session.jsonl"), [
+    { type: "session_meta", payload: { cwd: join(home, "myrepo") } },
+    ...cases.flatMap((output, i) => [
+      item({
+        type: "function_call",
+        name: "exec_command",
+        call_id: String(i),
+        arguments: JSON.stringify({ cmd: i < 2 ? "cat docs/absent.md" : "cat docs/examples.md" }),
+      }),
+      item({ type: "function_call_output", call_id: String(i), output }),
+    ]),
+    item({
+      type: "message",
+      role: "assistant",
+      content: [{ text: "The metric discusses stale docs and wrong paths." }],
+    }),
+  ]);
+  expect(ranked(home)[0]).toMatchObject({
+    tools: 6,
+    misses: 2,
+    widen: 1,
+    rereads: 1,
+    stale: 2,
+    score: 6,
+  });
+  expect(ranked(home)[0].missExamples.map(([call]) => call)).toEqual([1, 2]);
+  const timeline = retro(home, "timeline", join(home, "session.jsonl"));
+  expect(timeline.match(/!!/g)).toHaveLength(2);
+  expect(timeline).toContain("!! rg: docs/absent.md: No such file or directory");
+});
+
+test.each(["cursor", "acp"])(
+  "%s structured missing-file errors retain diagnostic evidence",
+  (format) => {
+    const home = mkdtempSync(
+      join(process.env.HOUSE_RULES_TEST_TMP ?? tmpdir(), "retro-error-object-"),
+    );
+    homes.push(home);
+    const error = { code: "ENOENT", message: "Unable to read docs/absent.md" };
+    const records =
+      format === "cursor"
+        ? [
+            {
+              type: "tool_call",
+              subtype: "completed",
+              call_id: "x",
+              tool_call: { readToolCall: { args: { path: "docs/absent.md" }, result: { error } } },
+            },
+          ]
+        : [
+            {
+              sessionUpdate: "tool_call",
+              toolCallId: "x",
+              kind: "read",
+              locations: [{ path: "docs/absent.md" }],
+              status: "failed",
+              rawOutput: error,
+            },
+          ];
+    const path = join(home, "session.jsonl");
+    jsonl(path, records);
+    const out = join(home, "metrics.json");
+    execFileSync("python3", [
+      script,
+      "rank",
+      "--cwd",
+      home,
+      "--repo-root",
+      `app=${home}`,
+      "--json",
+      out,
+      path,
+    ]);
+    expect(JSON.parse(readFileSync(out, "utf8"))[0]).toMatchObject({ tools: 1, misses: 1 });
+  },
+);
 
 test("timeline flags the empty search and the missing file", () => {
   const home = fixtureHome();

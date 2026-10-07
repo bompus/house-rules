@@ -48,6 +48,11 @@ session-new/load/resume requests can provide cwd when included in the recording.
 Repository-root mappings label paths; they do not establish a session's cwd.
 Unmapped or unavailable directories remain unknown.
 
+Missing-path checks inspect complete result diagnostics and known shell-result
+JSON envelopes. Fenced examples and arbitrary source JSON are excluded. Unfenced
+source text identical to a diagnostic remains ambiguous; verify the recorded
+command and output before calling it a failure.
+
 Missing result text, terminal references and unsupported tool fields are gaps
 in evidence. They do not establish that a search found nothing. Synthetic tests
 verify these adapters' metric behavior; time or token savings are unmeasured.

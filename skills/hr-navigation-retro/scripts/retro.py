@@ -23,9 +23,9 @@ Per-session metrics:
             ToolSearch are excluded as noise.
   widen     a miss within 4 calls of the previous miss (a search being widened)
   rereads   files read 3+ times (Read, or cat/sed -n/head/tail on a path)
-  stale     assistant text saying a doc or path is stale, moved or wrong
-  score     misses + 2*widen + 2*rereads + 3*min(stale, 10) (heuristic weights;
-            stale phrases are noisy, so they are capped)
+  stale     unverified assistant text matches about stale, moved or wrong paths
+  score     misses + 2*widen + 2*rereads (heuristic weights; stale text matches
+            remain visible but do not contribute to ranking)
   rate      score per 100 tool calls. The top list sorts by rate (or --sort
             score) among sessions with at least --min-tools calls, so a long
             session does not outrank a short one by length alone.
@@ -299,6 +299,37 @@ def events(path):
         yield (role, ''.join(chunks), stamp)
 
 
+def missing_path(text, is_error=False):
+    """Inspect complete result diagnostics, including serialized shell outputs."""
+    lines = text.splitlines()
+    decoder = json.JSONDecoder()
+    fenced = False
+    for line in lines:
+        rest = line.lstrip()
+        if rest.startswith(('```', '~~~')):
+            fenced = not fenced
+            continue
+        if fenced:
+            continue
+        while rest.startswith('{'):
+            try:
+                result, end = decoder.raw_decode(rest)
+            except ValueError:
+                break
+            if isinstance(result, dict):
+                if is_error and result.get('code') == 'ENOENT':
+                    return 'ENOENT: ' + str(result.get('message', 'missing path'))
+                if ('chunk_id' in result or 'wall_time_seconds' in result) and isinstance(result.get('output'), str):
+                    lines.extend(result['output'].splitlines())
+            rest = rest[end:].lstrip()
+        if re.match(r'^(?:cat|rg|grep|find|ls|sed|head|tail|bash|sh|Error|FileNotFoundError):', rest) or re.match(
+            r'^(?:No such file or directory|File does not exist|does not exist|ENOENT)\b', rest
+        ):
+            if MISSING_FILE.search(rest):
+                return rest
+    return None
+
+
 def scan(path, sub=False, cutoff=None):
     rows = {}
     cwd, title, prompt, index = None, '', '', 0
@@ -378,7 +409,7 @@ def scan(path, sub=False, cutoff=None):
             if not targets[repo][0]:
                 continue
             miss = (name in ("Grep", "Glob") and EMPTY_SEARCH.match(text)) or (
-                (is_error or name not in NAV_TOOLS) and MISSING_FILE.search(text[:600])
+                (is_error or name not in NAV_TOOLS) and missing_path(text, is_error)
             )
             if miss:
                 s = state(repo)
@@ -399,7 +430,7 @@ def scan(path, sub=False, cutoff=None):
         s.update(title=title, prompt=prompt, sub=sub)
         s["rereadFiles"] = [[f.replace(HOME, '~', 1), n] for f, n in reads.most_common() if n >= 3][:8]
         s["rereads"] = sum(n >= 3 for n in reads.values())
-        s["score"] = s["misses"] + 2 * s["widen"] + 2 * s["rereads"] + 3 * min(s["stale"], 10)
+        s["score"] = s["misses"] + 2 * s["widen"] + 2 * s["rereads"]
         s["rate"] = round(100 * s["score"] / max(s["tools"], 1), 1)
     return list(rows.values())
 
@@ -452,9 +483,10 @@ def timeline(args):
             print(f"  #{index} {event[1]}: {short(event[2], 200)}")
         elif kind == "result":
             text = event[2]
-            if event[3] or EMPTY_SEARCH.match(text) or MISSING_FILE.search(text[:800]) or not text.strip() \
+            diagnostic = missing_path(text, event[3])
+            if event[3] or EMPTY_SEARCH.match(text) or diagnostic or not text.strip() \
                     or re.search(r"Process exited with code [1-9]", text[:800]):
-                print(f"     !! {short(text or '(empty)', 160)}")
+                print(f"     !! {short(diagnostic or text or '(empty)', 160)}")
 
 
 def main():
