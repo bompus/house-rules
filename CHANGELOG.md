@@ -4,6 +4,9 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Notify affected sessions after agent-component updates and refresh subagent,
+  configuration, script and tool discovery alongside deployed rules and skills.
+
 - Clarify that lean planning drafts and critiques plans in the conversation
   without changing files or writing code; preserve explicit-only invocation.
 

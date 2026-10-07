@@ -1,37 +1,50 @@
 ---
 name: hr-agent-guidance-refresh
-description: "Check deployed guidance revisions and reread changed rules and skills. Use for reload requests, start/resume, or an update signal before affected work."
+description: "Check deployed agent components and reread changed guidance, skills and subagent definitions; verify configuration and tooling discovery. Use for reload requests, start/resume, or an update signal before affected work."
 ---
 
 # Agent guidance refresh
 
 Injected rules and skill catalogs can retain an earlier snapshot. Use the
 host's approved deployed target, not an upstream commit or pending source edit.
-This skill rereads guidance; it does not authorize installation, settings
-changes, model calls or provider restarts.
+This skill reads guidance and checks supported discovery; it does not authorize
+installation, configuration changes, model calls, new probes or provider restarts.
+A pushed-source notice remains pending until the affected component is deployed.
 
 1. At start/resume, or the next affected-action boundary after an update signal,
    check the host's deployed revision or content fingerprints against this
    session's last refresh record. Include the repository instruction root and
-   applicable shared rules and selected skills. If no record exists, read the
-   current applicable guidance once and record its identity. An unavailable
-   target or approval record stays unverified; do not infer approval from a hash.
+   applicable shared rules, selected skills and their resources, subagent
+   definitions, configuration, supporting scripts and tooling. Scope this
+   inventory to components the session inherits or uses. Record effective
+   deployed identities through supported host discovery without exposing secrets.
+   If no record exists, read the applicable guidance and establish that baseline.
+   An unavailable target or approval record stays unverified; do not infer approval from a hash.
 2. Keep only the newest pending target per component. An unchanged identity
-   needs no repeated read or notice. Routine updates wait for an active session's
-   next boundary; they do not start idle model turns. Skip excluded skills and
-   preserve explicit invocation policies, settings and repository safeguards.
+   needs no repeated read or notice. Coalesce duplicate signals; a source revision
+   and its deployed target remain separate evidence. Routine updates wait for
+   the next affected action after the active operation ends. Keep idle and
+   offline sessions pending until resume; do not start a model turn for a notice.
+   Skip excluded skills and preserve explicit invocation policies, settings and repository safeguards.
 3. Finish an active operation before refreshing. When an evaluation fixes its
    guidance or tools, record the target as held until that context is released.
    Do not change its inputs. If an incompatible update prevents the next
    affected operation, hold that operation for supported recovery instead of
    using an incompatible context or forcing a restart.
-4. Read the changed deployed instruction files and affected skill content,
-   following their local indexes and necessary references. Recheck worktree
-   assumptions invalidated by the change. Use the host's supported catalog or
-   tool refresh only when its capability is established. A reread does not
-   prove that a provider's injected root, skill catalog or tool definitions
-   changed. Record unsupported or failed refresh paths and their blockers.
-5. Record the target, paths reread and observed loaded identities separately
+4. Read changed deployed instructions, affected skill resources and subagent
+   definitions through their local indexes and necessary references. Inspect
+   changed configuration through supported redacted summaries, never secret
+   values. Verify affected script or tool versions and the actual catalog,
+   configuration or callable interfaces the session would use next. Reading a
+   script does not run or deploy it. Recheck assumptions invalidated by changes.
+   Use supported context, catalog or tool refresh only when its capability and
+   authorization are established. A reread does not prove injected context,
+   effective subagent definitions, process configuration or tool discovery changed.
+   Record unsupported or failed paths. If a restart, reinstall or reload is needed,
+   report the component and required action as a blocker; do not perform it without
+   existing authorization.
+5. Record each component's source and deployed targets, affected paths, refresh
+   action and observed effective identity. Keep these results separate
    from installed-byte checks, catalog discovery, delivery acknowledgements and
    behavior tests. Mark components current only for the evidence obtained;
    keep pending, held, unsupported and offline states explicit. Disconnected
