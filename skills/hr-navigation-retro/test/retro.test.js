@@ -3,7 +3,8 @@ import { execFileSync, spawnSync } from "node:child_process";
 import {
   mkdirSync,
   linkSync,
-  mkdtempSync,
+  mkdtempSync as makeTemporaryDirectory,
+  realpathSync,
   readFileSync,
   readdirSync,
   rmSync,
@@ -14,6 +15,7 @@ import { join } from "node:path";
 
 const script = join(import.meta.dir, "../scripts/retro.py");
 const homes = [];
+const mkdtempSync = (prefix) => realpathSync.native(makeTemporaryDirectory(prefix));
 afterEach(() => {
   for (const home of homes.splice(0)) {
     rmSync(home, { recursive: true, force: true });
@@ -121,7 +123,7 @@ const retro = (home, command, ...args) =>
     "python3",
     [script, command, ...args, ...(command === "rank" ? [...rootArgs(home), ...inputs(home)] : [])],
     {
-      env: { ...process.env, HOME: home },
+      env: { ...process.env, HOME: home, USERPROFILE: home },
       encoding: "utf8",
     },
   );
@@ -286,7 +288,7 @@ test("batched command directories and physical read paths stay separate across r
     { type: "session_meta", payload: { cwd: a } },
     call(
       "batch",
-      `await tools.exec_command({workdir:${JSON.stringify(a)},cmd:"cat AGENTS.md; cat ./AGENTS.md; cat ${a}/AGENTS.md"}); await tools.exec_command({cmd:"cat AGENTS.md; cat AGENTS.md",workdir:${JSON.stringify(b)}});`,
+      `await tools.exec_command({workdir:${JSON.stringify(a)},cmd:${JSON.stringify(`cat AGENTS.md; cat ./AGENTS.md; cat ${a.replaceAll("\\", "/")}/AGENTS.md`)}}); await tools.exec_command({cmd:"cat AGENTS.md; cat AGENTS.md",workdir:${JSON.stringify(b)}});`,
     ),
     {
       type: "response_item",
@@ -302,7 +304,7 @@ test("batched command directories and physical read paths stay separate across r
     ),
     call(
       "cd",
-      `await tools.exec_command({cmd:"cd ${b} && cat AGENTS.md",workdir:${JSON.stringify(a)}});`,
+      `await tools.exec_command({cmd:${JSON.stringify(`cd "${b.replaceAll("\\", "/")}" && cat AGENTS.md`)},workdir:${JSON.stringify(a)}});`,
     ),
     call("dynamic", 'await tools.exec_command({cmd:"cat AGENTS.md",workdir:chosenDirectory});'),
   ]);
@@ -311,8 +313,8 @@ test("batched command directories and physical read paths stay separate across r
   const beta = rows.find((r) => r.repo === "beta");
   expect(alpha).toMatchObject({ tools: 2, nav: 2, rereads: 1, misses: 0 });
   expect(beta).toMatchObject({ tools: 2, nav: 2, rereads: 1, misses: 0 });
-  expect(alpha.rereadFiles).toEqual([["~/checkouts/alpha/one/AGENTS.md", 3]]);
-  expect(beta.rereadFiles).toEqual([["~/beta/AGENTS.md", 3]]);
+  expect(alpha.rereadFiles).toEqual([[join("~", "checkouts/alpha/one/AGENTS.md"), 3]]);
+  expect(beta.rereadFiles).toEqual([[join("~", "beta/AGENTS.md"), 3]]);
 });
 
 test("Claude text roles and dates exclude injected remarks and retain assistant legacy records", () => {
@@ -449,7 +451,7 @@ test("rank reads only selected inputs and uses explicit roots instead of store l
       selected,
     ],
     {
-      env: { ...process.env, HOME: home },
+      env: { ...process.env, HOME: home, USERPROFILE: home },
     },
   );
   const rows = JSON.parse(readFileSync(output, "utf8"));
@@ -466,7 +468,7 @@ test("rank selects the most specific mapped root and leaves adjacent paths unkno
     execFileSync(
       "python3",
       [script, "rank", ...roots.flatMap((r) => ["--repo-root", r]), "--json", output, selected],
-      { env: { ...process.env, HOME: home } },
+      { env: { ...process.env, HOME: home, USERPROFILE: home } },
     );
     return JSON.parse(readFileSync(output, "utf8"));
   };
@@ -500,7 +502,9 @@ test("invalid input selection and output aliases refuse before changing a transc
     ],
   ];
   for (const args of invalid) {
-    const result = spawnSync("python3", [script, ...args], { env: { ...process.env, HOME: home } });
+    const result = spawnSync("python3", [script, ...args], {
+      env: { ...process.env, HOME: home, USERPROFILE: home },
+    });
     expect(result.status).toBe(2);
     expect(readFileSync(selected, "utf8")).toBe(original);
   }
