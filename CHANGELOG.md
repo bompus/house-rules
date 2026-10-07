@@ -4,6 +4,10 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Add optional GitHub review-feedback and single-thread resolution helpers to
+  `hr-pr-followup`, with complete-read checks, dry-run resolution and
+  lost-response verification.
+
 - Clarify that agent guidance audits cover the requested repository scope,
   including skill description accuracy.
 
