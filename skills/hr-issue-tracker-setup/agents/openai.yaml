@@ -1,0 +1,5 @@
+interface:
+  display_name: "HR: Issue tracker setup"
+  short_description: "Configure project tracker and domain-doc conventions"
+policy:
+  allow_implicit_invocation: false

@@ -254,6 +254,7 @@ want and explains these limits before changing the configuration.
 | `hr-extract-shared-steps` | Move operations repeated across workflows into shared functions. |
 | `hr-handoff` | Write a handoff a fresh session can resume from. |
 | `hr-house-rules-setup` | Choose modifiers, create your layer and connect your hosts. |
+| `hr-issue-tracker-setup` | Configure project tracker, domain-term and ADR conventions; explicit-only. |
 | `hr-lean-plan` | Write or tighten an implementation plan with the fewest moving parts. |
 | `hr-maintainability-review` | Review a diff or entire codebase strictly for structure and maintainability. |
 | `hr-manual-qa` | Give reproducible human checks after reporting agent verification results. |
