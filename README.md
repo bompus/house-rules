@@ -210,7 +210,7 @@ in name order, after the modifiers.
 | `no-attribution` | Commits, pull requests and comments carry no agent or tool credit lines. |
 | `plan-files` | Multi-step work keeps a visible task list mirrored to a plan file with a ledger of every item's outcome. |
 | `question-cards` | Opt in to question cards beside complete text offers when the host supports them; availability and presentation can vary by host, provider and model. |
-| `release-batching` | Batch approved, compatible changes before publishing releases, with a defined cutoff and an urgent-fix path. |
+| `release-batching` | Batch approved, compatible changes for releases and audit factual claims before releases or public announcements. |
 | `scratch-on-disk` | Task scratch lives on disk under the user data directory, never in RAM-backed `/tmp`. |
 | `shared-host-load` | Run one heavy job at a time with capped CPU and memory; other sessions may continue light work within its resource limits. |
 | `solo-operator` | For repositories with one maintainer, the user's direction is the review; no review-gated steps. |

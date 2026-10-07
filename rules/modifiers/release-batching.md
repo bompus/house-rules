@@ -1,5 +1,5 @@
 ---
-description: Batch approved, compatible changes before publishing releases, with a defined cutoff and an urgent-fix path.
+description: Batch approved, compatible changes for releases and audit factual claims before releases or public announcements.
 after: Landing
 ---
 ## Release batching
@@ -18,6 +18,26 @@ next release. Record the included changes, unfinished items and release cutoff
 or readiness condition in the task plan. Backlog items do not authorize
 implementation or landing. Do not hold a ready batch for unrelated, unapproved
 or indefinite work.
+
+Before any release or public announcement, audit the README, comparisons,
+performance metrics, relevant documentation, announcement plans and drafts,
+and release notes against the intended revision or artifact and current
+verified state. Record which materials were checked and the evidence for
+claims in the task plan. Correct, add, remove or update content to resolve
+outdated instructions, omissions, contradictions and unsupported claims.
+Distinguish released, deployed and planned behavior; give performance claims
+measurement conditions and evidence, and label unverified results. Preserve
+historical results with their tested versions instead of presenting them as
+current measurements.
+
+Recheck affected claims when the candidate or supporting evidence changes.
+Before publishing, resolve unsupported or contradictory claims by correcting,
+qualifying or removing them; record any remaining accuracy blocker. Do not
+publish material with an unresolved accuracy blocker. Use existing evidence;
+this audit does not authorize new benchmarks, probes, source changes outside
+the task, or publication. Follow the owning repository's requirements for any
+needed correction or measurement. An urgent release may narrow the audit to
+its published materials and affected claims, but must still verify them.
 
 An urgent security, regression or compatibility fix can ship without waiting
 for unfinished backlog work. Every release's notes must cover all unreleased

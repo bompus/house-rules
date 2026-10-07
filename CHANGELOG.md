@@ -4,6 +4,10 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Release batching now audits documentation, comparisons, performance claims,
+  announcement materials and release notes against verified state before
+  releases or public announcements.
+
 - Benchmark guidance now verifies saved run identities and qualification from raw
   evidence, and limits observer-induced retention in WeakRef memory probes.
 
