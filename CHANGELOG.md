@@ -4,6 +4,10 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Add `hr-tdd` for requested test-first implementation, with bundled test and
+  mocking examples. Keep red-green cycles separate from review-stage simplification
+  and preserve fresh-install skill selections.
+
 - Add optional GitHub review-feedback and single-thread resolution helpers to
   `hr-pr-followup`, with complete-read checks, dry-run resolution and
   lost-response verification.

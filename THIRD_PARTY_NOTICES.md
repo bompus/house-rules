@@ -27,6 +27,9 @@ Source: https://github.com/mattpocock/skills (compared at revision `d81f3a1`)
 - `skills/hr-diagnosing-bugs/`: written for this repository after
   `skills/engineering/diagnosing-bugs/`, which it shares a purpose with.
 
+- `skills/hr-tdd/`: adapted from `skills/engineering/tdd/` at revision
+  `f3fc5632f401156837ee3872f14fe33ccf1024ea`. The bundle carries its MIT notice.
+
 Copyright (c) 2026 Matt Pocock
 
 ## obra/superpowers
