@@ -4,6 +4,10 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Add an explicit-only navigation retrospective with selected transcript inputs,
+  repository-root mappings, supported Claude/Codex metrics and synthetic tests.
+  Transcript discovery and sensitive findings stay with the host.
+
 - Add an explicit-only project tracker setup skill that reuses existing issue,
   domain-term and ADR conventions without imposing unrelated setup.
 

@@ -150,6 +150,10 @@ and reconcile existing notice files before replacing them. A full
 skill, keep its entire directory, including any `NOTICE.md` and `LICENSE`.
 Personal layers must also carry notices required by their own sources.
 
+The `hr-navigation-retro` skill analyzes selected Claude Code and Codex raw
+transcripts to find navigation failures, then proposes fixes verified against
+current source. It is explicit-only and requires Python 3.11+. Its reports stay local.
+
 ## Upgrading skill names
 
 All shipped skill names use `hr-`. Before updating an older installation,
