@@ -16,6 +16,13 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 - Clarify stock UI audit review versus cleanup triggers, and benchmark timing,
   memory and saved-evidence assessment; preserve invocation policies.
 
+- Separate observer cost budgets from contention and pressure gates, account for
+  all collectors, and require sensitivity evidence for claims of negligible
+  observation effects. Record protocol versions before execution and preserve
+  historical rejection verdicts. Retain over-budget runs outside accepted
+  evidence; declare stop rules and replacement limits before execution. Record
+  budget failures separately from foreign-load and pressure failures.
+
 - Explicit maintainability reviews now support entire repositories and
   subsystems, account for coverage gaps, use maintenance-priority verdicts for
   those scopes, and distinguish structure from correctness, UI, tests and
