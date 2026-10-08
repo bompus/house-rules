@@ -36,12 +36,14 @@ Lead with one symptom, the reproduction, expected and actual text results,
 and the versions and environment needed to reproduce it. Check the current
 stable release; identify development builds separately when tested. A verified
 small reproduction can be reported while its internal cause remains unknown.
+
 Show direct reproduction commands. Omit incidental scheduling, resource-control
 and observer wrappers from issue and pull request examples. When a control is
 required to reproduce the defect, include it and explain why. Keep exact executed
 commands in measurement records; disclose material conditions beside performance
 results without presenting local controls as prerequisites or changing historical
 conditions. This reporting choice is checked by the author, not a syntax gate.
+
 When reduction is blocked, record the attempted isolations and why the remaining
 parts are necessary before asking whether to submit the broader case.
 

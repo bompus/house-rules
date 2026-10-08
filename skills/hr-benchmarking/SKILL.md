@@ -69,8 +69,8 @@ rather than assuming their omission resets either. Use restricted affinity or
 changed priority only for representative deployment settings, an explicit resource
 agreement or a stated sensitivity question. Record the reason and effective values.
 Preserve frozen protocols and report constrained results within their tested scope.
-Treat a priority or affinity change as
-a separate sensitivity pilot under the host's rules, with preset variation
+
+Treat a priority or affinity change as a separate sensitivity pilot under the host's rules, with preset variation
 criteria and retained raw results. Verify that the controls apply and that
 dependencies and monitoring still progress before adopting them for the
 declared experiment. Priority changes never replace admission checks, resource
