@@ -60,6 +60,11 @@ Report relevant checks and their actual outcomes, including material failures an
 
 Use a small code example when it makes behavior concrete. For visual changes, use comparable before/after images when available. When the change replaces an existing procedure, state the prior and new procedure in one line each. For measured performance claims, identify the baseline and candidate, measurement conditions, and variability.
 
+For reproduction examples, apply the direct-command and material-condition
+guidance in the installed `hr-diagnosing-bugs` skill's `references/reporting.md`.
+When that skill is unavailable, show commands that reproduce the symptom and
+keep incidental local execution controls in the measurement record.
+
 When the existing shape is familiar, use a focused diff of calls, components
 or files to show the change. Use a diagram when it explains relationships more
 clearly than prose. Show the whole relevant block when omitted context would
