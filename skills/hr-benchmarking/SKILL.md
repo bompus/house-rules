@@ -75,10 +75,15 @@ before proposing another experiment.
 
 Classify the timed region against the host's budget for concurrent light work.
 A local phase is heavy when measured or expected CPU, memory or I/O exceeds
-that budget. When either is unknown, contact the active reservation owner or
-host coordinator. If neither is identified, ask the operator. Launch only after
-recording agreement on a bounded trial with CPU, memory and I/O limits, or an
-exclusive run window.
+that budget. Inspect the command, its hooks, wrappers and children before calling
+demand
+unknown. Inspection can qualify bounded ordinary work within that budget;
+missing resource samples alone does not require a trial. When inspection leaves
+potentially incompatible demand unresolved, contact the active reservation owner
+or host coordinator. If neither is identified, ask the operator. Launch that
+workload only after recording agreement on a bounded trial with CPU, memory and
+I/O limits, or an exclusive run window. Resolve input and authorization conflicts
+separately; resource admission does not override them.
 
 For an unknown competing job, record a preset time or query limit, then inspect
 its process identity, actual demand and access to measured inputs. Stop at that
@@ -90,9 +95,10 @@ A retained benchmark lock does not pause other sessions or reserve every phase
 of their tasks. Qualified non-heavy checks, edits and coordination proceed without
 acquiring that lock while staying within the concurrent-work budget and preserving
 measured inputs. Classify actual commands and children, including hooks; reuse
-qualification only for comparable inputs, runtimes and worker counts. When demand
-is unknown, identify the missing evidence and arrange the bounded qualification
-above. Defer only the incompatible phase, naming its resource or input conflict;
+qualification only for comparable inputs, runtimes and worker counts. When
+inspection leaves demand unresolved, identify the missing evidence and arrange
+the bounded qualification above. Defer only the incompatible phase, naming its
+resource or input conflict;
 do not use lock ownership alone to block qualified non-heavy work. Keep repository
 integration and installation write locks separate from benchmark admission.
 

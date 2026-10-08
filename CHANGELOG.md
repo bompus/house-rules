@@ -4,6 +4,11 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Accept inspection as qualification for bounded repository work within host
+  limits. Missing resource measurements alone no longer require a fresh
+  benchmark-owner grant; required hooks, input freezes and specific user stops
+  still apply.
+
 - The plain-prose checker flags counts and measurement units joined to prose
   without spaces, while preserving literal identifiers in code spans. The
   writing recipe applies the check to outgoing agent messages.
