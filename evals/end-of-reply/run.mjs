@@ -106,7 +106,7 @@ for (const { file, expect, body } of scenarios) {
         if (r.stderr) console.log(indent(r.stderr));
         continue;
       }
-      const g = grade(r.stdout ?? "", expect, { coded: arm.coded });
+      const g = grade(r.stdout ?? "", expect, { coded: arm.coded, scenario: file });
       if (g.pass) passed++;
       else if (arm.name === "rules") failed++;
       console.log(`${g.pass ? "PASS" : "FAIL"} ${label} run ${i + 1}: ${JSON.stringify(g)}`);

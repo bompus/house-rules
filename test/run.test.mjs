@@ -31,19 +31,20 @@ const baseline = (t, reply) => {
 test("--baseline reports each arm and warns about scenarios every arm passes", (t) => {
   const r = baseline(t, `() => "TOOL_CALL: Bash run tests\\n"`);
   assert.equal(r.status, 1, r.stderr);
-  assert.match(r.stdout, /^rules 3\/5, one-line 3\/5, no-rules 3\/5$/m);
+  assert.match(r.stdout, /^rules 2\/5, one-line 2\/5, no-rules 2\/5$/m);
   assert.match(r.stdout, /^WARN continue\.md /m);
   assert.match(r.stdout, /^WARN followups\.md /m);
-  assert.match(r.stdout, /^WARN phase-remainder\.md /m);
+  assert.doesNotMatch(r.stdout, /WARN phase-remainder\.md/);
   assert.doesNotMatch(r.stdout, /WARN waiting-with-ready-backlog\.md/);
   assert.doesNotMatch(r.stdout, /WARN needs-approval\.md/);
 });
 
 test("--baseline exits on the rules arm alone and stays quiet when only the rules pass", (t) => {
-  const offer = "Apply the change?\\n\\n1. Apply it (Recommended)\\n2. Wait\\n\\nReply 1 to apply.";
+  const offer =
+    "Fix the configuration validation bug?\\n\\n1. Apply it (Recommended)\\n2. Wait\\n\\nReply 1 to apply.";
   const r = baseline(
     t,
-    `(p) => !p.includes("RULES-MARKER") ? "Done. Nothing is left." : /approval|unselected/i.test(p) ? "${offer}" : "TOOL_CALL: Bash run tests\\n"`,
+    `(p) => !p.includes("RULES-MARKER") ? "Done. Nothing is left." : /approval|unselected/i.test(p) ? "${offer}" : /installed configuration verification/i.test(p) ? "TOOL_CALL: verify installed configuration\\n" : "TOOL_CALL: Bash run tests\\n"`,
   );
   assert.equal(r.status, 0, r.stdout);
   assert.match(r.stdout, /^rules 5\/5, one-line 0\/5, no-rules 0\/5$/m);

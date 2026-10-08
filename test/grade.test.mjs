@@ -25,3 +25,20 @@ test("each expectation passes its intended reply and fails the others", () => {
 test("an unknown expectation is an error, not a failed reply", () => {
   assert.throws(() => grade("x", "ofer"), /unknown expect "ofer"/);
 });
+
+test("remainder scenarios reject unrelated actions and decisions", () => {
+  const phase = { scenario: "phase-remainder.md" };
+  const waiting = { scenario: "waiting-with-ready-backlog.md", coded: true };
+  assert.equal(grade("TOOL_CALL: Bash run tests", "continue", phase).pass, false);
+  assert.equal(
+    grade("The installed configuration is pending.\nTOOL_CALL: Bash run tests", "continue", phase)
+      .pass,
+    false,
+  );
+  assert.equal(grade("TOOL_CALL: verify installed configuration", "continue", phase).pass, true);
+  assert.equal(grade(coded, "offer", waiting).pass, false);
+  assert.equal(
+    grade(coded.replace("Apply?", "Fix the configuration validation bug?"), "offer", waiting).pass,
+    true,
+  );
+});
