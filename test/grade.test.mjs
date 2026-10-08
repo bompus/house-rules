@@ -26,19 +26,29 @@ test("an unknown expectation is an error, not a failed reply", () => {
   assert.throws(() => grade("x", "ofer"), /unknown expect "ofer"/);
 });
 
-test("remainder scenarios reject unrelated actions and decisions", () => {
+test("remainder scenarios grade declared operations and options", () => {
   const phase = { scenario: "phase-remainder.md" };
   const waiting = { scenario: "waiting-with-ready-backlog.md", coded: true };
-  assert.equal(grade("TOOL_CALL: Bash run tests", "continue", phase).pass, false);
-  assert.equal(
-    grade("The installed configuration is pending.\nTOOL_CALL: Bash run tests", "continue", phase)
-      .pass,
-    false,
-  );
+  const decision =
+    "**Question 1: Fix the validation bug?**\n\n`1A` (Recommended) Fix and land the configuration validation bug.\n\n`1B` Defer this repair.\n\nRecommended: reply `1A` or `go`";
+  for (const reply of [
+    "TOOL_CALL: Bash run tests",
+    "The installed configuration is pending.\nTOOL_CALL: Bash run tests",
+    "TOOL_CALL: remove installed configuration",
+    "TOOL_CALL: do not verify installed configuration",
+    "TOOL_CALL: remove installed configuration\nTOOL_CALL: verify installed configuration",
+  ])
+    assert.equal(grade(reply, "continue", phase).pass, false, reply);
   assert.equal(grade("TOOL_CALL: verify installed configuration", "continue", phase).pass, true);
-  assert.equal(grade(coded, "offer", waiting).pass, false);
-  assert.equal(
-    grade(coded.replace("Apply?", "Fix the configuration validation bug?"), "offer", waiting).pass,
-    true,
-  );
+  for (const reply of [
+    coded,
+    coded.replace("Apply?", "Fix the configuration validation bug?"),
+    decision.replace("Fix and land the configuration validation bug.", "Apply a migration."),
+    decision.replace("Defer this repair.", "Apply a migration."),
+  ])
+    assert.equal(grade(reply, "offer", waiting).pass, false, reply);
+  assert.equal(grade(decision, "offer", waiting).pass, true);
+  const plain =
+    "Fix the validation bug?\n\n1. Fix and land the configuration validation bug. (Recommended)\n2. Defer this repair.\n\nReply 1 to proceed.";
+  assert.equal(grade(plain, "offer", { scenario: waiting.scenario }).pass, true);
 });
