@@ -41,6 +41,7 @@ try {
     "rules/references/release-batching.md",
     "rules/references/landing.md",
     "rules/references/squash-landing.md",
+    "rules/references/multi-agent.md",
     "config.mjs",
     "config-view.mjs",
     "setup.mjs",
@@ -89,7 +90,7 @@ try {
   const allSkillsConfig = join(scratch, "all-skills.json");
   writeFileSync(
     allSkillsConfig,
-    JSON.stringify({ modifiers: ["release-batching", "squash-landing"] }),
+    JSON.stringify({ modifiers: ["release-batching", "squash-landing", "multi-agent"] }),
   );
   const runtimes = [process.execPath, ...(process.argv.includes("--bun") ? ["bun"] : [])];
   for (const [index, runtime] of runtimes.entries()) {
@@ -142,6 +143,11 @@ try {
     assert.match(rules, /house-rules-references\/release-batching.md/);
     assert.match(rules, /house-rules-references\/landing.md/);
     assert.match(rules, /house-rules-references\/squash-landing.md/);
+    assert.match(rules, /house-rules-references\/multi-agent.md/);
+    assert.equal(
+      readFileSync(join(scratch, "house-rules-references", "multi-agent.md"), "utf8"),
+      readFileSync(join(root, "rules/references/multi-agent.md"), "utf8"),
+    );
     assert.match(
       readFileSync(join(scratch, "house-rules-references", "landing.md"), "utf8"),
       /After integration:/,

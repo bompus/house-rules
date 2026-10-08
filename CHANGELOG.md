@@ -4,6 +4,10 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Export the enabled multi-agent modifier's complete delegation, review and cleanup
+  procedure through rule references, retaining inline safeguards and full inline
+  output for default API and stdout callers.
+
 - Written rules now export core Landing and selected Squash landing procedures
   through independent references, retaining safety boundaries inline. Default
   composition and stdout retain full procedure bodies; personal replacements

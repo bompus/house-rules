@@ -54,13 +54,19 @@ test("copied rules retain the full procedure with no skills or source checkout",
   ])
     cpSync(join(root, name), join(source, name), { recursive: true });
   const config = join(dir, "config.json");
-  writeFileSync(config, JSON.stringify(selected));
+  writeFileSync(
+    config,
+    JSON.stringify({ ...selected, modifiers: [...selected.modifiers, "multi-agent"] }),
+  );
   const out = join(dir, "output", "rules.md");
   execFileSync(process.execPath, [join(source, "compose.mjs"), "--config", config, "--out", out]);
   rmSync(source, { recursive: true });
   const rules = readFileSync(out, "utf8");
   const link = /\[the release procedure\]\(([^)]+)\)/.exec(rules)[1];
   const landing = /\[the landing procedure\]\(([^)]+)\)/.exec(rules)[1];
+  const agents = /\[the agent-work procedure\]\(([^)]+)\)/.exec(rules)[1];
+  const agentProcedure = readFileSync(join(dirname(out), decodeURI(agents)), "utf8");
+  assert.equal(agentProcedure, readFileSync(join(root, "rules/references/multi-agent.md"), "utf8"));
   assert.match(readFileSync(join(dirname(out), decodeURI(landing)), "utf8"), /After integration:/);
   const procedure = readFileSync(join(dirname(out), decodeURI(link)), "utf8");
   assert.match(procedure, /Every release's notes must/);
@@ -69,6 +75,7 @@ test("copied rules retain the full procedure with no skills or source checkout",
   const copied = join(dir, "another-host");
   cpSync(dirname(out), copied, { recursive: true });
   assert.equal(readFileSync(join(copied, decodeURI(link)), "utf8"), procedure);
+  assert.equal(readFileSync(join(copied, decodeURI(agents)), "utf8"), agentProcedure);
 });
 
 test("repeat export updates owned files and rejects reference drift before changing rules", (t) => {
@@ -240,4 +247,44 @@ test("personal reference replacements can reuse a replaced resource name, but li
     () => composeConfiguration(config, dir, { referencesDirectory: "resources" }),
     /conflicting reference/,
   );
+});
+
+test("agent-work references follow modifier selection and preserve default APIs and replacements", (t) => {
+  const dir = scratch(t, "reference-agents-");
+  const config = {
+    modifiers: ["multi-agent"],
+    skills: { include: [], exclude: ["hr-code-review"] },
+  };
+  const canonical = readFileSync(join(root, "rules/references/multi-agent.md"), "utf8");
+  const inline = composeConfiguration(config, dir);
+  assert.ok(inline.rules.includes(canonical.trimEnd()));
+  assert.equal(inline.references.size, 0);
+  assert.equal(
+    compose(readFileSync(join(root, "rules/core.md"), "utf8"), [
+      parseFragment(
+        readFileSync(join(root, "rules/modifiers/multi-agent.md"), "utf8"),
+        "multi-agent",
+      ),
+    ]),
+    inline.rules,
+  );
+  const linked = composeConfiguration(config, dir, { referencesDirectory: "resources" });
+  assert.equal(linked.references.get("multi-agent.md"), canonical);
+  assert.match(linked.rules, /read \[the agent-work procedure\]\(resources\/multi-agent.md\)/);
+  assert.match(linked.rules, /further\s+fixes do not reset that limit/);
+  assert.match(linked.rules, /disconnected or resumable session/);
+  assert.equal(
+    composeConfiguration({ skills: { include: [] } }, dir, {
+      referencesDirectory: "resources",
+    }).references.has("multi-agent.md"),
+    false,
+  );
+  mkdirSync(join(dir, "rules"));
+  writeFileSync(
+    join(dir, "rules", "agents.md"),
+    "---\nreplaces: Working with other agents\n---\n## Working with other agents\n\nPersonal worker procedure.\n",
+  );
+  const replaced = composeConfiguration(config, dir, { referencesDirectory: "resources" });
+  assert.match(replaced.rules, /Personal worker procedure/);
+  assert.equal(replaced.references.has("multi-agent.md"), false);
 });

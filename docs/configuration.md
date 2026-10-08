@@ -165,6 +165,10 @@ when copying it to a host. References do not depend on `skills.include` or
 `skills.exclude`. Core Landing always contributes its reference; enabled modifiers contribute
 theirs. A personal replacement suppresses the resource it replaces.
 
+The `multi-agent` modifier exports its complete agent-work procedure when enabled,
+including review follow-ups and cleanup qualification. It remains independent
+of selected skills; enabling reference output does not enable the modifier.
+
 Use `--references-out <directory>` with `--out` to choose another destination;
 links are rendered relative to the rules file. Keep both locations available.
 Stdout and ordinary composition/configuration API calls retain full inline
