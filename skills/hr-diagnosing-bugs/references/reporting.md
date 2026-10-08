@@ -13,23 +13,31 @@ replacement workflow below.
 Reduce the failure to the smallest self-contained reproduction you can verify.
 Remove unrelated code, dependencies, data and setup. Keep reducing until each
 remaining part is needed to reproduce the failure. For a library failure,
-trace the operation and reproduce it directly when possible. Dig deeper when
-a broad symptom hides which part fails.
+trace the failing path and isolate its underlying runtime API or language
+operation. Use source inspection, profiling or controlled substitutions to
+choose the next reduction; a slow dependency does not establish its cause.
 
-Run the final reproduction with exact commands and pinned versions. Confirm
-that it preserves the original failure. Lead with one symptom, the reproduction,
-expected and actual text results, and the versions and environment needed to
-reproduce it. Check the current stable release; identify development builds
-separately when tested. Separate confirmed causes from suspected explanations.
-A verified small reproduction can be reported while its internal cause remains
-unknown. When reduction fails, report what you tried and what remains before
-asking whether to submit the broader case.
+Verify both the final reduction and the original scenario with exact commands
+and pinned versions. Preserve the inputs, output checks and relevant allocation,
+retention, concurrency or lifecycle behavior. A similar standalone failure is
+a contributor observation until evidence connects it to the original symptom.
+For performance or memory bugs, compare equivalent work under the applicable
+benchmark protocol. State units, repetitions, variability and measured controls;
+put the focused case before a larger comparison matrix.
 
-For performance or memory bugs, follow the applicable benchmark protocol.
-Put the focused case and its result before a larger comparison matrix.
-Check correctness and compare the same operation under the same conditions.
-Recheck both reduced and original cases. State units, repetitions and
-variability; include useful controls or workarounds when already measured.
+Include a cause-and-reduction note in the report: the isolated operation,
+evidence connecting it to the original failure, and remaining uncertainty.
+Test the proposed cause by changing or removing the suspected factor while
+preserving the other relevant conditions. Distinguish a reproduced operation,
+a supported causal explanation and a confirmed internal defect. Do not infer
+an engine defect merely because one runtime is slower on a library workload.
+
+Lead with one symptom, the reproduction, expected and actual text results,
+and the versions and environment needed to reproduce it. Check the current
+stable release; identify development builds separately when tested. A verified
+small reproduction can be reported while its internal cause remains unknown.
+When reduction is blocked, record the attempted isolations and why the remaining
+parts are necessary before asking whether to submit the broader case.
 
 Read the repository's contribution guidance and matching issue template,
 including organization defaults. Complete required fields and checklists.
