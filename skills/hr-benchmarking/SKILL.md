@@ -86,6 +86,16 @@ limit. A cap, service name or active state alone does not establish incompatible
 work. Keep unresolved overlap or observer gaps unqualified; input mutation remains
 incompatible even at low demand.
 
+A retained benchmark lock does not pause other sessions or reserve every phase
+of their tasks. Qualified non-heavy checks, edits and coordination proceed without
+acquiring that lock while staying within the concurrent-work budget and preserving
+measured inputs. Classify actual commands and children, including hooks; reuse
+qualification only for comparable inputs, runtimes and worker counts. When demand
+is unknown, identify the missing evidence and arrange the bounded qualification
+above. Defer only the incompatible phase, naming its resource or input conflict;
+do not use lock ownership alone to block qualified non-heavy work. Keep repository
+integration and installation write locks separate from benchmark admission.
+
 Reserve the host only for heavy local phases or deliberately isolated local
 performance measurements. Remote model
 inference, light CLI/API work and remote waits need no exclusive slot; a

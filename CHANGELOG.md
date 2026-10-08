@@ -4,6 +4,10 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Clarify that benchmark locks do not block qualified non-heavy checks or pause
+  other tasks. Classify actual commands and preserve measurement inputs, resource
+  budgets and separate repository or installation write locks.
+
 - Export detailed backlog reporting through a bundled `hr-what-next` reference,
   independently of skill selection. Keep general reporting and automatic completion
   duties inline, and preserve full inline output for default API and stdout callers.
