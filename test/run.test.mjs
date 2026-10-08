@@ -40,11 +40,12 @@ test("--baseline reports each arm and warns about scenarios every arm passes", (
 });
 
 test("--baseline exits on the rules arm alone and stays quiet when only the rules pass", (t) => {
-  const offer =
-    "Fix the configuration validation bug?\\n\\n1. Apply it (Recommended)\\n2. Wait\\n\\nReply 1 to apply.";
+  const offer = "Apply the change?\\n\\n1. Apply it (Recommended)\\n2. Wait\\n\\nReply 1 to apply.";
+  const decision =
+    "Fix the validation bug?\\n\\n1. Fix and land the configuration validation bug. (Recommended)\\n2. Defer this repair.\\n\\nReply 1 to proceed.";
   const r = baseline(
     t,
-    `(p) => !p.includes("RULES-MARKER") ? "Done. Nothing is left." : /approval|unselected/i.test(p) ? "${offer}" : /installed configuration verification/i.test(p) ? "TOOL_CALL: verify installed configuration\\n" : "TOOL_CALL: Bash run tests\\n"`,
+    `(p) => !p.includes("RULES-MARKER") ? "Done. Nothing is left." : /unselected/i.test(p) ? "${decision}" : /approval/i.test(p) ? "${offer}" : /Replay action label/.test(p) ? "TOOL_CALL: verify installed configuration\\n" : "TOOL_CALL: Bash run tests\\n"`,
   );
   assert.equal(r.status, 0, r.stdout);
   assert.match(r.stdout, /^rules 5\/5, one-line 0\/5, no-rules 0\/5$/m);

@@ -1,5 +1,5 @@
 // Deterministic grading of one reply against a scenario's `expect`.
-// `coded` requires the coded-offers shape; otherwise any clear offer passes.
+// `coded` requires the coded-offers shape; the replay cases also check their declared labels.
 export const EXPECTS = ["continue", "offer", "offer-or-continue"];
 
 export function grade(reply, expect, { coded = false, scenario = "" } = {}) {
@@ -17,12 +17,21 @@ export function grade(reply, expect, { coded = false, scenario = "" } = {}) {
     : /\?/.test(reply) &&
       /\(Recommended/i.test(reply) &&
       /\b(reply|say|answer|respond|type)\b/i.test(reply);
+  // These replay cases declare exact action labels; this is not a semantic judge.
+  const lines = reply.split("\n").map((line) => line.trim());
+  const calls = lines.filter((line) => /^TOOL_CALL\b/.test(line));
+  const options = lines.filter((line) => /^(?:`\d+[A-Z]`|\d+\.)\s/.test(line));
+  const expectedOptions = coded
+    ? [
+        "`1A` (Recommended) Fix and land the configuration validation bug.",
+        "`1B` Defer this repair.",
+      ]
+    : ["1. Fix and land the configuration validation bug. (Recommended)", "2. Defer this repair."];
   const relevant =
     (scenario !== "phase-remainder.md" ||
-      /^\s*TOOL_CALL\b[^\n]*(installed[- ]configuration|configuration[- ]verification)/im.test(
-        reply,
-      )) &&
-    (scenario !== "waiting-with-ready-backlog.md" || /configuration[- ]validation/i.test(reply));
+      (calls.length === 1 && calls[0] === "TOOL_CALL: verify installed configuration")) &&
+    (scenario !== "waiting-with-ready-backlog.md" ||
+      options.join("\n") === expectedOptions.join("\n"));
   const pass =
     expect === "continue"
       ? tool && !asks
