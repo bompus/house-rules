@@ -162,7 +162,8 @@ required.
 `--out rules.md` writes selected procedure references to a sibling
 `house-rules-references/` directory. Keep that directory beside the rules file
 when copying it to a host. References do not depend on `skills.include` or
-`skills.exclude`. Only selected rule fragments contribute references.
+`skills.exclude`. Core Landing always contributes its reference; enabled modifiers contribute
+theirs. A personal replacement suppresses the resource it replaces.
 
 Use `--references-out <directory>` with `--out` to choose another destination;
 links are rendered relative to the rules file. Keep both locations available.
@@ -173,3 +174,13 @@ A hash manifest permits repeat exports and updates to previously generated
 files. Modified, missing or unrecognized files in that directory stop generation
 before output writes. Reconcile them explicitly; generation never removes old
 procedure files or unrelated files. Output directories must not overlap.
+
+Core rule frontmatter may name one `reference` relative to `rules/core.md`.
+Its procedure must contain one level-2 section whose heading matches the core
+section holding the mandatory link. Default composition expands that section;
+linked output retains its safety boundaries and reading trigger. Modifier
+references use the same validation and output inventory.
+
+For low-level `compose(coreText, fragments)`, use `loadFragments` for personal
+layers so reference paths retain their source ownership. Directly parsed shipped
+modifiers are recognized only when their label and body match the shipped file.

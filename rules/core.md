@@ -1,3 +1,6 @@
+---
+reference: references/landing.md
+---
 # House rules
 
 These are your always-on working rules. Enabled modifiers and your personal
@@ -214,25 +217,10 @@ repository requires (pull request or direct push), and never bypass required
 checks. Landing is done when a fresh fetch shows the default branch contains
 the change.
 
-After integration:
-
-- Fetch, then bring the local default branch current. When it is clean,
-  strictly behind and not checked out elsewhere, fast-forward it. When another
-  worktree has it checked out and you know no session or running job is using
-  that worktree (your own main checkout, for example), run `git pull --ff-only`
-  there; unrelated uncommitted files may stay. When you cannot tell, treat it
-  as in use. Confirm the local and fetched remote heads match.
-- If the default branch is diverged, on another branch, in use, or the pull
-  refuses because local edits would be overwritten, leave it and report its
-  path and the blocker. Never merge, reset, stash or switch branches to make it
-  match, and never update other sessions' worktrees or separate clones.
-- Delete the merged remote branch when it is this task's own branch
-  (`git push origin --delete <branch>` when the merge did not); § Cleanup
-  covers branches others may rely on. Before merging a pull request that another open pull
-  request targets, retarget that one to the default branch first.
-- When the change landed by squash, verify the pull request's recorded squash
-  commit is in the fetched default branch and the intended changes landed; the
-  original feature commits need not be ancestors.
+Before integration, updating a default checkout or deleting a landed branch, read
+[the landing procedure](references/landing.md). Never bypass required checks;
+verify remote containment with a fresh fetch. Leave another session's checkout
+alone. Never merge, reset, stash or switch it to make it match the default.
 
 ## Cleanup
 

@@ -39,6 +39,8 @@ try {
     "composition.mjs",
     "rule-references.mjs",
     "rules/references/release-batching.md",
+    "rules/references/landing.md",
+    "rules/references/squash-landing.md",
     "config.mjs",
     "config-view.mjs",
     "setup.mjs",
@@ -85,7 +87,10 @@ try {
   cpSync(join(root, "examples", "person", "house-rules.json"), config);
   // Keep full resource coverage separate from the bounded fresh selection.
   const allSkillsConfig = join(scratch, "all-skills.json");
-  writeFileSync(allSkillsConfig, JSON.stringify({ modifiers: ["release-batching"] }));
+  writeFileSync(
+    allSkillsConfig,
+    JSON.stringify({ modifiers: ["release-batching", "squash-landing"] }),
+  );
   const runtimes = [process.execPath, ...(process.argv.includes("--bun") ? ["bun"] : [])];
   for (const [index, runtime] of runtimes.entries()) {
     assert.match(run(runtime, [join(installed, "compose.mjs"), "--list"], scratch), /coded-offers/);
@@ -135,6 +140,16 @@ try {
     compare(join(root, "skills"), output);
     const rules = readFileSync(join(scratch, `rules-${index}.md`), "utf8");
     assert.match(rules, /house-rules-references\/release-batching.md/);
+    assert.match(rules, /house-rules-references\/landing.md/);
+    assert.match(rules, /house-rules-references\/squash-landing.md/);
+    assert.match(
+      readFileSync(join(scratch, "house-rules-references", "landing.md"), "utf8"),
+      /After integration:/,
+    );
+    assert.match(
+      readFileSync(join(scratch, "house-rules-references", "squash-landing.md"), "utf8"),
+      /When an app manages the checkout, leave it/,
+    );
     assert.match(
       readFileSync(join(scratch, "house-rules-references", "release-batching.md"), "utf8"),
       /Every release's notes must/,

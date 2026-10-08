@@ -4,7 +4,7 @@ import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } fr
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { test } from "node:test";
-import { compose, composeConfiguration, loadFragments } from "../composition.mjs";
+import { compose, composeConfiguration, loadFragments, parseFragment } from "../composition.mjs";
 import { scratch } from "./fixture.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
@@ -29,7 +29,7 @@ test("inline callers and disabled modifiers preserve policy without requiring a 
     referencesDirectory: "resources",
   });
   assert.doesNotMatch(disabled.rules, /## Release batching/);
-  assert.equal(disabled.references.size, 0);
+  assert.deepEqual([...disabled.references.keys()], ["landing.md"]);
   const config = join(dir, "config.json");
   writeFileSync(config, JSON.stringify(selected));
   const result = cli(["--config", config]);
@@ -60,6 +60,8 @@ test("copied rules retain the full procedure with no skills or source checkout",
   rmSync(source, { recursive: true });
   const rules = readFileSync(out, "utf8");
   const link = /\[the release procedure\]\(([^)]+)\)/.exec(rules)[1];
+  const landing = /\[the landing procedure\]\(([^)]+)\)/.exec(rules)[1];
+  assert.match(readFileSync(join(dirname(out), decodeURI(landing)), "utf8"), /After integration:/);
   const procedure = readFileSync(join(dirname(out), decodeURI(link)), "utf8");
   assert.match(procedure, /Every release's notes must/);
   assert.match(procedure, /adds no permission to tag, publish or change release automation/);
@@ -159,5 +161,83 @@ test("a personal replacement omits the overridden public reference from resource
   );
   const result = composeConfiguration(selected, dir, { referencesDirectory: "resources" });
   assert.match(result.rules, /Personal release procedure/);
-  assert.equal(result.references.size, 0);
+  assert.equal(result.references.has("release-batching.md"), false);
+  assert.deepEqual([...result.references.keys()], ["landing.md"]);
+});
+
+test("core landing and selected squash references preserve inline callers and personal overrides", (t) => {
+  const dir = scratch(t, "reference-landing-");
+  const config = { modifiers: ["squash-landing"], skills: { include: [] } };
+  const inline = composeConfiguration(config, dir);
+  assert.match(inline.rules, /After integration:/);
+  assert.match(inline.rules, /Do not pass `--delete-branch`/);
+  assert.equal(
+    compose(readFileSync(join(root, "rules/core.md"), "utf8"), [
+      parseFragment(
+        readFileSync(join(root, "rules/modifiers/squash-landing.md"), "utf8"),
+        "squash-landing",
+      ),
+    ]),
+    inline.rules,
+  );
+  assert.doesNotMatch(inline.rules, /\[the landing procedure\]/);
+  assert.equal(inline.references.size, 0);
+  const linked = composeConfiguration(config, dir, { referencesDirectory: "resources" });
+  assert.deepEqual([...linked.references.keys()].sort(), ["landing.md", "squash-landing.md"]);
+  assert.match(linked.rules, /Never bypass required checks/);
+  assert.match(linked.rules, /During integration, never switch, reset, force-move or remove/);
+  assert.match(linked.references.get("landing.md"), /If the default branch is diverged/);
+  assert.match(
+    linked.references.get("squash-landing.md"),
+    /When an app manages the checkout, leave it/,
+  );
+  mkdirSync(join(dir, "rules"));
+  writeFileSync(
+    join(dir, "rules", "landing.md"),
+    "---\nreplaces: Landing\n---\n## Landing\n\nPersonal landing procedure.\n",
+  );
+  const replacement = composeConfiguration(config, dir, { referencesDirectory: "resources" });
+  assert.equal(replacement.references.has("landing.md"), false);
+  assert.equal(replacement.references.has("squash-landing.md"), true);
+  assert.match(replacement.rules, /Personal landing procedure/);
+});
+
+test("personal reference replacements can reuse a replaced resource name, but live collisions fail", (t) => {
+  const dir = scratch(t, "reference-owned-");
+  mkdirSync(join(dir, "rules"));
+  mkdirSync(join(dir, "references"));
+  for (const [name, heading] of [
+    ["landing", "Landing"],
+    ["squash-landing", "Squash landing"],
+  ]) {
+    writeFileSync(
+      join(dir, "rules", `${name}.md`),
+      `---\nreplaces: ${heading}\nreference: ../references/${name}.md\n---\n## ${heading}\n\nRead [personal procedure](../references/${name}.md).\n`,
+    );
+    writeFileSync(
+      join(dir, "references", `${name}.md`),
+      `## ${heading}\n\nPersonal ${name} procedure.\n`,
+    );
+  }
+  assert.throws(
+    () =>
+      compose(readFileSync(join(root, "rules/core.md"), "utf8"), [
+        parseFragment(readFileSync(join(dir, "rules", "landing.md"), "utf8"), "landing"),
+      ]),
+    /use loadFragments/,
+  );
+  const config = { modifiers: ["squash-landing"], skills: { include: [] } };
+  assert.match(composeConfiguration(config, dir).rules, /Personal landing procedure/);
+  const linked = composeConfiguration(config, dir, { referencesDirectory: "resources" });
+  assert.match(linked.references.get("landing.md"), /Personal landing procedure/);
+  assert.match(linked.references.get("squash-landing.md"), /Personal squash-landing procedure/);
+  writeFileSync(
+    join(dir, "rules", "landing.md"),
+    "---\nafter: Landing\nreference: ../references/landing.md\n---\n## Other\n\nRead [other](../references/landing.md).\n",
+  );
+  writeFileSync(join(dir, "references", "landing.md"), "## Other\n\nOther procedure.\n");
+  assert.throws(
+    () => composeConfiguration(config, dir, { referencesDirectory: "resources" }),
+    /conflicting reference/,
+  );
 });

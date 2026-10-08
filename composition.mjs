@@ -46,8 +46,18 @@ export function splitSections(rawText) {
   return { preamble, sections };
 }
 
-export function compose(coreText, fragments) {
+function composeParts(coreText, fragments, referencesDirectory, candidates) {
+  const core = parseFragment(coreText, "core");
+  if ("reference" in core.meta) {
+    core.path = join(BASE, "rules/core.md");
+    core.root = BASE;
+    renderReference(core, referencesDirectory, true);
+    coreText = core.body;
+  }
   const { preamble, sections } = splitSections(coreText);
+  if (core.referenceOutput)
+    sections.find((s) => s.heading === core.referenceOutput.heading).referenceOutput =
+      core.referenceOutput;
   const find = (heading, f) => {
     const i = sections.findIndex((s) => s.heading === heading);
     if (i < 0) throw new Error(`${f.source}: no section "${heading}" to target`);
@@ -76,6 +86,7 @@ export function compose(coreText, fragments) {
       continue;
     }
     const { preamble: stray, sections: added } = splitSections(f.body);
+    for (const section of added) section.referenceOutput = f.referenceOutput;
     if (!added.length || stray)
       throw new Error(`${f.source}: body must start with a "## " heading`);
     if (op === "replaces") {
@@ -95,6 +106,13 @@ export function compose(coreText, fragments) {
     if (seen.has(s.heading))
       throw new Error(`duplicate section "${s.heading}"; use replaces: to override it`);
     seen.add(s.heading);
+    if (s.referenceOutput) {
+      const resource = s.referenceOutput;
+      const previous = candidates.get(resource.name);
+      if (previous && previous.text !== resource.text)
+        throw new Error(`conflicting reference "${resource.name}"`);
+      candidates.set(resource.name, resource);
+    }
   }
   if (sections[0]?.heading !== PROTECTED)
     throw new Error(`"${PROTECTED}" must stay the first section`);
@@ -102,6 +120,30 @@ export function compose(coreText, fragments) {
     if (!seen.has(h))
       throw new Error(`a "${h}" section is required; a replacement must keep that heading`);
   return [preamble, ...sections.map((s) => s.text)].filter(Boolean).join("\n\n") + "\n";
+}
+
+export function compose(coreText, fragments) {
+  const inline = fragments.map((fragment) => {
+    if (!("reference" in fragment.meta) || !fragment.body.includes(`](${fragment.meta.reference})`))
+      return fragment;
+    const f = { ...fragment };
+    if (!f.path) {
+      const name =
+        typeof f.source === "string" ? f.source.replace(/^modifier /, "").replace(/\.md$/, "") : "";
+      const path = join(BASE, "rules/modifiers", `${name}.md`);
+      if (
+        !/^[a-z0-9-]+$/.test(name) ||
+        !existsSync(path) ||
+        parseFragment(readFileSync(path, "utf8"), name).body !== f.body
+      )
+        throw new Error(`${f.source}: use loadFragments to establish the reference source layer`);
+      f.path = path;
+      f.root = BASE;
+    }
+    renderReference(f, undefined);
+    return f;
+  });
+  return composeParts(coreText, inline, undefined, new Map());
 }
 
 const mdFiles = (dir) =>
@@ -212,6 +254,45 @@ export function configurationPath(path) {
   );
 }
 
+function renderReference(f, referencesDirectory, core = false) {
+  const invalidReference = `${f.source}: reference must be a regular file within its source layer`;
+  const path = resolve(dirname(f.path), f.meta.reference);
+  if (!f.meta.reference || !existsSync(path) || !lstatSync(path).isFile())
+    throw new Error(invalidReference);
+  const inside = relative(realpathSync(f.root), realpathSync(path));
+  if (inside.startsWith("..") || isAbsolute(inside)) throw new Error(invalidReference);
+  const name = basename(path);
+  if (!/^[a-z0-9][a-z0-9-]*\.md$/.test(name))
+    throw new Error(`${f.source}: invalid reference filename`);
+  const text = readFileSync(path, "utf8");
+  const original = splitSections(text);
+  const parts = splitSections(f.body);
+  const section = core
+    ? parts.sections.find((s) => s.heading === original.sections[0]?.heading)
+    : null;
+  const short = core ? splitSections(section?.text ?? "") : parts;
+  if (
+    original.preamble ||
+    short.preamble ||
+    original.sections.length !== 1 ||
+    short.sections.length !== 1 ||
+    original.sections[0].heading !== short.sections[0].heading
+  )
+    throw new Error(`${f.source}: reference must contain the same single section heading`);
+  const sourceLink = `](${f.meta.reference})`;
+  if (!(core ? section.text : f.body).includes(sourceLink))
+    throw new Error(`${f.source}: reference link missing from body`);
+  if (referencesDirectory === undefined) {
+    f.body = core ? f.body.replace(section.text, text.trim()) : text.trim();
+  } else {
+    const href = encodeURI(
+      `${referencesDirectory.replace(/\\/g, "/").replace(/\/$/, "")}/${name}`,
+    ).replace(/[()#?]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`);
+    f.body = f.body.replaceAll(sourceLink, `](${href})`);
+    f.referenceOutput = { name, text, heading: original.sections[0].heading };
+  }
+}
+
 function referenceFragments(config, configDir, referencesDirectory) {
   if (
     referencesDirectory !== undefined &&
@@ -222,40 +303,7 @@ function referenceFragments(config, configDir, referencesDirectory) {
   const candidates = new Map();
   for (const f of fragments) {
     if (!("reference" in f.meta)) continue;
-    const invalidReference = `${f.source}: reference must be a regular file within its source layer`;
-    const path = resolve(dirname(f.path), f.meta.reference);
-    if (!f.meta.reference || !existsSync(path) || !lstatSync(path).isFile())
-      throw new Error(invalidReference);
-    const inside = relative(realpathSync(f.root), realpathSync(path));
-    if (inside.startsWith("..") || isAbsolute(inside)) throw new Error(invalidReference);
-    const name = basename(path);
-    if (!/^[a-z0-9][a-z0-9-]*\.md$/.test(name))
-      throw new Error(`${f.source}: invalid reference filename`);
-    const text = readFileSync(path, "utf8");
-    const original = splitSections(text);
-    const short = splitSections(f.body);
-    if (
-      original.preamble ||
-      short.preamble ||
-      original.sections.length !== 1 ||
-      short.sections.length !== 1 ||
-      original.sections[0].heading !== short.sections[0].heading
-    )
-      throw new Error(`${f.source}: reference must contain the same single section heading`);
-    const sourceLink = `](${f.meta.reference})`;
-    if (!f.body.includes(sourceLink))
-      throw new Error(`${f.source}: reference link missing from body`);
-    if (referencesDirectory === undefined) {
-      f.body = text.trim();
-    } else {
-      const href = encodeURI(
-        `${referencesDirectory.replace(/\\/g, "/").replace(/\/$/, "")}/${name}`,
-      ).replace(/[()#?]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`);
-      f.body = f.body.replaceAll(sourceLink, `](${href})`);
-      const previous = candidates.get(name);
-      if (previous && previous.text !== text) throw new Error(`conflicting reference "${name}"`);
-      candidates.set(name, { text, link: `](${href})` });
-    }
+    renderReference(f, referencesDirectory);
   }
   return { fragments, candidates };
 }
@@ -267,12 +315,13 @@ export function loadFragments(config, configDir) {
 
 export function composeConfiguration(config, configDir, { referencesDirectory } = {}) {
   const { fragments, candidates } = referenceFragments(config, configDir, referencesDirectory);
-  const rules = compose(readFileSync(join(BASE, "rules/core.md"), "utf8"), fragments);
-  const references = new Map(
-    [...candidates]
-      .filter(([, value]) => rules.includes(value.link))
-      .map(([name, value]) => [name, value.text]),
+  const rules = composeParts(
+    readFileSync(join(BASE, "rules/core.md"), "utf8"),
+    fragments,
+    referencesDirectory,
+    candidates,
   );
+  const references = new Map([...candidates].map(([name, value]) => [name, value.text]));
   const skills = skillSources(config, configDir);
   const warnings = [];
   for (const f of fragments) {

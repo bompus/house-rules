@@ -4,6 +4,11 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Written rules now export core Landing and selected Squash landing procedures
+  through independent references, retaining safety boundaries inline. Default
+  composition and stdout retain full procedure bodies; personal replacements
+  suppress the resources they replace.
+
 - Export release-procedure references beside written rules independently of
   selected skills. Keep stdout and configuration previews inline, and protect
   exported references from overwriting modified or unrecognized files.
