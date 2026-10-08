@@ -2,6 +2,7 @@
 description: Commits, pull requests and comments carry no agent or tool credit lines.
 after: Writing
 ---
+
 ## No attribution
 
 Commits, pull requests, issues and comments carry no agent or tool credit: no

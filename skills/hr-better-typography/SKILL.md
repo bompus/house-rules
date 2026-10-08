@@ -141,20 +141,20 @@ Keep text selectable by default. `::selection` can carry brand into the reading 
 
 ## Before you finish
 
-| Mistake | Fix |
-| --- | --- |
-| Synthesized face differs from the design | Load the real face; disable only the verified synthesis mode |
-| Child heading visually overpowers its parent | Map that section's hierarchy to descending scale steps |
-| Heading element picked for its default size | Choose semantics first, then set the size in CSS |
-| Orphan on the last line of a paragraph | `text-wrap: pretty` |
-| Lopsided two-line heading | `text-wrap: balance` |
-| Justified text in an interface | `text-align: start`; reserve justify for specific editorial layouts |
-| Underline cuts through descenders | `text-decoration-skip-ink: auto`, `from-font` metrics |
-| Mixed-direction value renders in the wrong order | Correct `lang`/`dir`; isolate the value with `<bdi>` |
-| Selection disabled across application chrome | Restore it; suppress only where it conflicts with a drag or gesture |
-| Extra-info hint with no visual cue | Dotted underline via `text-decoration-style: dotted` |
-| Thin/Light weight on `14px` UI text | Weight `400`+ below `18px`; thin weights are display-only |
-| `leading-none` on a three-line card description | At least `1.4` on any text that wraps to 3+ lines |
+| Mistake                                          | Fix                                                                 |
+| ------------------------------------------------ | ------------------------------------------------------------------- |
+| Synthesized face differs from the design         | Load the real face; disable only the verified synthesis mode        |
+| Child heading visually overpowers its parent     | Map that section's hierarchy to descending scale steps              |
+| Heading element picked for its default size      | Choose semantics first, then set the size in CSS                    |
+| Orphan on the last line of a paragraph           | `text-wrap: pretty`                                                 |
+| Lopsided two-line heading                        | `text-wrap: balance`                                                |
+| Justified text in an interface                   | `text-align: start`; reserve justify for specific editorial layouts |
+| Underline cuts through descenders                | `text-decoration-skip-ink: auto`, `from-font` metrics               |
+| Mixed-direction value renders in the wrong order | Correct `lang`/`dir`; isolate the value with `<bdi>`                |
+| Selection disabled across application chrome     | Restore it; suppress only where it conflicts with a drag or gesture |
+| Extra-info hint with no visual cue               | Dotted underline via `text-decoration-style: dotted`                |
+| Thin/Light weight on `14px` UI text              | Weight `400`+ below `18px`; thin weights are display-only           |
+| `leading-none` on a three-line card description  | At least `1.4` on any text that wraps to 3+ lines                   |
 
 ## Reporting
 
@@ -165,7 +165,7 @@ Keep text selectable by default. `::selection` can carry brand into the reading 
 **Format.** Group findings under the principle each violates, ordered by severity, one row per root cause listing every location it appears in:
 
 | Severity | Location | Before | After | Why |
-| --- | --- | --- | --- | --- |
+| -------- | -------- | ------ | ----- | --- |
 
 `Location` is `path/to/file:line`. `Why` names the principle and the user impact.
 

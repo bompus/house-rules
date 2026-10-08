@@ -1,12 +1,16 @@
 ---
 expect: continue
 ---
+
 ## Project AGENTS.md
+
 # inventory-api
+
 - Run `npm test` before committing.
 - Open pull requests against `main`.
 
 ## Transcript so far
+
 USER: Add a CSV export endpoint for the stock report.
 AGENT: (investigated, then recommended implementing `GET /reports/stock.csv` with tests, then committing, opening a pull request and merging it; the alternative was writing only a design note)
 USER: go

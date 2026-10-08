@@ -234,7 +234,7 @@ test("the README lists every modifier with its description, and every skill", ()
   const readme = readFileSync(join(root, "README.md"), "utf8");
   const plain = (s) => s.replace(/`/g, "");
   for (const m of modifierList()) {
-    const row = readme.split("\n").find((l) => l.startsWith("| `" + m.name + "` |"));
+    const row = readme.split("\n").find((l) => l.split("|")[1]?.trim() === "`" + m.name + "`");
     assert.equal(plain(row?.split("|")[2].trim() ?? ""), plain(m.description), m.name);
   }
   for (const s of readdirSync(join(root, "skills")))

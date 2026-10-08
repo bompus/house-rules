@@ -77,14 +77,14 @@ The transform shrinks the whole box, not only the glyphs, so let a wrapper draw 
 
 ## Decorative text
 
-| Property | Effect |
-| --- | --- |
-| `::first-letter` | Drop cap, widely supported |
-| `::first-line` | Styles only the first line |
-| `initial-letter` | Sizes the drop cap; limited support, no Firefox yet |
-| `background-clip: text` | Clips a background or gradient to the letter shapes |
-| `-webkit-text-stroke` | Outlines the letters; works across modern browsers despite the prefix |
-| `text-shadow` | Like `box-shadow` but follows the character shapes |
+| Property                | Effect                                                                |
+| ----------------------- | --------------------------------------------------------------------- |
+| `::first-letter`        | Drop cap, widely supported                                            |
+| `::first-line`          | Styles only the first line                                            |
+| `initial-letter`        | Sizes the drop cap; limited support, no Firefox yet                   |
+| `background-clip: text` | Clips a background or gradient to the letter shapes                   |
+| `-webkit-text-stroke`   | Outlines the letters; works across modern browsers despite the prefix |
+| `text-shadow`           | Like `box-shadow` but follows the character shapes                    |
 
 A text stroke can expose overlapping font contours inside the letters. Variable fonts may retain overlaps for interpolation, and static fonts can contain them too. Inspect the specific font before treating a static cut as a fix.
 
@@ -92,12 +92,12 @@ A text stroke can expose overlapping font contours inside the letters. Variable 
 
 Typography must survive the reader changing it: zoom, a larger browser font size, an overridden line height or letter spacing.
 
-| Text | Size |
-| --- | --- |
-| Long-form body starting point | Around `16px`, verified in the actual typeface and measure |
-| Inputs and menus starting point | Around `14px` |
-| Captions | `13px` |
-| Floor | Rarely below `12px` |
+| Text                            | Size                                                       |
+| ------------------------------- | ---------------------------------------------------------- |
+| Long-form body starting point   | Around `16px`, verified in the actual typeface and measure |
+| Inputs and menus starting point | Around `14px`                                              |
+| Captions                        | `13px`                                                     |
+| Floor                           | Rarely below `12px`                                        |
 
 ## Font smoothing
 

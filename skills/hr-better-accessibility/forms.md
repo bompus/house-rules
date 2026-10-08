@@ -12,14 +12,12 @@ Every control needs a programmatic label: `<label for>` pointing at the input's 
 <input id="email" type="email" autocomplete="email" />
 
 <!-- Good: wrapping label, so label and control share one hit target -->
-<label>
-  <input type="checkbox" /> Send me updates
-</label>
+<label> <input type="checkbox" /> Send me updates </label>
 ```
 
 Label and control share one hit target, so clicking "Send me updates" toggles the checkbox with no dead zone between them. Mark required fields with native `required` plus a visible indicator explained once per form ("* required").
 
-A placeholder used *in addition to* a label shows an example of the expected format: `placeholder="name@company.com"`.
+A placeholder used _in addition to_ a label shows an example of the expected format: `placeholder="name@company.com"`.
 
 ## Error messaging
 
@@ -48,27 +46,27 @@ The complete pattern:
 
 `autocomplete` with a meaningful `name` fills forms in one tap and is a WCAG requirement (1.3.5) for fields about the user. The common tokens:
 
-| Field | `autocomplete` |
-| --- | --- |
-| Name | `name` (or `given-name` / `family-name`) |
-| Email | `email` |
-| Phone | `tel` |
-| Address | `street-address`, `address-line1`, `postal-code`, `country` |
-| Card | `cc-number`, `cc-exp`, `cc-csc`, `cc-name` |
-| Login | `username`, `current-password` |
-| Signup / reset | `new-password` |
-| 2FA code | `one-time-code` |
+| Field          | `autocomplete`                                              |
+| -------------- | ----------------------------------------------------------- |
+| Name           | `name` (or `given-name` / `family-name`)                    |
+| Email          | `email`                                                     |
+| Phone          | `tel`                                                       |
+| Address        | `street-address`, `address-line1`, `postal-code`, `country` |
+| Card           | `cc-number`, `cc-exp`, `cc-csc`, `cc-name`                  |
+| Login          | `username`, `current-password`                              |
+| Signup / reset | `new-password`                                              |
+| 2FA code       | `one-time-code`                                             |
 
 Prefix with a section where relevant: `autocomplete="shipping street-address"`.
 
 Correct `type` and `inputmode` pick the right mobile keyboard:
 
-| Input | Use |
-| --- | --- |
-| Email, URL, phone | `type="email"`, `type="url"`, `type="tel"` |
+| Input                   | Use                                                                  |
+| ----------------------- | -------------------------------------------------------------------- |
+| Email, URL, phone       | `type="email"`, `type="url"`, `type="tel"`                           |
 | OTP / PIN / card number | `type="text" inputmode="numeric"` (keeps text semantics, no spinner) |
-| Money, decimals | `type="text" inputmode="decimal"` |
-| True numeric quantity | `type="number"` |
+| Money, decimals         | `type="text" inputmode="decimal"`                                    |
+| True numeric quantity   | `type="number"`                                                      |
 
 Disable spellcheck on emails, codes and usernames: `spellcheck="false"`.
 
@@ -78,7 +76,7 @@ Disable spellcheck on emails, codes and usernames: `spellcheck="false"`.
 
 ## Submit behavior
 
-- Keep submit enabled until the request starts, then disable it and show a spinner *beside the original label*. "Save" with a spinner, not a bare spinner. The label is what tells assistive tech which button is busy.
+- Keep submit enabled until the request starts, then disable it and show a spinner _beside the original label_. "Save" with a spinner, not a bare spinner. The label is what tells assistive tech which button is busy.
 - Announce results. Success goes through a polite live region. On failure, focus the first invalid field, which is itself the announcement. Reserve `role="alert"` for form-level errors not tied to a field ([screen-readers.md](screen-readers.md)).
 - Warn on unsaved changes before navigation, and never lose typed input to a re-render. Hydration must preserve focus and value.
 - Enter submits from any focused input; in `<textarea>`, ⌘/Ctrl+Enter submits.

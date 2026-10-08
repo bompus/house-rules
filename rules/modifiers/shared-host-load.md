@@ -2,6 +2,7 @@
 description: Coordinate shared local work within host-defined resource budgets; isolate measurements and release reservations during remote waits.
 after: Coordination and isolation
 ---
+
 ## Shared machine load
 
 When local work shares a host, follow its declared CPU, memory and I/O budgets

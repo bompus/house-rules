@@ -2,6 +2,7 @@
 description: Offers use numbered questions and coded options (1A, 1B) so one short reply answers every decision.
 replaces: Offers
 ---
+
 ## Offers
 
 Use § Finishing work to select displayed candidates. Each offer stands alone:

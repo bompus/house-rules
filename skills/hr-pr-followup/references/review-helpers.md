@@ -84,4 +84,3 @@ or changed head exits 2. Re-read the PR before deciding whether to retry.
 
 The helper shares GraphQL command/envelope validation with `check-pr-review.ts`.
 It does not clear that gate's review-body findings or change the landing workflow.
-

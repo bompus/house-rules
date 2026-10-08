@@ -10,13 +10,13 @@ Contrast is measured between a **foreground color**, meaning text, an icon, or a
 
 APCA (Accessible Perceptual Contrast Algorithm) models perceived contrast more accurately than WCAG 2 and is the better default for design decisions. Lc (Lightness Contrast) measures perceived contrast between foreground and background. These levels simplify APCA's full font-size and weight lookup table:
 
-| Content type | Minimum | Preferred |
-| --- | --- | --- |
-| Body text (columns or blocks of text) | Lc 75 | Lc 90 |
-| Non-body text (labels, headlines) | Lc 60 | Lc 75 |
-| Large text meeting APCA size/weight guidance (e.g. 36px at weight 400) | Lc 45 | Lc 60 |
-| Large solid semantic shapes | Lc 30 | n/a |
-| Fine-detail pictograms and small outline icons | Lc 45 | n/a |
+| Content type                                                           | Minimum | Preferred |
+| ---------------------------------------------------------------------- | ------- | --------- |
+| Body text (columns or blocks of text)                                  | Lc 75   | Lc 90     |
+| Non-body text (labels, headlines)                                      | Lc 60   | Lc 75     |
+| Large text meeting APCA size/weight guidance (e.g. 36px at weight 400) | Lc 45   | Lc 60     |
+| Large solid semantic shapes                                            | Lc 30   | n/a       |
+| Fine-detail pictograms and small outline icons                         | Lc 45   | n/a       |
 
 Use [APCA's size and weight guidance](https://github.com/Myndex/SAPC-APCA/blob/master/documentation/APCA_in_a_Nutshell.md) for the actual typeface; 36px text at weight 300 needs Lc 60. Lc 30 is also APCA's minimum for disabled and placeholder text. Lc 15 applies only to sufficiently large, solid non-semantic elements.
 
@@ -26,11 +26,11 @@ Lc is signed: positive means dark text on a light background, negative means lig
 
 WCAG 2 is still required for formal WCAG 2.x conformance claims. Its luminance ratio is both too strict and too lenient depending on the pair, but it has the legal standing.
 
-| Content type | AA | AAA |
-| --- | --- | --- |
-| Normal text (<24px / <18.67px bold) | 4.5:1 | 7:1 |
-| Large text (≥24px / ≥18.67px bold) | 3:1 | 4.5:1 |
-| UI components and graphical objects | 3:1 | n/a |
+| Content type                        | AA    | AAA   |
+| ----------------------------------- | ----- | ----- |
+| Normal text (<24px / <18.67px bold) | 4.5:1 | 7:1   |
+| Large text (≥24px / ≥18.67px bold)  | 3:1   | 4.5:1 |
+| UI components and graphical objects | 3:1   | n/a   |
 
 WCAG defines large text in points: 18pt ≈ `24px`, 14pt bold ≈ `18.67px`.
 

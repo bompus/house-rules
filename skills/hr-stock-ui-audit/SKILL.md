@@ -43,17 +43,17 @@ nothing reached the failing severity (high by default), 1 means something did,
 `--fail-on medium` when violet accents, a single stock font or emoji icons
 should fail the run. Do not add the scanner as a CI gate unless asked.
 
-| Rule | Severity | Catches |
-|---|---|---|
-| `purple-blue-gradient` | high | gradients whose stops are all cool hues with at least one violet, in CSS or Tailwind `from-`/`to-` classes |
-| `violet-accent` | medium | any hex, rgb, hsl, oklch or bare HSL token whose computed hue lands in the indigo-to-purple band, plus Tailwind indigo/violet/purple classes |
-| `gradient-text` | medium | `background-clip: text` and `bg-clip-text` |
-| `single-stock-font` | medium | one stock sans (Inter, Roboto, Poppins and similar) as the only named face across two or more declarations in the scanned set |
-| `emoji-icon` | medium | emoji inside headings, buttons, links, nav items or `icon`/`label`/`title` fields |
-| `neon-glow` | medium | zero-offset, wide-blur shadows in a saturated color, and Tailwind colored shadows |
-| `frosted-glass` | low | `backdrop-filter: blur()` and `backdrop-blur` |
-| `library-default-token` | low | untouched default primaries from Bootstrap, Material, MUI, Ant Design, Chakra, shadcn/ui and the Vite starter |
-| `tracked-caps` | low | uppercase text with wide letter spacing |
+| Rule                    | Severity | Catches                                                                                                                                      |
+| ----------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `purple-blue-gradient`  | high     | gradients whose stops are all cool hues with at least one violet, in CSS or Tailwind `from-`/`to-` classes                                   |
+| `violet-accent`         | medium   | any hex, rgb, hsl, oklch or bare HSL token whose computed hue lands in the indigo-to-purple band, plus Tailwind indigo/violet/purple classes |
+| `gradient-text`         | medium   | `background-clip: text` and `bg-clip-text`                                                                                                   |
+| `single-stock-font`     | medium   | one stock sans (Inter, Roboto, Poppins and similar) as the only named face across two or more declarations in the scanned set                |
+| `emoji-icon`            | medium   | emoji inside headings, buttons, links, nav items or `icon`/`label`/`title` fields                                                            |
+| `neon-glow`             | medium   | zero-offset, wide-blur shadows in a saturated color, and Tailwind colored shadows                                                            |
+| `frosted-glass`         | low      | `backdrop-filter: blur()` and `backdrop-blur`                                                                                                |
+| `library-default-token` | low      | untouched default primaries from Bootstrap, Material, MUI, Ant Design, Chakra, shadcn/ui and the Vite starter                                |
+| `tracked-caps`          | low      | uppercase text with wide letter spacing                                                                                                      |
 
 The font rule looks across every file in one run, so scan the whole UI scope
 together; scanning one file at a time hides it.

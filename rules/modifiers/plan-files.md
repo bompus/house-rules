@@ -2,6 +2,7 @@
 description: Multi-step work keeps a visible task list mirrored to a plan file with a ledger of every item's outcome.
 after: Durable notes
 ---
+
 ## Task tracking
 
 For work with two or more steps, create the task list up front, keep exactly

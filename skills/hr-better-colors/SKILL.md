@@ -48,7 +48,7 @@ Never borrow a token because its value is right today. A separator used as a tex
 
 Four properties define a well-formed ramp:
 
-- Steps follow a deliberate *perceived* lightness progression ([palette-generation.md](palette-generation.md)).
+- Steps follow a deliberate _perceived_ lightness progression ([palette-generation.md](palette-generation.md)).
 - Hue stays constant end to end.
 - Vividness peaks mid-ramp and falls off at both ends.
 - Steps sit denser at the light end than at the dark end.
@@ -81,22 +81,22 @@ See [color-usage.md](color-usage.md).
 
 ## Before you finish
 
-| Mistake | Fix |
-| --- | --- |
-| A raw value where the project has a token | Reuse or add the role token, in the project's notation |
-| An isolated `oklch()` value dropped into a hex codebase | Keep the established notation unless a migration is in scope |
-| A primitive like `--blue-500` used directly in a component | Point a semantic token at it |
-| Token named for its appearance (`--color-blue-button`) or first use (`--color-sidebar-gray`) | Name it for its role: `--color-accent-solid`, `--color-bg-surface` |
-| `--color-primary` meaning the brand and `--color-text-primary` meaning body text | Reserve `accent` for the brand; let `primary` mean "most prominent of its group" |
-| Semantic token used outside its role (separator as text) | Add a token for the missing role; never borrow by value |
-| Ramp built by varying HSL lightness | Rebuild against perceived lightness with a constant hue |
-| Ramp spaced evenly across the full range | Tighten the light end until `50` and `100` read as two surfaces |
-| Same saturation number reused across hues | Match the proportion of each hue's own maximum, not the raw value |
-| Status hue that collides with the accent hue | Move it until destructive and primary read apart side by side |
-| Dark mode made by mechanically reversing the light palette | Reverse as a starting point, then reduce vividness, widen the dark end and recheck every pair |
-| `prefers-color-scheme` setting some tokens and a `.dark` class setting others | Pick one switching mechanism and use it throughout |
-| Contrast fixed by changing hue | Change lightness, the channel contrast responds to |
-| P3 color with no sRGB fallback | Declare the sRGB value first, then override inside `@media (color-gamut: p3)` |
+| Mistake                                                                                      | Fix                                                                                           |
+| -------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| A raw value where the project has a token                                                    | Reuse or add the role token, in the project's notation                                        |
+| An isolated `oklch()` value dropped into a hex codebase                                      | Keep the established notation unless a migration is in scope                                  |
+| A primitive like `--blue-500` used directly in a component                                   | Point a semantic token at it                                                                  |
+| Token named for its appearance (`--color-blue-button`) or first use (`--color-sidebar-gray`) | Name it for its role: `--color-accent-solid`, `--color-bg-surface`                            |
+| `--color-primary` meaning the brand and `--color-text-primary` meaning body text             | Reserve `accent` for the brand; let `primary` mean "most prominent of its group"              |
+| Semantic token used outside its role (separator as text)                                     | Add a token for the missing role; never borrow by value                                       |
+| Ramp built by varying HSL lightness                                                          | Rebuild against perceived lightness with a constant hue                                       |
+| Ramp spaced evenly across the full range                                                     | Tighten the light end until `50` and `100` read as two surfaces                               |
+| Same saturation number reused across hues                                                    | Match the proportion of each hue's own maximum, not the raw value                             |
+| Status hue that collides with the accent hue                                                 | Move it until destructive and primary read apart side by side                                 |
+| Dark mode made by mechanically reversing the light palette                                   | Reverse as a starting point, then reduce vividness, widen the dark end and recheck every pair |
+| `prefers-color-scheme` setting some tokens and a `.dark` class setting others                | Pick one switching mechanism and use it throughout                                            |
+| Contrast fixed by changing hue                                                               | Change lightness, the channel contrast responds to                                            |
+| P3 color with no sRGB fallback                                                               | Declare the sRGB value first, then override inside `@media (color-gamut: p3)`                 |
 
 ## Reporting
 
@@ -107,7 +107,7 @@ See [color-usage.md](color-usage.md).
 **Format.** Group findings under the principle each violates, ordered by severity, one row per root cause listing every location it appears in:
 
 | Severity | Location | Before | After | Why |
-| --- | --- | --- | --- | --- |
+| -------- | -------- | ------ | ----- | --- |
 
 `Location` is `path/to/file:line`. `Why` names the principle and the user impact.
 

@@ -70,43 +70,43 @@ look harder where several cluster in one paragraph. The checker script under
 "Check the result" reads this table and the one under "Name the actual
 thing", so keep each row as `| term | replacement |`.
 
-| Word | Write instead |
-|---|---|
-| delve into | look at, read, test |
-| pivotal, crucial | say what breaks without it |
-| robust | name the failure it survives |
-| seamless | name the step that no longer fails, or cut |
-| comprehensive | name what is covered |
-| streamline | name the step removed |
-| showcase | show |
-| underscore | show, or cut |
-| foster | help, build |
-| elevate | improve, raise |
-| tapestry | cut |
-| realm | area, or cut |
-| testament to | evidence of, or cut |
-| moreover, furthermore | also, or cut |
-| notably | cut |
+| Word                  | Write instead                              |
+| --------------------- | ------------------------------------------ |
+| delve into            | look at, read, test                        |
+| pivotal, crucial      | say what breaks without it                 |
+| robust                | name the failure it survives               |
+| seamless              | name the step that no longer fails, or cut |
+| comprehensive         | name what is covered                       |
+| streamline            | name the step removed                      |
+| showcase              | show                                       |
+| underscore            | show, or cut                               |
+| foster                | help, build                                |
+| elevate               | improve, raise                             |
+| tapestry              | cut                                        |
+| realm                 | area, or cut                               |
+| testament to          | evidence of, or cut                        |
+| moreover, furthermore | also, or cut                               |
+| notably               | cut                                        |
 
 ## Name the actual thing
 
 Some nouns sound technical but describe a problem as terrain or a physical
 force when an ordinary word for it is available. Name the actual thing.
 
-| Stand-in | Plain word |
-|---|---|
-| landscape | the tools or vendors, listed |
-| ecosystem | the packages, plugins or companies meant |
-| friction | the extra step, prompt or wait |
-| traction | users, downloads or revenue, with the number |
-| momentum | what shipped, and when |
-| headwinds | the specific problems |
-| fault line | the boundary where the two designs disagree |
-| center of gravity | the module or team that decides |
-| bandwidth | time |
-| lens | the criterion |
-| pillars | parts, goals |
-| erosion | the drop, with before and after figures |
+| Stand-in          | Plain word                                   |
+| ----------------- | -------------------------------------------- |
+| landscape         | the tools or vendors, listed                 |
+| ecosystem         | the packages, plugins or companies meant     |
+| friction          | the extra step, prompt or wait               |
+| traction          | users, downloads or revenue, with the number |
+| momentum          | what shipped, and when                       |
+| headwinds         | the specific problems                        |
+| fault line        | the boundary where the two designs disagree  |
+| center of gravity | the module or team that decides              |
+| bandwidth         | time                                         |
+| lens              | the criterion                                |
+| pillars           | parts, goals                                 |
+| erosion           | the drop, with before and after figures      |
 
 Write figurative language literally too. That covers metaphors, figurative
 verbs, code or documents described as if they had wishes, and slogan-like

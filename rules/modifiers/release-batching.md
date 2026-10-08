@@ -3,6 +3,7 @@ description: Batch approved, compatible changes for releases and audit factual c
 after: Landing
 reference: ../references/release-batching.md
 ---
+
 ## Release batching
 
 Landing does not authorize publishing. Follow the repository's release requirements.

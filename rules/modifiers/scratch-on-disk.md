@@ -2,6 +2,7 @@
 description: Task scratch lives on disk under the user data directory, never in RAM-backed /tmp.
 after: Durable notes
 ---
+
 ## Scratch files
 
 Keep task scratch on disk-backed storage, under `tmp/<topic>/` in your notes

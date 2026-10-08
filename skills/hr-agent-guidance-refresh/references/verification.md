@@ -6,13 +6,13 @@ The host and repository own the supported commands and safeguards.
 
 ## Keep the evidence separate
 
-| Claim | Evidence needed | Limit |
-| --- | --- | --- |
-| Installed | Compare destination bytes with the selected source revision | Does not establish discovery or loading |
-| Discovered | Inspect the actual host catalog from the relevant repository and account | Does not establish loaded bodies |
-| Loaded | Inspect a fresh context or an approved probe for the selected instruction identity | Does not establish compliance or message visibility |
-| Followed | Inspect the complete trace of a bounded behavior case | Applies to that case, host and tested revision |
-| Prevented | Verify enforcement on the actual host and tool paths | A request or mode label alone is insufficient |
+| Claim      | Evidence needed                                                                    | Limit                                               |
+| ---------- | ---------------------------------------------------------------------------------- | --------------------------------------------------- |
+| Installed  | Compare destination bytes with the selected source revision                        | Does not establish discovery or loading             |
+| Discovered | Inspect the actual host catalog from the relevant repository and account           | Does not establish loaded bodies                    |
+| Loaded     | Inspect a fresh context or an approved probe for the selected instruction identity | Does not establish compliance or message visibility |
+| Followed   | Inspect the complete trace of a bounded behavior case                              | Applies to that case, host and tested revision      |
+| Prevented  | Verify enforcement on the actual host and tool paths                               | A request or mode label alone is insufficient       |
 
 Record the source and deployed revisions, host/account, repository, test scope,
 observed result and missing evidence. Keep unavailable, failed and untested

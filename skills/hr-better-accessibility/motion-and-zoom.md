@@ -44,11 +44,11 @@ For an existing codebase where opt-in isn't feasible, a global reset is the fall
 
 Reduced motion means reduced, not eliminated. It targets vestibular triggers, not feedback.
 
-| Disable entirely | Replace | Keep |
-| --- | --- | --- |
-| Parallax scrolling | Slide/scale/zoom transitions → opacity crossfade | Loading spinners and progress |
-| Autoplaying video, GIFs, looping decoration | Smooth scrolling → instant jump | Instant state changes (hover color, focus ring) |
-| Spinning, large-scale movement across the screen | Auto-rotating carousels → start paused | Brief functional feedback (button press) |
+| Disable entirely                                 | Replace                                          | Keep                                            |
+| ------------------------------------------------ | ------------------------------------------------ | ----------------------------------------------- |
+| Parallax scrolling                               | Slide/scale/zoom transitions → opacity crossfade | Loading spinners and progress                   |
+| Autoplaying video, GIFs, looping decoration      | Smooth scrolling → instant jump                  | Instant state changes (hover color, focus ring) |
+| Spinning, large-scale movement across the screen | Auto-rotating carousels → start paused           | Brief functional feedback (button press)        |
 
 Animations are interruptible and driven by user input. Nothing autoplays or refuses to stop, and under reduced motion carousels start paused.
 
@@ -71,11 +71,11 @@ Fixed heights are what break under zoom. Use `min-height` on anything containing
 
 Respect how the codebase is set up. Where the project sizes in `px`, or on an established Tailwind scale, stay consistent and never introduce mixed units into someone else's system. Where you do have the choice, in new code or a codebase already on `rem`, `rem` respects the user's base font size and `px` ignores it:
 
-| Use `rem` | Use `px` |
-| --- | --- |
-| `font-size` | Borders and hairlines |
-| `max-width` of text containers | Focus outline width and offset |
-| Media-query breakpoints (`@media (min-width: 48rem)`) | `box-shadow` details |
-| Spacing that should scale with text | Fixed-size decorations |
+| Use `rem`                                             | Use `px`                       |
+| ----------------------------------------------------- | ------------------------------ |
+| `font-size`                                           | Borders and hairlines          |
+| `max-width` of text containers                        | Focus outline width and offset |
+| Media-query breakpoints (`@media (min-width: 48rem)`) | `box-shadow` details           |
+| Spacing that should scale with text                   | Fixed-size decorations         |
 
 Breakpoints are where the choice matters most. At a larger base font size an `em` or `rem` query switches to the mobile layout when the text needs it, and a `px` query does not.

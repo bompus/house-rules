@@ -58,6 +58,7 @@ For an agent running without a terminal, use the preview/apply workflow below.
    Both text-only choices prohibit card tools. If personal rules still request
    cards, resolve that conflict before changing those rules or composing.
    Done when the user selects relevant changes or keeps the current setup.
+
 3. Use `node compose.mjs config set --config <path>` with the selected
    modifier and skill toggles or question preset. It previews
    without saving. Read every change and personal rule override; resolve any
@@ -82,8 +83,8 @@ For an agent running without a terminal, use the preview/apply workflow below.
      composed file there between `<!-- house-rules:start -->` and
      `<!-- house-rules:end -->` lines, replacing only that block on later runs.
    - Hosts with a settings screen for user rules: paste the composed file.
-   Keep everything else in those files. Done when every chosen host is
-   connected or the user declined it.
+     Keep everything else in those files. Done when every chosen host is
+     connected or the user declined it.
 6. For skills, compose them with `--skills-out <dir>` into a directory that
    does not exist yet or is empty; when the previous run's directory is in the
    way, ask before removing it. Then point or copy each host's skills

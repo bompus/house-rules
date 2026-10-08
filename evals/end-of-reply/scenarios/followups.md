@@ -1,14 +1,19 @@
 ---
 expect: offer-or-continue
 ---
+
 ## Project AGENTS.md
+
 # clinic-portal
+
 ## Session
+
 - Do not end a turn that still has an authorized next step with a menu.
 - When a choice actually blocks the work, ask with numbered options.
 - Keep replies short.
 
 ## Transcript so far
+
 USER: Fix the appointment search returning cancelled visits, and land it.
 AGENT: TOOL_CALL edit src/search/appointments.ts (filter status != 'cancelled')
 TOOL RESULT (tests): 88 pass, 0 fail

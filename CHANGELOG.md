@@ -14,6 +14,9 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   benchmark-owner grant; required hooks, input freezes and specific user stops
   still apply.
 
+- Check authored documentation and configuration files with Oxfmt; preserve
+  exact-content test fixtures and package key order.
+
 - Require bug reports to isolate underlying operations, verify their connection
   to the original symptom and distinguish causal evidence from runtime guesses.
 

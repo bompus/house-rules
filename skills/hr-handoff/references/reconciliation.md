@@ -85,11 +85,11 @@ Bun runs the same script. It prints JSON with status, counts, missing IDs,
 errors, coverage gaps and limits. It does not write files or query hosts.
 Repeating the command on unchanged inputs repeats no external action.
 
-| Exit | Meaning | Action |
-| --- | --- | --- |
-| `0` | Supplied accounting and declared outcomes are mechanically complete | Review the semantic coverage and saved handoff before claiming all items were addressed. |
-| `1` | Malformed input, missing accounting or contradictory declared state | Resolve the reported fields and IDs within the handoff's stop boundary. |
-| `2` | Valid accounting with partial coverage | Save the limitations and known next action; do not label coverage complete. |
+| Exit | Meaning                                                             | Action                                                                                   |
+| ---- | ------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `0`  | Supplied accounting and declared outcomes are mechanically complete | Review the semantic coverage and saved handoff before claiming all items were addressed. |
+| `1`  | Malformed input, missing accounting or contradictory declared state | Resolve the reported fields and IDs within the handoff's stop boundary.                  |
+| `2`  | Valid accounting with partial coverage                              | Save the limitations and known next action; do not label coverage complete.              |
 
 The checker cannot detect a promise hidden behind a context-only annotation,
 an omitted source, a falsely complete export or an omitted PR query scope.

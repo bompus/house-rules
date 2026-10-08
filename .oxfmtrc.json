@@ -1,4 +1,5 @@
 {
   "printWidth": 100,
-  "ignorePatterns": ["**/*.md", "**/*.json", "**/*.yaml", "skills/*/test/fixtures/**"]
+  "ignorePatterns": ["skills/*/test/fixtures/**"],
+  "sortPackageJson": false
 }

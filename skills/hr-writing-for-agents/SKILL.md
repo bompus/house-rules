@@ -89,12 +89,12 @@ State the desired behavior clearly. Retain explicit prohibitions when they defin
 
 Choose the instruction's form from the failure it fixes:
 
-| Observed failure | Form that fixes it | Form that backfires |
-|---|---|---|
-| Knows the rule, skips it under pressure | An explicit prohibition that names the workaround | Soft guidance ("prefer", "consider") |
-| Complies, but the output has the wrong shape | A recipe: the output's parts, in order | A list of "don't" items, which the agent negotiates with |
-| Leaves out a required element | A required slot in the template it fills in | A prose reminder near the template |
-| Behavior depends on a condition | A conditional on something the agent can observe | An unconditional rule with exemption clauses |
+| Observed failure                             | Form that fixes it                                | Form that backfires                                      |
+| -------------------------------------------- | ------------------------------------------------- | -------------------------------------------------------- |
+| Knows the rule, skips it under pressure      | An explicit prohibition that names the workaround | Soft guidance ("prefer", "consider")                     |
+| Complies, but the output has the wrong shape | A recipe: the output's parts, in order            | A list of "don't" items, which the agent negotiates with |
+| Leaves out a required element                | A required slot in the template it fills in       | A prose reminder near the template                       |
+| Behavior depends on a condition              | A conditional on something the agent can observe  | An unconditional rule with exemption clauses             |
 
 Exemption and nuance clauses leak: "don't X unless it matters" reopens the decision, and "this limit doesn't apply to code blocks" still suppresses code blocks. Express a real exception as its own conditional, or restructure so the rule cannot reach the exempt part.
 

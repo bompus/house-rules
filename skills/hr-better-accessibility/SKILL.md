@@ -93,15 +93,15 @@ The page must work at 200% zoom and reflow at 320px width without horizontal scr
 
 ## Before you finish
 
-| Mistake | Fix |
-| --- | --- |
-| Custom focus color assumed to work everywhere | Verify it against every adjacent color and in forced-colors mode |
-| Repeated polite update inconsistently announced | Keep a stable empty status region and update its text |
-| `assertive` live region for a routine toast | Use `polite`; reserve `assertive` for errors |
-| `aria-hidden="true"` on a focusable element | Remove it or make the element non-focusable |
-| Submit disabled until the form is valid | Keep it enabled; validate on submit and focus the first error |
-| Hover treatment stuck after a tap on touch | Gate hover styling with `@media (hover: hover)` |
-| Tooltip on a natively `disabled` control | Text beside it, or `aria-disabled` so it stays focusable |
+| Mistake                                         | Fix                                                              |
+| ----------------------------------------------- | ---------------------------------------------------------------- |
+| Custom focus color assumed to work everywhere   | Verify it against every adjacent color and in forced-colors mode |
+| Repeated polite update inconsistently announced | Keep a stable empty status region and update its text            |
+| `assertive` live region for a routine toast     | Use `polite`; reserve `assertive` for errors                     |
+| `aria-hidden="true"` on a focusable element     | Remove it or make the element non-focusable                      |
+| Submit disabled until the form is valid         | Keep it enabled; validate on submit and focus the first error    |
+| Hover treatment stuck after a tap on touch      | Gate hover styling with `@media (hover: hover)`                  |
+| Tooltip on a natively `disabled` control        | Text beside it, or `aria-disabled` so it stays focusable         |
 
 ## Reporting
 
@@ -112,7 +112,7 @@ The page must work at 200% zoom and reflow at 320px width without horizontal scr
 **Format.** Group findings under the principle each violates, ordered by severity, one row per root cause listing every location it appears in:
 
 | Severity | Location | Before | After | Why |
-| --- | --- | --- | --- | --- |
+| -------- | -------- | ------ | ----- | --- |
 
 `Location` is `path/to/file:line`. `Why` names the principle and the user impact.
 

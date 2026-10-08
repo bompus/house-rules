@@ -210,6 +210,7 @@ and a core heading, followed by its own `## ` heading:
 ---
 after: Implementation economy
 ---
+
 ## My tooling
 
 Use pnpm for JavaScript projects unless the repository uses another manager.
@@ -223,22 +224,22 @@ in name order, after the modifiers.
 
 ## Modifiers
 
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Modifier&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | What it does |
-|---|---|
-| `coded-offers` | Offers use numbered questions and coded options (`1A`, `1B`) so one short reply answers every decision. |
-| `effort-estimates` | Options that differ in cost, or work that waits on CI, a build or a deploy, carry a wall-clock estimate based on comparable finished work. Estimates from workers, docs or other models are converted the same way or dropped. |
-| `land-when-done` | Authorized repository work is not finished until it is in the remote default branch. |
-| `low-quota-handoff` | When the current model's usage allowance runs low, write a handoff before work stops. |
-| `multi-agent` | Work is split across delegated workers and several agent hosts; worker reports, review standards and cleanup checks account for all of them. |
-| `no-attribution` | Commits, pull requests and comments carry no agent or tool credit lines. |
-| `plan-files` | Multi-step work keeps a visible task list mirrored to a plan file with a ledger of every item's outcome. |
-| `question-cards` | Opt in to question cards beside complete text offers when the host supports them; availability and presentation can vary by host, provider and model. |
-| `release-batching` | Batch approved, compatible changes for releases and audit factual claims before releases or public announcements. |
-| `scratch-on-disk` | Task scratch lives on disk under the user data directory, never in RAM-backed `/tmp`. |
-| `shared-host-load` | Coordinate shared local work within host-defined resource budgets; isolate measurements and release reservations during remote waits. |
-| `solo-operator` | For repositories with one maintainer, the user's direction is the review; no review-gated steps. |
-| `squash-landing` | Pull requests land by squash merge after review-bot findings are handled, and the session's checkout moves off the landed branch. |
-| `swarmail` | Locate Swarmail-owned instructions and tool contracts for local session coordination. |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Modifier&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | What it does                                                                                                                                                                                                                   |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `coded-offers`                                                                                                                                           | Offers use numbered questions and coded options (`1A`, `1B`) so one short reply answers every decision.                                                                                                                        |
+| `effort-estimates`                                                                                                                                       | Options that differ in cost, or work that waits on CI, a build or a deploy, carry a wall-clock estimate based on comparable finished work. Estimates from workers, docs or other models are converted the same way or dropped. |
+| `land-when-done`                                                                                                                                         | Authorized repository work is not finished until it is in the remote default branch.                                                                                                                                           |
+| `low-quota-handoff`                                                                                                                                      | When the current model's usage allowance runs low, write a handoff before work stops.                                                                                                                                          |
+| `multi-agent`                                                                                                                                            | Work is split across delegated workers and several agent hosts; worker reports, review standards and cleanup checks account for all of them.                                                                                   |
+| `no-attribution`                                                                                                                                         | Commits, pull requests and comments carry no agent or tool credit lines.                                                                                                                                                       |
+| `plan-files`                                                                                                                                             | Multi-step work keeps a visible task list mirrored to a plan file with a ledger of every item's outcome.                                                                                                                       |
+| `question-cards`                                                                                                                                         | Opt in to question cards beside complete text offers when the host supports them; availability and presentation can vary by host, provider and model.                                                                          |
+| `release-batching`                                                                                                                                       | Batch approved, compatible changes for releases and audit factual claims before releases or public announcements.                                                                                                              |
+| `scratch-on-disk`                                                                                                                                        | Task scratch lives on disk under the user data directory, never in RAM-backed `/tmp`.                                                                                                                                          |
+| `shared-host-load`                                                                                                                                       | Coordinate shared local work within host-defined resource budgets; isolate measurements and release reservations during remote waits.                                                                                          |
+| `solo-operator`                                                                                                                                          | For repositories with one maintainer, the user's direction is the review; no review-gated steps.                                                                                                                               |
+| `squash-landing`                                                                                                                                         | Pull requests land by squash merge after review-bot findings are handled, and the session's checkout moves off the landed branch.                                                                                              |
+| `swarmail`                                                                                                                                               | Locate Swarmail-owned instructions and tool contracts for local session coordination.                                                                                                                                          |
 
 Questions use text by default, with plain options or `coded-offers`. Text-only
 setups do not call question-card tools merely because a host exposes them.
@@ -249,44 +250,44 @@ want and explains these limits before changing the configuration.
 
 ## Skills
 
-| Skill | Use it to |
-|---|---|
-| `hr-agent-guidance-audit` | Audit a repository's agent guidance for stale, duplicated or conflicting rules. |
-| `hr-agent-guidance-refresh` | Re-read guidance that changed since the session started. |
-| `hr-api-exposure-check` | Keep API responses to the fields a consumer reads and the caller may see. |
-| `hr-audit-choices` | List and check the decisions made while implementing a task. |
-| `hr-benchmarking` | Design, run and assess timing, CPU and memory comparisons; choose tools by the question they answer. |
-| `hr-better-accessibility` | Build and review keyboard access, semantics, forms, focus, motion and reflow in web UI. |
-| `hr-better-colors` | Choose and check palettes, semantic tokens, themes, gamut and rendered contrast. |
-| `hr-better-layout` | Build and review grouping, alignment, spacing, responsive layout and clipping. |
-| `hr-better-typography` | Style and review type scales, wrapping, spacing, truncation and font loading. |
-| `hr-better-writing` | Write and review interface labels, errors, empty states and product terminology. |
-| `hr-change-impact` | Check what a change can break beyond its diff before merging. |
-| `hr-code-review` | Review a diff against the repository's standards and the originating request. |
-| `hr-design-exploration` | Compare four visual directions and refine the selected two toward one final design. |
-| `hr-diagnosing-bugs` | Work a hard bug or regression to a confirmed cause. |
-| `hr-explain-code` | Trace how existing code works, read-only, before changing it. |
-| `hr-extract-shared-steps` | Move operations repeated across workflows into shared functions. |
-| `hr-handoff` | Write a handoff a fresh session can resume from. |
-| `hr-house-rules-setup` | Choose modifiers, create your layer and connect your hosts. |
-| `hr-issue-tracker-setup` | Configure project tracker, domain-term and ADR conventions; explicit-only. |
-| `hr-lean-plan` | Write or tighten an implementation plan with the fewest moving parts. |
-| `hr-maintainability-review` | Review a diff or entire codebase strictly for structure and maintainability. |
-| `hr-manual-qa` | Give reproducible human checks after reporting agent verification results. |
-| `hr-navigation-retro` | Audit navigation failures in selected transcripts and propose verified findability fixes; explicit-only. |
-| `hr-ordering-tests` | Enumerate event orderings through the real code to find race bugs. |
-| `hr-plain-prose` | Make text people read plain and specific. |
-| `hr-progress-report` | Report current task activity, milestone completion and remaining wall-clock time. |
-| `hr-pr-followup` | Address conflicts, feedback and failing checks for a requested PR; honor existing landing authority. |
-| `hr-read-reddit` | Read Reddit feed output while supported; RSS support ends November 13, 2026. Partial web-search fallback. |
-| `hr-read-x-links` | Read the full content of X posts. |
-| `hr-split-to-prs` | Divide work into coherent PRs while preserving recovery points and verifying each slice. |
-| `hr-stock-ui-audit` | Find and triage template-default styling in frontend code. |
-| `hr-tdd` | Implement requested test-first work through one red-green slice at a time; simplify during review. |
-| `hr-test-audit` | Decide which new tests are worth keeping and which old ones to prune. |
-| `hr-what-next` | Reconcile remaining session work and recommend priorities when asked what comes next. |
-| `hr-writing-for-agents` | Write skills, rules and other documents agents read. |
-| `hr-writing-pr` | Write a pull request title and body from the final diff. |
+| Skill                       | Use it to                                                                                                 |
+| --------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `hr-agent-guidance-audit`   | Audit a repository's agent guidance for stale, duplicated or conflicting rules.                           |
+| `hr-agent-guidance-refresh` | Re-read guidance that changed since the session started.                                                  |
+| `hr-api-exposure-check`     | Keep API responses to the fields a consumer reads and the caller may see.                                 |
+| `hr-audit-choices`          | List and check the decisions made while implementing a task.                                              |
+| `hr-benchmarking`           | Design, run and assess timing, CPU and memory comparisons; choose tools by the question they answer.      |
+| `hr-better-accessibility`   | Build and review keyboard access, semantics, forms, focus, motion and reflow in web UI.                   |
+| `hr-better-colors`          | Choose and check palettes, semantic tokens, themes, gamut and rendered contrast.                          |
+| `hr-better-layout`          | Build and review grouping, alignment, spacing, responsive layout and clipping.                            |
+| `hr-better-typography`      | Style and review type scales, wrapping, spacing, truncation and font loading.                             |
+| `hr-better-writing`         | Write and review interface labels, errors, empty states and product terminology.                          |
+| `hr-change-impact`          | Check what a change can break beyond its diff before merging.                                             |
+| `hr-code-review`            | Review a diff against the repository's standards and the originating request.                             |
+| `hr-design-exploration`     | Compare four visual directions and refine the selected two toward one final design.                       |
+| `hr-diagnosing-bugs`        | Work a hard bug or regression to a confirmed cause.                                                       |
+| `hr-explain-code`           | Trace how existing code works, read-only, before changing it.                                             |
+| `hr-extract-shared-steps`   | Move operations repeated across workflows into shared functions.                                          |
+| `hr-handoff`                | Write a handoff a fresh session can resume from.                                                          |
+| `hr-house-rules-setup`      | Choose modifiers, create your layer and connect your hosts.                                               |
+| `hr-issue-tracker-setup`    | Configure project tracker, domain-term and ADR conventions; explicit-only.                                |
+| `hr-lean-plan`              | Write or tighten an implementation plan with the fewest moving parts.                                     |
+| `hr-maintainability-review` | Review a diff or entire codebase strictly for structure and maintainability.                              |
+| `hr-manual-qa`              | Give reproducible human checks after reporting agent verification results.                                |
+| `hr-navigation-retro`       | Audit navigation failures in selected transcripts and propose verified findability fixes; explicit-only.  |
+| `hr-ordering-tests`         | Enumerate event orderings through the real code to find race bugs.                                        |
+| `hr-plain-prose`            | Make text people read plain and specific.                                                                 |
+| `hr-progress-report`        | Report current task activity, milestone completion and remaining wall-clock time.                         |
+| `hr-pr-followup`            | Address conflicts, feedback and failing checks for a requested PR; honor existing landing authority.      |
+| `hr-read-reddit`            | Read Reddit feed output while supported; RSS support ends November 13, 2026. Partial web-search fallback. |
+| `hr-read-x-links`           | Read the full content of X posts.                                                                         |
+| `hr-split-to-prs`           | Divide work into coherent PRs while preserving recovery points and verifying each slice.                  |
+| `hr-stock-ui-audit`         | Find and triage template-default styling in frontend code.                                                |
+| `hr-tdd`                    | Implement requested test-first work through one red-green slice at a time; simplify during review.        |
+| `hr-test-audit`             | Decide which new tests are worth keeping and which old ones to prune.                                     |
+| `hr-what-next`              | Reconcile remaining session work and recommend priorities when asked what comes next.                     |
+| `hr-writing-for-agents`     | Write skills, rules and other documents agents read.                                                      |
+| `hr-writing-pr`             | Write a pull request title and body from the final diff.                                                  |
 
 ## Checking the rules against your models
 
@@ -308,6 +309,11 @@ node --test test/*.test.mjs   # composer and eval grader (or: bun test test/)
 bun test skills/    # skill scripts
 npx oxlint . && npx oxfmt --check .
 ```
+
+Oxfmt checks authored Markdown, HTML, JSON, JSONC, YAML, TOML and CSS as well
+as JavaScript and TypeScript. Test fixtures stay excluded because scanner
+tests depend on their exact text and line numbers. Package key sorting is
+disabled so formatting preserves the existing key order.
 
 Tests remove their own fixture directories after each test, including failures.
 Set `HOUSE_RULES_TEST_TMP` to an existing directory to choose their scratch root;

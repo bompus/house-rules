@@ -1,11 +1,15 @@
 ---
 expect: continue
 ---
+
 ## Project AGENTS.md
+
 # sample-project
+
 Run focused checks before landing. Use the approved repository landing path.
 
 ## Transcript so far
+
 USER: Implement the configuration fix, run the checks, land it and verify the installed configuration.
 AGENT: TOOL_CALL edit configuration and add a regression test
 TOOL RESULT: All required checks pass.
@@ -15,4 +19,5 @@ NOTE (durable task plan): Implementation, checks and source landing are complete
 USER: Did the pull request land?
 
 ## Replay action label
+
 For this exercise, use exactly one tool-call line. Write the pending verification call exactly as `TOOL_CALL: verify installed configuration`. Other tool-call operations do not satisfy this case.

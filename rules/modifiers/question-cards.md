@@ -2,6 +2,7 @@
 description: Opt in to question cards beside complete text offers when the host supports them; availability and presentation can vary by host, provider and model.
 after: Offers
 ---
+
 ## Question cards
 
 This modifier opts in to cards beside text. Availability, invocation and

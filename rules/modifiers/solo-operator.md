@@ -2,6 +2,7 @@
 description: For repositories with one maintainer, the user's direction is the review; no review-gated steps.
 after: Landing
 ---
+
 ## Solo operator
 
 The user's repositories have no second reviewer: the user's explicit direction

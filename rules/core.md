@@ -1,6 +1,7 @@
 ---
 references: references/landing.md, ../skills/hr-what-next/references/reporting.md
 ---
+
 # House rules
 
 These are your always-on working rules. Enabled modifiers and your personal

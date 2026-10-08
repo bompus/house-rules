@@ -77,9 +77,17 @@ type ChargeResult =
   | { ok: true; chargeId: string }
   | { ok: false; kind: "declined" | "unavailable" | "invalid"; detail: string };
 
-async function chargeCard(client: PaymentClient, input: {
-  customerRef: string; amountCents: number; currency: string; idempotencyKey: string;
-}): Promise<ChargeResult> { /* request, call, map provider errors to kind */ }
+async function chargeCard(
+  client: PaymentClient,
+  input: {
+    customerRef: string;
+    amountCents: number;
+    currency: string;
+    idempotencyKey: string;
+  },
+): Promise<ChargeResult> {
+  /* request, call, map provider errors to kind */
+}
 
 // Checkout: show declines to the customer, never retry.
 const paid = await chargeCard(client, { ...order.charge, idempotencyKey: order.id });

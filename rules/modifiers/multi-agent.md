@@ -3,6 +3,7 @@ description: Work is split across delegated workers and several agent hosts; wor
 after: Coordination and isolation
 reference: ../references/multi-agent.md
 ---
+
 ## Working with other agents
 
 Keep delegation within the user's authorization and responsibility in the current

@@ -2,6 +2,7 @@
 description: Options that differ in cost, or work that waits on CI, a build or a deploy, carry a wall-clock estimate based on comparable finished work. Estimates from workers, docs or other models are converted the same way or dropped.
 after: Offers
 ---
+
 ## Effort estimates
 
 When options in one question differ materially in cost, or the recommended work

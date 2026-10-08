@@ -3,6 +3,7 @@ description: Pull requests land by squash merge after review-bot findings are ha
 after: Landing
 reference: ../references/squash-landing.md
 ---
+
 ## Squash landing
 
 Prefer squash merges unless the repository requires another strategy or the user

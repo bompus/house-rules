@@ -102,10 +102,10 @@ not add a shipped name. Disabling adds an exclusion, retaining the include list,
 unrelated exclusions and custom settings. Configs without an include list keep
 their existing selection behavior.
 
-| Question preset | Enabled offer modifiers |
-|---|---|
-| `--questions plain` | Neither offer modifier |
-| `--questions coded` | `coded-offers` |
+| Question preset     | Enabled offer modifiers             |
+| ------------------- | ----------------------------------- |
+| `--questions plain` | Neither offer modifier              |
+| `--questions coded` | `coded-offers`                      |
 | `--questions cards` | `coded-offers` and `question-cards` |
 
 Question presets preserve other modifiers. Choose a preset or explicit offer

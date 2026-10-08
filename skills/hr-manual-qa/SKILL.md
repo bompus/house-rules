@@ -30,8 +30,8 @@ can reproduce. Follow the project's verification and domain safeguards.
    - **Expected observation**: the visible result that distinguishes success
      from failure.
    - **Reason**: the changed requirement or credible regression it checks.
-   Keep the smoke check short without omitting required coverage to meet a
-   time limit. Report access gaps and checks still awaiting the user.
+     Keep the smoke check short without omitting required coverage to meet a
+     time limit. Report access gaps and checks still awaiting the user.
 
 Done when each required manual observation has a reproducible check or a named
 coverage gap. Distinguish agent verification from user checks still pending.

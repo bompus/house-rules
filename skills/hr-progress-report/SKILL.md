@@ -35,14 +35,14 @@ under the governing continuation and offer rules.
    table. Separate verified facts, session estimates and unknowns. End with
    the next action or required decision using the governing offer format.
 
-| Field | Report |
-|---|---|
-| Task / state | Goal, selected scope; working, waiting, blocked or idle |
-| Current action | Action and supporting job state or recent result |
-| Progress | Completed milestones, percentage basis or unknown |
-| Remaining | Unfinished milestones, including checks and integration |
-| Elapsed / ETA | Wall-clock time, evidence, confidence and waiting conditions |
-| Blockers / next action | Dependency, owner or decision needed |
+| Field                  | Report                                                       |
+| ---------------------- | ------------------------------------------------------------ |
+| Task / state           | Goal, selected scope; working, waiting, blocked or idle      |
+| Current action         | Action and supporting job state or recent result             |
+| Progress               | Completed milestones, percentage basis or unknown            |
+| Remaining              | Unfinished milestones, including checks and integration      |
+| Elapsed / ETA          | Wall-clock time, evidence, confidence and waiting conditions |
+| Blockers / next action | Dependency, owner or decision needed                         |
 
 This is a snapshot, not independent proof of another session's activity.
 Use existing tools and records. Do not start watchers, ping other sessions

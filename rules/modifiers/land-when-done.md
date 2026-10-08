@@ -2,6 +2,7 @@
 description: Authorized repository work is not finished until it is in the remote default branch.
 after: Landing
 ---
+
 ## Landing by default
 
 This is your standing direction under § Landing: authorized repository work

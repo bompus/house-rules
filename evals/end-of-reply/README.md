@@ -32,13 +32,13 @@ only ignores the offer format the control arms were never asked for: it checks
 that the reply kept working, or asked for the user's decision in any words,
 when it should.
 
-| Scenario | Rules | One sentence | No rules |
-| --- | --- | --- | --- |
-| `continue` | 21/21 | 20/21 | 21/21 |
-| `followups` | 21/21 | 4/21 | 0/21 |
-| `needs-approval` | 20/21 | 2/21 | 0/21 |
-| Strict total | 62/63 | 26/63 | 21/63 |
-| Behavior-only total | 62/63 | 44/63 | 41/63 |
+| Scenario            | Rules | One sentence | No rules |
+| ------------------- | ----- | ------------ | -------- |
+| `continue`          | 21/21 | 20/21        | 21/21    |
+| `followups`         | 21/21 | 4/21         | 0/21     |
+| `needs-approval`    | 20/21 | 2/21         | 0/21     |
+| Strict total        | 62/63 | 26/63        | 21/63    |
+| Behavior-only total | 62/63 | 44/63        | 41/63    |
 
 - Without the rules, 25 of 42 `followups` replies reported the two noticed
   problems and stopped without asking whether to act on them.
@@ -51,4 +51,3 @@ when it should.
 Limits: the scenarios were written while shaping the rules, so they are not
 held-out cases, and the replies are text with `TOOL_CALL:` lines rather than a
 live tool loop.
-

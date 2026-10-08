@@ -6,11 +6,11 @@ What a color system is made of, before any values exist. For computing the value
 
 Most products need three kinds of ramp and nothing else:
 
-| Ramp | How many | Notes |
-| --- | --- | --- |
-| Neutral | 1 | Carries 80–90% of the interface: backgrounds, borders, body text |
-| Accent | 1 | The brand hue. Interactive and selected states |
-| Status | 0–4 | `danger`, `warning`, `success`, `info`. Add one only when the product shows that state |
+| Ramp    | How many | Notes                                                                                  |
+| ------- | -------- | -------------------------------------------------------------------------------------- |
+| Neutral | 1        | Carries 80–90% of the interface: backgrounds, borders, body text                       |
+| Accent  | 1        | The brand hue. Interactive and selected states                                         |
+| Status  | 0–4      | `danger`, `warning`, `success`, `info`. Add one only when the product shows that state |
 
 Add a second accent only when two things must be distinguishable, as required by `SKILL.md`. Check the rendered colors side by side in each appearance; if they are indistinguishable, use the existing accent ramp's steps or choose a distinct second hue.
 
@@ -18,20 +18,20 @@ Add a second accent only when two things must be distinguishable, as required by
 
 Each step maps to a role. Generate the steps the roles below call for and skip the rest.
 
-| Role | Tailwind | Radix |
-| --- | --- | --- |
-| Page background | `50` | `1` |
-| Subtle background | `50` | `2` |
-| Component background | `100` | `3` |
-| Component hover | `200` | `4` |
-| Component active / selected | `200` | `5` |
-| Subtle border | `200` | `6` |
-| Border, separator | `300` | `7` |
-| Strong border, focus ring | `400` | `8` |
-| Solid fill | `500` | `9` |
-| Solid fill hover | `600` | `10` |
-| Low-contrast text | `700` | `11` |
-| High-contrast text | `900` | `12` |
+| Role                        | Tailwind | Radix |
+| --------------------------- | -------- | ----- |
+| Page background             | `50`     | `1`   |
+| Subtle background           | `50`     | `2`   |
+| Component background        | `100`    | `3`   |
+| Component hover             | `200`    | `4`   |
+| Component active / selected | `200`    | `5`   |
+| Subtle border               | `200`    | `6`   |
+| Border, separator           | `300`    | `7`   |
+| Strong border, focus ring   | `400`    | `8`   |
+| Solid fill                  | `500`    | `9`   |
+| Solid fill hover            | `600`    | `10`  |
+| Low-contrast text           | `700`    | `11`  |
+| High-contrast text          | `900`    | `12`  |
 
 The two conventions differ in kind, not only in numbering:
 

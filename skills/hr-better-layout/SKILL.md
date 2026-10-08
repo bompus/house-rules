@@ -66,15 +66,15 @@ Never park a critical action where resizing or scrolling clips it. Keep it in th
 
 ## Before you finish
 
-| Mistake | Fix |
-| --- | --- |
-| `margin-left` / `padding-right` in a localizable layout | `margin-inline-start` / `padding-inline-end` |
-| Content-layout button touches the viewport edge | Inset within the project margins; keep intentional platform chrome |
-| Breakpoints at 768/1024 because they're the defaults | Break where the content actually stops fitting |
-| Fixed-width text container sized to one language | `max-width` and wrapping; test pseudo-localization |
-| Primary action at the clip-prone bottom of a pane | Sticky positioning or stable chrome with safe-area padding |
-| `100vh` app shell or hero on mobile | `100dvh` for a shell that tracks the browser chrome, `100svh` for a first screen |
-| Long text pushes a row's trailing action off-screen or squashes its avatar | `min-width: 0` on the text column, `flex-shrink: 0` on fixed-size items |
+| Mistake                                                                    | Fix                                                                              |
+| -------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| `margin-left` / `padding-right` in a localizable layout                    | `margin-inline-start` / `padding-inline-end`                                     |
+| Content-layout button touches the viewport edge                            | Inset within the project margins; keep intentional platform chrome               |
+| Breakpoints at 768/1024 because they're the defaults                       | Break where the content actually stops fitting                                   |
+| Fixed-width text container sized to one language                           | `max-width` and wrapping; test pseudo-localization                               |
+| Primary action at the clip-prone bottom of a pane                          | Sticky positioning or stable chrome with safe-area padding                       |
+| `100vh` app shell or hero on mobile                                        | `100dvh` for a shell that tracks the browser chrome, `100svh` for a first screen |
+| Long text pushes a row's trailing action off-screen or squashes its avatar | `min-width: 0` on the text column, `flex-shrink: 0` on fixed-size items          |
 
 ## Reporting
 
@@ -85,7 +85,7 @@ Never park a critical action where resizing or scrolling clips it. Keep it in th
 **Format.** Group findings under the principle each violates, ordered by severity, one row per root cause listing every location it appears in:
 
 | Severity | Location | Before | After | Why |
-| --- | --- | --- | --- | --- |
+| -------- | -------- | ------ | ----- | --- |
 
 `Location` is `path/to/file:line`. `Why` names the principle and the user impact.
 
