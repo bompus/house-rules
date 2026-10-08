@@ -7,6 +7,35 @@ import { check, parseWordTables } from "../scripts/check.mjs";
 const SCRIPT = join(import.meta.dir, "../scripts/check.mjs");
 const rules = (text) => check(text).map((f) => `${f.line} ${f.rule} ${f.text}`);
 
+test("joined counts, units and surrounding prose are flagged before sending", () => {
+  const draft =
+    "The run has208 accepted/54unfinished cases after2GiBNodeOOM.\nRemaining work took3.86CPU-s during2.808s.";
+  const spacing = check(draft).filter((f) => f.rule === "missing-space");
+  expect(spacing.map((f) => f.text)).toEqual([
+    "has",
+    "unfinished",
+    "after",
+    "2GiB",
+    "took",
+    "3.86CPU-s",
+    "during",
+    "2.808s",
+  ]);
+  expect(
+    check(
+      "The run has 208 accepted cases and 54 unfinished cases.\nIt used 2 GiB and took 3.86 CPU-s during 2.808 s.",
+    ),
+  ).toEqual([]);
+});
+
+test("spacing checks preserve literal code and ordinary names", () => {
+  expect(
+    check(
+      "Use `run2GiB.py`, `phase208accepted`, `NodeOOM`, and `v12`.\nSee https://example.com/after2GiB or [receipt](./run2GiB.json).\nHTTP/2 and SHA256 identifiers stay unchanged.",
+    ),
+  ).toEqual([]);
+});
+
 test("every term in SKILL.md's two word tables is loaded", () => {
   const terms = parseWordTables(readFileSync(join(import.meta.dir, "../SKILL.md"), "utf8"));
   // 17 terms in "Choose plain words" and 12 in "Name the actual thing". A

@@ -170,6 +170,11 @@ self-reference ("As an AI..."). Start with the content.
 
 ## Make it easy to read
 
+- Keep spaces between prose words, counts and units, including agent messages.
+  Write "has 12 unfinished cases" and "64 MiB process peak", never
+  "has12unfinished" or "64MiBprocesspeak". Preserve literal identifiers and
+  filenames byte-for-byte in code spans. Run the checker on outgoing drafts;
+  correct its missing-space cues before sending. It cannot detect every joined word.
 - One idea per sentence. Split a sentence that joins two claims with "and".
 - Use active voice with a named actor: "The scheduler drops the job", not "The
   job is dropped".
@@ -221,6 +226,7 @@ line and column, and exits 1 when it finds any:
 - an em dash or other dash stand-in
 - a colon between two clauses
 - a curly quote or a filler phrase
+- counts or measurement units joined to prose without spaces
 - a word from the two tables above
 - a sentence over 30 words
 

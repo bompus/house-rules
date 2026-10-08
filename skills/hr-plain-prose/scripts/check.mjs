@@ -79,6 +79,14 @@ const DASHES = [
   { re: /(?<=[A-Za-z_])\s--?\s(?=\w)|(?<=\d)\s--?\s(?=[A-Za-z_])/g, rule: "spaced-hyphen" },
 ];
 
+// These are prose cues, not a word splitter. Keep identifiers in code spans;
+// never insert spaces into the draft automatically.
+const JOINED_PROSE = [
+  /\b(?:has|have|had|after|before|during|vs|took)(?=\d)/g,
+  /(?<=\d)(?:accepted|unfinished|remaining|passed|failed)\b/g,
+  /\d+(?:\.\d+)?(?:[KMGT]i?B|CPU-s|ms|s)(?=$|[^A-Za-z]|[A-Z]|process|peak|idle|during|scope)/g,
+];
+
 // Replaces kept spans with spaces of the same length and keeps line breaks, so
 // lines and columns still line up. Code spans and quotes may wrap onto the next
 // line but never cross a blank line. A code span becomes KEPT characters,
@@ -244,6 +252,15 @@ export function check(markdown, terms = parseWordTables(readFileSync(SKILL, "utf
     }
     for (const m of text.matchAll(/[‘’“”]/g)) {
       add("curly-quote", m.index, m[0], "use straight quotes");
+    }
+    for (const re of JOINED_PROSE) {
+      for (const m of text.matchAll(re))
+        add(
+          "missing-space",
+          m.index,
+          m[0],
+          "separate prose words, counts and units; keep literal identifiers in code",
+        );
     }
     if (!/^\s*(#|\|)/.test(raw)) {
       for (const c of colonReveals(text))

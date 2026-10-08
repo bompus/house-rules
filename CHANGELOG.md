@@ -4,6 +4,10 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- The plain-prose checker flags counts and measurement units joined to prose
+  without spaces, while preserving literal identifiers in code spans. The
+  writing recipe applies the check to outgoing agent messages.
+
 - Clarify that benchmark locks do not block qualified non-heavy checks or pause
   other tasks. Classify actual commands and preserve measurement inputs, resource
   budgets and separate repository or installation write locks.
