@@ -4,6 +4,11 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Accept inspection as qualification for bounded repository work within host
+  limits. Missing resource measurements alone no longer require a fresh
+  benchmark-owner grant; required hooks, input freezes and specific user stops
+  still apply.
+
 - Require bug reports to isolate underlying operations, verify their connection
   to the original symptom and distinguish causal evidence from runtime guesses.
 

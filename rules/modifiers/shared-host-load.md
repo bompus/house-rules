@@ -11,8 +11,21 @@ within that budget, accounting for interactive use of the machine.
 
 Classify each local phase and its actual commands, hooks and children. A phase
 is resource-intensive when its expected CPU, memory or I/O demand exceeds the
-host's concurrent-work budget. Use the host's qualification procedure when
-expected demand is unknown. Without a budget or qualification procedure, get
+host's concurrent-work budget.
+
+Before calling demand unknown, inspect the command, its applicable hooks,
+wrappers and children. When inspection establishes bounded demand within existing
+host limits and the active measurement's light-work allowance, proceed without
+fresh benchmark-owner permission, a collector or a measurement receipt.
+Inspection is sufficient qualification; missing resource samples alone is not
+a blocker. Use the host's admission procedure when inspection leaves potentially
+incompatible demand unresolved. Admit the complete invocation when its children
+need admission, and retain required hooks. This resource permission does not
+lift checkout ownership, shared-write serialization, named input freezes or
+explicit operation-specific user restrictions. A retained benchmark lock alone
+does not suspend permitted light work.
+
+Without a budget or qualification procedure, get
 operator direction before launching parallel local workers or commands that
 build, test, index or process an entire repository or dataset. Bounded reads
 and edits may continue. Coordinate competing phases without blocking whole
