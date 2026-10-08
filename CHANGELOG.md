@@ -4,6 +4,11 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Require a remaining-work check before every reply ends, including completed
+  phases, landed pull requests, status answers and external waits. Continue
+  authorized work or automatically present the next ready decision; distinguish
+  blocked or deferred work from an empty ledger.
+
 - Clarify that benchmark locks do not block qualified non-heavy checks or pause
   other tasks. Classify actual commands and preserve measurement inputs, resource
   budgets and separate repository or installation write locks.
