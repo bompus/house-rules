@@ -63,7 +63,13 @@ services unchanged.
 
 Prefer removing competing work to raising priority. Record effective CPU and
 I/O scheduling policies and memory protections; keep them equal across arms.
-Use deployment settings for representative results. Treat a priority change as
+Use normal scheduling and all available CPUs for ordinary measurements. Omit
+automatic `nice` and `taskset` wrappers; verify inherited priority and affinity
+rather than assuming their omission resets either. Use restricted affinity or
+changed priority only for representative deployment settings, an explicit resource
+agreement or a stated sensitivity question. Record the reason and effective values.
+Preserve frozen protocols and report constrained results within their tested scope.
+Treat a priority or affinity change as
 a separate sensitivity pilot under the host's rules, with preset variation
 criteria and retained raw results. Verify that the controls apply and that
 dependencies and monitoring still progress before adopting them for the

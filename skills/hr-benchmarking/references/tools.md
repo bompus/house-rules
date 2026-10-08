@@ -36,6 +36,7 @@ a setting does not prove it took effect.
 | Control | Effect and limit |
 |---|---|
 | [Nice level](https://man7.org/linux/man-pages/man2/nice.2.html) | Lower numeric values raise fair CPU scheduling priority. Permissions and autogroup policy affect the result. This does not reserve a core. |
+| CPU affinity (`taskset`) | Restricts available CPUs and can affect worker counts and parallelism. It does not reserve exclusive cores. Use it for a declared CPU configuration, not automatic noise reduction. |
 | [CPU and I/O cgroup weights](https://docs.kernel.org/admin-guide/cgroup-v2.html) | Adjust relative shares among active sibling groups. Parent limits and controller/device support still apply; a higher weight is not a capacity guarantee. |
 | [Process I/O priority](https://man7.org/linux/man-pages/man2/ioprio_set.2.html) | Depends on the supporting I/O scheduler and path. Process-specific priority does not cover asynchronous writes. |
 | [Memory protection](https://docs.kernel.org/admin-guide/cgroup-v2.html) | `memory.low` and `memory.min` protect against reclaim, not memory-bandwidth competition. Excessive hard protection can cause OOM. Memory caps remain limits, not reservations. |

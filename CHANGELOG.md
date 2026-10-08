@@ -4,6 +4,11 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Default ordinary benchmarks to normal scheduling and available CPUs. Keep
+  scheduling restrictions explicit and historical protocols unchanged. Issue
+  and pull request reproductions omit incidental execution wrappers while
+  retaining material measurement conditions.
+
 - Accept inspection as qualification for bounded repository work within host
   limits. Missing resource measurements alone no longer require a fresh
   benchmark-owner grant; required hooks, input freezes and specific user stops
