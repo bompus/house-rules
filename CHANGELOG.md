@@ -4,6 +4,9 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Require bug reports to isolate underlying operations, verify their connection
+  to the original symptom and distinguish causal evidence from runtime guesses.
+
 - The plain-prose checker flags counts and measurement units joined to prose
   without spaces, while preserving literal identifiers in code spans. The
   writing recipe applies the check to outgoing agent messages.
