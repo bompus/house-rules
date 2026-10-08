@@ -1,7 +1,7 @@
 // Composition and source discovery shared by output generation and configuration management.
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, lstatSync, readdirSync, readFileSync, realpathSync } from "node:fs";
 import { homedir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const BASE = dirname(fileURLToPath(import.meta.url));
@@ -9,7 +9,7 @@ const PROTECTED = "End of every reply";
 // The protected section points at § Offers, so Offers may be replaced but not removed.
 const REQUIRED = [PROTECTED, "Offers"];
 const OPS = ["replaces", "after", "before", "removes"];
-const KEYS = [...OPS, "description", "requires"];
+const KEYS = [...OPS, "description", "requires", "reference"];
 
 // Windows line endings and a byte-order mark would otherwise hide frontmatter and headings.
 const normalize = (text) => text.replace(/^\uFEFF/, "").replace(/\r\n?/g, "\n");
@@ -122,16 +122,20 @@ export function modifierList() {
 // The directory holding house-rules.json is the user's layer unless the config lists others.
 const layersOf = (config) => config.layers ?? ["."];
 
-export function loadFragments(config, configDir) {
+function loadRawFragments(config, configDir) {
   const fragments = (config.modifiers ?? []).map((name) => {
     const path = join(BASE, "rules/modifiers", `${name}.md`);
     if (!existsSync(path)) throw new Error(`unknown modifier "${name}" (see --list)`);
-    return parseFragment(readFileSync(path, "utf8"), `modifier ${name}`);
+    return { ...parseFragment(readFileSync(path, "utf8"), `modifier ${name}`), path, root: BASE };
   });
   for (const layer of layersOf(config)) {
     const dir = join(resolve(configDir, layer), "rules");
     for (const f of mdFiles(dir))
-      fragments.push(parseFragment(readFileSync(join(dir, f), "utf8"), join(dir, f)));
+      fragments.push({
+        ...parseFragment(readFileSync(join(dir, f), "utf8"), join(dir, f)),
+        path: join(dir, f),
+        root: resolve(configDir, layer),
+      });
   }
   return fragments;
 }
@@ -208,9 +212,70 @@ export function configurationPath(path) {
   );
 }
 
-export function composeConfiguration(config, configDir) {
-  const fragments = loadFragments(config, configDir);
+function referenceFragments(config, configDir, referencesDirectory) {
+  if (
+    referencesDirectory !== undefined &&
+    (typeof referencesDirectory !== "string" || !referencesDirectory.trim())
+  )
+    throw new Error("referencesDirectory must be a non-empty string");
+  const fragments = loadRawFragments(config, configDir);
+  const candidates = new Map();
+  for (const f of fragments) {
+    if (!("reference" in f.meta)) continue;
+    const path = resolve(dirname(f.path), f.meta.reference);
+    const inside = relative(realpathSync(f.root), realpathSync(path));
+    if (
+      !f.meta.reference ||
+      inside.startsWith("..") ||
+      isAbsolute(inside) ||
+      !lstatSync(path).isFile()
+    )
+      throw new Error(`${f.source}: reference must be a regular file within its source layer`);
+    const name = basename(path);
+    if (!/^[a-z0-9][a-z0-9-]*\.md$/.test(name))
+      throw new Error(`${f.source}: invalid reference filename`);
+    const text = readFileSync(path, "utf8");
+    const original = splitSections(text);
+    const short = splitSections(f.body);
+    if (
+      original.preamble ||
+      short.preamble ||
+      original.sections.length !== 1 ||
+      short.sections.length !== 1 ||
+      original.sections[0].heading !== short.sections[0].heading
+    )
+      throw new Error(`${f.source}: reference must contain the same single section heading`);
+    const sourceLink = `](${f.meta.reference})`;
+    if (!f.body.includes(sourceLink))
+      throw new Error(`${f.source}: reference link missing from body`);
+    if (referencesDirectory === undefined) {
+      f.body = text.trim();
+    } else {
+      const href = encodeURI(
+        `${referencesDirectory.replace(/\\/g, "/").replace(/\/$/, "")}/${name}`,
+      ).replace(/[()#?]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`);
+      f.body = f.body.replaceAll(sourceLink, `](${href})`);
+      const previous = candidates.get(name);
+      if (previous && previous.text !== text) throw new Error(`conflicting reference "${name}"`);
+      candidates.set(name, { text, link: `](${href})` });
+    }
+  }
+  return { fragments, candidates };
+}
+
+// Existing low-level callers receive complete inline procedure bodies too.
+export function loadFragments(config, configDir) {
+  return referenceFragments(config, configDir).fragments;
+}
+
+export function composeConfiguration(config, configDir, { referencesDirectory } = {}) {
+  const { fragments, candidates } = referenceFragments(config, configDir, referencesDirectory);
   const rules = compose(readFileSync(join(BASE, "rules/core.md"), "utf8"), fragments);
+  const references = new Map(
+    [...candidates]
+      .filter(([, value]) => rules.includes(value.link))
+      .map(([name, value]) => [name, value.text]),
+  );
   const skills = skillSources(config, configDir);
   const warnings = [];
   for (const f of fragments) {
@@ -222,5 +287,5 @@ export function composeConfiguration(config, configDir) {
         warnings.push(`${f.source} expects the "${need}" skill, which is not in the composed set`);
     }
   }
-  return { fragments, rules, skills, warnings };
+  return { fragments, rules, skills, warnings, references };
 }

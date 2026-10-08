@@ -11,12 +11,13 @@ import {
   realpathSync,
   writeFileSync,
 } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { composeConfiguration, configurationPath, modifierList } from "./composition.mjs";
 import { configCommand } from "./config.mjs";
 import { setupCommand } from "./setup.mjs";
+import { checkOutputPath, planReferenceOutput, writeReferenceOutput } from "./rule-references.mjs";
 export {
   compose,
   composeConfiguration,
@@ -41,6 +42,7 @@ function main(argv) {
       config: { type: "string" },
       out: { type: "string" },
       "skills-out": { type: "string" },
+      "references-out": { type: "string" },
       list: { type: "boolean" },
     },
   });
@@ -50,12 +52,42 @@ function main(argv) {
   }
   const configPath = configurationPath(values.config);
   const config = JSON.parse(readFileSync(configPath, "utf8").replace(/^\uFEFF/, ""));
-  const { fragments, rules, skills, warnings } = composeConfiguration(config, dirname(configPath));
+  const { out, "skills-out": skillsOut, "references-out": explicitReferences } = values;
+  if (explicitReferences && !out) throw new Error("--references-out requires --out");
+  const referencesOut = out
+    ? resolve(explicitReferences ?? join(dirname(resolve(out)), "house-rules-references"))
+    : null;
+  const { fragments, rules, skills, warnings, references } = composeConfiguration(
+    config,
+    dirname(configPath),
+    referencesOut
+      ? { referencesDirectory: relative(dirname(resolve(out)), referencesOut) || "." }
+      : {},
+  );
   for (const warning of warnings) console.error(`warning: ${warning}`);
-  const { out, "skills-out": skillsOut } = values;
+  const paths = [
+    out && { path: resolve(out), directory: false },
+    skillsOut && { path: resolve(skillsOut), directory: true },
+    referencesOut && { path: referencesOut, directory: true },
+  ].filter(Boolean);
+  for (const { path, directory } of paths) checkOutputPath(path, directory);
+  for (const a of paths)
+    for (const b of paths) {
+      if (a === b) continue;
+      const rel = relative(a.path, b.path);
+      if (
+        !rel ||
+        (rel !== ".." &&
+          !rel.startsWith(`..${process.platform === "win32" ? "\\" : "/"}`) &&
+          !isAbsolute(rel))
+      )
+        throw new Error("Output paths must not overlap");
+    }
   // Composition errors and a non-empty --skills-out stop the run before anything is written.
   if (skillsOut && existsSync(skillsOut) && readdirSync(skillsOut).length)
     throw new Error(`--skills-out ${skillsOut} must be empty or absent`);
+  const referenceWrites = references.size ? planReferenceOutput(referencesOut, references) : [];
+  writeReferenceOutput(referenceWrites);
   if (out) {
     mkdirSync(dirname(resolve(out)), { recursive: true });
     writeFileSync(out, rules);

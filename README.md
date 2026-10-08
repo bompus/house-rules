@@ -296,6 +296,11 @@ time, including when it reads only the first 80 lines. On seven models, the
 rules passed 62 of 63 replies, against 26 for a one-sentence instruction and 21
 with no rules; its README has the breakdown and limits.
 
+Written rules export required procedure files to a sibling `house-rules-references/`
+directory, independently of selected skills. Move that directory with the rules
+file when connecting another host. Stdout and configuration previews retain the
+complete inline procedures. See [reference output](docs/configuration.md#reference-output).
+
 ## Development
 
 ```bash

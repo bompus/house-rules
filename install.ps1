@@ -196,8 +196,9 @@ param([switch]$PrintRuntime)
   Write-Host 'Connect them to your agent:'
   Write-Host '  Claude Code: add this line to ~\.claude\CLAUDE.md'
   Write-Host "    @$import"
-  Write-Host "  Other hosts: copy rules.md into the host's user-level rules file, and"
-  Write-Host "  point the host's skills directory at composed-skills."
+  Write-Host "  Other hosts: copy the contents of rules.md into the host's user-level"
+  Write-Host "  rules file and put house-rules-references beside it. Point its"
+  Write-Host "  skills directory at composed-skills."
   Write-Host "To change modifiers, edit $(Show-Path "$cfg\house-rules.json") (list them with"
   Write-Host "  & '$rt' '$dir\compose.mjs' --list) and run this installer again."
 }

@@ -184,8 +184,9 @@ main() {
   say "Connect them to your agent:"
   say "  Claude Code: add this line to ~/.claude/CLAUDE.md"
   say "    @$(tilde "$cfg/rules.md")"
-  say "  Other hosts: copy rules.md into the host's user-level rules file, and"
-  say "  point the host's skills directory at composed-skills."
+  say "  Other hosts: copy the contents of rules.md into the host's user-level"
+  say "  rules file and put house-rules-references beside it. Point its"
+  say "  skills directory at composed-skills."
   say "To change modifiers, edit $(tilde "$cfg/house-rules.json") (list them with"
   say "  $(tilde "$rt") $(tilde "$dir")/compose.mjs --list) and run this installer again."
 }

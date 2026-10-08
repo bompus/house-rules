@@ -4,6 +4,10 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Export release-procedure references beside written rules independently of
+  selected skills. Keep stdout and configuration previews inline, and protect
+  exported references from overwriting modified or unrecognized files.
+
 - Clarify checkout protection during integration and retain the guarded move
   after landing. Point release guidance to the full shared procedure, align the
   handoff picker with resumable handoffs and remove repeated palette wording.

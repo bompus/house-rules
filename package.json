@@ -18,6 +18,7 @@
   "files": [
     "compose.mjs",
     "composition.mjs",
+    "rule-references.mjs",
     "config.mjs",
     "config-view.mjs",
     "setup.mjs",

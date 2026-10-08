@@ -156,3 +156,20 @@ Connecting or copying that output to agent hosts remains a separate setup
 step. Use `hr-house-rules-setup` for the guided workflow. Custom rule prose
 still belongs in layer fragments; the protected completion sections stay
 required.
+
+## Reference output
+
+`--out rules.md` writes selected procedure references to a sibling
+`house-rules-references/` directory. Keep that directory beside the rules file
+when copying it to a host. References do not depend on `skills.include` or
+`skills.exclude`. Only selected rule fragments contribute references.
+
+Use `--references-out <directory>` with `--out` to choose another destination;
+links are rendered relative to the rules file. Keep both locations available.
+Stdout and ordinary composition/configuration API calls retain full inline
+procedures, so existing preview and copy-only workflows need no bundle.
+
+A hash manifest permits repeat exports and updates to previously generated
+files. Modified, missing or unrecognized files in that directory stop generation
+before output writes. Reconcile them explicitly; generation never removes old
+procedure files or unrelated files. Output directories must not overlap.

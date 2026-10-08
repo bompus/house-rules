@@ -133,7 +133,7 @@ it("installs from a checkout, then recomposes without deleting the old skills", 
   );
   assert.equal(existsSync(join(config, "composed-skills", "hr-handoff")), false);
   const existing = JSON.stringify({
-    modifiers: ["no-attribution"],
+    modifiers: ["no-attribution", "release-batching"],
     skills: { exclude: ["hr-read-reddit"] },
     custom: "keep",
   });
@@ -142,6 +142,18 @@ it("installs from a checkout, then recomposes without deleting the old skills", 
   const second = run(home, [], [], env);
   assert.equal(second.status, 0, second.stderr);
   assert.equal(readFileSync(join(config, "house-rules.json"), "utf8"), existing);
+  assert.match(
+    readFileSync(join(config, "rules.md"), "utf8"),
+    /house-rules-references\/release-batching.md/,
+  );
+  assert.match(
+    readFileSync(join(config, "house-rules-references", "release-batching.md"), "utf8"),
+    /Every release's notes must/,
+  );
+  const referenceManifest = readFileSync(
+    join(config, "house-rules-references", "manifest.json"),
+    "utf8",
+  );
   assert.equal(existsSync(join(config, "composed-skills", "hr-handoff", "SKILL.md")), true);
   assert.equal(existsSync(join(config, "composed-skills", "hr-read-reddit")), false);
   const kept = readdirSync(config).filter((f) => f.startsWith("composed-skills.previous-"));
@@ -151,6 +163,10 @@ it("installs from a checkout, then recomposes without deleting the old skills", 
   // Runs within the same second keep separate backups instead of nesting one.
   const third = run(home, [], [], env);
   assert.equal(third.status, 0, third.stderr);
+  assert.equal(
+    readFileSync(join(config, "house-rules-references", "manifest.json"), "utf8"),
+    referenceManifest,
+  );
   const backups = readdirSync(config).filter((f) => f.startsWith("composed-skills.previous-"));
   assert.equal(backups.length, 2);
   for (const b of backups) assert.ok(!existsSync(join(config, b, "composed-skills")));

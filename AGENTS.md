@@ -32,7 +32,7 @@ Changelog entries describe completed changes. Keep unfinished work in the
 task plan rather than the changelog.
 
 Before a release or public announcement, follow the full release procedure in
-[`rules/modifiers/release-batching.md`](rules/modifiers/release-batching.md).
+[`rules/references/release-batching.md`](rules/references/release-batching.md).
 
 When the batch is ready, prepare one release commit that moves all `Unreleased`
 entries into a dated version section. Choose the semantic version for the

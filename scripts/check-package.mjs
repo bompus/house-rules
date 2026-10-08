@@ -37,6 +37,8 @@ try {
   for (const required of [
     "compose.mjs",
     "composition.mjs",
+    "rule-references.mjs",
+    "rules/references/release-batching.md",
     "config.mjs",
     "config-view.mjs",
     "setup.mjs",
@@ -83,7 +85,7 @@ try {
   cpSync(join(root, "examples", "person", "house-rules.json"), config);
   // Keep full resource coverage separate from the bounded fresh selection.
   const allSkillsConfig = join(scratch, "all-skills.json");
-  writeFileSync(allSkillsConfig, "{}");
+  writeFileSync(allSkillsConfig, JSON.stringify({ modifiers: ["release-batching"] }));
   const runtimes = [process.execPath, ...(process.argv.includes("--bun") ? ["bun"] : [])];
   for (const [index, runtime] of runtimes.entries()) {
     assert.match(run(runtime, [join(installed, "compose.mjs"), "--list"], scratch), /coded-offers/);
@@ -131,6 +133,12 @@ try {
       }
     }
     compare(join(root, "skills"), output);
+    const rules = readFileSync(join(scratch, `rules-${index}.md`), "utf8");
+    assert.match(rules, /house-rules-references\/release-batching.md/);
+    assert.match(
+      readFileSync(join(scratch, "house-rules-references", "release-batching.md"), "utf8"),
+      /Every release's notes must/,
+    );
   }
   const out = process.argv.indexOf("--out");
   if (out !== -1) {
