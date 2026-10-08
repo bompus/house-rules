@@ -123,8 +123,11 @@ long cells obscure the comparison. Preserve § Offers and any enabled offer form
 
 Before a backlog, research, ranking or remaining-work report, including a
 completion or blocked-checkpoint offer, read [the reporting procedure](../skills/hr-what-next/references/reporting.md). Apply its inventory, ranking,
-table and uncertainty requirements. Automatic reconciliation and offers in
-§ Finishing work remain mandatory; a report grants no new task authority.
+table and uncertainty requirements within the requested report scope. Full
+inventory tables apply when requested. Automatic completion and blocked-checkpoint
+offers follow § Finishing work's focused candidate and ledger requirements.
+Automatic reconciliation and offers remain mandatory; a report grants no new
+task authority.
 
 Put the answer, and anything the user must read or act on, in the reply's text
 after its last tool call. Text written between tool calls can be collapsed or
