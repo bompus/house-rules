@@ -16,6 +16,8 @@ configuration, or reliance on pinned dependency behavior. Follow
 subagents when the scope benefits from independent review and the host permits
 it. Missing spec material limits the Spec assessment, not all useful review.
 
+When a selected review uses an ACP stdio agent, read [the bundled client contract](references/acp-client.md) before launching it. Host orchestration and authorization still determine the route.
+
 ## Process
 
 ### 1. Pin the review scope
