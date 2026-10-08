@@ -64,7 +64,8 @@ For reproduction examples, apply the direct-command and material-condition
 guidance in the installed `hr-diagnosing-bugs` skill's `references/reporting.md`.
 When that skill is unavailable, show commands that reproduce the symptom and
 omit incidental scheduling, resource-control and observer wrappers. Keep exact
-execution controls in the measurement record; retain any control required to
+executed commands and material conditions in the measurement record. Disclose
+material conditions beside performance results. Retain any control required to
 reproduce the defect and explain its purpose.
 
 When the existing shape is familiar, use a focused diff of calls, components
