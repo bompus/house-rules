@@ -63,7 +63,9 @@ Use a small code example when it makes behavior concrete. For visual changes, us
 For reproduction examples, apply the direct-command and material-condition
 guidance in the installed `hr-diagnosing-bugs` skill's `references/reporting.md`.
 When that skill is unavailable, show commands that reproduce the symptom and
-keep incidental local execution controls in the measurement record.
+omit incidental scheduling, resource-control and observer wrappers. Keep exact
+execution controls in the measurement record; retain any control required to
+reproduce the defect and explain its purpose.
 
 When the existing shape is familiar, use a focused diff of calls, components
 or files to show the change. Use a diagram when it explains relationships more
