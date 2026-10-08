@@ -40,9 +40,15 @@ export function planReferenceOutput(directory, references) {
   if (existsSync(directory) && readdirSync(directory).length) {
     if (!existsSync(manifestPath) || !lstatSync(manifestPath).isFile())
       throw new Error(`Unmanaged reference directory: ${directory}`);
-    const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+    const content = readFileSync(manifestPath, "utf8");
+    let manifest;
+    try {
+      manifest = JSON.parse(content);
+    } catch {
+      throw new Error(`Invalid reference manifest: ${manifestPath}; reconcile it first`);
+    }
     if (
-      manifest.format !== 1 ||
+      manifest?.format !== 1 ||
       !manifest.files ||
       typeof manifest.files !== "object" ||
       Array.isArray(manifest.files)

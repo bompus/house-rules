@@ -222,15 +222,12 @@ function referenceFragments(config, configDir, referencesDirectory) {
   const candidates = new Map();
   for (const f of fragments) {
     if (!("reference" in f.meta)) continue;
+    const invalidReference = `${f.source}: reference must be a regular file within its source layer`;
     const path = resolve(dirname(f.path), f.meta.reference);
+    if (!f.meta.reference || !existsSync(path) || !lstatSync(path).isFile())
+      throw new Error(invalidReference);
     const inside = relative(realpathSync(f.root), realpathSync(path));
-    if (
-      !f.meta.reference ||
-      inside.startsWith("..") ||
-      isAbsolute(inside) ||
-      !lstatSync(path).isFile()
-    )
-      throw new Error(`${f.source}: reference must be a regular file within its source layer`);
+    if (inside.startsWith("..") || isAbsolute(inside)) throw new Error(invalidReference);
     const name = basename(path);
     if (!/^[a-z0-9][a-z0-9-]*\.md$/.test(name))
       throw new Error(`${f.source}: invalid reference filename`);

@@ -82,6 +82,16 @@ test("repeat export updates owned files and rejects reference drift before chang
   assert.equal(cli(args).status, 0);
   assert.equal(readFileSync(join(refs, "manifest.json"), "utf8"), manifest);
   assert.match(before, /refs%20with%20space\/release-batching.md/);
+  for (const invalid of ["{", "null"]) {
+    writeFileSync(join(refs, "manifest.json"), invalid);
+    const malformed = cli(args);
+    assert.notEqual(malformed.status, 0);
+    assert.match(malformed.stderr, /Invalid reference manifest:/);
+    assert.ok(malformed.stderr.includes(join(refs, "manifest.json")));
+    assert.equal(readFileSync(out, "utf8"), before);
+    assert.equal(readFileSync(join(refs, "manifest.json"), "utf8"), invalid);
+  }
+  writeFileSync(join(refs, "manifest.json"), manifest);
   writeFileSync(join(refs, "release-batching.md"), "User changes");
   writeFileSync(out, "Existing rules");
   const rejected = cli(args);
@@ -107,6 +117,16 @@ test("invalid source references and overlapping or unmanaged destinations write 
   assert.notEqual(escaping.status, 0);
   assert.match(escaping.stderr, /within its source layer/);
   assert.equal(existsSync(out), false);
+  for (const reference of ["missing.md", ""]) {
+    writeFileSync(
+      join(layer, "bad.md"),
+      `---\nafter: Landing\nreference: ${reference}\n---\n## Missing\n\n[read](${reference})\n`,
+    );
+    const missing = cli(["--config", config, "--out", out]);
+    assert.notEqual(missing.status, 0);
+    assert.match(missing.stderr, /reference must be a regular file within its source layer/);
+    assert.equal(existsSync(out), false);
+  }
   rmSync(join(layer, "bad.md"));
   writeFileSync(config, JSON.stringify(selected));
   const refs = join(dir, "house-rules-references");
