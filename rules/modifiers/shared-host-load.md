@@ -18,8 +18,9 @@ wrappers and children. When inspection establishes bounded demand within existin
 host limits and the active measurement's light-work allowance, proceed without
 fresh benchmark-owner permission, a collector or a measurement receipt.
 Inspection is sufficient qualification; missing resource samples alone is not
-a blocker. Use the host's admission procedure when inspection leaves potentially
-incompatible demand unresolved. Admit the complete invocation when its children
+a blocker. Use the host's admission procedure when inspection cannot establish
+that the complete invocation fits the host's budget and any active measurement's
+light-work allowance. Admit the complete invocation when its children
 need admission, and retain required hooks. This resource permission does not
 lift checkout ownership, shared-write serialization, named input freezes or
 explicit operation-specific user restrictions. A retained benchmark lock alone
