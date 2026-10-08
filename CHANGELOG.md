@@ -4,6 +4,10 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Export detailed backlog reporting through a bundled `hr-what-next` reference,
+  independently of skill selection. Keep general reporting and automatic completion
+  duties inline, and preserve full inline output for default API and stdout callers.
+
 - Export the enabled multi-agent modifier's complete delegation, review and cleanup
   procedure through rule references, retaining inline safeguards and full inline
   output for default API and stdout callers.

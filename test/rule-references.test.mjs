@@ -29,7 +29,7 @@ test("inline callers and disabled modifiers preserve policy without requiring a 
     referencesDirectory: "resources",
   });
   assert.doesNotMatch(disabled.rules, /## Release batching/);
-  assert.deepEqual([...disabled.references.keys()], ["landing.md"]);
+  assert.deepEqual([...disabled.references.keys()], ["reporting.md", "landing.md"]);
   const config = join(dir, "config.json");
   writeFileSync(config, JSON.stringify(selected));
   const result = cli(["--config", config]);
@@ -65,6 +65,12 @@ test("copied rules retain the full procedure with no skills or source checkout",
   const link = /\[the release procedure\]\(([^)]+)\)/.exec(rules)[1];
   const landing = /\[the landing procedure\]\(([^)]+)\)/.exec(rules)[1];
   const agents = /\[the agent-work procedure\]\(([^)]+)\)/.exec(rules)[1];
+  const reporting = /\[the reporting procedure\]\(([^)]+)\)/.exec(rules)[1];
+  const reportProcedure = readFileSync(join(dirname(out), decodeURI(reporting)), "utf8");
+  assert.equal(
+    reportProcedure,
+    readFileSync(join(root, "skills/hr-what-next/references/reporting.md"), "utf8"),
+  );
   const agentProcedure = readFileSync(join(dirname(out), decodeURI(agents)), "utf8");
   assert.equal(agentProcedure, readFileSync(join(root, "rules/references/multi-agent.md"), "utf8"));
   assert.match(readFileSync(join(dirname(out), decodeURI(landing)), "utf8"), /After integration:/);
@@ -76,6 +82,7 @@ test("copied rules retain the full procedure with no skills or source checkout",
   cpSync(dirname(out), copied, { recursive: true });
   assert.equal(readFileSync(join(copied, decodeURI(link)), "utf8"), procedure);
   assert.equal(readFileSync(join(copied, decodeURI(agents)), "utf8"), agentProcedure);
+  assert.equal(readFileSync(join(copied, decodeURI(reporting)), "utf8"), reportProcedure);
 });
 
 test("repeat export updates owned files and rejects reference drift before changing rules", (t) => {
@@ -169,7 +176,7 @@ test("a personal replacement omits the overridden public reference from resource
   const result = composeConfiguration(selected, dir, { referencesDirectory: "resources" });
   assert.match(result.rules, /Personal release procedure/);
   assert.equal(result.references.has("release-batching.md"), false);
-  assert.deepEqual([...result.references.keys()], ["landing.md"]);
+  assert.deepEqual([...result.references.keys()], ["reporting.md", "landing.md"]);
 });
 
 test("core landing and selected squash references preserve inline callers and personal overrides", (t) => {
@@ -190,7 +197,11 @@ test("core landing and selected squash references preserve inline callers and pe
   assert.doesNotMatch(inline.rules, /\[the landing procedure\]/);
   assert.equal(inline.references.size, 0);
   const linked = composeConfiguration(config, dir, { referencesDirectory: "resources" });
-  assert.deepEqual([...linked.references.keys()].sort(), ["landing.md", "squash-landing.md"]);
+  assert.deepEqual([...linked.references.keys()].sort(), [
+    "landing.md",
+    "reporting.md",
+    "squash-landing.md",
+  ]);
   assert.match(linked.rules, /Never bypass required checks/);
   assert.match(linked.rules, /During integration, never switch, reset, force-move or remove/);
   assert.match(linked.references.get("landing.md"), /If the default branch is diverged/);
@@ -287,4 +298,105 @@ test("agent-work references follow modifier selection and preserve default APIs 
   const replaced = composeConfiguration(config, dir, { referencesDirectory: "resources" });
   assert.match(replaced.rules, /Personal worker procedure/);
   assert.equal(replaced.references.has("multi-agent.md"), false);
+});
+
+test("core reference lists retain scalar compatibility and reject malformed inputs", () => {
+  const current = readFileSync(join(root, "rules/core.md"), "utf8");
+  const { body } = parseFragment(current, "core");
+  const reporting = readFileSync(join(root, "skills/hr-what-next/references/reporting.md"), "utf8");
+  const inlineBody = body.replace(/## Reporting\n[\s\S]*?(?=\n## )/, reporting.trim());
+  const scalar = `---\nreference: references/landing.md\n---\n${inlineBody}`;
+  assert.equal(compose(current, []), compose(scalar, []));
+  for (const metadata of [
+    "reference: references/landing.md\nreferences: references/landing.md",
+    "references:",
+    "references: references/landing.md,",
+    "references: references/landing.md, references/landing.md",
+    "references: missing.md",
+    "references: ../../outside.md",
+  ])
+    assert.throws(() => compose(`---\n${metadata}\n---\n${body}`, []), /core: /);
+});
+
+test("Reporting exports without its skill and replacements retain independent Landing ownership", (t) => {
+  const dir = scratch(t, "reference-reporting-");
+  const canonical = readFileSync(join(root, "skills/hr-what-next/references/reporting.md"), "utf8");
+  for (const skills of [
+    { include: [] },
+    { exclude: ["hr-what-next"] },
+    { include: ["hr-what-next"] },
+  ]) {
+    const result = composeConfiguration({ skills }, dir, { referencesDirectory: "resources" });
+    assert.equal(result.references.get("reporting.md"), canonical);
+    assert.match(result.rules, /\[the reporting procedure\]\(resources\/reporting.md\)/);
+    assert.match(result.rules, /Automatic reconciliation and offers/);
+  }
+  mkdirSync(join(dir, "rules"));
+  writeFileSync(
+    join(dir, "rules", "reporting.md"),
+    "---\nreplaces: Reporting\n---\n## Reporting\n\nPersonal reporting.\n",
+  );
+  const config = { skills: { include: [] } };
+  const replaced = composeConfiguration(config, dir, { referencesDirectory: "resources" });
+  assert.equal(replaced.references.has("reporting.md"), false);
+  assert.equal(replaced.references.has("landing.md"), true);
+  mkdirSync(join(dir, "references"));
+  writeFileSync(join(dir, "references", "reporting.md"), "## Reporting\n\nPersonal procedure.\n");
+  writeFileSync(
+    join(dir, "rules", "reporting.md"),
+    "---\nreplaces: Reporting\nreference: ../references/reporting.md\n---\n## Reporting\n\nRead [personal](../references/reporting.md).\n",
+  );
+  const personal = composeConfiguration(config, dir, { referencesDirectory: "resources" });
+  assert.equal(personal.references.get("reporting.md"), "## Reporting\n\nPersonal procedure.\n");
+  assert.equal(personal.references.has("landing.md"), true);
+  const standalone = join(dir, "standalone");
+  cpSync(join(root, "skills/hr-what-next"), standalone, { recursive: true });
+  const skill = readFileSync(join(standalone, "SKILL.md"), "utf8");
+  const link = /\[reporting procedure\]\(([^)]+)\)/.exec(skill)[1];
+  assert.equal(readFileSync(join(standalone, link), "utf8"), canonical);
+});
+
+test("duplicate core reference headings fail before changing existing output", (t) => {
+  const dir = scratch(t, "reference-core-reject-");
+  const source = join(dir, "source");
+  mkdirSync(source);
+  for (const name of [
+    "compose.mjs",
+    "composition.mjs",
+    "rule-references.mjs",
+    "config.mjs",
+    "config-view.mjs",
+    "setup.mjs",
+    "rules",
+    "skills",
+  ])
+    cpSync(join(root, name), join(source, name), { recursive: true });
+  const corePath = join(source, "rules/core.md");
+  const core = readFileSync(corePath, "utf8")
+    .replace(
+      "../skills/hr-what-next/references/reporting.md\n---",
+      "../skills/hr-what-next/references/reporting.md, ../skills/hr-what-next/references/other.md\n---",
+    )
+    .replace(
+      "## Reporting\n",
+      "## Reporting\n\nRead [other](../skills/hr-what-next/references/other.md).\n",
+    );
+  writeFileSync(corePath, core);
+  cpSync(
+    join(source, "skills/hr-what-next/references/reporting.md"),
+    join(source, "skills/hr-what-next/references/other.md"),
+  );
+  const config = join(dir, "config.json");
+  writeFileSync(config, JSON.stringify({ skills: { include: [] } }));
+  const out = join(dir, "rules.md");
+  writeFileSync(out, "Existing rules.\n");
+  const result = spawnSync(
+    process.execPath,
+    [join(source, "compose.mjs"), "--config", config, "--out", out],
+    { encoding: "utf8" },
+  );
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /core: duplicate reference section "Reporting"/);
+  assert.equal(readFileSync(out, "utf8"), "Existing rules.\n");
+  assert.equal(existsSync(join(dir, "house-rules-references")), false);
 });

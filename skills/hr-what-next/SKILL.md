@@ -6,7 +6,8 @@ description: "Reconcile remaining work and recommend priorities. Use for next, n
 # What next
 
 Turn the requested scope into an evidence-based inventory and next decision.
-Use the governing backlog, continuation and offer rules; this request does
+Before reporting, read the bundled [reporting procedure](references/reporting.md).
+Use it with the governing continuation and offer rules; this request does
 not cancel selected work or authorize a new task.
 
 1. Choose the review scope from the request and its context. For a short

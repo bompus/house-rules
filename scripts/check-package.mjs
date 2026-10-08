@@ -42,6 +42,7 @@ try {
     "rules/references/landing.md",
     "rules/references/squash-landing.md",
     "rules/references/multi-agent.md",
+    "skills/hr-what-next/references/reporting.md",
     "config.mjs",
     "config-view.mjs",
     "setup.mjs",
@@ -144,6 +145,11 @@ try {
     assert.match(rules, /house-rules-references\/landing.md/);
     assert.match(rules, /house-rules-references\/squash-landing.md/);
     assert.match(rules, /house-rules-references\/multi-agent.md/);
+    assert.match(rules, /house-rules-references\/reporting.md/);
+    assert.equal(
+      readFileSync(join(scratch, "house-rules-references", "reporting.md"), "utf8"),
+      readFileSync(join(root, "skills/hr-what-next/references/reporting.md"), "utf8"),
+    );
     assert.equal(
       readFileSync(join(scratch, "house-rules-references", "multi-agent.md"), "utf8"),
       readFileSync(join(root, "rules/references/multi-agent.md"), "utf8"),

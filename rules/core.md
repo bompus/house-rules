@@ -1,5 +1,5 @@
 ---
-reference: references/landing.md
+references: references/landing.md, ../skills/hr-what-next/references/reporting.md
 ---
 # House rules
 
@@ -121,28 +121,10 @@ gains. Keep columns consistent and cells short. Label missing or unverified valu
 explanations and caveats beside the table. Split wide tables or use lists when
 long cells obscure the comparison. Preserve § Offers and any enabled offer format.
 
-When asked for a backlog, research list or remaining work, check the current
-session and relevant task records within the requested scope. Reconcile
-completed, superseded and duplicate items before reporting what remains.
-State which records were checked and label incomplete coverage.
-
-Show one row per remaining item in priority order. Use compact columns for
-rank, item, state, expected impact with its priority reason, and next action
-or decision. Include owners and source links when needed to distinguish work.
-Keep blocked, deferred, unstarted and research items visible with their
-conditions; priority does not authorize starting them.
-
-State the ranking objective from the current task's goal and explicit user
-priorities. Recent work informs that objective; explain any inferred goal.
-Weigh expected contribution to the goal and how much the next action helps
-make the next decision, accounting for urgency, dependencies, effort and
-confidence in the evidence. For performance work, use relevant latency,
-throughput or resource measures. For fixes, weigh severity and affected users.
-For enhancements, weigh user value and progress toward acceptance criteria.
-For research, name the uncertainty or decision the work could resolve.
-Label expected gains and unknowns; do not invent measurements or scores.
-Keep priority separate from readiness, and preserve § Finishing work's
-requirements for continuing authorized work and making offers.
+Before a backlog, research, ranking or remaining-work report, including a
+completion or blocked-checkpoint offer, read [the reporting procedure](../skills/hr-what-next/references/reporting.md). Apply its inventory, ranking,
+table and uncertainty requirements. Automatic reconciliation and offers in
+§ Finishing work remain mandatory; a report grants no new task authority.
 
 Put the answer, and anything the user must read or act on, in the reply's text
 after its last tool call. Text written between tool calls can be collapsed or

@@ -48,16 +48,31 @@ export function splitSections(rawText) {
 
 function composeParts(coreText, fragments, referencesDirectory, candidates) {
   const core = parseFragment(coreText, "core");
-  if ("reference" in core.meta) {
+  if ("reference" in core.meta && "references" in core.meta)
+    throw new Error("core: use reference or references, not both");
+  const paths =
+    "references" in core.meta
+      ? core.meta.references.split(",").map((path) => path.trim())
+      : "reference" in core.meta
+        ? [core.meta.reference]
+        : [];
+  if (paths.some((path) => !path) || new Set(paths).size !== paths.length)
+    throw new Error("core: references must contain distinct non-empty paths");
+  const outputs = new Map();
+  if (paths.length) {
     core.path = join(BASE, "rules/core.md");
     core.root = BASE;
-    renderReference(core, referencesDirectory, true);
+    for (const path of paths) {
+      const output = renderReference(core, referencesDirectory, true, path);
+      if (outputs.has(output.heading))
+        throw new Error(`core: duplicate reference section "${output.heading}"`);
+      outputs.set(output.heading, output);
+    }
     coreText = core.body;
   }
   const { preamble, sections } = splitSections(coreText);
-  if (core.referenceOutput)
-    sections.find((s) => s.heading === core.referenceOutput.heading).referenceOutput =
-      core.referenceOutput;
+  if (referencesDirectory !== undefined)
+    for (const section of sections) section.referenceOutput = outputs.get(section.heading);
   const find = (heading, f) => {
     const i = sections.findIndex((s) => s.heading === heading);
     if (i < 0) throw new Error(`${f.source}: no section "${heading}" to target`);
@@ -254,10 +269,10 @@ export function configurationPath(path) {
   );
 }
 
-function renderReference(f, referencesDirectory, core = false) {
+function renderReference(f, referencesDirectory, core = false, reference = f.meta.reference) {
   const invalidReference = `${f.source}: reference must be a regular file within its source layer`;
-  const path = resolve(dirname(f.path), f.meta.reference);
-  if (!f.meta.reference || !existsSync(path) || !lstatSync(path).isFile())
+  const path = resolve(dirname(f.path), reference);
+  if (!reference || !existsSync(path) || !lstatSync(path).isFile())
     throw new Error(invalidReference);
   const inside = relative(realpathSync(f.root), realpathSync(path));
   if (inside.startsWith("..") || isAbsolute(inside)) throw new Error(invalidReference);
@@ -279,7 +294,7 @@ function renderReference(f, referencesDirectory, core = false) {
     original.sections[0].heading !== short.sections[0].heading
   )
     throw new Error(`${f.source}: reference must contain the same single section heading`);
-  const sourceLink = `](${f.meta.reference})`;
+  const sourceLink = `](${reference})`;
   if (!(core ? section.text : f.body).includes(sourceLink))
     throw new Error(`${f.source}: reference link missing from body`);
   if (referencesDirectory === undefined) {
@@ -289,8 +304,9 @@ function renderReference(f, referencesDirectory, core = false) {
       `${referencesDirectory.replace(/\\/g, "/").replace(/\/$/, "")}/${name}`,
     ).replace(/[()#?]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`);
     f.body = f.body.replaceAll(sourceLink, `](${href})`);
-    f.referenceOutput = { name, text, heading: original.sections[0].heading };
+    if (!core) f.referenceOutput = { name, text, heading: original.sections[0].heading };
   }
+  return { name, text, heading: original.sections[0].heading };
 }
 
 function referenceFragments(config, configDir, referencesDirectory) {

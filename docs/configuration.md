@@ -162,8 +162,9 @@ required.
 `--out rules.md` writes selected procedure references to a sibling
 `house-rules-references/` directory. Keep that directory beside the rules file
 when copying it to a host. References do not depend on `skills.include` or
-`skills.exclude`. Core Landing always contributes its reference; enabled modifiers contribute
-theirs. A personal replacement suppresses the resource it replaces.
+`skills.exclude`. Core Landing and Reporting always contribute their references; enabled modifiers
+contribute theirs. Reporting is also bundled with `hr-what-next` for standalone
+skill use. Excluding that skill does not remove the core reference. A personal replacement suppresses the resource it replaces.
 
 The `multi-agent` modifier exports its complete agent-work procedure when enabled,
 including review follow-ups and cleanup qualification. It remains independent
@@ -179,9 +180,11 @@ files. Modified, missing or unrecognized files in that directory stop generation
 before output writes. Reconcile them explicitly; generation never removes old
 procedure files or unrelated files. Output directories must not overlap.
 
-Core rule frontmatter may name one `reference` relative to `rules/core.md`.
-Its procedure must contain one level-2 section whose heading matches the core
-section holding the mandatory link. Default composition expands that section;
+Core rule frontmatter may name one `reference` or a comma-separated `references`
+list relative to `rules/core.md`. Use only one form; list paths and section headings
+must be distinct and non-empty. Each target must be a regular file within the
+source layer, with one level-2 heading matching the core section holding its
+mandatory link. Default composition expands that section;
 linked output retains its safety boundaries and reading trigger. Modifier
 references use the same validation and output inventory.
 
