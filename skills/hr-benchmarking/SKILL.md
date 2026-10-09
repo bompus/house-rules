@@ -91,6 +91,17 @@ workload only after recording agreement on a bounded trial with CPU, memory and
 I/O limits, or an exclusive run window. Resolve input and authorization conflicts
 separately; resource admission does not override them.
 
+Apply worker limits to requested processing concurrency. Report sampled OS-thread
+counts separately; runtime background threads are not processing workers. A
+thread count alone does not establish CPU contention. Use CPU, memory, I/O and
+elapsed-time controls for the admitted resource budget. Keep thread count
+diagnostic unless a host limit or experiment requirement separately justifies
+using it to stop or reject a run.
+
+When an existing admission binds thread count, obtain revised admission before
+relaxing that condition. Preserve the other controls, held inputs and original
+run verdicts. Record the revised observer and limits before execution.
+
 For an unknown competing job, record a preset time or query limit, then inspect
 its process identity, actual demand and access to measured inputs. Stop at that
 limit. A cap, service name or active state alone does not establish incompatible

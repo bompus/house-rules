@@ -4,6 +4,9 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Benchmarking guidance separates processing-worker limits from reported OS-thread
+  counts and requires revised admission before relaxing a declared stop condition.
+
 - Default ordinary benchmarks to normal scheduling and available CPUs. Keep
   scheduling restrictions explicit and historical protocols unchanged. Issue
   and pull request reproductions omit incidental execution wrappers while
