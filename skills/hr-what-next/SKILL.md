@@ -10,6 +10,10 @@ Before reporting, read the bundled [reporting procedure](references/reporting.md
 Use it with the governing continuation and offer rules; this request does
 not cancel selected work or authorize a new task.
 
+Before a session-completion claim, apply the governing § Finishing work's
+full-session gate even when the request was only a short "next?". Save the
+completed state before the completion message; a report alone does not do so.
+
 1. Choose the review scope from the request and its context. For a short
    "next?", check the current task, its ledger and latest results. When asked
    for all current and past items, review the available session transcript,

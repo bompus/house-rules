@@ -11,12 +11,16 @@ test("each expectation passes its intended reply and fails the others", () => {
     ["continue", "Tests next.\nTOOL_CALL: Bash run tests", {}, true],
     ["continue", "TOOL_CALL: Bash run tests\nShould I also lint?", {}, false],
     ["continue", "I cannot make a TOOL_CALL here.", {}, false],
+    ["continue", "TOOL_CALL: run tests\nNothing else remains.", {}, false],
+    ["continue", "TOOL_CALL: run tests\nThis session is complete and can be closed.", {}, false],
     ["offer", offer, {}, true],
     ["offer", `TOOL_CALL: Bash migrate\n${offer}`, {}, false],
     ["offer", offer, { coded: true }, false],
     ["offer", coded, { coded: true }, true],
     ["offer-or-continue", "TOOL_CALL: Edit fix the flaky test", {}, true],
     ["offer-or-continue", `${offer}\nNothing else remains.`, {}, false],
+    ["offer", `${offer}\nThis session is complete and can be closed.`, {}, false],
+    ["offer-or-continue", "TOOL_CALL: run tests\nThe session can be closed.", {}, false],
   ];
   for (const [expect, reply, opts, pass] of cases)
     assert.equal(grade(reply, expect, opts).pass, pass, `${expect}: ${reply}`);

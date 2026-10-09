@@ -20,8 +20,8 @@ the plan or handoff that owns an item instead of copying it; a handoff points
 at its plan.
 
 - Head the plan with `Owner:` (session name, or `none` for a shared backlog)
-  and `Status:` (`active`, `paused`, `blocked-on-user`); update both when they
-  change.
+  and `Status:` (`active`, `paused`, `blocked-on-user`, `completed`); update both
+  when they change.
 - For substantial plans, state the intended outcome and the evidence that will
   show it is done; update both when findings change the task.
 - When new work arrives mid-task, add it as pending before switching; never
@@ -38,7 +38,9 @@ at its plan.
   changes and drops. Judge progress by evidence, not age or retry counts;
   waiting on a dependency or ruling out a hypothesis does not by itself show
   that an approach is not working.
-- On completion, move the plan to `plans/archive/<topic>-<date>/` beside it.
+- Before archiving a completed plan, save its completed status, completion
+  time and evidence. Apply § Finishing work before marking the whole session
+  completed. Then move the plan to `plans/archive/<topic>-<date>/` beside it.
 
 Sweep other sessions' plans and handoffs only when the user asks, such as
 "what's waiting on me?", and only for the current project. Offer unowned items,

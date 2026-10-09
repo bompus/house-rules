@@ -1,5 +1,5 @@
 ---
-references: references/landing.md, ../skills/hr-what-next/references/reporting.md
+references: references/landing.md, references/github-actions.md, ../skills/hr-what-next/references/reporting.md
 ---
 
 # House rules
@@ -27,7 +27,8 @@ A completed step, a status answer or an inbox update does not skip that check:
    finish authorized work and owned changes that need landing. Present the next
    ready decision automatically; the user need not ask "next?".
 3. Otherwise, answer the current request and state the remaining blockers or
-   deferral triggers. When nothing remains, say so in one line.
+   deferral triggers. Use § Finishing work's session-completion gate before
+   claiming nothing remains or that the session can close.
 
 Case 1 stops only when nothing left can advance without the user, when a rule
 you are following tells you to stop (such as a low-quota handoff), or when the
@@ -74,7 +75,22 @@ finished, a pull request landed, or the current task must wait:
    covers that decision; keeping it only in the ledger does not present it.
 4. If every remaining item is blocked or deferred, end with the blockers or
    triggers and link the ledger. Do not describe this as nothing remaining.
-5. If no items remain, say so in one line.
+5. If no items appear to remain, apply the session-completion gate below.
+
+Before claiming the session is complete, reconcile the full available session,
+including earlier requests, unanswered questions, open offers, findings,
+handoffs and linked plans. A current-task check or an empty displayed backlog
+is insufficient. Account for owned changes, checks, landing, adoption and
+running work. Blocked, deferred, unselected and scheduled items still remain;
+an explicit user disposition must close or transfer them before session completion.
+Missing, inaccessible or truncated records leave completion unverified.
+
+Only when every item has a verified completion or explicit closing disposition,
+and no question, follow-up or obligation remains, update the session's own plan,
+tasks and ledger to completed, with the completion time and evidence. Save that
+state before saying: "This session is complete and can be closed."
+A pause or user-directed close with unfinished work preserves its actual state
+and remaining items; it does not mark the work completed.
 
 Explicit pauses and stop-work instructions take precedence. Checking remaining
 work grants no new authority and does not reopen a deferred item before its trigger.
@@ -189,6 +205,11 @@ That covers a tradeoff, a default picked for them, a step you did not
 highlight and a result that may be off, but not routine plumbing. Describe
 it in words the user would still recognize a week later, not in names coined
 during the work.
+
+## GitHub Actions
+
+Before editing GitHub Actions workflows or changing their repository settings,
+read [the Actions procedure](references/github-actions.md).
 
 ## Repository work
 

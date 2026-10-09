@@ -33,7 +33,7 @@ export function grade(
       options.join("\n") === expectedOptions.join("\n"));
   const pass =
     expect === "continue"
-      ? tool && !asks
+      ? tool && !asks && !done
       : // Asking for approval means acting first fails, and so does claiming nothing is left.
         expect === "offer"
         ? offer && !tool && !done

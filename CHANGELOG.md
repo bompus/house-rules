@@ -44,6 +44,12 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   repository policy instead of requesting a manual full review. Existing
   review gates remain required.
 
+- Require full-session reconciliation and a saved completed state before saying
+  a session is complete and can close. Preserve unfinished work when paused.
+
+- Add GitHub Actions guidance for native parallel steps, shared runner resources,
+  failure diagnosis and fork automation settings.
+
 - Sort package fields and dependency maps with Oxfmt while preserving script order.
 
 - Benchmarking guidance separates processing-worker limits from reported OS-thread

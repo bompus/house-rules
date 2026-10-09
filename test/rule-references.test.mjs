@@ -29,7 +29,10 @@ test("inline callers and disabled modifiers preserve policy without requiring a 
     referencesDirectory: "resources",
   });
   assert.doesNotMatch(disabled.rules, /## Release batching/);
-  assert.deepEqual([...disabled.references.keys()], ["reporting.md", "landing.md"]);
+  assert.deepEqual(
+    [...disabled.references.keys()],
+    ["reporting.md", "github-actions.md", "landing.md"],
+  );
   const config = join(dir, "config.json");
   writeFileSync(config, JSON.stringify(selected));
   const result = cli(["--config", config]);
@@ -176,7 +179,10 @@ test("a personal replacement omits the overridden public reference from resource
   const result = composeConfiguration(selected, dir, { referencesDirectory: "resources" });
   assert.match(result.rules, /Personal release procedure/);
   assert.equal(result.references.has("release-batching.md"), false);
-  assert.deepEqual([...result.references.keys()], ["reporting.md", "landing.md"]);
+  assert.deepEqual(
+    [...result.references.keys()],
+    ["reporting.md", "github-actions.md", "landing.md"],
+  );
 });
 
 test("core landing and selected squash references preserve inline callers and personal overrides", (t) => {
@@ -198,6 +204,7 @@ test("core landing and selected squash references preserve inline callers and pe
   assert.equal(inline.references.size, 0);
   const linked = composeConfiguration(config, dir, { referencesDirectory: "resources" });
   assert.deepEqual([...linked.references.keys()].sort(), [
+    "github-actions.md",
     "landing.md",
     "reporting.md",
     "squash-landing.md",
@@ -304,7 +311,10 @@ test("core reference lists retain scalar compatibility and reject malformed inpu
   const current = readFileSync(join(root, "rules/core.md"), "utf8");
   const { body } = parseFragment(current, "core");
   const reporting = readFileSync(join(root, "skills/hr-what-next/references/reporting.md"), "utf8");
-  const inlineBody = body.replace(/## Reporting\n[\s\S]*?(?=\n## )/, reporting.trim());
+  const actions = readFileSync(join(root, "rules/references/github-actions.md"), "utf8");
+  const inlineBody = body
+    .replace(/## Reporting\n[\s\S]*?(?=\n## )/, reporting.trim())
+    .replace(/## GitHub Actions\n[\s\S]*?(?=\n## )/, actions.trim());
   const scalar = `---\nreference: references/landing.md\n---\n${inlineBody}`;
   assert.equal(compose(current, []), compose(scalar, []));
   for (const metadata of [

@@ -7,7 +7,7 @@ export function replyFacts(reply, coded = false) {
     asks: /\b(shall I|should I|can I|may I|could I|want me to|would you like|let me know)\b/i.test(
       reply,
     ),
-    done: /nothing (else )?(remains|is left|left)(?![\s\S]*\b(?:remains|is left|left)\b)/i.test(
+    done: /nothing (else )?(remains|is left|left)(?![\s\S]*\b(?:remains|is left|left)\b)|this session is complete|(?:session|it) can be closed/i.test(
       reply,
     ),
     offer: coded
