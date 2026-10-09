@@ -10,7 +10,6 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 - Add finite Linux and Windows process-attribution collectors to benchmarking
   tooling, with process birth identities and observer cost records.
 
-
 - Keep routine reply lists focused while preserving complete inventories and
   required options. Check reply openings and endings for a clear answer and
   any required next action.
