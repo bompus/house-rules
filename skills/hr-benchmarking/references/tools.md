@@ -88,7 +88,9 @@ other sessions' CPU placement:
    every arm, its browser or runtime and its children to them.
 2. Move every other thread you are permitted to change off the benchmark CPUs.
    Record each thread's identity (PID, thread ID, birth ticks) and original
-   affinity. Stop and signal nothing.
+   affinity. Stop and signal nothing. A thread that sets its own affinity, or
+   is created with an explicit mask, can stay eligible on the benchmark CPUs;
+   the gate still counts its CPU, and you record it as unfenced.
 3. Gate on foreign CPU on the benchmark CPUs: their busy time (`cpuBusyCores`)
    minus the CPU of the benchmark's own process tree. Process CPU is not
    per-CPU, so the subtraction holds only while the whole tree stays on the
