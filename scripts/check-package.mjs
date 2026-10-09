@@ -126,7 +126,7 @@ try {
     );
     function compare(source, target) {
       for (const entry of readdirSync(source, { withFileTypes: true })) {
-        if (entry.name === "test") continue;
+        if (entry.name === "test" || entry.name === "__pycache__") continue;
         const from = join(source, entry.name),
           to = join(target, entry.name);
         assert(existsSync(to), `Missing installed resource ${to}`);

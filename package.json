@@ -21,6 +21,7 @@
     "rules/",
     "skills/",
     "!skills/*/test/",
+    "!**/__pycache__/",
     "docs/",
     "examples/",
     "LICENSE",
