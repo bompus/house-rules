@@ -90,13 +90,16 @@ other sessions' CPU placement:
    Record each thread's identity (PID, thread ID, birth ticks) and original
    affinity. Stop and signal nothing. A thread that sets its own affinity, or
    is created with an explicit mask, can stay eligible on the benchmark CPUs;
-   the gate still counts its CPU, and you record it as unfenced.
+   the gate still counts its CPU.
 3. Gate on foreign CPU on the benchmark CPUs: their busy time (`cpuBusyCores`)
-   minus the CPU of the benchmark's own process tree. Process CPU is not
-   per-CPU, so the subtraction holds only while the whole tree stays on the
-   benchmark CPUs: check every thread's effective affinity at the start and end
-   of each batch, and reject the batch if any ran elsewhere. Report host-wide
-   load as context.
+   minus the interval CPU of the benchmark's own live processes (`busyCores`).
+   Do not subtract `reapedChildCores`: it can include CPU used before the
+   interval, so it would understate foreign load. Process CPU is not per-CPU,
+   so the subtraction holds only while the whole tree stays on the benchmark
+   CPUs: check every thread's effective affinity at the start and end of each
+   batch, and reject the batch if any ran elsewhere. In the same census,
+   record every other permitted thread still eligible on the benchmark CPUs as
+   unfenced. Report host-wide load as context.
 4. At the phase boundary, restore recorded threads after checking their birth
    ticks. Threads started during the window inherited the fence; give them the
    CPU set they would otherwise have inherited, usually all CPUs. A still-fenced
