@@ -1,6 +1,6 @@
 ---
 name: hr-usage-report
-description: Measure where coding-agent usage went by provider, model and role from local Claude Code, Codex and OpenCode records, and render model comparisons as HTML charts and verdict tables. Use for quota or cost questions ("where did our usage go", "would model X save quota in role Y") and when showing a model or role recommendation visually.
+description: Measure where Claude Code, Codex and OpenCode usage went by provider, model and role, and chart model comparisons as HTML. Use for quota or cost questions and to show a model or role recommendation visually.
 ---
 
 # Usage report
