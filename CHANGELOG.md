@@ -4,6 +4,8 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Sort package fields and dependency maps with Oxfmt while preserving script order.
+
 - Benchmarking guidance separates processing-worker limits from reported OS-thread
   counts and requires revised admission before relaxing a declared stop condition.
 
@@ -18,7 +20,7 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   still apply.
 
 - Check authored documentation and configuration files with Oxfmt; preserve
-  exact-content test fixtures and package key order.
+  exact-content test fixtures.
 
 - Require bug reports to isolate underlying operations, verify their connection
   to the original symptom and distinguish causal evidence from runtime guesses.

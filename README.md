@@ -312,8 +312,8 @@ npx oxlint . && npx oxfmt --check .
 
 Oxfmt checks authored Markdown, HTML, JSON, JSONC, YAML, TOML and CSS as well
 as JavaScript and TypeScript. Test fixtures stay excluded because scanner
-tests depend on their exact text and line numbers. Package key sorting is
-disabled so formatting preserves the existing key order.
+tests depend on their exact text and line numbers. Package fields and
+dependency maps are sorted; script order is preserved.
 
 Tests remove their own fixture directories after each test, including failures.
 Set `HOUSE_RULES_TEST_TMP` to an existing directory to choose their scratch root;

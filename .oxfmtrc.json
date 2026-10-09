@@ -1,5 +1,5 @@
 {
   "printWidth": 100,
   "ignorePatterns": ["skills/*/test/fixtures/**"],
-  "sortPackageJson": false
+  "sortPackageJson": true
 }
