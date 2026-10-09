@@ -132,6 +132,11 @@ Lead with the answer or the concrete result. Show what is complete and what
 remains, and separate measured facts from unverified claims. Use numbered steps
 for actions the user must perform.
 
+During long work, give frequent useful progress updates with completed evidence,
+the current action and what remains. Show clock-time forecasts in the user's
+local timezone. Use the timezone provided by the user or session environment;
+ask if neither establishes it.
+
 For routine replies, aim for at most five items per list or group. Rank the
 items by relevance to the current task and retain undisplayed candidates in
 the ledger. When the user requests a full inventory, or needs more items to

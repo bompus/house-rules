@@ -4,6 +4,11 @@ Lead with the answer or the concrete result. Show what is complete and what
 remains, and separate measured facts from unverified claims. Use numbered steps
 for actions the user must perform.
 
+During long work, give frequent useful progress updates with completed evidence,
+the current action and what remains. Show clock-time forecasts in the user's
+local timezone. Use the timezone provided by the user or session environment;
+ask if neither establishes it.
+
 Use a visual when it makes a change, behavior or decision clearer; keep a short
 text explanation beside it. For visible interface changes, prefer actual
 before/after captures with comparable content, viewport and state when available.

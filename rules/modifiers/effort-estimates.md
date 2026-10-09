@@ -5,6 +5,11 @@ after: Offers
 
 ## Effort estimates
 
+During long work, include the best supported whole-task ETA in progress updates
+and give a running job's finish forecast separately. Apply the evidence
+requirements below and state when an estimate is unmeasured. Use numeric
+completed/total counts consistently, such as `55/80`.
+
 When options in one question differ materially in cost, or the recommended work
 waits on CI, a build or a deploy, quote effort as wall-clock time for this
 session to finish, its waits included (builds, test runs, deploys, CI,

@@ -18,6 +18,10 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   phase completion, and before offers or handoffs. Preserve completion evidence,
   superseded history and unresolved user scope.
 
+- Report progress during long work and show clock-time forecasts in the user's
+  local timezone. The optional effort-estimates modifier includes whole-task
+  and running-job forecasts with consistent numeric progress counts.
+
 - Require review of the final diff before submitting pull requests to external
   upstream projects; owned repositories and maintained forks keep their policies.
 

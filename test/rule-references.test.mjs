@@ -318,6 +318,30 @@ test("core reference lists retain scalar compatibility and reject malformed inpu
     assert.throws(() => compose(`---\n${metadata}\n---\n${body}`, []), /core: /);
 });
 
+test("progress reporting survives reference exports while effort forecasts stay optional", (t) => {
+  const dir = scratch(t, "reference-progress-");
+  for (const linked of [false, true]) {
+    for (const effort of [false, true]) {
+      const result = composeConfiguration(
+        { modifiers: effort ? ["effort-estimates"] : [], skills: { include: [] } },
+        dir,
+        linked ? { referencesDirectory: "resources" } : {},
+      );
+      const reporting = linked ? result.references.get("reporting.md") : result.rules;
+      assert.match(reporting, /During long work, give frequent useful progress updates/);
+      assert.match(reporting, /clock-time forecasts in the user's\s+local timezone/);
+      assert.match(reporting, /ask if neither establishes it/);
+      if (effort) {
+        assert.match(result.rules, /best supported whole-task ETA/);
+        assert.match(result.rules, /running job's finish forecast separately/);
+        assert.match(result.rules, /completed\/total counts consistently/);
+      } else {
+        assert.doesNotMatch(result.rules, /whole-task ETA|completed\/total counts/);
+      }
+    }
+  }
+});
+
 test("Reporting exports without its skill and replacements retain independent Landing ownership", (t) => {
   const dir = scratch(t, "reference-reporting-");
   const canonical = readFileSync(join(root, "skills/hr-what-next/references/reporting.md"), "utf8");
