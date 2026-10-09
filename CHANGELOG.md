@@ -9,6 +9,9 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   counters are opt-in with `--metrics` there, and the JSON export layout
   changed.
 
+- Split the Reporting table paragraph so the before/after metric guidance stands
+  on its own. The wording is unchanged.
+
 - Before landing a changed benchmark evidence reader, run it over the saved
   archive after integrating the base branch and compare its accepted and
   excluded records with the frozen reader's.
