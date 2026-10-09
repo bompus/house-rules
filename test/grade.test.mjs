@@ -13,6 +13,12 @@ test("each expectation passes its intended reply and fails the others", () => {
     ["continue", "I cannot make a TOOL_CALL here.", {}, false],
     ["continue", "TOOL_CALL: run tests\nNothing else remains.", {}, false],
     ["continue", "TOOL_CALL: run tests\nThis session is complete and can be closed.", {}, false],
+    [
+      "continue",
+      "I will not say “this session is complete”; work remains.\nTOOL_CALL: Bash continue-work",
+      {},
+      true,
+    ],
     ["offer", offer, {}, true],
     ["offer", `TOOL_CALL: Bash migrate\n${offer}`, {}, false],
     ["offer", offer, { coded: true }, false],

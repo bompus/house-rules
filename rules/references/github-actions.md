@@ -4,8 +4,9 @@ Inspect the current workflows, run logs and effective repository policies before
 changing CI. Distinguish runner startup or action-policy failures from test
 failures, timeouts and missing credentials. Preserve checks and assertions;
 qualify timeout changes with the actual failing operation and comparable runs.
-Give jobs finite timeouts. Cancel superseded pull-request runs when appropriate;
-preserve required default-branch and release evidence.
+Give jobs finite timeouts. Cancel an older pull-request run only when a newer
+run for the same pull request covers the same required checks; preserve required
+default-branch and release evidence.
 
 ### Choose the concurrency boundary
 
@@ -15,8 +16,9 @@ sequence, but GitHub also supports native parallel steps. Confirm current
 before using it; older model knowledge may omit this capability.
 
 - A `parallel` group starts its steps together and waits for the group.
-- `background: true` starts a step without waiting. Use its `id` with `wait`,
-  `wait-all` or `cancel` as required by the dependency and failure policy.
+- `background: true` starts a step without waiting. Use its `id` with `wait` or
+  `cancel`, or use `wait-all` to wait for every active background step, as the
+  dependency and failure policy requires.
 - Parallel steps share a runner, workspace and resource budget. Inspect writes,
   caches, outputs and prerequisites before overlapping commands. Install shared
   dependencies first. Do not infer a speedup without measurements.
