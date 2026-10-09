@@ -4,6 +4,10 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Put performance results before lengthy verification details in pull requests.
+  Keep required template sections, collapse supporting commands and avoid
+  repeating result tables in prose.
+
 - Show percent or times benefit in before/after metric tables. Keep benchmark
   collector, scheduling and qualification details in measurement records unless
   they affect the claim or the reader requests them. Use a practical 3% no-clear-change

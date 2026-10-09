@@ -272,9 +272,13 @@ worsening, unchanged or inconclusive results. With a zero or missing baseline,
 show an absolute change or state that the benefit cannot be calculated.
 
 Use 3% as the default practical no-clear-change band for reported differences.
-This is a reporting convention, not a statistical margin of error. Use a larger
-band when observed variability requires it. A change outside the band still
-needs qualified evidence and must exceed run-to-run variation. Set a different
+This is a reporting convention, not a statistical margin of error. Use the
+variation statistic and threshold declared before collecting results. When that
+threshold, expressed as a percentage of the baseline, exceeds 3%, widen the
+reporting band to at least that percentage and name the statistic and threshold.
+If the variation criterion cannot support a percentage band, keep its result
+separate and label unsupported differences inconclusive. A change outside the
+band still needs qualified evidence and must meet the declared variation criterion. Set a different
 precision target before collecting results when the workload requires it;
 changing presentation does not change frozen acceptance or rejection gates.
 

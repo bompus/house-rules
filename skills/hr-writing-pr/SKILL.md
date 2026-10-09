@@ -42,7 +42,7 @@ Resolve mismatches between the description and the implementation before calling
 
 ## Title and body
 
-Write a title naming the resulting behavior or fixed failure. Use the repository's title convention when it has one. Check the title's type and scope against the diff's dominant change, not the author's intent: a `docs:` title on a diff that adds an executable installer misfiles the record the squash message becomes. When no PR template exists, the title convention is the only template; default to Conventional Commits `type(scope):` unless the repository's recent history uses another style. Flag a mixed diff as a possible split into separate PRs (the `hr-split-to-prs` skill, where installed) instead of stretching the title to cover it.
+Write a title naming the resulting behavior or fixed failure. Use the repository's title convention when it has one. Check the title's type and scope against the diff's dominant change. A `docs:` title on a diff that adds an executable installer misfiles the squash commit. When no PR template exists, the title convention is the only template; default to Conventional Commits `type(scope):` unless the repository's recent history uses another style. Flag a mixed diff as a possible split into separate PRs (the `hr-split-to-prs` skill, where installed) instead of stretching the title to cover it.
 
 Lead the body with the concrete problem and resulting behavior. A small change may need only a paragraph and a validation sentence. Expand only where the reviewer needs more context:
 
@@ -58,7 +58,11 @@ Describe the final combined change. Leave out intermediate attempts, commit resh
 
 Report relevant checks and their actual outcomes, including material failures and unverified behavior. Name the tests or commands run and their scope; a suite-wide pass count alone is not evidence for the changed behavior. When generated files dominate the diff, give the authored line count alongside the headline number so the size does not mislead review. Distinguish newly introduced failures from established baseline failures only when a comparison supports that claim. Keep detailed logs in a linked artifact when the short result is sufficient.
 
-Use a small code example when it makes behavior concrete. For visual changes, use comparable before/after images when available. When the change replaces an existing procedure, state the prior and new procedure in one line each. For measured performance claims, identify the baseline and candidate, measurement conditions, and variability.
+Use a small code example when it makes behavior concrete. For visual changes, use comparable before/after images when available. When the change replaces an existing procedure, state the prior and new procedure in one line each. For measured performance claims, follow the installed `hr-benchmarking` skill's
+"Report and decide" guidance for benefit columns, variability and claim limits.
+When that skill is unavailable, identify the baseline and candidate, workload,
+repetitions and variability, and show before/after metrics with percent or times
+benefit. Keep material limitations beside the results.
 
 For reproduction examples, apply the direct-command and material-condition
 guidance in the installed `hr-diagnosing-bugs` skill's `references/reporting.md`.
@@ -74,10 +78,18 @@ clearly than prose. Show the whole relevant block when omitted context would
 hide ownership, order or a guard. Keep verification and uncertainty beside
 the view; brevity does not remove required evidence.
 
+Put the measured result table after the change summary and before lengthy
+verification details, within the repository's required template. Explain the
+result without repeating the table's numbers. Keep the relevant checks and
+outcomes visible; collapse long commands or supporting detail when useful.
+Required scope or approval sections stay, with only the justification and links
+the reviewer needs. Use visuals when they explain behavior better than text;
+numeric comparisons usually need only a table.
+
 Scale structure to the change. Omit empty optional sections, placeholder text, guessed risk scores or review times, and coverage percentages that were not measured. Complete a required checklist with this PR's specifics rather than omitting it, and mark non-applicable items N/A with a reason. Preserve required template sections and mark unavailable evidence honestly.
 
 ## Completion check
 
-Every factual claim must be supported by inspected code, the originating request, or observed results. The opening explains what changes and why; the remaining text helps review it. Deliver the title and body in the form requested. Apply them to a remote PR only within the user's authorized scope. When the user's rules turn attribution off (the `no-attribution` modifier, for example), include no `Made with` or other host attribution, and after `gh pr create` or `gh pr edit`, reread the published body and strip any footer a harness appended.
+Every factual claim must be supported by inspected code, the originating request, or observed results. The opening explains what changes and why; the remaining text helps review it. Deliver the title and body in the form requested. Apply them to a remote PR only within the user's authorized scope. When the user's rules turn attribution off, include no `Made with` or other host attribution. After `gh pr create` or `gh pr edit`, reread the published body and strip any footer a harness appended.
 
 Relevant validation stays in the description; extensive templates and review automation are outside this skill.
