@@ -2,16 +2,15 @@
 
 The package name is `@bompus/house-rules`; the executable is `house-rules`.
 It has no runtime dependencies or install hooks. Installing the package does
-not install skills into an agent host. Composition writes only explicit outputs.
+not install skills into an agent host. Composition writes the requested rules
+file, its `house-rules-references/` directory and any `--skills-out` directory.
 
-`package.json` starts at the existing release version, 0.10.0. This preparation
-does not publish that version. In the next batched release commit, update its
-version with the dated changelog entry. Keep the package version, changelog
-version and `v<version>` tag identical.
+Keep the `package.json` version, changelog version and `v<version>` tag
+identical.
 
 ## First publication
 
-The first publication requires an npm account that owns the `bompus` scope.
+This one-time setup applies to 0.11.0, the first published version. The first publication requires an npm account that owns the `bompus` scope.
 An earlier publication of another package does not establish current login or
 scope access. Authenticate using npm's web login and complete its 2FA approval.
 Do not put credentials into the repository or workflow.

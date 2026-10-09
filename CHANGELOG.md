@@ -4,6 +4,26 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+## 0.11.0 - 2026-10-09
+
+- First npm publication of `@bompus/house-rules`, with the `house-rules` CLI,
+  bundled rules, skills and docs, and trusted publishing triggered by a GitHub
+  release.
+
+- Upgrade note: `--out` now also writes `house-rules-references/` beside the
+  rules file, and the written rules link into it. Keep that directory with any
+  copy of the rules file. Stdout keeps the procedures inline. Composition
+  refuses overlapping output paths and will not overwrite modified or
+  unrecognized files in that directory.
+
+- Upgrade note: the sample `examples/person/house-rules.json` now selects no
+  modifiers and eight skills through `skills.include`. Existing configs are
+  unchanged and keep the full shipped skill set.
+
+- Upgrade note: core gained a `## GitHub Actions` section. A personal-layer
+  section with the same heading now fails composition; give it
+  `replaces: GitHub Actions` frontmatter instead.
+
 - Split the benchmarking collector notes and the variation criterion into
   shorter paragraphs so the newer notes stand on their own. The wording is
   unchanged.
@@ -41,7 +61,9 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   steal time, also for the host total) and each process's reaped-child CPU,
   attributed to the parent that reaped it. Short or tail metrics get an
   absolute variation floor or a percentile or count metric, and automated stop
-  rules use the acceptance analysis code.
+  rules use the acceptance analysis code. CPUs that go offline or online during
+  a sample are reported as null instead of idle, and undecodable process names
+  keep their attribution.
 
 - Put performance results before lengthy verification details in pull requests.
   Keep required template sections, collapse supporting commands and avoid
@@ -153,9 +175,11 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 - Keep unverified stale-text matches out of navigation ranking scores and detect
   missing-path diagnostics beyond result prefixes without counting source quotes.
+
 - Start fresh installs with eight skills and no modifiers. Add explicit shipped
   skill selection while preserving existing configs and personal layers. Setup
   introduces relevant additions without requiring a catalog-wide decision.
+
 - Require new guidance proposals to explain their need, existing alternatives,
   evidence, activation limits and setup or maintenance cost.
 
@@ -231,6 +255,8 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 - The opt-in shared-load modifier now follows host-defined resource budgets
   instead of prescribing fixed concurrency, memory limits or platform commands.
+  Without a host budget, get operator direction before whole-repository or
+  parallel local work.
 
 - Completion and blocked checkpoints now check the task ledger and offer the
   highest-priority ready next step without waiting for a "next?" prompt.
@@ -260,8 +286,8 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 - Benchmark guidance now verifies saved run identities and qualification from raw
   evidence, and limits observer-induced retention in WeakRef memory probes.
 
-The benchmarking skill now links a dated priority experiment record, including
-positive, zero and negative nice results, inheritance behavior and scope limits.
+- The benchmarking skill now links a dated priority experiment record, including
+  positive, zero and negative nice results, inheritance behavior and scope limits.
 
 - Cross-session selection guidance now binds relayed offer choices to verified
   source messages and exact scope instead of the receiving session's offer codes.
@@ -306,10 +332,6 @@ positive, zero and negative nice results, inheritance behavior and scope limits.
 - Clarify reporting guidance to use compact tables for multiple benefits,
   tradeoffs and differences from current behavior, one item per row, with
   evidence and uncertainty.
-
-## 0.11.0 - 2026-10-06
-
-- Prepare `@bompus/house-rules` npm distribution with the existing composition CLI and release-triggered trusted publication.
 
 - Remove test fixtures after successful and failed tests, and support
   `HOUSE_RULES_TEST_TMP` across composer, configuration, installer and eval tests.

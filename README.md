@@ -16,7 +16,7 @@ Fresh installs select eight skills for setup, review, diagnosis, explanation,
 planning, tests, writing and remaining work. Modifiers start off. Add guidance
 when a task needs it, and let each repository supply its own safeguards.
 
-<p align="center"><img src="docs/assets/overview.png" alt="The four layers composed into one rules file (core, opt-in modifiers, your layer, each repository's AGENTS.md), and the end-of-reply eval: 2/10 before the rewrite to 42/42 with the shipped wording, on an agent that reads only the first 80 lines." width="100%"></p>
+<p align="center"><img src="docs/assets/overview.png" alt="The four layers composed into one rules file: core, opt-in modifiers, your layer and each repository's AGENTS.md. The eval figures in this illustration come from an early internal run and are not a current result." width="100%"></p>
 
 If you are an AI agent reading this for your user, the prompt under
 [Evaluate it with your agent](#evaluate-it-with-your-agent) is the evaluation
@@ -103,7 +103,10 @@ even when Node.js composes the rules.
 
 Then connect the composed file to your agent. Claude Code reads
 `@~/.config/house-rules/rules.md` on its own line in `~/.claude/CLAUDE.md`;
-other hosts take a copy in their user-level rules file. To change modifiers or
+other hosts take a copy in their user-level rules file, with the
+`house-rules-references/` directory placed beside it. Written rules link to the
+procedures in that directory; stdout and configuration previews keep them
+inline. See [reference output](docs/configuration.md#reference-output). To change modifiers or
 skills, change to the checkout directory and run `node compose.mjs setup`,
 or `bun compose.mjs setup` when Node.js is unavailable. Review the numbered
 choices and use `save` to change only the configuration. Then run the
@@ -115,10 +118,9 @@ hosts, and asks before it touches a host file.
 
 ### npm distribution
 
-The next release will also publish `@bompus/house-rules` to npm. The package
-provides the `house-rules` composition and configuration commands. Installation
-has no lifecycle hooks and does not connect an agent host or change its settings.
-After the package is published:
+`@bompus/house-rules` is published to npm. The package provides the
+`house-rules` composition and configuration commands. Installation has no
+lifecycle hooks and does not connect an agent host or change its settings.
 
 ```bash
 npm install --global @bompus/house-rules
@@ -129,9 +131,9 @@ house-rules --config ./house-rules.json --out ./rules.md --skills-out ./composed
 
 Create your configuration before composing. The
 [configuration guide](docs/configuration.md) describes the available choices.
-The package bundles rules, skills, their resources and documentation. Git-based
-installers continue to follow the default branch; npm follows published versions.
-See [npm release setup](docs/npm-release.md) for the first-publish prerequisite.
+The package bundles rules, skills, their resources and documentation. With the
+npm package, run `house-rules setup` to change modifiers or skills. Git-based
+installers follow the default branch; npm follows published versions.
 
 ### Manual steps
 
@@ -148,8 +150,9 @@ node compose.mjs --config ~/.config/house-rules/house-rules.json \
 ```
 
 To recompose later, move or remove the old `composed-skills` directory first,
-because `--skills-out` must be empty or absent. `compose.mjs` itself writes
-only the paths you give it and never deletes anything.
+because `--skills-out` must be empty or absent. `compose.mjs` writes the rules
+file, a `house-rules-references/` directory beside it (or at `--references-out`),
+and `--skills-out` when given. It never deletes anything.
 
 When distributing a rules-only output, carry this checkout's `LICENSE` and
 `THIRD_PARTY_NOTICES.md` alongside it. Copy them into an explicit destination
@@ -291,16 +294,12 @@ want and explains these limits before changing the configuration.
 
 ## Checking the rules against your models
 
-`evals/end-of-reply/` runs three short scenarios through any model CLI and
-grades whether the agent keeps working or ends with an offer at the right
-time, including when it reads only the first 80 lines. On seven models, the
-rules passed 62 of 63 replies, against 26 for a one-sentence instruction and 21
-with no rules; its README has the breakdown and limits.
-
-Written rules export required procedure files to a sibling `house-rules-references/`
-directory, independently of selected skills. Move that directory with the rules
-file when connecting another host. Stdout and configuration previews retain the
-complete inline procedures. See [reference output](docs/configuration.md#reference-output).
+`evals/end-of-reply/` runs short scenarios through any model CLI and grades
+whether the agent keeps working or ends with an offer at the right time,
+including when it reads only the first 80 lines. In a 2026-10-04 run of the
+three original scenarios against v0.5.7 on seven models, the rules passed 62 of
+63 replies, against 26 for a one-sentence instruction and 21 with no rules; its
+README has the breakdown and limits.
 
 ## Development
 

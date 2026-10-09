@@ -62,6 +62,8 @@ when it should.
   told.
 - The rules arm's one failure ran a read-only command before a correct offer.
 
-Limits: the scenarios were written while shaping the rules, so they are not
+Limits: the seven models' identities and CLI versions were not recorded. This
+run covers the three original scenarios; later scenarios have no baseline run.
+The scenarios were written while shaping the rules, so they are not
 held-out cases, and the replies are text with `TOOL_CALL:` lines rather than a
 live tool loop.

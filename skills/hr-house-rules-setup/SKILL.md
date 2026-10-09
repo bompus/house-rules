@@ -82,7 +82,10 @@ For an agent running without a terminal, use the preview/apply workflow below.
    - Hosts without file includes (for example a global `AGENTS.md`): copy the
      composed file there between `<!-- house-rules:start -->` and
      `<!-- house-rules:end -->` lines, replacing only that block on later runs.
-   - Hosts with a settings screen for user rules: paste the composed file.
+     Place the `house-rules-references/` directory beside that file, because
+     the written rules link to it.
+   - Hosts with a settings screen for user rules: paste the stdout output of
+     `node compose.mjs --config <path>`, which keeps the procedures inline.
      Keep everything else in those files. Done when every chosen host is
      connected or the user declined it.
 6. For skills, compose them with `--skills-out <dir>` into a directory that

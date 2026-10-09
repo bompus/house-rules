@@ -36,7 +36,11 @@ Before a release or public announcement, follow the full release procedure in
 
 When the batch is ready, prepare one release commit that moves all `Unreleased`
 entries into a dated version section. Choose the semantic version for the
-combined changes, including any breaking change. Once that commit and every
+combined changes, including any breaking change. Keep `package.json` `version`
+equal to the changelog version. For the first npm publication, follow
+[docs/npm-release.md](docs/npm-release.md): publish the verified tarball by
+hand and configure the trusted publisher before creating the GitHub release.
+Once that commit and every
 included change are verified on `main`, tag the release commit `v<version>`
 and publish notes containing that version's complete changelog entry:
 `gh release create v<version> --target <sha> --title v<version> --notes-file <entry>`.
