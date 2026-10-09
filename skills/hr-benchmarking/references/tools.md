@@ -97,9 +97,12 @@ other sessions' CPU placement:
    interval, so it would understate foreign load. Process CPU is not per-CPU,
    so the subtraction holds only while the whole tree stays on the benchmark
    CPUs: check every thread's effective affinity at the start and end of each
-   batch, and reject the batch if any ran elsewhere. In the same census,
-   record every other permitted thread still eligible on the benchmark CPUs as
-   unfenced. Report host-wide load as context.
+   batch, and reject the batch if any ran elsewhere. Boundary checks miss a
+   thread that widens and restores its affinity within the batch; when the
+   workload can change its own affinity, confine the tree with a cpuset it
+   cannot widen. In the same census, record every other permitted thread
+   still eligible on the benchmark CPUs as unfenced. Report host-wide load as
+   context.
 4. At the phase boundary, restore recorded threads after checking their birth
    ticks. Threads started during the window inherited the fence; give them the
    CPU set they would otherwise have inherited, usually all CPUs. A still-fenced
