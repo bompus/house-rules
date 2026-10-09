@@ -4,6 +4,10 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- The local-timezone rule now names the host clock zone (`date +%Z`, or
+  `Get-TimeZone` on Windows) as part of the session environment and requires
+  checking it before reporting UTC or saying the zone is unknown.
+
 - The plan-files rule now keeps the ledger as a `## Ledger` section of item
   lines (open, deferred with a trigger, done with evidence, dropped with who
   dropped it), and `hr-what-next` gains `scripts/check-open-work.mjs`. The

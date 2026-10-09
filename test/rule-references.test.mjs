@@ -340,7 +340,9 @@ test("progress reporting survives reference exports while effort forecasts stay 
       const reporting = linked ? result.references.get("reporting.md") : result.rules;
       assert.match(reporting, /During long work, give frequent useful progress updates/);
       assert.match(reporting, /clock-time forecasts in the user's\s+local timezone/);
-      assert.match(reporting, /ask if neither establishes it/);
+      assert.match(reporting, /host clock zone \(`date \+%Z`, or `Get-TimeZone` on Windows\)/);
+      assert.match(reporting, /before reporting UTC or saying the zone is\s+unknown/);
+      assert.match(reporting, /ask if neither\s+establishes it/);
       if (effort) {
         assert.match(result.rules, /best supported whole-task ETA/);
         assert.match(result.rules, /running job's finish forecast separately/);

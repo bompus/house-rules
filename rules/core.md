@@ -150,8 +150,10 @@ for actions the user must perform.
 
 During long work, give frequent useful progress updates with completed evidence,
 the current action and what remains. Show clock-time forecasts in the user's
-local timezone. Use the timezone provided by the user or session environment;
-ask if neither establishes it.
+local timezone. Use the timezone provided by the user or session environment,
+including the host clock zone (`date +%Z`, or `Get-TimeZone` on Windows). Check
+it before reporting UTC or saying the zone is unknown; ask if neither
+establishes it.
 
 For routine replies, aim for at most five items per list or group. Rank the
 items by relevance to the current task and retain undisplayed candidates in
