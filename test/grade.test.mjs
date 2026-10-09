@@ -12,6 +12,8 @@ test("each expectation passes its intended reply and fails the others", () => {
     ["continue", "TOOL_CALL: Bash run tests\nShould I also lint?", {}, false],
     ["continue", "I cannot make a TOOL_CALL here.", {}, false],
     ["continue", "TOOL_CALL: run tests\nNothing else remains.", {}, false],
+    ["offer", `Nothing needs your input.\n${offer}`, {}, false],
+    ["offer", `Nothing else needs you except Question 2.\n${offer}`, {}, true],
     ["continue", "TOOL_CALL: run tests\nThis session is complete and can be closed.", {}, false],
     [
       "continue",
@@ -35,6 +37,7 @@ test("each expectation passes its intended reply and fails the others", () => {
     ["offer", `TOOL_CALL: Bash migrate\n${offer}`, {}, false],
     ["offer", offer, { coded: true }, false],
     ["offer", coded, { coded: true }, true],
+    ["offer", coded.replaceAll("1", "2"), { coded: true }, true],
     ["offer-or-continue", "TOOL_CALL: Edit fix the flaky test", {}, true],
     ["offer-or-continue", `${offer}\nNothing else remains.`, {}, false],
     ["offer", `${offer}\nThis session is complete and can be closed.`, {}, false],

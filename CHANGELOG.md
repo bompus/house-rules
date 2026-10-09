@@ -13,6 +13,14 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   review round, waits for the running review, and integrates the base only
   when the PR needs it.
 
+- A short "next?" in hr-what-next now always covers unanswered questions from
+  earlier offers, owned uncommitted files, unpushed commits and held
+  checkouts, and the number of other live ledger items. It may not say that
+  nothing is left or that nothing needs the user while any of them remain.
+  The end-of-reply grader treats "nothing needs your input" as a completion
+  claim and accepts a coded offer that re-presents a later question, such as
+  Question 2. A new scenario covers a "next?" with an unanswered question.
+
 - Update the benchmarking tool notes for Hyperfine 2.0: commands run without a
   shell by default, peak memory is measured on Linux and macOS, hardware
   counters are opt-in with `--metrics` there, and the JSON export layout

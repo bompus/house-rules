@@ -15,7 +15,14 @@ full-session gate even when the request was only a short "next?". Save the
 completed state before the completion message; a report alone does not do so.
 
 1. Choose the review scope from the request and its context. For a short
-   "next?", check the current task, its ledger and latest results. When asked
+   "next?", check the current task, its ledger and latest results, plus this
+   floor whatever the scope: every question from an earlier offer in this
+   conversation that the user has not answered, every owned uncommitted file,
+   unpushed commit or held checkout, and the number of other live ledger items
+   (deferred, unselected, blocked or follow-up) with a link to the ledger.
+   Report each floor item, or state that the floor is empty. While any floor
+   item remains, do not say that nothing is left or that nothing needs the
+   user; re-present the unanswered questions as an offer instead. When asked
    for all current and past items, review the available session transcript,
    relevant plans, task lists, handoffs and linked follow-ups. Name source
    ranges and missing, inaccessible or truncated records. Sweep other
