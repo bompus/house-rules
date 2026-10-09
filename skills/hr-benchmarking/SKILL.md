@@ -218,6 +218,7 @@ decision and observed variation; there is no universal minimum.
 For a performance claim, add alternating runs to assess run-to-run variation.
 Before the first run used in that claim, set a repetition count or stopping
 rule and a reproducible variation criterion (statistic and threshold).
+
 For short or tail metrics, such as the longest stall in a run, give the
 threshold an absolute floor or use a percentile or count metric; a percentage
 of a single small maximum can fail on the workload's own variation.

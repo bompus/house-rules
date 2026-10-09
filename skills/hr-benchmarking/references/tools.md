@@ -38,10 +38,12 @@ python3 scripts/process-attribution.py --seconds 20 --output /disk/path/receipt.
 Run from the skill directory. Linux receipts contain raw one-second snapshots
 and CPU deltas ranked by busy cores, with process name, parent PID, birth ticks,
 RSS pages and unmatched boundary counts. They omit command arguments.
+
 Each row also reports `reapedChildCores`: CPU of children the process reaped
 during the interval, attributed to that parent. It shows which process ran
 commands too short-lived to appear in a snapshot, not the commands themselves,
 and can include CPU the children used before the interval started.
+
 Each interval reports `cpuBusyCores` per logical CPU for pinned runs (see
 [fenced-core arm](#fenced-core-arm)). Busy CPU excludes idle, iowait and steal
 time. A CPU brought online or offline during the interval reports `null`; the
