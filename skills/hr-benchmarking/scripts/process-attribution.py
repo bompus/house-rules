@@ -24,7 +24,7 @@ def snapshot(proc=Path("/proc")):
         if not path.name.isdigit():
             continue
         try:
-            processes[int(path.name)] = read_process((path / "stat").read_text())
+            processes[int(path.name)] = read_process((path / "stat").read_text(encoding="utf-8", errors="replace"))
         except (OSError, ValueError, IndexError):
             missing += 1
     ticks = list(map(int, (proc / "stat").read_text().splitlines()[0].split()[1:9]))
