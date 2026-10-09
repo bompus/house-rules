@@ -100,3 +100,15 @@ test("exact-source replay requires the action label on an offer option", () => {
     true,
   );
 });
+
+test("a later remaining-work claim contradicts completion", () => {
+  for (const reply of [
+    "Nothing remains to verify; publishing the source remains.",
+    "Nothing else is left. Publishing is left.",
+    "Nothing left.\nOne release step remains.",
+  ]) {
+    assert.equal(grade(reply, "complete").pass, false);
+    assert.equal(checkBoundary(reply, state("complete")).pass, false);
+  }
+  assert.equal(grade("All checks passed. Nothing remains.", "complete").pass, true);
+});
