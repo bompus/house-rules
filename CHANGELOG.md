@@ -4,6 +4,10 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Update the benchmarking tool notes for Hyperfine 2.0: commands run without a
+  shell by default, peak memory and hardware counters are measured, and the
+  JSON export layout changed.
+
 - Before landing a changed benchmark evidence reader, run it over the saved
   archive after integrating the base branch and compare its accepted and
   excluded records with the frozen reader's.
