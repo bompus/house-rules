@@ -173,13 +173,16 @@ tradeoffs or how a proposal differs from current behavior, use a compact
 table for multiple items. Explain one item per row. For changes, show current
 and proposed behavior and why the difference matters. Include relevant
 tradeoffs and evidence or uncertainty; label unknowns rather than inventing
-gains. Keep columns consistent and cells short. Label missing or unverified values and put units in headings. Put
-explanations and caveats beside the table. Split wide tables or use lists when
-long cells obscure the comparison. For numeric before/after metrics, add a benefit
-column with percent change or a times improvement. Label worsening, unchanged
-and inconclusive results; use an absolute change when a relative benefit cannot
-be calculated. For benchmark differences, label changes within the reporting
-noise band as no clear change and explain the band beside the table. Preserve § Offers and any enabled offer format.
+gains. Keep columns consistent and cells short. Label missing or unverified
+values and put units in headings. Put explanations and caveats beside the
+table. Split wide tables or use lists when long cells obscure the comparison.
+Preserve § Offers and any enabled offer format.
+
+For numeric before/after metrics, add a benefit column with percent change or a
+times improvement. Label worsening, unchanged and inconclusive results; use an
+absolute change when a relative benefit cannot be calculated. For benchmark
+differences, label changes within the reporting noise band as no clear change
+and explain the band beside the table.
 
 Before a backlog, research, ranking or remaining-work report, including a
 completion or blocked-checkpoint offer, read [the reporting procedure](../skills/hr-what-next/references/reporting.md). Apply its inventory, ranking,
