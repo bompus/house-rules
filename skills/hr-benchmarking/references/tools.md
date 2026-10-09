@@ -97,8 +97,11 @@ other sessions' CPU placement:
    load as context.
 4. At the phase boundary, restore recorded threads after checking their birth
    ticks. Threads started during the window inherited the fence; give them the
-   CPU set they would otherwise have inherited, usually all CPUs. Verify no thread remains fenced, including when the
-   phase fails.
+   CPU set they would otherwise have inherited, usually all CPUs. A still-fenced
+   thread can start another while you restore, so repeat the census until a
+   full pass finds no permitted thread left fenced; threads started after their
+   creator is restored inherit the restored set. Do not freeze processes to stop
+   thread creation. Run this cleanup even when the phase fails.
 
 Report results as constrained to the pinned setting with the effective
 affinities. Processes you cannot change (other users, system services) stay
