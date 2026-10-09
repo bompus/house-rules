@@ -130,6 +130,38 @@ describe("usage-by-model", () => {
       session: "c1",
     });
   });
+
+  test("Codex token_count events count once each when a rollout has no usage records", () => {
+    const dir = mkdtempSync(join(tmpdir(), "usage-codex-events-"));
+    const usage = { input_tokens: 1000, cached_input_tokens: 800, output_tokens: 50 };
+    const event = (total: number) => ({
+      type: "event_msg",
+      timestamp: "2026-10-09T12:00:00Z",
+      payload: {
+        type: "token_count",
+        info: { last_token_usage: usage, total_token_usage: { total_tokens: total } },
+      },
+    });
+    const lines = [
+      { type: "turn_context", payload: { model: "gpt-6.1-sol" } },
+      event(1050),
+      event(1050), // repeated for a rate-limit update only
+      event(2100),
+    ];
+    writeFileSync(join(dir, "rollout-2.jsonl"), lines.map((e) => JSON.stringify(e)).join("\n"));
+    expect(codexRequests(dir, 0).map((r) => r.fresh)).toEqual([200, 200]);
+
+    const record = {
+      type: "token_usage_record",
+      timestamp: "2026-10-09T12:00:00Z",
+      payload: { usage },
+    };
+    writeFileSync(
+      join(dir, "rollout-2.jsonl"),
+      [...lines, record].map((e) => JSON.stringify(e)).join("\n"),
+    );
+    expect(codexRequests(dir, 0)).toHaveLength(1);
+  });
 });
 
 describe("render-report", () => {

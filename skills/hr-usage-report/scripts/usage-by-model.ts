@@ -166,20 +166,49 @@ type CodexUsage = {
   cached_input_tokens?: number;
   cache_write_input_tokens?: number;
   output_tokens?: number;
+  total_tokens?: number;
 };
 type CodexLine = {
   type?: string;
   timestamp?: string;
-  payload?: { model?: string; usage?: CodexUsage; source?: unknown; id?: string };
+  payload?: {
+    type?: string;
+    model?: string;
+    usage?: CodexUsage;
+    info?: { last_token_usage?: CodexUsage; total_token_usage?: CodexUsage } | null;
+    source?: unknown;
+    id?: string;
+  };
 };
 
 /** Codex rollouts: one row per response record; input tokens include the cached ones. */
+// Codex writes one token_usage_record per response. Builds without it still write
+// token_count events, which repeat when only rate limits change; those count only
+// when the session's running total advances, and only for files with no records.
 export function codexRequests(root: string, since: number): Request[] {
   const out: Request[] = [];
   for (const file of jsonlFiles(root, since)) {
     let model = "unknown";
     let role = "main";
     let session = file;
+    let total = 0;
+    const records: Request[] = [];
+    const events: Request[] = [];
+    const request = (u: CodexUsage, t: number): Request => {
+      const cached = u.cached_input_tokens ?? 0;
+      return {
+        provider: "codex",
+        priceProvider: "openai",
+        model,
+        role,
+        session,
+        t,
+        fresh: Math.max(0, (u.input_tokens ?? 0) - cached),
+        cacheRead: cached,
+        cacheWrite: u.cache_write_input_tokens ?? 0,
+        output: u.output_tokens ?? 0,
+      };
+    };
     for (const raw of readFileSync(file, "utf8").split("\n")) {
       if (!raw) {
         continue;
@@ -191,6 +220,7 @@ export function codexRequests(root: string, since: number): Request[] {
         continue;
       }
       const p = e.payload ?? {};
+      const t = Date.parse(e.timestamp ?? "");
       if (e.type === "session_meta") {
         session = p.id ?? file;
         if (p.source && typeof p.source === "object" && "subagent" in p.source) {
@@ -199,26 +229,20 @@ export function codexRequests(root: string, since: number): Request[] {
       } else if (e.type === "turn_context" && p.model) {
         model = p.model;
       } else if (e.type === "token_usage_record" && p.usage) {
-        const t = Date.parse(e.timestamp ?? "");
-        if (!(t >= since)) {
-          continue;
+        if (t >= since) {
+          records.push(request(p.usage, t));
         }
-        const u = p.usage;
-        const cached = u.cached_input_tokens ?? 0;
-        out.push({
-          provider: "codex",
-          priceProvider: "openai",
-          model,
-          role,
-          session,
-          t,
-          fresh: Math.max(0, (u.input_tokens ?? 0) - cached),
-          cacheRead: cached,
-          cacheWrite: u.cache_write_input_tokens ?? 0,
-          output: u.output_tokens ?? 0,
-        });
+      } else if (e.type === "event_msg" && p.type === "token_count" && p.info?.last_token_usage) {
+        const running = p.info.total_token_usage?.total_tokens ?? 0;
+        if (running > total) {
+          total = running;
+          if (t >= since) {
+            events.push(request(p.info.last_token_usage, t));
+          }
+        }
       }
     }
+    out.push(...(records.length ? records : events));
   }
   return out;
 }
