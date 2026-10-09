@@ -4,6 +4,11 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Show percent or times benefit in before/after metric tables. Keep benchmark
+  collector, scheduling and qualification details in measurement records unless
+  they affect the claim or the reader requests them. Use a practical 3% no-clear-change
+  reporting band, with measured variability still required for gain claims.
+
 - Require review of the final diff before submitting pull requests to external
   upstream projects; owned repositories and maintained forks keep their policies.
 

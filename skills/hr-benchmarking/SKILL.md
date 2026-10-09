@@ -255,10 +255,28 @@ Batch latency percentiles describe batches, not individual requests.
 
 ## Report and decide
 
-State the workload, versions, conditions, repetitions, output identity,
-errors and measurement units beside the results. Name excluded costs and
-coverage limits. A claimed difference with unknown limits, unequal work or
-missing repetitions is unverified or inconclusive.
+Keep the full workload, versions, conditions, repetitions, output identity,
+errors and measurement units in the measurement record. Include excluded costs,
+coverage limits, collector overhead, scheduling, resource caps, admission checks
+and rejected attempts there.
+
+Pull requests and other change summaries show the workload, baseline and
+candidate, measured results, relevant checks and limits that affect the claim.
+Omit operational measurement details unless the reader needs them to interpret
+the result or asks for them. A claimed difference with unknown limits, unequal
+work or missing repetitions is unverified or inconclusive.
+
+Show numeric before/after results in a table with a benefit column containing
+percent change or a times improvement. Use the metric's direction and label
+worsening, unchanged or inconclusive results. With a zero or missing baseline,
+show an absolute change or state that the benefit cannot be calculated.
+
+Use 3% as the default practical no-clear-change band for reported differences.
+This is a reporting convention, not a statistical margin of error. Use a larger
+band when observed variability requires it. A change outside the band still
+needs qualified evidence and must exceed run-to-run variation. Set a different
+precision target before collecting results when the workload requires it;
+changing presentation does not change frozen acceptance or rejection gates.
 
 For agent, model, rule or skill comparisons, distinguish development cases
 from held-out cases and report runs per case. Include a one-line instruction
