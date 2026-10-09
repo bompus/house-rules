@@ -9,6 +9,7 @@ import { basename, dirname, join, resolve, sep } from "node:path";
 const usage =
   "usage: check-open-work.mjs <plan.md> [--checkout <path>]... [--scratch <dir>] [--archive] [--json]";
 const TERMINAL_STATUS = /^(completed?|done|archived)\b/i;
+const COMPLETED_STATUS = /^completed\b/i;
 const MARKS = { " ": "open", "~": "deferred", x: "done", "-": "dropped" };
 const REQUIRED = {
   "~": ["trigger", "a trigger"],
@@ -97,23 +98,24 @@ function notesRoot(planPath) {
 }
 
 // An owner line can name several identities ("Alice, session 7"); a manifest is the plan's only when
-// its whole owner equals one of them, so a manifest owned by "session" is not claimed.
+// its whole owner equals one of them, so a manifest owned by "session" is not claimed. A manifest that
+// cannot be read, or has no owner, could be the plan's, so it is reported instead of skipped.
 function ownedScratch(directory, owner) {
-  if (!existsSync(directory)) return [];
+  const result = { owned: [], unreadable: [] };
+  if (!existsSync(directory)) return result;
   const identities = [owner, ...owner.split(/[,;]/)].map((part) => part.trim().toLowerCase());
-  return readdirSync(directory)
-    .filter((name) => existsSync(join(directory, name, "manifest.json")))
-    .filter((name) => {
-      try {
-        const manifest = JSON.parse(readFileSync(join(directory, name, "manifest.json"), "utf8"));
-        return (
-          typeof manifest.owner === "string" &&
-          identities.includes(manifest.owner.trim().toLowerCase())
-        );
-      } catch {
-        return false;
-      }
-    });
+  for (const name of readdirSync(directory)) {
+    const manifest = join(directory, name, "manifest.json");
+    if (!existsSync(manifest)) continue;
+    try {
+      const parsed = JSON.parse(readFileSync(manifest, "utf8"));
+      if (typeof parsed.owner !== "string") throw new Error("no owner");
+      if (identities.includes(parsed.owner.trim().toLowerCase())) result.owned.push(name);
+    } catch {
+      result.unreadable.push(manifest);
+    }
+  }
+  return result;
 }
 
 function git(path, ...args) {
@@ -132,8 +134,15 @@ function checkoutState(path) {
   return { branch, dirty: changes.length, unpushed: unpushed.length };
 }
 
+// A name counts only as a whole token, so "main" inside "update main docs" or "/a/b" inside "/a/bc" does not.
+const GENERIC_BRANCHES = ["main", "master", "HEAD", "No"];
+function mentions(text, name) {
+  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`(^|[^\\w./-])${escaped}($|[^\\w./-])`).test(text);
+}
+
 function accountFor(resource, names, items, findings) {
-  const naming = items.filter((item) => names.some((name) => item.text.includes(name)));
+  const naming = items.filter((item) => names.some((name) => mentions(item.text, name)));
   if (!naming.length) findings.push(`${resource} is not named in any ledger item`);
   else if (!naming.some((item) => item.mark === " " || item.mark === "~"))
     findings.push(
@@ -164,16 +173,21 @@ function run(options) {
     );
   const roots = notesRoot(planPath);
   const scratch = options.scratch ?? (roots ? join(roots.notes, "tmp") : null);
-  if (scratch)
-    for (const name of ownedScratch(scratch, plan.owner))
-      accountFor(`scratch ${name}`, [name], plan.items, report.findings);
+  if (scratch) {
+    const { owned, unreadable } = ownedScratch(scratch, plan.owner);
+    for (const manifest of unreadable)
+      report.errors.push(
+        `cannot read the scratch manifest ${manifest} (needs a JSON object with a string owner)`,
+      );
+    for (const name of owned) accountFor(`scratch ${name}`, [name], plan.items, report.findings);
+  }
   for (const path of options.checkouts) {
     const state = checkoutState(path);
     if (state.error) report.errors.push(state.error);
     else if (state.dirty || state.unpushed)
       accountFor(
         `checkout ${path} (${state.dirty} changed file(s), ${state.unpushed} unpushed commit(s))`,
-        [path, state.branch],
+        [path, ...(GENERIC_BRANCHES.includes(state.branch) ? [] : [state.branch])],
         plan.items,
         report.findings,
       );
@@ -183,7 +197,7 @@ function run(options) {
   if (plan.narrative.length > 5)
     report.warnings.push(`${plan.narrative.length - 5} more narrative marker line(s)`);
   if (options.archive && !report.errors.length) {
-    if (!TERMINAL_STATUS.test(plan.status))
+    if (!COMPLETED_STATUS.test(plan.status))
       report.findings.push(`archiving refused: Status is "${plan.status}", not completed`);
     else if (roots?.parts.at(-3) !== "plans")
       report.errors.push("the plan is not at plans/<topic>/plan.md (already archived?)");

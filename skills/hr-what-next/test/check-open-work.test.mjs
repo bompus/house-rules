@@ -136,6 +136,41 @@ test("owned scratch must be named by an item that is still open", () => {
   expect(check(plan).code).toBe(0);
 });
 
+test("an unreadable scratch manifest is an error, not a clean pass", () => {
+  const { notes, plan } = setup({
+    status: "completed",
+    ledger: ["- [x] a: shipped - evidence: x"],
+  });
+  mkdirSync(join(notes, "tmp", "broken"), { recursive: true });
+  writeFileSync(join(notes, "tmp", "broken", "manifest.json"), "{not json");
+  const { code, report } = check(plan, "--archive");
+  expect(code).toBe(1);
+  expect(report.errors[0]).toContain(join("broken", "manifest.json"));
+  expect(existsSync(plan)).toBe(true);
+});
+
+test("a branch name or path counts only as a whole word in an item", () => {
+  const { notes, plan } = setup({
+    ledger: ["- [ ] docs: update main docs and the maintenance notes"],
+  });
+  const checkout = join(notes, "work");
+  repository(checkout, 1);
+  let { report } = check(plan, "--checkout", checkout);
+  expect(report.findings[0]).toContain("is not named in any ledger item");
+  writeFileSync(
+    plan,
+    `Owner: Alice\nStatus: active\n\n## Ledger\n- [ ] land: ${checkout}x and ${checkout}-old\n`,
+  );
+  ({ report } = check(plan, "--checkout", checkout));
+  expect(report.findings[0]).toContain("is not named in any ledger item");
+  writeFileSync(
+    plan,
+    `Owner: Alice\nStatus: active\n\n## Ledger\n- [ ] land: ${checkout} commits\n`,
+  );
+  ({ report } = check(plan, "--checkout", checkout));
+  expect(report.findings).toEqual([]);
+});
+
 test("a dirty or unpushed checkout must be named by an open item", () => {
   const { notes, plan } = setup({
     status: "completed",
@@ -162,6 +197,10 @@ test("archiving moves only a completed plan with nothing open", () => {
   expect(code).toBe(2);
   expect(report.findings[0]).toContain("archiving refused");
   expect(existsSync(active.plan)).toBe(true);
+
+  const finished = setup({ status: "done", ledger: ["- [x] a: shipped - evidence: x"] });
+  expect(check(finished.plan, "--archive").code).toBe(2);
+  expect(existsSync(finished.plan)).toBe(true);
 
   const open = setup({ status: "completed", ledger: ["- [ ] a: still open"] });
   expect(check(open.plan, "--archive").code).toBe(2);
