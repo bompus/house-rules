@@ -1,10 +1,6 @@
----
-name: hr-change-impact
-description: "Check what a change can break beyond the lines it edits, and back the claim that it is safe with something that ran. Use when the user asks what a change might break, wants its impact checked before merging, or distrusts a small diff."
-disable-model-invocation: true
----
-
 # Change impact
+
+Loaded by `hr-code-review` for its Impact section.
 
 The diff shows what changed. This skill asks what else depends on the old
 behavior, and whether the change is safe for a reason someone has seen work.
@@ -105,9 +101,3 @@ Keep the list of risks short. Three real ones with locations beat fifteen
 possibilities. Before sharing publicly, follow the project's data-classification
 policy. Remove credentials, personal data, private project names and URLs,
 and local paths.
-
-## Related skills
-
-- `hr-explain-code` when you need to understand the code before judging a change.
-- `hr-code-review` for standards, style and spec conformance of the same diff.
-- `hr-diagnosing-bugs` once something is actually broken.

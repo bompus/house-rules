@@ -8,6 +8,20 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   worktree with `git merge --ff-only` to the fetched, verified remote head
   instead of `git pull --ff-only`. A concurrent fetch in a shared repository
   can rewrite `FETCH_HEAD` and make the pull fail.
+- `hr-code-review` now covers what a change can break beyond its diff. It adds
+  an Impact section, using the method that `hr-change-impact` held, when asked
+  or when a diff touches stored shapes, outside readers, timing, configuration
+  or pinned dependency behavior. `hr-change-impact` is removed.
+- `hr-maintainability-review` also handles whole-repository over-engineering
+  audits: it now checks for leftover scaffolding and tests suspect layers by
+  imagining them deleted.
+- `hr-design-exploration` gains a single-component mode: three variants on one
+  design axis, compared in the real page.
+- `hr-lean-plan` leaves out steps added only in case something goes wrong.
+
+- Upgrade note: a config that lists `hr-change-impact` in `skills.include` now
+  fails composition with "unknown shipped skill". Replace it with
+  `hr-code-review`.
 
 - New `hr-usage-report` skill: measure where Claude Code, Codex and OpenCode
   usage went by provider, model and role at list prices, and render model

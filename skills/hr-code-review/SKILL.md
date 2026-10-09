@@ -1,6 +1,6 @@
 ---
 name: hr-code-review
-description: Review a branch, PR, working-tree changes or changes since a revision for repository standards and spec conformance. Use only when the user requests a change review. Do not use for simplification-only or strictest maintainability audits.
+description: Review a branch, PR, working-tree changes or changes since a revision for repository standards, spec conformance and what the change can break beyond its diff. Use only when the user requests a change review or asks what a change might break before merging. Do not use for simplification-only or strictest maintainability audits.
 ---
 
 Two-axis review of the changes the user requested: working-tree changes, a committed branch, or changes since a named revision.
@@ -8,7 +8,11 @@ Two-axis review of the changes the user requested: working-tree changes, a commi
 - **Standards**: does the code conform to this repo's documented coding standards?
 - **Spec**: does the code implement the originating issue / spec?
 
-Keep both axes distinct. Review small scopes locally; use separate read-only
+Keep both axes distinct. Add an **Impact** section when the user asks what the
+change might break, or when the diff changes something read outside its own
+lines: a stored or serialized shape, output another process consumes, timing,
+configuration, or reliance on pinned dependency behavior. Follow
+[the change-impact method](references/impact.md) for it. Review small scopes locally; use separate read-only
 subagents when the scope benefits from independent review and the host permits
 it. Missing spec material limits the Spec assessment, not all useful review.
 
@@ -99,6 +103,10 @@ explicitly rather than claiming a pass.
 Present Standards and Spec separately. Verify delegated findings, remove
 unsupported or duplicate claims, and prioritize within each axis. Preserve the
 distinction between documented violations and heuristic suggestions.
+
+Report Impact after the two axes: what the change relies on, its real risks and
+what was ruled out, as the change-impact method describes. It never reranks
+Standards or Spec findings.
 
 Report a one-line summary: total findings per axis, and the worst issue _within each axis_ (if any). Don't pick a single winner across axes; the separation exists to prevent that reranking.
 

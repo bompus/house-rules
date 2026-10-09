@@ -61,6 +61,10 @@ Look for a framing that deletes work before ordering it:
   their existing owning layer. A new layer needs a reason the current one
   cannot meet the goal.
 
+Leave out steps added only in case something goes wrong. A fallback, retry,
+backup path or extra check belongs in the plan when a named risk, constraint or
+must-not-regress item calls for it; name which one.
+
 Count the moving parts the plan adds: new files, modules, services,
 dependencies, config keys, flags, migrations, background jobs and parallel
 paths. A smaller count that still meets the done-state is the better plan.

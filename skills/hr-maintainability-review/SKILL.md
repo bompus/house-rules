@@ -1,6 +1,6 @@
 ---
 name: hr-maintainability-review
-description: "Review a diff or an entire codebase for maintainability and structure, preserving behavior. Use when explicitly requested for a strict, deep, harsh or thermo-nuclear maintainability review. Report-only; correctness, UI quality, test coverage and measured performance need separate assessments."
+description: "Review a diff or an entire codebase for maintainability and structure, preserving behavior. Use when explicitly requested for a strict, deep, harsh or thermo-nuclear maintainability review, or a whole-repository over-engineering or bloat audit. Report-only; correctness, UI quality, test coverage and measured performance need separate assessments."
 disable-model-invocation: true
 ---
 
@@ -58,7 +58,10 @@ disposition. Report gaps rather than claiming a complete audit from a sample.
   before this change lands, and where the seam is.
 - **Pass-through layers.** Wrappers, adapters and services that forward calls
   with renamed arguments. Indirection must buy clarity, isolation or a real
-  second implementation.
+  second implementation. Test a suspect module by imagining it deleted: if its
+  complexity would spread into every caller, it is earning its keep; propose
+  removal only when callers could use the underlying behavior directly without
+  duplicating or redistributing that complexity.
 - **Generic machinery over a simple shape.** Registries, plugin systems,
   builders or configurable pipelines where the data is a fixed list or a plain
   record.
@@ -75,6 +78,13 @@ disposition. Report gaps rather than claiming a complete audit from a sample.
   shape where partial state cannot exist.
 - **Modes and flags.** A boolean parameter or mode switch that splits one
   function into two behaviors sharing a name.
+- **Leftover scaffolding.** Stubs and placeholders still on a live path, fixed
+  sample data where real data should flow, functions that report success
+  without doing their work, handlers that silently do nothing, "temporary"
+  branches that shipped, and comments describing a refactor long finished.
+  Propose deleting what no consumer needs. When a consumer depends on one, the
+  real behavior is missing: report it under **Other assessments** as a
+  correctness concern, without guessing at the contract the code never showed.
 
 ## Look for code that disappears
 

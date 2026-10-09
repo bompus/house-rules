@@ -1,6 +1,6 @@
 ---
 name: hr-design-exploration
-description: "Explore visual design or redesign alternatives through four ranked directions, top-two feedback and successive refinement toward one chosen design. Use when asked to propose or compare UI design directions; ordinary UI fixes and implementing an already chosen design do not need this workflow."
+description: "Explore visual design or redesign alternatives through four ranked directions, top-two feedback and successive refinement toward one chosen design, or compare variants of one component in place. Use when asked to propose or compare UI design directions or component variants; ordinary UI fixes and implementing an already chosen design do not need this workflow."
 ---
 
 # Design exploration
@@ -45,6 +45,29 @@ main difference, benefit and tradeoff. Keep IDs stable when rankings change.
 Ask the user to select their top two and give feedback on each, including what
 to retain and what to change. Follow the host's question format. Wait for the
 answer before narrowing or generating the next round.
+
+## One component
+
+When the scope is a single component rather than a screen or flow, build three
+variants by default. When the authorized prototype scope includes the page
+where the component renders, put them behind a switcher there, so the user
+compares them where the component actually lives; otherwise compare them
+within the scope you have. Keep the switcher and variants out of production
+code paths, and remove them once a variant is chosen.
+
+Pick one design axis and give each variant a different position on it:
+structure (grouping, order, what collapses), density (spacing, hit areas),
+emphasis (where strong color and weight go), type (scale and weight contrast)
+or voice (labels and amount of copy). Let secondary choices follow from that
+position. Variants that differ on several axes at once cannot show which
+change made the difference. Name each variant for its direction, not "Option
+A". Before ranking, name the accessibility checks every variant must pass, at
+least keyboard reach, visible focus, accessible names for controls, no
+clipping at the narrowest supported width and no meaning carried by color
+alone, plus `hr-better-accessibility`'s checks when it is available. Check
+each variant against the same list and drop any direction that fails one.
+
+Rank and refine the variants as described below.
 
 ## Refine the selected two
 

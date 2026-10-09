@@ -19,7 +19,7 @@ can reproduce. Follow the project's verification and domain safeguards.
    observation is needed, say so instead of inventing a checklist.
 4. Ground regression checks in the changed flow and supported surfaces. Use
    available impact findings and UI guidance. When a consequential risk needs
-   investigation and `hr-change-impact` is available, use it for that risk;
+   investigation and `hr-code-review` is available, use it for that risk;
    otherwise name the uncertainty. A checklist does not require a full impact
    assessment.
 5. Present agent results first. When a manual observation remains, include a

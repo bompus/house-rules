@@ -265,9 +265,8 @@ want and explains these limits before changing the configuration.
 | `hr-better-layout`          | Build and review grouping, alignment, spacing, responsive layout and clipping.                            |
 | `hr-better-typography`      | Style and review type scales, wrapping, spacing, truncation and font loading.                             |
 | `hr-better-writing`         | Write and review interface labels, errors, empty states and product terminology.                          |
-| `hr-change-impact`          | Check what a change can break beyond its diff before merging.                                             |
-| `hr-code-review`            | Review a diff against the repository's standards and the originating request.                             |
-| `hr-design-exploration`     | Compare four visual directions and refine the selected two toward one final design.                       |
+| `hr-code-review`            | Review a diff against standards and the request, and check what it can break beyond its lines.            |
+| `hr-design-exploration`     | Compare visual directions, or variants of one component, and refine toward one design.                    |
 | `hr-diagnosing-bugs`        | Work a hard bug or regression to a confirmed cause.                                                       |
 | `hr-explain-code`           | Trace how existing code works, read-only, before changing it.                                             |
 | `hr-extract-shared-steps`   | Move operations repeated across workflows into shared functions.                                          |
@@ -275,7 +274,7 @@ want and explains these limits before changing the configuration.
 | `hr-house-rules-setup`      | Choose modifiers, create your layer and connect your hosts.                                               |
 | `hr-issue-tracker-setup`    | Configure project tracker, domain-term and ADR conventions; explicit-only.                                |
 | `hr-lean-plan`              | Write or tighten an implementation plan with the fewest moving parts.                                     |
-| `hr-maintainability-review` | Review a diff or entire codebase strictly for structure and maintainability.                              |
+| `hr-maintainability-review` | Review a diff or entire codebase strictly for structure, over-engineering and leftover scaffolding.       |
 | `hr-manual-qa`              | Give reproducible human checks after reporting agent verification results.                                |
 | `hr-navigation-retro`       | Audit navigation failures in selected transcripts and propose verified findability fixes; explicit-only.  |
 | `hr-ordering-tests`         | Enumerate event orderings through the real code to find race bugs.                                        |

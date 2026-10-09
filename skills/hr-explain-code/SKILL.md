@@ -106,5 +106,5 @@ when it has nothing to say.
 Describe what the code does, not whether it should. If you notice a likely
 bug, mention it once as a fact with its location and move on. For a critique
 of the design, point to `hr-maintainability-review`. For what a planned change
-would affect, point to `hr-change-impact`. For a failure being chased, point to
+would affect, point to `hr-code-review` (its Impact section). For a failure being chased, point to
 `hr-diagnosing-bugs`.
