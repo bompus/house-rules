@@ -14,6 +14,10 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   they affect the claim or the reader requests them. Use a practical 3% no-clear-change
   reporting band, with measured variability still required for gain claims.
 
+- Reconcile task and ledger records on resume, changed requests or results,
+  phase completion, and before offers or handoffs. Preserve completion evidence,
+  superseded history and unresolved user scope.
+
 - Require review of the final diff before submitting pull requests to external
   upstream projects; owned repositories and maintained forks keep their policies.
 

@@ -86,7 +86,24 @@ about unresolved decisions.
 
 Keep every live candidate and disposition in the plan ledger, or a durable list
 when no plan exists. Include this task, earlier unfinished work, findings, resumed
-handoffs, owned changes and untriaged feedback. Re-check before offering; explain stale removals.
+handoffs, owned changes and untriaged feedback.
+
+Reconcile those records on resume, when a new request or result changes an item's
+state, at phase completion, and before offers or handoffs. Update the records
+before choosing the next action; a timer or a user request to review the backlog
+is not needed. Review this conversation's work within its authorized scope;
+other sessions' records remain subject to their ownership and sweep rules.
+
+- Mark completion only with evidence for the item's full selected scope,
+  including required checks, landing and adoption. Record the result and when
+  it completed; partial progress updates the next unfinished step.
+- Keep duplicate and superseded entries as history, linking to the retained
+  item or replacement and its disposition. A replacement inherits only verified
+  existing authority; it does not authorize a wider scope.
+- When evidence suggests a request is no longer relevant, record the reason
+  and ask about dropping or changing unresolved user scope. Age, inactivity or
+  a missing owner alone does not complete or discard an item. Preserve valid
+  unanswered offers, owners, schedules and deferral triggers.
 
 - Work handbacks and "what next" replies show the recommended next step and
   every decision needed to finish authorized work, including owned uncommitted

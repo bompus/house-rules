@@ -14,8 +14,10 @@ one, otherwise `plans/<topic>/plan.md` in your notes directory (§ Durable
 notes). At session start, read the relevant plans and every `blocked-on-user`
 plan whatever its owner, so unanswered decisions stay visible; that read is not
 the sweep below. Update the plan when you update the list, add findings as they
-turn up, and use the same item states in both. Point at the plan or handoff that
-owns an item instead of copying it; a handoff points at its plan.
+turn up, and use the same item states in both. At each reconciliation event in
+§ Finishing work, update both records before choosing the next action. Point at
+the plan or handoff that owns an item instead of copying it; a handoff points
+at its plan.
 
 - Head the plan with `Owner:` (session name, or `none` for a shared backlog)
   and `Status:` (`active`, `paused`, `blocked-on-user`); update both when they
