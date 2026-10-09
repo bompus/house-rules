@@ -44,7 +44,8 @@ commands too short-lived to appear in a snapshot, not the commands themselves,
 and can include CPU the children used before the interval started.
 Each interval reports `cpuBusyCores` per logical CPU for pinned runs (see
 [fenced-core arm](#fenced-core-arm)). Busy CPU excludes idle, iowait and steal
-time.
+time. A CPU brought online or offline during the interval reports `null`; the
+fenced-core gate rejects that interval.
 The collector uses its own `/proc/self/status` `VmHWM` for peak RSS;
 `ru_maxrss` can retain a launcher's inherited high-water mark.
 It records observer CPU and scan duration. Include those costs in the declared

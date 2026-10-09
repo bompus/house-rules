@@ -22,6 +22,7 @@ b=sample('10',20,2);v=m.compare(a,b,100);assert v['processCpu'][0]['busyCores']=
 a['processes'][7]['reapedChildCpuTicks']=5;b=sample('10',10,2);b['processes'][7]['reapedChildCpuTicks']=55
 v=m.compare(a,b,100);assert v['processCpu'][0]['busyCores']==0 and v['processCpu'][0]['reapedChildCores']==.5
 a['cpuBusyTicks']={'0':10,'1':10};b['cpuBusyTicks']={'0':110,'1':10};assert m.compare(a,b,100)['cpuBusyCores']=={'0':1.0,'1':0.0}
+a['cpuBusyTicks']={'0':10,'1':10};b['cpuBusyTicks']={'0':110,'2':10};assert m.compare(a,b,100)['cpuBusyCores']=={'0':1.0,'1':None,'2':None}
 stat='7 (name with ) bracket) '+' '.join(['S','1']+['0']*9+['10','20','3','4']+['0']*4+['123','0','4'])
 v=m.read_process(stat);assert v['name']=='name with ) bracket' and v['birthTicks']=='123' and v['cpuTicks']==30 and v['reapedChildCpuTicks']==7 and v['rssPages']==4
 with tempfile.TemporaryDirectory(dir=sys.argv[2]) as directory:
