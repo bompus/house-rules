@@ -12,7 +12,8 @@ def read_process(stat):
     end = stat.rfind(")")
     fields = stat[end + 2:].split()
     return {"name": stat[stat.find("(") + 1:end], "parentPid": int(fields[1]),
-            "cpuTicks": int(fields[11]) + int(fields[12]), "birthTicks": fields[19],
+            "cpuTicks": int(fields[11]) + int(fields[12]),
+            "reapedChildCpuTicks": int(fields[13]) + int(fields[14]), "birthTicks": fields[19],
             "rssPages": int(fields[21])}
 
 
@@ -27,12 +28,16 @@ def snapshot(proc=Path("/proc")):
             processes[int(path.name)] = read_process((path / "stat").read_text(encoding="utf-8", errors="replace"))
         except (OSError, ValueError, IndexError):
             missing += 1
-    ticks = list(map(int, (proc / "stat").read_text().splitlines()[0].split()[1:9]))
+    cpu_lines = [line.split() for line in (proc / "stat").read_text().splitlines() if line.startswith("cpu")]
+    ticks = list(map(int, cpu_lines[0][1:9]))
+    per_cpu = {line[0][3:]: list(map(int, line[1:9])) for line in cpu_lines[1:]}
     peak = int(next(line for line in (proc / "self/status").read_text().splitlines()
                     if line.startswith("VmHWM:")).split()[1]) * 1024
     usage = resource.getrusage(resource.RUSAGE_SELF)
     return {"monotonic": time.monotonic(), "utc": datetime.now(timezone.utc).isoformat(),
-            "hostBusyTicks": sum(ticks) - ticks[3] - ticks[4], "processes": processes,
+            "hostBusyTicks": sum(ticks) - ticks[3] - ticks[4],
+            "cpuBusyTicks": {cpu: sum(t) - t[3] - t[4] for cpu, t in per_cpu.items()},
+            "processes": processes,
             "missingProcesses": missing, "scanSeconds": time.monotonic() - started,
             "observerCpuSeconds": usage.ru_utime + usage.ru_stime,
             "observerPeakRssBytes": peak}
@@ -50,10 +55,16 @@ def compare(before, after, hz):
             continue
         matched.add(pid)
         cpu = process["cpuTicks"] - old["cpuTicks"]
-        if cpu > 0:
-            rows.append({"pid": pid, **process, "busyCores": cpu / hz / seconds})
+        # Children that exited and were reaped in the interval add to the parent's
+        # cutime/cstime, which names who ran work too short-lived to be sampled.
+        reaped = process.get("reapedChildCpuTicks", 0) - old.get("reapedChildCpuTicks", 0)
+        if cpu > 0 or reaped > 0:
+            rows.append({"pid": pid, **process, "busyCores": cpu / hz / seconds,
+                         "reapedChildCores": reaped / hz / seconds})
     return {"startUtc": before["utc"], "endUtc": after["utc"], "seconds": seconds,
             "hostBusyCores": (after["hostBusyTicks"] - before["hostBusyTicks"]) / hz / seconds,
+            "cpuBusyCores": {cpu: (ticks - before.get("cpuBusyTicks", {}).get(cpu, ticks)) / hz / seconds
+                             for cpu, ticks in after.get("cpuBusyTicks", {}).items()},
             "unmatchedBefore": len(prior) - len(matched),
             "unmatchedAfter": len(current) - len(matched),
             "processCpu": sorted(rows, key=lambda row: -row["busyCores"])}
@@ -72,10 +83,10 @@ def main():
         time.sleep(1)
         samples.append(snapshot())
     intervals = [compare(a, b, hz) for a, b in zip(samples, samples[1:])]
-    result = {"version": 1, "observerPid": os.getpid(), "clockTicksPerSecond": hz,
+    result = {"version": 2, "observerPid": os.getpid(), "clockTicksPerSecond": hz,
               "bootId": Path("/proc/sys/kernel/random/boot_id").read_text().strip(),
               "samples": samples, "intervals": intervals,
-              "limits": "Snapshots miss processes that start and exit between samples. CPU attribution does not prove interference or grant admission. Observer overhead is included; no negligible-impact claim."}
+              "limits": "Snapshots miss processes that start and exit between samples; their CPU appears as the reaping parent's reapedChildCores only after the parent waits for them. CPU attribution does not prove interference or grant admission. Observer overhead is included; no negligible-impact claim."}
     args.output.write_text(json.dumps(result, indent=2))
     print(json.dumps({"output": str(args.output), "intervals": len(intervals),
                       "peakHostBusyCores": max(row["hostBusyCores"] for row in intervals),

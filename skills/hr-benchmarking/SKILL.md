@@ -75,7 +75,9 @@ criteria and retained raw results. Verify that the controls apply and that
 dependencies and monitoring still progress before adopting them for the
 declared experiment. Priority changes never replace admission checks, resource
 caps or pressure rejection. Read [scheduling controls](references/tools.md#scheduling-controls)
-before choosing them. For questions about negative, zero or positive nice values,
+before choosing them. When brief bursts from other sessions keep failing host-wide
+admission on a shared host, read the [fenced-core arm](references/tools.md#fenced-core-arm)
+before proposing one; it needs the user's authorization. For questions about negative, zero or positive nice values,
 read the [recorded priority findings](references/priority-findings-20261006.md)
 before proposing another experiment.
 
@@ -142,7 +144,8 @@ I/O. Separate setup from collection; disclose missing platform counters and
 shared provider or writeback costs. A log-byte count is not physical disk I/O.
 Retain over-budget runs with an over-budget status and exclude them from accepted
 performance evidence. Declare any stop rule and replacement limit before
-execution. Record budget failures separately from foreign-load and pressure
+execution. When automation applies a stop rule, compute it with the same code as
+the acceptance analysis. Record budget failures separately from foreign-load and pressure
 failures.
 
 Choose budgets for the host, workload duration and decision precision; there is
@@ -215,6 +218,9 @@ decision and observed variation; there is no universal minimum.
 For a performance claim, add alternating runs to assess run-to-run variation.
 Before the first run used in that claim, set a repetition count or stopping
 rule and a reproducible variation criterion (statistic and threshold).
+For short or tail metrics, such as the longest stall in a run, give the
+threshold an absolute floor or use a percentile or count metric; a percentage
+of a single small maximum can fail on the workload's own variation.
 Retain every result. Keep pilots that informed the plan separate from the
 claim's sample. Capture raw results, exit status, elapsed time, CPU and memory
 observations. Report admission and monitoring overhead separately from the

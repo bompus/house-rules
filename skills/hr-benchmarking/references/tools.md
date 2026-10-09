@@ -38,6 +38,11 @@ python3 scripts/process-attribution.py --seconds 20 --output /disk/path/receipt.
 Run from the skill directory. Linux receipts contain raw one-second snapshots
 and CPU deltas ranked by busy cores, with process name, parent PID, birth ticks,
 RSS pages and unmatched boundary counts. They omit command arguments.
+Each row also reports `reapedChildCores`: CPU of children that exited and were
+reaped by that process during the interval. It names who ran commands too
+short-lived to appear in a snapshot, once their parent has waited for them.
+Each interval reports `cpuBusyCores` per logical CPU for pinned runs (see
+[fenced-core arm](#fenced-core-arm)).
 The collector uses its own `/proc/self/status` `VmHWM` for peak RSS;
 `ru_maxrss` can retain a launcher's inherited high-water mark.
 It records observer CPU and scan duration. Include those costs in the declared
@@ -62,13 +67,39 @@ establish isolation. Check support for the actual kernel, controller and I/O
 path. Record effective values and unavailable controls for every arm; requesting
 a setting does not prove it took effect.
 
-| Control                                                                          | Effect and limit                                                                                                                                                                    |
-| -------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [Nice level](https://man7.org/linux/man-pages/man2/nice.2.html)                  | Lower numeric values raise fair CPU scheduling priority. Permissions and autogroup policy affect the result. This does not reserve a core.                                          |
-| CPU affinity (`taskset`)                                                         | Restricts available CPUs and can affect worker counts and parallelism. It does not reserve exclusive cores. Use it for a declared CPU configuration, not automatic noise reduction. |
-| [CPU and I/O cgroup weights](https://docs.kernel.org/admin-guide/cgroup-v2.html) | Adjust relative shares among active sibling groups. Parent limits and controller/device support still apply; a higher weight is not a capacity guarantee.                           |
-| [Process I/O priority](https://man7.org/linux/man-pages/man2/ioprio_set.2.html)  | Depends on the supporting I/O scheduler and path. Process-specific priority does not cover asynchronous writes.                                                                     |
-| [Memory protection](https://docs.kernel.org/admin-guide/cgroup-v2.html)          | `memory.low` and `memory.min` protect against reclaim, not memory-bandwidth competition. Excessive hard protection can cause OOM. Memory caps remain limits, not reservations.      |
+| Control                                                                          | Effect and limit                                                                                                                                                                                                             |
+| -------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [Nice level](https://man7.org/linux/man-pages/man2/nice.2.html)                  | Lower numeric values raise fair CPU scheduling priority. Permissions and autogroup policy affect the result. This does not reserve a core.                                                                                   |
+| CPU affinity (`taskset`)                                                         | Restricts available CPUs and can affect worker counts and parallelism. It does not reserve exclusive cores. Use it for a declared CPU configuration or a [fenced-core arm](#fenced-core-arm), not automatic noise reduction. |
+| [CPU and I/O cgroup weights](https://docs.kernel.org/admin-guide/cgroup-v2.html) | Adjust relative shares among active sibling groups. Parent limits and controller/device support still apply; a higher weight is not a capacity guarantee.                                                                    |
+| [Process I/O priority](https://man7.org/linux/man-pages/man2/ioprio_set.2.html)  | Depends on the supporting I/O scheduler and path. Process-specific priority does not cover asynchronous writes.                                                                                                              |
+| [Memory protection](https://docs.kernel.org/admin-guide/cgroup-v2.html)          | `memory.low` and `memory.min` protect against reclaim, not memory-bandwidth competition. Excessive hard protection can cause OOM. Memory caps remain limits, not reservations.                                               |
+
+### Fenced-core arm
+
+On a shared host where brief bursts from other sessions keep failing host-wide
+admission, a fenced-core arm keeps other work off chosen CPUs for a finite phase. It is a
+declared sensitivity arm that needs the user's authorization, because it changes
+other sessions' CPU placement:
+
+1. Choose the benchmark CPUs as whole physical cores (include SMT siblings) and pin
+   every arm, its browser or runtime and its children to them.
+2. Move every other thread you are permitted to change off the benchmark CPUs.
+   Record each thread's identity (PID, thread ID, birth ticks) and original
+   affinity. Stop and signal nothing.
+3. Gate on foreign CPU on the benchmark CPUs: their busy time (`cpuBusyCores`)
+   minus the CPU of the benchmark's own process tree. Report host-wide load as
+   context.
+4. At the phase boundary, restore recorded threads after checking their birth
+   ticks. Threads started during the window inherited the fence; give them the
+   CPU set they would otherwise have inherited, usually all CPUs. Verify no thread remains fenced, including when the
+   phase fails.
+
+Report results as constrained to the pinned setting with the effective
+affinities. Processes you cannot change (other users, system services) stay
+unfenced; record them. In a virtual machine, guest affinity does not reserve
+host cores; host activity, shared cache, memory bandwidth and power limits
+still apply.
 
 Avoid realtime [CPU](https://man7.org/linux/man-pages/man7/sched.7.html) or
 [I/O](https://man7.org/linux/man-pages/man1/ionice.1.html) classes for generic
