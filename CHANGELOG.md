@@ -4,6 +4,10 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Check blocked, paused and completed handbacks in the end-of-reply evaluator.
+  Add replay cases for redundant approvals, missing offers and exact-source
+  limits, plus an explicit boundary-record checker for opt-in host pilots.
+
 - Review-helper diagnostics direct callers to inspect the review integration and
   repository policy instead of requesting a manual full review. Existing
   review gates remain required.

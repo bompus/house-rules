@@ -16,6 +16,20 @@ states what it expects: `continue` (a tool call, no request for permission),
 `offer-or-continue` (either, but never "nothing left"). One run per scenario is
 a smoke test; use `--runs 3` before trusting a wording change.
 
+`blocked` and `paused` require a blocker or pause handback without a tool call,
+offer or completion claim. `complete` requires an explicit nothing-remains
+statement. A scenario may declare `requiredCall` or `requiredText` for its exact
+operation or blocker. These checks enforce declared replay facts, not semantics
+for arbitrary replies.
+
+`scripts/continuity-boundary.mjs` checks an explicit version-1 record with
+`disposition`, `goal`, `result`, `remaining` and boolean `phaseBoundary`.
+Dispositions are `continue`, `offer`, `blocked`, `complete` and `paused`.
+A final handback cannot pass with ready work recorded as `continue`.
+At a phase boundary, the reply must include the recorded goal, result and
+remaining work. The caller supplies current state; this helper cannot prove
+permission, backlog completeness or truth of the record.
+
 Add `--baseline` to see what the rules add. Each scenario then also runs with
 a one-sentence instruction in place of the rules, and with no rules at all.
 The run prints each arm's passes, such as `rules 9/9, one-line 6/9, no-rules

@@ -57,7 +57,13 @@ const scenarios = readdirSync(dir)
     const { meta, body } = parseFragment(readFileSync(join(dir, file), "utf8"), file);
     if (!EXPECTS.includes(meta.expect))
       fail(`${file}: expect: must be one of ${EXPECTS.join(", ")}`);
-    return { file, expect: meta.expect, body };
+    return {
+      file,
+      expect: meta.expect,
+      body,
+      requiredCall: meta.requiredCall,
+      requiredText: meta.requiredText,
+    };
   });
 
 // Control arms are graded without --coded: one sentence does not ask for codes.
@@ -76,7 +82,7 @@ const indent = (text) =>
     .join("\n");
 
 let failed = 0;
-for (const { file, expect, body } of scenarios) {
+for (const { file, expect, body, requiredCall, requiredText } of scenarios) {
   for (const arm of arms) {
     const label = values.baseline ? `[${arm.name}] ${file}` : file;
     const prompt = [
@@ -106,7 +112,12 @@ for (const { file, expect, body } of scenarios) {
         if (r.stderr) console.log(indent(r.stderr));
         continue;
       }
-      const g = grade(r.stdout ?? "", expect, { coded: arm.coded, scenario: file });
+      const g = grade(r.stdout ?? "", expect, {
+        coded: arm.coded,
+        scenario: file,
+        requiredCall,
+        requiredText,
+      });
       if (g.pass) passed++;
       else if (arm.name === "rules") failed++;
       console.log(`${g.pass ? "PASS" : "FAIL"} ${label} run ${i + 1}: ${JSON.stringify(g)}`);
