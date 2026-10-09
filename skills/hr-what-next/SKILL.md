@@ -20,6 +20,9 @@ completed state before the completion message; a report alone does not do so.
    conversation that the user has not answered, every owned uncommitted file,
    unpushed commit or held checkout, and the number of other live ledger items
    (deferred, unselected, blocked or follow-up) with a link to the ledger.
+   When the session keeps a plan file, `scripts/check-open-work.mjs <plan>`
+   computes this floor (add `--checkout <path>` for each checkout touched):
+   run it and quote its result instead of recalling the ledger.
    Report each floor item, or state that the floor is empty. While any floor
    item remains, do not say that nothing is left or that nothing needs the
    user; re-present the unanswered questions as an offer instead. When asked

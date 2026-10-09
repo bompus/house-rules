@@ -38,9 +38,21 @@ at its plan.
   changes and drops. Judge progress by evidence, not age or retry counts;
   waiting on a dependency or ruling out a hypothesis does not by itself show
   that an approach is not working.
+- Keep the ledger as a `## Ledger` section of item lines a script can read:
+  `- [ ] text` is open, `- [~] text … trigger: <what reopens it>` deferred,
+  `- [x] text … evidence: <result>` done and `- [-] text … by: <who dropped it>`
+  dropped. Name each scratch directory, checkout and branch you own in an item.
+- Before claiming that nothing remains or the session can close, and before
+  archiving a plan, run the `hr-what-next` skill's
+  `scripts/check-open-work.mjs <plan>`, adding `--checkout <path>` for each
+  checkout you touched, and quote its result. Open or deferred items, and owned
+  resources no open item names, mean work remains.
 - Before archiving a completed plan, save its completed status, completion
   time and evidence. Apply § Finishing work before marking the whole session
-  completed. Then move the plan to `plans/archive/<topic>-<date>/` beside it.
+  completed. Then archive with the same script's `--archive` flag; it moves the
+  plan to `plans/archive/<topic>-<date>/` beside it only when the status is
+  completed and nothing is open. A plan whose status is `active`, `paused` or
+  `blocked-on-user` stays where the session-start read finds it.
 
 Sweep other sessions' plans and handoffs only when the user asks, such as
 "what's waiting on me?", and only for the current project. Offer unowned items,

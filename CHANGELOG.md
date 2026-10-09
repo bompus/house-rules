@@ -4,6 +4,15 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- The plan-files rule now keeps the ledger as a `## Ledger` section of item
+  lines (open, deferred with a trigger, done with evidence, dropped with who
+  dropped it), and `hr-what-next` gains `scripts/check-open-work.mjs`. The
+  script lists open and deferred items, flags scratch directories and
+  checkouts the session owns that no open item names, and its `--archive` flag
+  moves a plan to the archive only when its status is completed and nothing is
+  open. A measured scan found over half of archived plans had been archived
+  with an open status, and the earlier wording relied on each agent checking by
+  hand.
 - `hr-agent-guidance-audit` gains a verdict method for deciding which
   skills, docs and scripts to retire or merge: one verdict per candidate with
   quoted evidence, separate verdicts for the shared source and a local
