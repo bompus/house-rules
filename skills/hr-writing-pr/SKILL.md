@@ -85,8 +85,9 @@ outcomes visible; collapse long commands or supporting detail when useful.
 Required scope or approval sections stay, with only the justification and links
 the reviewer needs.
 
-For material measured performance changes, prefer a compact chart alongside
-the exact result table when it makes comparisons easier to scan. Skip charts
+For qualified measured performance changes outside the declared no-clear-change
+band, prefer a compact chart alongside the exact result table when it makes
+comparisons easier to scan. Skip charts
 that add no information, such as a single small change. Preview a proposed
 visual with the user before publishing a new visual style. Use labeled units,
 zero-based bar axes, readable contrast and meaningful precision. Show the
