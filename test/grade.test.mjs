@@ -25,6 +25,12 @@ test("each expectation passes its intended reply and fails the others", () => {
       {},
       false,
     ],
+    [
+      "continue",
+      "The bug report is pending. It can be closed after verification, but this session must continue.\nTOOL_CALL: Bash continue-work",
+      {},
+      true,
+    ],
     ["offer", offer, {}, true],
     ["offer", `TOOL_CALL: Bash migrate\n${offer}`, {}, false],
     ["offer", offer, { coded: true }, false],
