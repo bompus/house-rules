@@ -9,6 +9,10 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   instead of `git pull --ff-only`. A concurrent fetch in a shared repository
   can rewrite `FETCH_HEAD` and make the pull fail.
 
+- New `hr-usage-report` skill: measure where Claude Code, Codex and OpenCode
+  usage went by provider, model and role at list prices, and render model
+  comparisons as self-contained HTML charts and verdict tables.
+
 ## 0.11.0 - 2026-10-09
 
 - First npm publication of `@bompus/house-rules`, with the `house-rules` CLI

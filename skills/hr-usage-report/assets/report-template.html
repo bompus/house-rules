@@ -1,0 +1,377 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <!-- Model comparison report. scripts/render-report.ts fills #report-data from a data file;
+     section types and rules: SKILL.md. Colors: up to three categorical series
+     (validated dark-surface slots) plus one dashed neutral "reference" series. -->
+    <style>
+      :root {
+        --s1: #3987e5;
+        --s2: #d95926;
+        --s3: #199e70;
+        --ref: #a8a7a0;
+        --fg: var(--foreground, #f2f2f0);
+        --mut: var(--muted-foreground, #b5b4ad);
+        --bd: var(--border, #3a3a38);
+        --bg: var(--background, #1a1a19);
+        --grid: color-mix(in srgb, var(--fg) 12%, transparent);
+      }
+      html,
+      body {
+        background: var(--bg);
+      }
+      body {
+        font-family: var(--font-sans, system-ui, sans-serif);
+        color: var(--fg);
+        margin: 0;
+      }
+      .wrap {
+        display: flex;
+        flex-direction: column;
+        gap: 22px;
+      }
+      h2 {
+        font-size: 18px;
+        margin: 0;
+      }
+      h3 {
+        font-size: 15px;
+        margin: 0 0 2px;
+      }
+      .sub {
+        color: var(--mut);
+        font-size: 12.5px;
+        margin: 0 0 8px;
+        line-height: 1.4;
+      }
+      .legend {
+        display: flex;
+        gap: 14px;
+        flex-wrap: wrap;
+        font-size: 12.5px;
+        color: var(--mut);
+        margin-bottom: 6px;
+      }
+      .legend span {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .sw {
+        width: 18px;
+        height: 0;
+        border-top: 2px solid;
+      }
+      .grid2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 18px;
+      }
+      @media (max-width: 560px) {
+        .grid2 {
+          grid-template-columns: 1fr;
+        }
+      }
+      svg {
+        display: block;
+        width: 100%;
+        overflow: visible;
+      }
+      svg text {
+        font-family: inherit;
+        font-size: 11px;
+        fill: var(--mut);
+      }
+      svg .lbl {
+        fill: var(--fg);
+      }
+      .tip {
+        position: fixed;
+        pointer-events: none;
+        background: var(--popover, #262624);
+        color: var(--popover-foreground, var(--fg));
+        border: 1px solid var(--bd);
+        border-radius: 6px;
+        padding: 6px 8px;
+        font-size: 12px;
+        opacity: 0;
+        transition: opacity 0.08s;
+        z-index: 5;
+        max-width: 260px;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        font-size: 12.5px;
+      }
+      th,
+      td {
+        text-align: left;
+        padding: 6px 8px;
+        border-bottom: 1px solid var(--bd);
+        vertical-align: top;
+      }
+      th {
+        color: var(--mut);
+        font-weight: 600;
+      }
+      td.n {
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+      }
+      .yes {
+        color: var(--success, #3fb37f);
+      }
+      .no {
+        color: var(--mut);
+      }
+      .maybe {
+        color: var(--warning, #e0a63a);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap" id="root"></div>
+    <div class="tip" id="tip"></div>
+    <script id="report-data" type="application/json">
+      __REPORT_DATA__
+    </script>
+    <script>
+      const DATA = JSON.parse(document.getElementById("report-data").textContent);
+      const SLOTS = ["var(--s1)", "var(--s2)", "var(--s3)"];
+      const NS = "http://www.w3.org/2000/svg";
+      const tip = document.getElementById("tip");
+      const esc = (s) =>
+        String(s).replace(
+          /[&<>"]/g,
+          (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c],
+        );
+      function showTip(e, h) {
+        tip.innerHTML = h;
+        tip.style.opacity = 1;
+        tip.style.left = Math.min(e.clientX + 12, innerWidth - 270) + "px";
+        tip.style.top = e.clientY + 12 + "px";
+      }
+      function hideTip() {
+        tip.style.opacity = 0;
+      }
+      function el(t, a, p) {
+        const n = document.createElementNS(NS, t);
+        for (const k in a) n.setAttribute(k, a[k]);
+        if (p) p.appendChild(n);
+        return n;
+      }
+      function hover(node, html) {
+        node.addEventListener("mousemove", (e) => showTip(e, html));
+        node.addEventListener("mouseleave", hideTip);
+      }
+      // Color follows the entity: a series key keeps its slot across every chart in the report.
+      const keys = DATA.series || {};
+      const color = (k) => (keys[k]?.reference ? "var(--ref)" : SLOTS[keys[k]?.slot ?? 0]);
+      const isRef = (k) => !!keys[k]?.reference;
+      const name = (k) => keys[k]?.name ?? k;
+      const legend = (ks) =>
+        `<div class="legend">${ks.map((k) => `<span><i class="sw" style="border-color:${color(k)};${isRef(k) ? "border-top-style:dashed" : ""}"></i>${esc(name(k))}</span>`).join("")}</div>`;
+      function marker(svg, x, y, k, html) {
+        el(
+          "circle",
+          {
+            cx: x,
+            cy: y,
+            r: 4.5,
+            fill: isRef(k) ? "var(--bg)" : color(k),
+            stroke: isRef(k) ? color(k) : "var(--bg)",
+            "stroke-width": 2,
+          },
+          svg,
+        );
+        hover(el("circle", { cx: x, cy: y, r: 11, fill: "transparent" }, svg), html);
+      }
+      function endLabels(svg, items) {
+        items.sort((a, b) => a.y - b.y);
+        let last = -99;
+        for (const it of items) {
+          const y = Math.max(it.y, last + 13);
+          last = y;
+          el("text", { x: it.x + 8, y: y + 4, class: "lbl" }, svg).textContent = it.text;
+        }
+      }
+      const draw = {
+        // Score against cost (or any two measures): one polyline per series through its effort points.
+        curve(s, svg) {
+          const W = svg.clientWidth,
+            H = s.height || 300,
+            m = { l: 44, r: 74, t: 10, b: 34 };
+          svg.setAttribute("height", H);
+          const xs = s.series.flatMap((r) => r.points.map((p) => p.x)),
+            ys = s.series.flatMap((r) => r.points.map((p) => p.y));
+          const [x0, x1] = s.xDomain || [Math.min(...xs) * 0.7, Math.max(...xs) * 1.4],
+            [y0, y1] = s.yDomain || [
+              Math.floor(Math.min(...ys) / 10) * 10,
+              Math.ceil(Math.max(...ys) / 10) * 10,
+            ];
+          const tx = (v) =>
+            (s.xLog ? Math.log10(v) - Math.log10(x0) : v - x0) /
+            (s.xLog ? Math.log10(x1) - Math.log10(x0) : x1 - x0);
+          const x = (v) => m.l + tx(v) * (W - m.l - m.r),
+            y = (v) => H - m.b - ((v - y0) / (y1 - y0)) * (H - m.t - m.b);
+          for (const v of s.xTicks || []) {
+            el("line", { x1: x(v), x2: x(v), y1: m.t, y2: H - m.b, stroke: "var(--grid)" }, svg);
+            el("text", { x: x(v), y: H - m.b + 15, "text-anchor": "middle" }, svg).textContent =
+              (s.xPrefix || "") + v + (s.xSuffix || "");
+          }
+          for (const v of s.yTicks || []) {
+            el("line", { x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), stroke: "var(--grid)" }, svg);
+            el("text", { x: m.l - 6, y: y(v) + 4, "text-anchor": "end" }, svg).textContent =
+              v + (s.ySuffix || "");
+          }
+          el("text", { x: W / 2, y: H - 2, "text-anchor": "middle" }, svg).textContent =
+            s.xLabel || "";
+          const ends = [];
+          for (const r of s.series) {
+            el(
+              "polyline",
+              {
+                points: r.points.map((p) => x(p.x) + "," + y(p.y)).join(" "),
+                fill: "none",
+                stroke: color(r.key),
+                "stroke-width": 2,
+                "stroke-dasharray": isRef(r.key) ? "5 4" : "",
+              },
+              svg,
+            );
+            for (const p of r.points)
+              marker(
+                svg,
+                x(p.x),
+                y(p.y),
+                r.key,
+                `<b>${esc(name(r.key))} ${esc(p.label)}</b><br>${esc(p.tip || "")}`,
+              );
+            const L = r.points[r.points.length - 1];
+            ends.push({ x: x(L.x), y: y(L.y), text: name(r.key).split(" ")[0] });
+          }
+          endLabels(svg, ends);
+        },
+        // One value per category per series (effort ladders).
+        ladder(s, svg) {
+          const W = svg.clientWidth,
+            H = s.height || 250,
+            m = { l: 34, r: 74, t: 10, b: 26 },
+            n = s.categories.length;
+          svg.setAttribute("height", H);
+          const [y0, y1] = s.yDomain,
+            x = (i) => m.l + (i / (n - 1)) * (W - m.l - m.r),
+            y = (v) => H - m.b - ((v - y0) / (y1 - y0)) * (H - m.t - m.b);
+          for (const v of s.yTicks || []) {
+            el("line", { x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), stroke: "var(--grid)" }, svg);
+            el("text", { x: m.l - 6, y: y(v) + 4, "text-anchor": "end" }, svg).textContent = v;
+          }
+          s.categories.forEach((c, i) => {
+            el("text", { x: x(i), y: H - m.b + 16, "text-anchor": "middle" }, svg).textContent = c;
+          });
+          const ends = [];
+          for (const r of s.series) {
+            const pts = r.values.map((v, i) => [i, v]).filter((p) => p[1] !== null);
+            el(
+              "polyline",
+              {
+                points: pts.map(([i, v]) => x(i) + "," + y(v)).join(" "),
+                fill: "none",
+                stroke: color(r.key),
+                "stroke-width": 2,
+                "stroke-dasharray": isRef(r.key) ? "5 4" : "",
+              },
+              svg,
+            );
+            for (const [i, v] of pts)
+              marker(
+                svg,
+                x(i),
+                y(v),
+                r.key,
+                `<b>${esc(name(r.key))} ${esc(s.categories[i])}</b><br>${esc(v)}${r.notes?.[i] ? " · " + esc(r.notes[i]) : ""}`,
+              );
+            const L = pts[pts.length - 1];
+            ends.push({ x: x(L[0]), y: y(L[1]), text: name(r.key).split(" ")[0] });
+          }
+          endLabels(svg, ends);
+        },
+        // Horizontal bars; rows name their series for color.
+        bars(s, svg) {
+          const W = svg.clientWidth,
+            H = s.height || 190,
+            lw = s.labelWidth || 96,
+            rh = (H - 6) / s.rows.length,
+            max = s.max || Math.max(...s.rows.map((r) => r.value)) * 1.1;
+          svg.setAttribute("height", H);
+          s.rows.forEach((r, i) => {
+            const w = ((W - lw - 46) * r.value) / max,
+              yy = i * rh + 4,
+              bh = rh - 12;
+            el("text", { x: 0, y: yy + bh / 2 + 4 }, svg).textContent = r.label;
+            const b = el(
+              "rect",
+              {
+                x: lw,
+                y: yy,
+                width: Math.max(w, 2),
+                height: bh,
+                rx: 4,
+                fill: isRef(r.key) ? "none" : color(r.key),
+                stroke: isRef(r.key) ? color(r.key) : "none",
+                "stroke-dasharray": isRef(r.key) ? "5 4" : "",
+                "stroke-width": isRef(r.key) ? 1.5 : 0,
+              },
+              svg,
+            );
+            el("text", { x: lw + w + 6, y: yy + bh / 2 + 4, class: "lbl" }, svg).textContent =
+              r.display ?? r.value;
+            hover(b, `<b>${esc(r.label)}</b><br>${esc(r.tip || "")}`);
+          });
+        },
+      };
+      function section(s) {
+        const box = document.createElement("section");
+        box.innerHTML = `<h3>${esc(s.title || "")}</h3>${s.sub ? `<p class="sub">${esc(s.sub)}</p>` : ""}`;
+        if (s.type === "pair") {
+          box.className = "grid2";
+          box.innerHTML = "";
+          for (const c of s.items) box.appendChild(section(c));
+          return box;
+        }
+        if (s.type === "table") {
+          const cls = (v) => ({ yes: "yes", no: "no", maybe: "maybe" })[v] || "";
+          box.innerHTML += `<table><thead><tr>${s.columns.map((c) => `<th>${esc(c)}</th>`).join("")}</tr></thead><tbody>${s.rows
+            .map(
+              (row) =>
+                `<tr>${row
+                  .map((c, i) => {
+                    const v = typeof c === "object" && c ? c : { text: c };
+                    return `<td class="${s.numeric?.includes(i) ? "n" : ""} ${cls(v.verdict)}">${esc(v.text)}</td>`;
+                  })
+                  .join("")}</tr>`,
+            )
+            .join("")}</tbody></table>`;
+          return box;
+        }
+        const ks = s.series ? s.series.map((r) => r.key) : [];
+        if (ks.length > 1) box.insertAdjacentHTML("beforeend", legend(ks));
+        const svg = el("svg", { height: s.height || 200 }, box);
+        box._draw = () => {
+          svg.innerHTML = "";
+          draw[s.type](s, svg);
+        };
+        return box;
+      }
+      const root = document.getElementById("root");
+      if (DATA.title) root.insertAdjacentHTML("beforeend", `<h2>${esc(DATA.title)}</h2>`);
+      const nodes = DATA.sections.map(section);
+      nodes.forEach((n) => root.appendChild(n));
+      const redraw = () => root.querySelectorAll("section").forEach((n) => n._draw && n._draw());
+      redraw();
+      addEventListener("resize", redraw);
+    </script>
+  </body>
+</html>

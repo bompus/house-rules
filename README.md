@@ -288,6 +288,7 @@ want and explains these limits before changing the configuration.
 | `hr-stock-ui-audit`         | Find and triage template-default styling in frontend code.                                                |
 | `hr-tdd`                    | Implement requested test-first work through one red-green slice at a time; simplify during review.        |
 | `hr-test-audit`             | Decide which new tests are worth keeping and which old ones to prune.                                     |
+| `hr-usage-report`           | Measure where agent usage went by provider, model and role, and chart model comparisons.                  |
 | `hr-what-next`              | Reconcile remaining session work and recommend priorities when asked what comes next.                     |
 | `hr-writing-for-agents`     | Write skills, rules and other documents agents read.                                                      |
 | `hr-writing-pr`             | Write a pull request title and body from the final diff.                                                  |

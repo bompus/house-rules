@@ -1,0 +1,125 @@
+{
+  "title": "Example: three models across effort levels (illustrative data)",
+  "series": {
+    "small": { "name": "Model S", "slot": 0 },
+    "mid": { "name": "Model M", "slot": 1 },
+    "large": { "name": "Model L", "slot": 2 },
+    "previous": { "name": "Model L (previous)", "reference": true }
+  },
+  "sections": [
+    {
+      "type": "curve",
+      "title": "Score against cost per task, every effort level",
+      "sub": "Illustrative values. Each line runs low to max on a log cost axis.",
+      "xLog": true,
+      "xDomain": [0.05, 20],
+      "yDomain": [20, 60],
+      "xTicks": [0.1, 0.3, 1, 3, 10],
+      "xPrefix": "$",
+      "yTicks": [20, 30, 40, 50, 60],
+      "ySuffix": "%",
+      "xLabel": "cost per task (log)",
+      "series": [
+        {
+          "key": "small",
+          "points": [
+            { "label": "low", "x": 0.08, "y": 28, "tip": "28% · $0.08/task" },
+            { "label": "medium", "x": 0.2, "y": 34, "tip": "34% · $0.20/task" },
+            { "label": "max", "x": 1, "y": 45, "tip": "45% · $1.00/task" }
+          ]
+        },
+        {
+          "key": "mid",
+          "points": [
+            { "label": "low", "x": 0.5, "y": 35, "tip": "35% · $0.50/task" },
+            { "label": "medium", "x": 0.8, "y": 40, "tip": "40% · $0.80/task" },
+            { "label": "max", "x": 8, "y": 54, "tip": "54% · $8.00/task" }
+          ]
+        },
+        {
+          "key": "large",
+          "points": [
+            { "label": "low", "x": 1.2, "y": 44, "tip": "44% · $1.20/task" },
+            { "label": "medium", "x": 3, "y": 52, "tip": "52% · $3.00/task" },
+            { "label": "max", "x": 12, "y": 57, "tip": "57% · $12.00/task" }
+          ]
+        },
+        {
+          "key": "previous",
+          "points": [
+            { "label": "low", "x": 5, "y": 43, "tip": "43% · $5.00/task" },
+            { "label": "max", "x": 16, "y": 50, "tip": "50% · $16.00/task" }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "ladder",
+      "title": "Review: bugs found per effort level",
+      "sub": "Illustrative values; notes carry run counts.",
+      "categories": ["low", "medium", "high", "max"],
+      "yDomain": [0, 50],
+      "yTicks": [0, 25, 50],
+      "series": [
+        {
+          "key": "small",
+          "values": [10, 12, 16, null],
+          "notes": ["1 run", "1 run", "2 runs", "no row"]
+        },
+        {
+          "key": "mid",
+          "values": [18, 23, 34, 45],
+          "notes": ["3 runs", "3 runs", "3 runs", "3 runs"]
+        },
+        {
+          "key": "large",
+          "values": [22, 30, 32, 41],
+          "notes": ["3 runs", "3 runs", "3 runs", "3 runs"]
+        }
+      ]
+    },
+    {
+      "type": "pair",
+      "items": [
+        {
+          "type": "bars",
+          "title": "Generation speed: output tokens/s",
+          "max": 400,
+          "rows": [
+            { "label": "Model S", "key": "small", "value": 380 },
+            { "label": "Model M", "key": "mid", "value": 220 },
+            { "label": "Model L", "key": "large", "value": 125 }
+          ]
+        },
+        {
+          "type": "bars",
+          "title": "Task time: minutes per task",
+          "max": 3,
+          "rows": [
+            { "label": "Model S", "key": "small", "value": 2.6, "display": "2:36" },
+            { "label": "Model M", "key": "mid", "value": 1, "display": "1:00" },
+            { "label": "Model L", "key": "large", "value": 2.1, "display": "2:06" }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "table",
+      "title": "Model S: where it fits",
+      "columns": ["Role", "Key evidence", "Verdict"],
+      "rows": [
+        [
+          "Narrow read-only lookups",
+          "Equal accuracy on known-answer lookups at a fraction of the cost",
+          { "text": "Yes", "verdict": "yes" }
+        ],
+        [
+          "Mechanical edits",
+          "Matches Model M medium at lower cost; untested on your work",
+          { "text": "Try on a named task", "verdict": "maybe" }
+        ],
+        ["Review", "Finds about half of what Model L finds", { "text": "No", "verdict": "no" }]
+      ]
+    }
+  ]
+}
