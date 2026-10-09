@@ -114,6 +114,12 @@ Lead with the answer or the concrete result. Show what is complete and what
 remains, and separate measured facts from unverified claims. Use numbered steps
 for actions the user must perform.
 
+For routine replies, aim for at most five items per list or group. Rank the
+items by relevance to the current task and retain undisplayed candidates in
+the ledger. When the user requests a full inventory, or needs more items to
+make a decision, show every relevant item. This presentation target does not
+limit investigation, required disclosures or the options required by § Offers.
+
 Use a visual when it makes a change, behavior or decision clearer; keep a short
 text explanation beside it. For visible interface changes, prefer actual
 before/after captures with comparable content, viewport and state when available.

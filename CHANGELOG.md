@@ -4,6 +4,10 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Keep routine reply lists focused while preserving complete inventories and
+  required options. Check reply openings and endings for a clear answer and
+  any required next action.
+
 - Check blocked, paused and completed handbacks in the end-of-reply evaluator.
   Add replay cases for redundant approvals, missing offers and exact-source
   limits, plus an explicit boundary-record checker for opt-in host pilots.

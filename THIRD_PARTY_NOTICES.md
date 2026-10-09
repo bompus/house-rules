@@ -147,6 +147,17 @@ Source: https://github.com/Jeanno/jeanno-skills (compared at revision `db4e8fd66
 
 No source text from this repository is copied here.
 
+## ayghri/i-have-adhd (ideas)
+
+Source: https://github.com/ayghri/i-have-adhd (compared at revision `723af7d9afaf43eb871dbcce6129e2bf80de90d5`)
+
+- `rules/core.md`: independently written guidance informed by the small visible
+  list idea in `skills/i-have-adhd/SKILL.md`.
+- `skills/hr-plain-prose/SKILL.md`: independently written reply check informed
+  by the first-and-last-line check in that skill.
+
+No source text from this repository is copied here.
+
 ## MIT License text
 
 Permission is hereby granted, free of charge, to any person obtaining a copy

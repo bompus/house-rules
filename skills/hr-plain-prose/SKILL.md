@@ -188,10 +188,13 @@ self-reference ("As an AI..."). Start with the content.
 - Write each step as a command with one action, and put its condition first:
   "If the build fails, rerun it with `--verbose`." Two actions share a step
   only when they happen at the same time.
-- Before sending a reply, read it without the task notes. Rewrite sentences
-  that depend on unexplained labels, abbreviations or knowledge of the agent's
-  workflow. State permission limits plainly when they affect the proposed
-  action; routine updates do not need the unchanged list.
+- Before sending a reply, read it without the task notes. Then read only its
+  first and last lines. The opening should state the answer or result. The
+  ending should make any required next action or decision clear. When none
+  remains, end without inventing another task or repeating the answer.
+  Rewrite sentences that depend on unexplained labels, abbreviations or
+  knowledge of the agent's workflow. State permission limits plainly when
+  they affect the proposed action; routine updates do not need the unchanged list.
 - In a report or a note to the user, make each heading or bold lead state the
   takeaway ("Multi-turn ask is switched off"), not only the topic ("Prompt
   caching and multi-turn ask"). Reference pages keep topic headings.
