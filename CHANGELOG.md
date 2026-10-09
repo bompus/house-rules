@@ -4,8 +4,12 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Require review of the final diff before submitting pull requests to external
+  upstream projects; owned repositories and maintained forks keep their policies.
+
 - Add finite Linux and Windows process-attribution collectors to benchmarking
   tooling, with process birth identities and observer cost records.
+
 
 - Keep routine reply lists focused while preserving complete inventories and
   required options. Check reply openings and endings for a clear answer and

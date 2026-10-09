@@ -188,6 +188,12 @@ within existing authorization. When a new submission is needed, explain the
 distinct scope, regression or replacement and link related work. If search is
 unavailable, report that gap before submitting; do not claim no matches.
 
+Before submitting a pull request to an external upstream project, review the
+final diff with `hr-code-review`, resolve actionable findings and run the
+relevant checks. Review evidence must cover the submitted changes; tests,
+benchmarks and an earlier review of the parent PR do not replace this review.
+Owned repositories and maintained forks keep their own review requirements.
+
 Before filing a bug in any repository, follow the `hr-diagnosing-bugs` skill's
 `references/reporting.md`: reduce and verify the reproduction before submitting.
 For fixes intended for pull requests, try the simplest adequate change first;
