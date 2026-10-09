@@ -95,8 +95,9 @@ is not needed. Review this conversation's work within its authorized scope;
 other sessions' records remain subject to their ownership and sweep rules.
 
 - Mark completion only with evidence for the item's full selected scope,
-  including required checks, landing and adoption. Record the result and when
-  it completed; partial progress updates the next unfinished step.
+  including required checks, and landing or adoption when that scope includes
+  them. Record the result and when it completed; partial progress updates the
+  next unfinished step.
 - Keep duplicate and superseded entries as history, linking to the retained
   item or replacement and its disposition. A replacement inherits only verified
   existing authority; it does not authorize a wider scope.
