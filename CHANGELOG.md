@@ -4,6 +4,10 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Split the benchmarking collector notes and the variation criterion into
+  shorter paragraphs so the newer notes stand on their own. The wording is
+  unchanged.
+
 - Update the benchmarking tool notes for Hyperfine 2.0: commands run without a
   shell by default, peak memory is measured on Linux and macOS, hardware
   counters are opt-in with `--metrics` there, and the JSON export layout
