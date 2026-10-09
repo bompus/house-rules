@@ -38,11 +38,13 @@ python3 scripts/process-attribution.py --seconds 20 --output /disk/path/receipt.
 Run from the skill directory. Linux receipts contain raw one-second snapshots
 and CPU deltas ranked by busy cores, with process name, parent PID, birth ticks,
 RSS pages and unmatched boundary counts. They omit command arguments.
-Each row also reports `reapedChildCores`: CPU of children that exited and were
-reaped by that process during the interval. It names who ran commands too
-short-lived to appear in a snapshot, once their parent has waited for them.
+Each row also reports `reapedChildCores`: CPU of children the process reaped
+during the interval, attributed to that parent. It shows which process ran
+commands too short-lived to appear in a snapshot, not the commands themselves,
+and can include CPU the children used before the interval started.
 Each interval reports `cpuBusyCores` per logical CPU for pinned runs (see
-[fenced-core arm](#fenced-core-arm)).
+[fenced-core arm](#fenced-core-arm)). Busy CPU excludes idle, iowait and steal
+time.
 The collector uses its own `/proc/self/status` `VmHWM` for peak RSS;
 `ru_maxrss` can retain a launcher's inherited high-water mark.
 It records observer CPU and scan duration. Include those costs in the declared
@@ -88,8 +90,11 @@ other sessions' CPU placement:
    Record each thread's identity (PID, thread ID, birth ticks) and original
    affinity. Stop and signal nothing.
 3. Gate on foreign CPU on the benchmark CPUs: their busy time (`cpuBusyCores`)
-   minus the CPU of the benchmark's own process tree. Report host-wide load as
-   context.
+   minus the CPU of the benchmark's own process tree. Process CPU is not
+   per-CPU, so the subtraction holds only while the whole tree stays on the
+   benchmark CPUs: check every thread's effective affinity at the start and end
+   of each batch, and reject the batch if any ran elsewhere. Report host-wide
+   load as context.
 4. At the phase boundary, restore recorded threads after checking their birth
    ticks. Threads started during the window inherited the fence; give them the
    CPU set they would otherwise have inherited, usually all CPUs. Verify no thread remains fenced, including when the

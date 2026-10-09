@@ -35,8 +35,10 @@ def snapshot(proc=Path("/proc")):
                     if line.startswith("VmHWM:")).split()[1]) * 1024
     usage = resource.getrusage(resource.RUSAGE_SELF)
     return {"monotonic": time.monotonic(), "utc": datetime.now(timezone.utc).isoformat(),
-            "hostBusyTicks": sum(ticks) - ticks[3] - ticks[4],
-            "cpuBusyTicks": {cpu: sum(t) - t[3] - t[4] for cpu, t in per_cpu.items()},
+            # Busy excludes idle, iowait and steal: steal is time the hypervisor ran
+            # something else, not work by any guest thread.
+            "hostBusyTicks": sum(ticks) - ticks[3] - ticks[4] - ticks[7],
+            "cpuBusyTicks": {cpu: sum(t) - t[3] - t[4] - t[7] for cpu, t in per_cpu.items()},
             "processes": processes,
             "missingProcesses": missing, "scanSeconds": time.monotonic() - started,
             "observerCpuSeconds": usage.ru_utime + usage.ru_stime,
@@ -55,8 +57,9 @@ def compare(before, after, hz):
             continue
         matched.add(pid)
         cpu = process["cpuTicks"] - old["cpuTicks"]
-        # Children that exited and were reaped in the interval add to the parent's
-        # cutime/cstime, which names who ran work too short-lived to be sampled.
+        # When the parent reaps children, their total CPU is added to its
+        # cutime/cstime. The delta attributes that CPU to the parent; it can
+        # include CPU the children used before the interval started.
         reaped = process.get("reapedChildCpuTicks", 0) - old.get("reapedChildCpuTicks", 0)
         if cpu > 0 or reaped > 0:
             rows.append({"pid": pid, **process, "busyCores": cpu / hz / seconds,
@@ -86,7 +89,7 @@ def main():
     result = {"version": 2, "observerPid": os.getpid(), "clockTicksPerSecond": hz,
               "bootId": Path("/proc/sys/kernel/random/boot_id").read_text().strip(),
               "samples": samples, "intervals": intervals,
-              "limits": "Snapshots miss processes that start and exit between samples; their CPU appears as the reaping parent's reapedChildCores only after the parent waits for them. CPU attribution does not prove interference or grant admission. Observer overhead is included; no negligible-impact claim."}
+              "limits": "Snapshots miss processes that start and exit between samples. reapedChildCores attributes children's CPU to the parent in the interval it reaps them, including CPU they used before the interval. Busy CPU excludes idle, iowait and steal. CPU attribution does not prove interference or grant admission. Observer overhead is included; no negligible-impact claim."}
     args.output.write_text(json.dumps(result, indent=2))
     print(json.dumps({"output": str(args.output), "intervals": len(intervals),
                       "peakHostBusyCores": max(row["hostBusyCores"] for row in intervals),

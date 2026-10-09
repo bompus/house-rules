@@ -17,12 +17,14 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   excluded records with the frozen reader's.
 
 - Add an optional fenced-core benchmark arm for shared hosts: with the user's
-  authorization, move other sessions' threads off reserved CPUs for a finite
-  phase, gate on foreign CPU of those CPUs, and restore every thread afterwards.
-  The Linux process-attribution collector now reports per-CPU busy cores and
-  each process's reaped-child CPU, which names short-lived commands. Short or
-  tail metrics get an absolute variation floor, and automated stop rules use
-  the acceptance analysis code.
+  authorization, move other threads the user may change off the benchmark CPUs
+  for a finite phase, record processes that stay unfenced, gate on foreign CPU
+  of those CPUs, and restore every moved thread afterwards. The Linux
+  process-attribution collector now reports per-CPU busy cores (excluding
+  steal time, also for the host total) and each process's reaped-child CPU,
+  attributed to the parent that reaped it. Short or tail metrics get an
+  absolute variation floor or a percentile or count metric, and automated stop
+  rules use the acceptance analysis code.
 
 - Put performance results before lengthy verification details in pull requests.
   Keep required template sections, collapse supporting commands and avoid

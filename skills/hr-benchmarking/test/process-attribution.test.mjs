@@ -34,7 +34,7 @@ with tempfile.TemporaryDirectory(dir=sys.argv[2]) as directory:
   assert snapshot['observerPeakRssBytes']==37*1024
   assert snapshot['processes'][7]['name']=='name with \ufffd bracket'
   assert snapshot['processes'][7]['cpuTicks']==30 and snapshot['missingProcesses']==0
-  assert snapshot['hostBusyTicks']==27 and snapshot['cpuBusyTicks']=={'0':27}
+  assert snapshot['hostBusyTicks']==19 and snapshot['cpuBusyTicks']=={'0':19}
 
 `,
         collector,
