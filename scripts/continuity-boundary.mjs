@@ -11,8 +11,7 @@ export function replyFacts(reply, coded = false) {
       reply,
     ),
     offer: coded
-      ? /Question\s*\d+/i.test(reply) &&
-        /`\d+A`/.test(reply) &&
+      ? [...reply.matchAll(/Question\s*(\d+)/gi)].some(([, n]) => reply.includes(`\`${n}A\``)) &&
         /\(Recommended/.test(reply) &&
         /reply\s+`/i.test(reply)
       : /\?/.test(reply) &&

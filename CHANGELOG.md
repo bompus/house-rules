@@ -10,8 +10,8 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 - When a review bot spends a usage-limited review on each pushed head,
   hr-pr-followup runs the gates before the first push, sends one push per
-  review round, waits for the running review, and integrates the base only
-  when the PR needs it.
+  review round, waits for the running review unless a push fixes an
+  independent blocker, and integrates the base only when the PR needs it.
 
 - A short "next?" in hr-what-next now always covers unanswered questions from
   earlier offers, owned uncommitted files, unpushed commits and held
@@ -19,7 +19,7 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   nothing is left or that nothing needs the user while any of them remain.
   The end-of-reply grader treats "nothing needs your input" as a completion
   claim and accepts a coded offer that re-presents a later question, such as
-  Question 2. A new scenario covers a "next?" with an unanswered question.
+  Question 2, when its option codes use that question's number. A new scenario covers a "next?" with an unanswered question.
 
 - Update the benchmarking tool notes for Hyperfine 2.0: commands run without a
   shell by default, peak memory is measured on Linux and macOS, hardware

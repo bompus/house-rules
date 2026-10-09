@@ -38,6 +38,7 @@ test("each expectation passes its intended reply and fails the others", () => {
     ["offer", offer, { coded: true }, false],
     ["offer", coded, { coded: true }, true],
     ["offer", coded.replaceAll("1", "2"), { coded: true }, true],
+    ["offer", coded.replace("Question 1", "Question 2"), { coded: true }, false],
     ["offer-or-continue", "TOOL_CALL: Edit fix the flaky test", {}, true],
     ["offer-or-continue", `${offer}\nNothing else remains.`, {}, false],
     ["offer", `${offer}\nThis session is complete and can be closed.`, {}, false],

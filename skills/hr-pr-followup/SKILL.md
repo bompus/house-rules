@@ -37,7 +37,9 @@ restarting CI repeatedly without delaying an independent blocker.
 When a review bot reviews each pushed head against a usage limit, every push
 spends a review. Run the repository's gates before the first push. Push once
 per review round, with every fix for that round's findings, and do not push
-while the bot is still reviewing the current head. Integrate the base only to
+while the bot is still reviewing the current head unless the push fixes an
+independent blocker, such as a failing required check; include every finding
+fix ready at that point. Integrate the base only to
 resolve a conflict, pick up a fix the PR needs, or meet a landing requirement,
 and combine it with that round's fixes.
 
