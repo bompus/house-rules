@@ -4,6 +4,11 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- `hr-agent-guidance-audit` gains a verdict method for deciding which
+  skills, docs and scripts to retire or merge: one verdict per candidate with
+  quoted evidence, separate verdicts for the shared source and a local
+  install, and usage counts treated as supporting evidence only.
+
 - The landing procedure now updates a default branch checked out in another
   worktree with `git merge --ff-only` to the fetched, verified remote head
   instead of `git pull --ff-only`. A concurrent fetch in a shared repository

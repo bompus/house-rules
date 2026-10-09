@@ -1,6 +1,6 @@
 ---
 name: hr-agent-guidance-audit
-description: Audit and simplify agent-facing rules, skills and linked documentation within the requested repository scope. Use for guidance cleanup, skill description accuracy, token/clarity audits, or contradictions and duplication across agent instructions.
+description: Audit and simplify agent-facing rules, skills and linked documentation within the requested repository scope. Use for guidance cleanup, skill description accuracy, token/clarity audits, contradictions and duplication across agent instructions, or deciding which skills, docs and scripts to retire or merge.
 ---
 
 # Agent guidance audit
@@ -55,7 +55,9 @@ Verify effects before changing:
   for drift risk, not savings.
 
 When reviewing research records, staged lessons or guidance overrides, read
-[the record-maintenance method](references/records-and-lessons.md). For selected
+[the record-maintenance method](references/records-and-lessons.md). When
+deciding what to retire or merge, or triaging a usage report, read
+[the verdict method](references/retirement-verdicts.md). For selected
 loading or behavior verification, locate the `hr-agent-guidance-refresh` bundle
 and read its `references/verification.md`; keep unavailable evidence unverified.
 

@@ -255,7 +255,7 @@ want and explains these limits before changing the configuration.
 
 | Skill                       | Use it to                                                                                                 |
 | --------------------------- | --------------------------------------------------------------------------------------------------------- |
-| `hr-agent-guidance-audit`   | Audit a repository's agent guidance for stale, duplicated or conflicting rules.                           |
+| `hr-agent-guidance-audit`   | Audit agent guidance for stale or conflicting rules, and decide what to retire or merge.                  |
 | `hr-agent-guidance-refresh` | Re-read guidance that changed since the session started.                                                  |
 | `hr-api-exposure-check`     | Keep API responses to the fields a consumer reads and the caller may see.                                 |
 | `hr-audit-choices`          | List and check the decisions made while implementing a task.                                              |
