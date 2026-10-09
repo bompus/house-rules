@@ -8,6 +8,11 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   shorter paragraphs so the newer notes stand on their own. The wording is
   unchanged.
 
+- When a review bot spends a usage-limited review on each pushed head,
+  hr-pr-followup runs the gates before the first push, sends one push per
+  review round, waits for the running review, and integrates the base only
+  when the PR needs it.
+
 - Update the benchmarking tool notes for Hyperfine 2.0: commands run without a
   shell by default, peak memory is measured on Linux and macOS, hardware
   counters are opt-in with `--metrics` there, and the JSON export layout
