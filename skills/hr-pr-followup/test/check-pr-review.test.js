@@ -84,15 +84,14 @@ test("blocks unresolved threads and a review bot still running, but not other pe
   ]);
 });
 
-// After CodeRabbit's trial, public repositories under 10 stars get a review only on request, so a
-// push can leave no CodeRabbit check at all; that used to pass as "nothing running".
+// A configured review with no check must not pass as "nothing running".
 test("blocks a repository with .coderabbit.yaml whose head commit has no CodeRabbit check", () => {
   const state = pr({
     files: [".coderabbit.yaml", "README.md"],
     contexts: [{ name: "check", status: "COMPLETED" }],
   });
   expect(openFeedback(state)).toEqual([
-    'no CodeRabbit check on the head commit: comment "@coderabbitai full review"',
+    "no CodeRabbit check on the head commit: check the review integration and repository review policy",
   ]);
   const reviewed = pr({
     files: [".coderabbit.yaml"],
@@ -110,7 +109,7 @@ test("blocks a CodeRabbit status that is not a completed review", () => {
   const skipped = "Review skipped: reviews are disabled for this base branch";
   const ctx = { context: "CodeRabbit", state: "SUCCESS", description: skipped };
   expect(openFeedback(pr({ contexts: [ctx] }))).toEqual([
-    `CodeRabbit did not review the head commit ("${skipped}"): comment "@coderabbitai full review"`,
+    `CodeRabbit did not review the head commit ("${skipped}"): check the review integration and repository review policy`,
   ]);
   const failed = { context: "CodeRabbit", state: "FAILURE", description: "Review failed" };
   expect(openFeedback(pr({ contexts: [failed] }))).toHaveLength(1);
@@ -169,7 +168,7 @@ test("waitForReview waits a few minutes for a CodeRabbit check that has not appe
   clock = 0;
   const never = await waitForReview(() => missing, { ...opts, timeoutMs: 1_800_000 });
   expect(never).toEqual([
-    'no CodeRabbit check on the head commit: comment "@coderabbitai full review"',
+    "no CodeRabbit check on the head commit: check the review integration and repository review policy",
   ]);
   expect(clock).toBe(180_000);
 });

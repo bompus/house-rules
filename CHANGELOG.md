@@ -4,6 +4,10 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Review-helper diagnostics direct callers to inspect the review integration and
+  repository policy instead of requesting a manual full review. Existing
+  review gates remain required.
+
 - Sort package fields and dependency maps with Oxfmt while preserving script order.
 
 - Benchmarking guidance separates processing-worker limits from reported OS-thread

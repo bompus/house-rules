@@ -21,6 +21,10 @@ failed, cancelled, skipped or missing conclusions block the gate. A CodeRabbit s
 and a description starting with "Review completed". It does not
 check every CI result or authorize landing.
 
+If a review is missing or incomplete, inspect the integration and the repository's
+review policy. The helper does not determine automatic-review enablement or
+authorize a manual review request.
+
 To acknowledge a bot review body, post one PR conversation comment using the
 authenticated human account with WRITE, MAINTAIN or ADMIN permission:
 

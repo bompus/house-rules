@@ -6,9 +6,8 @@
 // selects this gate. It also refuses when CodeRabbit's status on the
 // head commit says anything but "Review completed": CodeRabbit marks a skipped review (for example
 // on a non-default base) as success with "Review skipped: …". When the head commit has
-// `.coderabbit.yaml` but no CodeRabbit check, it refuses too: CodeRabbit's open-source tier reviews
-// public repositories under 10 stars only on request, so a review may never start. Both say to
-// comment `@coderabbitai full review`.
+// `.coderabbit.yaml` but no CodeRabbit check, it refuses too. Missing or incomplete reviews
+// require inspection of the review integration and the repository's selected review policy.
 //   bun scripts/check-pr-review.ts <pr> [--repo <owner>/<name>] [--wait [--timeout <minutes>]]
 // Exit 1 while feedback is open, 2 when gh fails. Without --repo, gh resolves the repository from
 // the current checkout. --wait polls every 30 s while CodeRabbit's review is still running, and for
@@ -35,7 +34,7 @@ const REVIEW_BOTS = /coderabbit/i;
 const REVIEW_BOT_CONFIG = ".coderabbit.yaml";
 const BODY_FINDINGS = /Outside diff range comments|Nitpick comments|Duplicate comments/;
 const REVIEWED = /^Review completed/;
-const ASK = 'comment "@coderabbitai full review"';
+const FOLLOW_UP = "check the review integration and repository review policy";
 const RUNNING = "review still running: ";
 const NO_CHECK = "no CodeRabbit check on the head commit";
 const POLL_MS = 30_000;
@@ -366,7 +365,7 @@ export function openFeedback(pr: ReviewState): string[] {
   const contexts = head?.statusCheckRollup?.contexts.nodes ?? [];
   const hasConfig = head?.tree.entries.some((e) => e.name === REVIEW_BOT_CONFIG) ?? false;
   if (hasConfig && !contexts.some((ctx) => REVIEW_BOTS.test(ctx.context ?? ctx.name ?? ""))) {
-    open.push(`${NO_CHECK}: ${ASK}`);
+    open.push(`${NO_CHECK}: ${FOLLOW_UP}`);
   }
   for (const ctx of contexts) {
     const name = ctx.context ?? ctx.name ?? "";
@@ -378,12 +377,16 @@ export function openFeedback(pr: ReviewState): string[] {
     if (running) {
       open.push(`${RUNNING}${name}`);
     } else if (ctx.name !== undefined && ctx.conclusion !== "SUCCESS") {
-      open.push(`${name} review concluded ${ctx.conclusion ?? "(missing conclusion)"}: ${ASK}`);
+      open.push(
+        `${name} review concluded ${ctx.conclusion ?? "(missing conclusion)"}: ${FOLLOW_UP}`,
+      );
     } else if (
       ctx.context !== undefined &&
       (ctx.state !== "SUCCESS" || !REVIEWED.test(ctx.description ?? ""))
     ) {
-      open.push(`${name} did not review the head commit ("${ctx.description ?? ""}"): ${ASK}`);
+      open.push(
+        `${name} did not review the head commit ("${ctx.description ?? ""}"): ${FOLLOW_UP}`,
+      );
     }
   }
   for (const review of pr.reviews.nodes) {
