@@ -336,48 +336,52 @@ test("cleanup errors release the lock and allow a later write", (t) => {
   execFileSync(process.execPath, ["--input-type=module", "--eval", source], { stdio: "pipe" });
 });
 
-test("enumerated preview and apply orderings preserve every successful edit", (t) => {
-  const { path } = fixture(t);
-  const failures = [];
-  const events = ["preview A", "preview B", "apply A", "apply B", "external edit"];
-  function walk(sequence, depth, state = { text: "{}", previews: {}, expected: {} }) {
-    writeFileSync(path, state.text);
-    const previews = { ...state.previews };
-    let expected = state.expected;
-    const event = sequence.at(-1);
-    if (event) {
-      const [operation, actor] = event.split(" ");
-      if (operation === "preview") {
-        const snapshot = readConfiguration(path);
-        const options =
-          actor === "A"
-            ? { "enable-modifier": ["swarmail"] }
-            : { "disable-skill": ["hr-read-reddit"] };
-        previews[actor] = { snapshot, next: changeSelection(snapshot.config, options, path) };
-      } else if (operation === "external") {
-        expected = { ...expected, custom: "external edit preserved" };
-        writeFileSync(path, JSON.stringify(expected));
-      } else if (previews[actor]) {
-        const { snapshot, next } = previews[actor];
-        const fresh = readConfiguration(path).revision === snapshot.revision;
-        try {
-          const result = writeConfiguration(snapshot, next, snapshot.revision);
-          if (!fresh) failures.push(`stale write accepted after ${sequence.join(" -> ")}`);
-          if (fresh && result.changed) expected = next;
-        } catch (e) {
-          if (fresh || !/changed since preview/.test(e.message))
-            failures.push(`${e.message} after ${sequence.join(" -> ")}`);
+test(
+  "enumerated preview and apply orderings preserve every successful edit",
+  { timeout: 30_000 },
+  (t) => {
+    const { path } = fixture(t);
+    const failures = [];
+    const events = ["preview A", "preview B", "apply A", "apply B", "external edit"];
+    function walk(sequence, depth, state = { text: "{}", previews: {}, expected: {} }) {
+      writeFileSync(path, state.text);
+      const previews = { ...state.previews };
+      let expected = state.expected;
+      const event = sequence.at(-1);
+      if (event) {
+        const [operation, actor] = event.split(" ");
+        if (operation === "preview") {
+          const snapshot = readConfiguration(path);
+          const options =
+            actor === "A"
+              ? { "enable-modifier": ["swarmail"] }
+              : { "disable-skill": ["hr-read-reddit"] };
+          previews[actor] = { snapshot, next: changeSelection(snapshot.config, options, path) };
+        } else if (operation === "external") {
+          expected = { ...expected, custom: "external edit preserved" };
+          writeFileSync(path, JSON.stringify(expected));
+        } else if (previews[actor]) {
+          const { snapshot, next } = previews[actor];
+          const fresh = readConfiguration(path).revision === snapshot.revision;
+          try {
+            const result = writeConfiguration(snapshot, next, snapshot.revision);
+            if (!fresh) failures.push(`stale write accepted after ${sequence.join(" -> ")}`);
+            if (fresh && result.changed) expected = next;
+          } catch (e) {
+            if (fresh || !/changed since preview/.test(e.message))
+              failures.push(`${e.message} after ${sequence.join(" -> ")}`);
+          }
         }
+        if (JSON.stringify(JSON.parse(readFileSync(path, "utf8"))) !== JSON.stringify(expected))
+          failures.push(`successful edit lost after ${sequence.join(" -> ")}`);
       }
-      if (JSON.stringify(JSON.parse(readFileSync(path, "utf8"))) !== JSON.stringify(expected))
-        failures.push(`successful edit lost after ${sequence.join(" -> ")}`);
+      const nextState = { text: readFileSync(path, "utf8"), previews, expected };
+      if (depth) for (const event of events) walk([...sequence, event], depth - 1, nextState);
     }
-    const nextState = { text: readFileSync(path, "utf8"), previews, expected };
-    if (depth) for (const event of events) walk([...sequence, event], depth - 1, nextState);
-  }
-  walk([], 4);
-  assert.deepEqual(failures, []);
-});
+    walk([], 4);
+    assert.deepEqual(failures, []);
+  },
+);
 
 test(
   "symlink config is rejected without replacing its target",

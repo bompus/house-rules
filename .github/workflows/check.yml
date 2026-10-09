@@ -8,9 +8,14 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: check-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   check:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -32,13 +37,15 @@ jobs:
         run: npm run check:package -- --bun
       - name: Skill scripts
         run: bun test skills/
-      - name: Lint
-        run: npx --yes oxlint@1.85.0 .
-      - name: Format
-        run: npx --yes oxfmt@0.70.0 --check .
+      - parallel:
+          - name: Lint
+            run: npx --yes oxlint@1.85.0 .
+          - name: Format
+            run: npx --yes oxfmt@0.70.0 --check .
 
   windows:
     runs-on: windows-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
