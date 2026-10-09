@@ -53,6 +53,20 @@ describe("usage-by-model", () => {
     ).toBeCloseTo(2.5075, 6);
   });
 
+  test("the largest exceeded context tier applies whatever the list order", () => {
+    const price = {
+      input: 1,
+      output: 1,
+      tiers: [
+        { input: 3, output: 3, cache_read: 3, tier: { type: "context", size: 200_000 } },
+        { input: 2, output: 2, cache_read: 2, tier: { type: "context", size: 100_000 } },
+      ],
+    };
+    expect(
+      requestCost(price, { fresh: 0, output: 0, cacheRead: 1_000_000, cacheWrite: 0 }),
+    ).toBeCloseTo(3, 6);
+  });
+
   test("Claude streamed duplicates count once, advisor calls split out, synthetic replies skipped", () => {
     const dir = mkdtempSync(join(tmpdir(), "usage-claude-"));
     mkdirSync(join(dir, "p"));

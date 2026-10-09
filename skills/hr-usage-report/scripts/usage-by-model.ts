@@ -45,9 +45,12 @@ export function priceFor(prices: Prices, model: string, provider?: string): Pric
 export function requestCost(price: PriceEntry, r: Tokens): number {
   const ctx = r.fresh + r.cacheRead + r.cacheWrite;
   let rate: Rate = price;
+  // The largest exceeded tier applies, whatever order the price list gives.
+  let size = -1;
   for (const tier of price.tiers ?? []) {
-    if (tier.tier.type === "context" && ctx > tier.tier.size) {
+    if (tier.tier.type === "context" && ctx > tier.tier.size && tier.tier.size > size) {
       rate = tier;
+      size = tier.tier.size;
     }
   }
   const cr = rate.cache_read ?? rate.input * 0.1;
@@ -350,6 +353,14 @@ function arg(args: string[], name: string): string | undefined {
   return i >= 0 ? args[i + 1] : undefined;
 }
 
+async function fetchPrices(): Promise<unknown> {
+  const res = await fetch("https://models.dev/api.json");
+  if (!res.ok) {
+    throw new Error(`models.dev price list returned ${res.status}; pass --prices <file>`);
+  }
+  return res.json();
+}
+
 async function main(args: string[]) {
   const since = arg(args, "--since")
     ? Date.parse(arg(args, "--since")!)
@@ -360,9 +371,7 @@ async function main(args: string[]) {
   const providers = (arg(args, "--providers") ?? "claude,codex,opencode").split(",");
   const pricePath = arg(args, "--prices");
   const prices = (
-    pricePath
-      ? JSON.parse(readFileSync(pricePath, "utf8"))
-      : await (await fetch("https://models.dev/api.json")).json()
+    pricePath ? JSON.parse(readFileSync(pricePath, "utf8")) : await fetchPrices()
   ) as Prices;
   const home = homedir();
   const reqs = [

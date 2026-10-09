@@ -28,7 +28,7 @@ export function check(data: ReportData): string[] {
   // a fourth hue does not, so further series must be a dashed reference or a separate chart.
   if (colored.length > 3) {
     errors.push(
-      `at most 3 colored series (got ${colored.length}); mark the rest "reference": true or split the chart`,
+      `at most 3 colored series (got ${colored.length}); mark one more "reference": true or put the rest in a separate report`,
     );
   }
   if (entries.filter(([, s]) => s.reference).length > 1) {

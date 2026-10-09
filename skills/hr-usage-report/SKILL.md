@@ -65,10 +65,11 @@ embedded, and falls back to a dark surface. `assets/example-report.json` uses
 every section type.
 
 The data file declares `series` once, so each model keeps one color across
-charts: up to three colored series with slots 0 to 2, and at most one
-`"reference": true` series drawn dashed and neutral. The renderer rejects a
-fourth colored series because no fourth hue passes the color-vision check on
-the dark surface against the other three; split the chart instead.
+every chart in the report: up to three colored series with slots 0 to 2, and at
+most one `"reference": true` series drawn dashed and neutral. The renderer
+rejects a fourth colored series because no fourth hue passes the color-vision
+check on the dark surface against the other three. Compare more models in a
+second report file.
 
 Section types:
 
