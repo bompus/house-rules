@@ -19,6 +19,12 @@ test("each expectation passes its intended reply and fails the others", () => {
       {},
       true,
     ],
+    [
+      "continue",
+      "TOOL_CALL: run tests\nI am not continuing because this session is complete.",
+      {},
+      false,
+    ],
     ["offer", offer, {}, true],
     ["offer", `TOOL_CALL: Bash migrate\n${offer}`, {}, false],
     ["offer", offer, { coded: true }, false],
