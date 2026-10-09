@@ -26,6 +26,35 @@ Use [cgroup swap and zswap accounting](https://www.kernel.org/doc/html/latest/ad
 from other jobs. These occupancy values do not measure activity by themselves.
 Record missing counters and preserve the run plan's declared pressure criteria.
 
+## Process attribution
+
+Prefer `pidstat -u -r -d -p ALL 1 20` for the standard Linux process view.
+For receipts that retain PID birth identity, use the bundled collector:
+
+```sh
+python3 scripts/process-attribution.py --seconds 20 --output /disk/path/receipt.json
+```
+
+Run from the skill directory. Linux receipts contain raw one-second snapshots
+and CPU deltas ranked by busy cores, with process name, parent PID, birth ticks,
+RSS pages and unmatched boundary counts. They omit command arguments.
+The collector uses its own `/proc/self/status` `VmHWM` for peak RSS;
+`ru_maxrss` can retain a launcher's inherited high-water mark.
+It records observer CPU and scan duration. Include those costs in the declared
+measurement budget; no negligible-impact claim follows from successful collection.
+
+On Windows, `scripts/process-attribution.ps1` accepts mandatory `OutputPath`
+and `StopPath` arguments. It saves process PID, start time, name and cumulative
+CPU, plus host activity and observer CPU/working set. Match PID and start time
+before computing deltas. It stops when the stop file exists or after 120 samples;
+choose a fresh stop path. Use the host's approved PowerShell invocation without
+changing execution policy.
+
+Neither collector stops jobs, takes a lock or grants admission. Boundary samples
+miss processes that start and exit between them; unreadable processes are counted
+as missing. CPU contributors explain observed activity, not whether it changed
+application latency. Keep host/resource gates and owner coordination separate.
+
 ## Scheduling controls
 
 These Linux controls change resource allocation under competition; they do not
