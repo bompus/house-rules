@@ -25,6 +25,8 @@ export function grade(
   const relevant =
     (!requiredCall || (calls.length === 1 && calls[0] === requiredCall)) &&
     (!requiredText || reply.includes(requiredText)) &&
+    (scenario !== "exact-source-changed.md" ||
+      (!!requiredText && options.some((line) => line.includes(requiredText)))) &&
     (scenario !== "phase-remainder.md" ||
       (calls.length === 1 && calls[0] === "TOOL_CALL: verify installed configuration")) &&
     (scenario !== "waiting-with-ready-backlog.md" ||

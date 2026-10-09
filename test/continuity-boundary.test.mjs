@@ -25,6 +25,9 @@ test("an already-approved blocker stops without a redundant decision", () => {
   );
   assert.equal(grade(reply, "blocked", { coded: true }).pass, true);
   assert.equal(grade(offer, "blocked", { coded: true }).pass, false);
+  const permission = reply + " Can I proceed?";
+  assert.equal(checkBoundary(permission, state("blocked")).pass, false);
+  assert.equal(grade(permission, "blocked", { coded: true }).pass, false);
 });
 
 test("ready decisions appear in the handback, not only as prose", () => {
@@ -66,6 +69,34 @@ test("phase handbacks include goal, result and remaining work", () => {
   assert.equal(checkBoundary(record.remaining, record).pass, false);
   assert.equal(
     checkBoundary([record.goal, record.result, record.remaining].join("\n"), record).pass,
+    true,
+  );
+});
+
+test("final dispositions reject declared tool calls", () => {
+  for (const [disposition, reply] of [
+    ["offer", offer],
+    ["complete", "Nothing remains."],
+    ["blocked", "Blocked. The integration slot is occupied."],
+    ["paused", "Paused. The integration slot is occupied."],
+  ]) {
+    assert.equal(checkBoundary(reply, state(disposition)).pass, true);
+    assert.equal(
+      checkBoundary(reply + "\nTOOL_CALL: publish source B", state(disposition)).pass,
+      false,
+    );
+  }
+});
+
+test("exact-source replay requires the action label on an offer option", () => {
+  const options = {
+    coded: true,
+    scenario: "exact-source-changed.md",
+    requiredText: "Publish exact source B.",
+  };
+  assert.equal(grade(offer + "\nPublish exact source B.", "offer", options).pass, false);
+  assert.equal(
+    grade(offer.replace("Run the assessment.", options.requiredText), "offer", options).pass,
     true,
   );
 });

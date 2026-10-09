@@ -4,7 +4,9 @@ export const DISPOSITIONS = ["continue", "offer", "blocked", "complete", "paused
 export function replyFacts(reply, coded = false) {
   return {
     tool: /^\s*TOOL_CALL\b/m.test(reply),
-    asks: /\b(shall I|should I|want me to|would you like|let me know)\b/i.test(reply),
+    asks: /\b(shall I|should I|can I|may I|could I|want me to|would you like|let me know)\b/i.test(
+      reply,
+    ),
     done: /nothing (else )?(remains|is left|left)/i.test(reply),
     offer: coded
       ? /Question\s*1/i.test(reply) &&
@@ -41,6 +43,7 @@ export function checkBoundary(reply, state) {
     return { pass: false, issues: ["The handback is empty."] };
   }
   const facts = replyFacts(reply, true);
+  if (facts.tool) issues.push("A final handback cannot declare a tool call.");
   if (state.disposition === "continue") {
     issues.push(
       "Authorized ready work remains. Reconcile the record and continue only within existing authorization.",
