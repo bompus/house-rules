@@ -6,9 +6,9 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## 0.11.0 - 2026-10-09
 
-- First npm publication of `@bompus/house-rules`, with the `house-rules` CLI,
-  bundled rules, skills and docs, and trusted publishing triggered by a GitHub
-  release.
+- First npm publication of `@bompus/house-rules`, with the `house-rules` CLI
+  and bundled rules, skills and docs. Later versions publish from a GitHub
+  release through npm trusted publishing.
 
 - Upgrade note: `--out` now also writes `house-rules-references/` beside the
   rules file, and the written rules link into it. Keep that directory with any

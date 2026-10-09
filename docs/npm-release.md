@@ -3,7 +3,8 @@
 The package name is `@bompus/house-rules`; the executable is `house-rules`.
 It has no runtime dependencies or install hooks. Installing the package does
 not install skills into an agent host. Composition writes the requested rules
-file, its `house-rules-references/` directory and any `--skills-out` directory.
+file, its `house-rules-references/` directory when the rules include reference
+procedures, and any `--skills-out` directory.
 
 Keep the `package.json` version, changelog version and `v<version>` tag
 identical.

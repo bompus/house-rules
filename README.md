@@ -151,8 +151,8 @@ node compose.mjs --config ~/.config/house-rules/house-rules.json \
 
 To recompose later, move or remove the old `composed-skills` directory first,
 because `--skills-out` must be empty or absent. `compose.mjs` writes the rules
-file, a `house-rules-references/` directory beside it (or at `--references-out`),
-and `--skills-out` when given. It never deletes anything.
+file, a `house-rules-references/` directory beside it (or at `--references-out`)
+when the rules include reference procedures, and `--skills-out` when given. It never deletes anything.
 
 When distributing a rules-only output, carry this checkout's `LICENSE` and
 `THIRD_PARTY_NOTICES.md` alongside it. Copy them into an explicit destination
