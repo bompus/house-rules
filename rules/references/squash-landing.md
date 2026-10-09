@@ -19,7 +19,7 @@ the review body too: findings outside the diff arrive there, not as threads.
 During integration, never switch, reset or remove the session's own checkout: no
 `checkout` or `switch` to another ref, no `reset` or branch force-move, and no
 `worktree remove` on it. Updating the default branch it has checked out
-(`merge --squash`, `merge --ff-only`, or `pull --ff-only` after a remote merge)
+(`merge --squash`, or `merge --ff-only` to the fetched remote head after a remote merge)
 under the fast-forward conditions in § Landing is expected; report other paths
 to their owners.
 

@@ -4,6 +4,11 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- The landing procedure now updates a default branch checked out in another
+  worktree with `git merge --ff-only` to the fetched, verified remote head
+  instead of `git pull --ff-only`. A concurrent fetch in a shared repository
+  can rewrite `FETCH_HEAD` and make the pull fail.
+
 ## 0.11.0 - 2026-10-09
 
 - First npm publication of `@bompus/house-rules`, with the `house-rules` CLI

@@ -23,10 +23,13 @@ After integration:
 - Fetch, then bring the local default branch current. When it is clean,
   strictly behind and not checked out elsewhere, fast-forward it. When another
   worktree has it checked out and you know no session or running job is using
-  that worktree (your own main checkout, for example), run `git pull --ff-only`
-  there; unrelated uncommitted files may stay. When you cannot tell, treat it
-  as in use. Confirm the local and fetched remote heads match.
-- If the default branch is diverged, on another branch, in use, or the pull
+  that worktree (your own main checkout, for example), run
+  `git merge --ff-only <sha>` there with the remote head you just fetched and
+  verified; unrelated uncommitted files may stay. Avoid `git pull` there: a
+  fetch by another process can rewrite the shared `FETCH_HEAD` mid-pull and
+  fail it with "Cannot fast-forward to multiple branches". When you cannot
+  tell, treat it as in use. Confirm the local and fetched remote heads match.
+- If the default branch is diverged, on another branch, in use, or the merge
   refuses because local edits would be overwritten, leave it and report its
   path and the blocker. Never merge, reset, stash or switch branches to make it
   match, and never update other sessions' worktrees or separate clones.
