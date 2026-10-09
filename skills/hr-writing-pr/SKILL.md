@@ -83,8 +83,16 @@ verification details, within the repository's required template. Explain the
 result without repeating the table's numbers. Keep the relevant checks and
 outcomes visible; collapse long commands or supporting detail when useful.
 Required scope or approval sections stay, with only the justification and links
-the reviewer needs. Use visuals when they explain behavior better than text;
-numeric comparisons usually need only a table.
+the reviewer needs.
+
+For material measured performance changes, prefer a compact chart alongside
+the exact result table when it makes comparisons easier to scan. Skip charts
+that add no information, such as a single small change. Preview a proposed
+visual with the user before publishing a new visual style. Use labeled units,
+zero-based bar axes, readable contrast and meaningful precision. Show the
+workload and material limits beside it; a synthetic benchmark is not a
+production or UI speedup. Keep the table or equivalent text accessible, and
+attach PR-only graphics without committing them to the product repository.
 
 Scale structure to the change. Omit empty optional sections, placeholder text, guessed risk scores or review times, and coverage percentages that were not measured. Complete a required checklist with this PR's specifics rather than omitting it, and mark non-applicable items N/A with a reason. Preserve required template sections and mark unavailable evidence honestly.
 
