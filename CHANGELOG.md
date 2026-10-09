@@ -4,6 +4,10 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Before landing a changed benchmark evidence reader, run it over the saved
+  archive after integrating the base branch and compare its accepted and
+  excluded records with the frozen reader's.
+
 - Put performance results before lengthy verification details in pull requests.
   Keep required template sections, collapse supporting commands and avoid
   repeating result tables in prose. Prefer useful performance charts beside exact

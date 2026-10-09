@@ -233,7 +233,11 @@ stages against the declared plan.
 Recompute qualification from recorded raw counters and preset limits; an accepted
 summary or changed label is insufficient. Reject missing, duplicate or
 misclassified required observations. When an evidence reader exists, put these
-checks and focused corruption regressions there.
+checks and focused corruption regressions there. After a rebase or merge
+touches the reader or a check it imports, run the integrated reader over the
+saved archive before landing, and compare its accepted and excluded records
+with the frozen reader's. A shared check changed on the base branch can reject
+records that the frozen reader accepted.
 
 Record memory by what it measures. Whole-process peak RSS includes startup,
 inputs and dependencies. Heap snapshots describe retained objects; allocation
