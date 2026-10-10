@@ -12,4 +12,5 @@ footers. Where a host has a setting that turns attribution off, set it.
 When the target repository's contribution guidelines or pull request template
 ask for agent or model disclosure, give exactly what they ask for, in the place
 they ask for it, and nothing beyond it. The rule covers credit nobody asked
-for; it does not override a maintainer's stated requirement.
+for; it does not override a disclosure requirement in those guidelines or that
+template.
