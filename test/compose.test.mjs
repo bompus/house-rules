@@ -22,6 +22,22 @@ test("a replacement keeps the section's position and drops the old text", () => 
   assert.equal(out.includes(original.split("\n").slice(2).join("\n")), false);
 });
 
+test("every version of the Offers section tells the agent to queue a new decision behind stacked offers", () => {
+  const dir = join(root, "rules/modifiers");
+  const versions = [{ source: "core", text: core }];
+  for (const file of readdirSync(dir).filter((f) => f.endsWith(".md"))) {
+    const { meta, body } = parseFragment(readFileSync(join(dir, file), "utf8"), file);
+    if (meta.replaces === "Offers") versions.push({ source: file, text: body });
+  }
+  assert.ok(versions.length > 1, "expected a modifier that replaces Offers");
+  for (const { source, text } of versions)
+    assert.match(
+      text.replace(/\s+/g, " "),
+      /three or more offers are open and unanswered, do not present another one/,
+      source,
+    );
+});
+
 test("several fragments after one section keep their configured order", () => {
   const out = compose(core, [
     frag({ after: "Landing" }, "## First"),

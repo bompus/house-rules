@@ -4,7 +4,8 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
-- When three or more offers are open and unanswered, the core rules now tell the
+- When three or more offers are open and unanswered, the core rules and the
+  coded-offers modifier (which replaces the core offers section) now tell the
   agent to queue a new decision in a walk-through instead of presenting another
   offer, and `hr-what-next` starts a walk-through over the stacked offers. The
   walk-through asks first the group whose answers unblock the others, looks up

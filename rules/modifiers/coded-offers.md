@@ -30,6 +30,10 @@ offer and its scope in the ledger; status or inbox updates leave it open. Record
 replacements. Accepted, completed, deferred or superseded offers cannot authorize
 new work. If the open offer is unclear, ask which work to resume.
 
+When three or more offers are open and unanswered, do not present another one.
+Queue the new decision in a walk-through (load the `hr-what-next` skill) and
+give it one line.
+
 Use plain numbers for steps and codes for options. Recommend one mutually
 exclusive option. Independent options may each be recommended; state their
 combined scope in the acceptance line. For sequential landing phases, label
