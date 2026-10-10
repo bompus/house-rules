@@ -15,9 +15,9 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   when a repository's contribution guidelines or pull request template ask for
   agent or model disclosure, give exactly what they ask for, where they ask for
   it. When models are asked for, the disclosure names each model that did the
-  work; a stronger model of the same provider that reviewed or advised on
-  another's work is named first, and models that cannot be ranked follow in the
-  order they worked.
+  work; a model in a higher tier of the same provider's published tiers that
+  reviewed or advised on another's work is named first, and models those tiers
+  do not rank follow in the order they worked.
   Unrequested credit lines stay out. Before this, a template line such as
   "if you used an agent, end with the model and harness" conflicted with the
   rule and had to be skipped.
