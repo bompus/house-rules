@@ -14,9 +14,10 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 - The `no-attribution` modifier and `hr-writing-pr` now make one exception:
   when a repository's contribution guidelines or pull request template ask for
   agent or model disclosure, give exactly what they ask for, where they ask for
-  it. The disclosure names each model that did the work; a stronger model of
-  the same provider that reviewed or advised on another's work is named first,
-  and models that cannot be ranked follow in the order they worked.
+  it. When models are asked for, the disclosure names each model that did the
+  work; a stronger model of the same provider that reviewed or advised on
+  another's work is named first, and models that cannot be ranked follow in the
+  order they worked.
   Unrequested credit lines stay out. Before this, a template line such as
   "if you used an agent, end with the model and harness" conflicted with the
   rule and had to be skipped.

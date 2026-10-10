@@ -11,6 +11,6 @@ footers. Where a host has a setting that turns attribution off, set it.
 
 When the target repository's contribution guidelines or pull request template
 ask for agent or model disclosure, give exactly what they ask for, where they
-ask for it, and nothing beyond it. Name each model that did the work. A stronger
-model of the same provider that reviewed or advised on another's work goes first
-(Opus reviewing Sonnet names both, Opus first); unranked models, in work order.
+ask for it, and nothing beyond it. If models are asked for, name each that did
+the work; a stronger one of the same provider that reviewed or advised goes
+first (Opus reviewing Sonnet names both, Opus first); unranked: in work order.
