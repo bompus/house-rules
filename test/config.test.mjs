@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import {
   existsSync,
@@ -9,7 +10,7 @@ import {
   symlinkSync,
   writeFileSync,
 } from "node:fs";
-import { scratch } from "./fixture.mjs";
+import { scratch, panelPreferences as preferences } from "./fixture.mjs";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
@@ -31,6 +32,164 @@ function fixture(t, config = {}) {
   writeFileSync(path, JSON.stringify(config));
   return { dir, path };
 }
+
+test("panel preview and apply preserve selections, custom fields and ordered alternatives", (t) => {
+  const original = {
+    modifiers: ["coded-offers"],
+    skills: { include: ["hr-what-next"], exclude: ["unknown-retained"], custom: 12 },
+    custom: { retain: true },
+    panel: { legacy: "not silently adopted" },
+  };
+  const { dir, path } = fixture(t, original);
+  const input = join(dir, "panel.json");
+  writeFileSync(input, JSON.stringify(preferences));
+  const args = ["--panel-file", input];
+  const preview = report(path, args);
+  assert.deepEqual(preview.panel.before, original.panel);
+  assert.deepEqual(preview.panel.after, preferences);
+  assert.equal(preview.panel.readiness, "unverified");
+  assert.deepEqual(preview.changes, []);
+  assert.equal(readFileSync(path, "utf8"), JSON.stringify(original));
+  assert.match(cli(["preview", "--config", path, ...args]), /Panel section replacement/);
+  const apply = JSON.parse(
+    cli([
+      "set",
+      "--config",
+      path,
+      "--json",
+      ...args,
+      "--apply",
+      "--expect",
+      preview.revision,
+      "--expect-panel",
+      preview.panel.revision,
+    ]),
+  );
+  assert.deepEqual(JSON.parse(readFileSync(path, "utf8")), { ...original, panel: preferences });
+  assert.equal(apply.applied.changed, true);
+  const mtime = statSync(path).mtimeMs;
+  assert.equal(
+    JSON.parse(
+      cli([
+        "set",
+        "--config",
+        path,
+        "--json",
+        ...args,
+        "--apply",
+        "--expect",
+        apply.revision,
+        "--expect-panel",
+        preview.panel.revision,
+      ]),
+    ).applied.changed,
+    false,
+  );
+  assert.equal(statSync(path).mtimeMs, mtime);
+  const reversed = structuredClone(preferences);
+  reversed.roles[0].candidates.reverse();
+  writeFileSync(input, JSON.stringify(reversed));
+  const reorder = report(path, args);
+  assert.equal(reorder.panel.changed, true);
+  assert.throws(
+    () =>
+      cli([
+        "set",
+        "--config",
+        path,
+        ...args,
+        "--apply",
+        "--expect",
+        apply.revision,
+        "--expect-panel",
+        preview.panel.revision,
+      ]),
+    /panel input changed/,
+  );
+  assert.deepEqual(reorder.panel.after.roles[0].candidates, [
+    "review-alternative",
+    "review-primary",
+  ]);
+});
+
+test("panel input errors and stale applies preserve bytes, mtime and locks", (t) => {
+  const { dir, path } = fixture(t);
+  const input = join(dir, "panel.json");
+  const before = readFileSync(path, "utf8");
+  const mtime = statSync(path).mtimeMs;
+  for (const content of ["{", JSON.stringify({ ...preferences, version: 99 })]) {
+    writeFileSync(input, content);
+    assert.throws(
+      () =>
+        cli([
+          "set",
+          "--config",
+          path,
+          "--panel-file",
+          input,
+          "--apply",
+          "--expect",
+          readConfiguration(path).revision,
+          "--expect-panel",
+          createHash("sha256").update(content).digest("hex"),
+        ]),
+      /invalid JSON|panel.version/,
+    );
+    assert.equal(readFileSync(path, "utf8"), before);
+    assert.equal(statSync(path).mtimeMs, mtime);
+    assert.equal(existsSync(`${path}.lock`), false);
+  }
+  writeFileSync(input, JSON.stringify(preferences));
+  const preview = report(path, ["--panel-file", input]);
+  writeFileSync(path, JSON.stringify({ custom: "newer writer" }));
+  const newer = readFileSync(path, "utf8");
+  assert.throws(
+    () =>
+      cli([
+        "set",
+        "--config",
+        path,
+        "--panel-file",
+        input,
+        "--apply",
+        "--expect",
+        preview.revision,
+        "--expect-panel",
+        preview.panel.revision,
+      ]),
+    /changed since preview/,
+  );
+  assert.equal(readFileSync(path, "utf8"), newer);
+  assert.equal(existsSync(`${path}.lock`), false);
+  for (const command of ["catalog", "status", "validate"])
+    assert.throws(() => cli([command, "--config", path, "--panel-file", input]), /selection flags/);
+  assert.throws(
+    () => cli(["preview", "--config", path, "--panel-file", input, "--rules"]),
+    /change report/,
+  );
+  if (process.platform !== "win32") {
+    const link = join(dir, "panel-link.json");
+    symlinkSync(input, link);
+    assert.throws(() => report(path, ["--panel-file", link]), /regular file/);
+  }
+});
+
+test("panel preview does not create config, enable a skill or validate legacy panel data", (t) => {
+  const { dir, path } = fixture(t, { panel: { version: 99, custom: "keep" } });
+  cli(["validate", "--config", path]);
+  const before = JSON.parse(readFileSync(path, "utf8"));
+  const preview = report(path, ["--questions", "coded"]);
+  cli(["set", "--config", path, "--questions", "coded", "--apply", "--expect", preview.revision]);
+  assert.deepEqual(JSON.parse(readFileSync(path, "utf8")).panel, before.panel);
+  const input = join(dir, "panel.json");
+  writeFileSync(input, JSON.stringify(preferences));
+  const missing = join(dir, "new", "config.json");
+  const proposed = report(missing, ["--panel-file", input]);
+  assert.equal(existsSync(join(dir, "new")), false);
+  assert.equal(proposed.exists, false);
+  assert.equal(proposed.revision, "missing");
+  assert.deepEqual(proposed.changes, []);
+});
 
 test("selection preview, apply and repeated apply preserve custom configuration and output", (t) => {
   const original = {

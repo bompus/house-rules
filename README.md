@@ -303,6 +303,10 @@ README has the breakdown and limits.
 
 ## Development
 
+Optional [panel preferences](docs/configuration.md#optional-panel-preferences)
+can be previewed and saved through configuration commands. They store portable
+aliases and policy; provider discovery and model execution remain separate.
+
 ```bash
 node --test test/*.test.mjs   # composer and eval grader (or: bun test test/)
 bun test skills/    # skill scripts

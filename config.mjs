@@ -27,6 +27,7 @@ import {
   splitSections,
 } from "./composition.mjs";
 import { renderConfig, renderHelp } from "./config-view.mjs";
+import { changePanelPreferences } from "./panel.mjs";
 
 const COMMANDS = ["catalog", "status", "validate", "preview", "set"];
 const TOGGLES = ["enable-modifier", "disable-modifier", "enable-skill", "disable-skill"];
@@ -284,12 +285,16 @@ export function configCommand(argv) {
       questions: { type: "string" },
       apply: { type: "boolean" },
       expect: { type: "string" },
+      "panel-file": { type: "string" },
+      "expect-panel": { type: "string" },
       ...Object.fromEntries(TOGGLES.map((key) => [key, { type: "string", multiple: true }])),
     },
   });
   if (values.help) return console.log(renderHelp());
   const changing = Boolean(
-    values.questions !== undefined || TOGGLES.some((key) => values[key]?.length),
+    values.questions !== undefined ||
+    values["panel-file"] !== undefined ||
+    TOGGLES.some((key) => values[key]?.length),
   );
   if (
     (changing || values.apply || values.expect !== undefined) &&
@@ -298,10 +303,31 @@ export function configCommand(argv) {
     throw new Error("selection flags belong to config set or preview");
   if (values.apply && command !== "set") throw new Error("--apply belongs to config set");
   if (values.expect !== undefined && !values.apply) throw new Error("--expect requires --apply");
+  if (values["expect-panel"] !== undefined && (!values.apply || values["panel-file"] === undefined))
+    throw new Error("--expect-panel requires --apply and --panel-file");
   if (values.rules && values.json) throw new Error("choose --rules or --json, not both");
   if (values.rules && command !== "preview") throw new Error("--rules belongs to config preview");
+  if (values.rules && values["panel-file"] !== undefined)
+    throw new Error("--panel-file requires a change report; omit --rules");
   const snapshot = readConfiguration(configurationPath(values.config));
-  const next = changing ? changeSelection(snapshot.config, values, snapshot.path) : snapshot.config;
+  let next = changing ? changeSelection(snapshot.config, values, snapshot.path) : snapshot.config;
+  let panelRevision;
+  if (values["panel-file"] !== undefined) {
+    const path = resolve(values["panel-file"]);
+    if (!lstatSync(path).isFile())
+      throw new Error("panel input must be a regular file, not a symlink or directory");
+    const text = readFileSync(path, "utf8");
+    panelRevision = revisionOf(text);
+    if (values.apply && values["expect-panel"] !== panelRevision)
+      throw new Error("panel input changed or --expect-panel missing; preview again");
+    let preferences;
+    try {
+      preferences = JSON.parse(text.replace(/^\uFEFF/, ""));
+    } catch {
+      throw new Error("invalid JSON in panel input");
+    }
+    next = changePanelPreferences(next, preferences);
+  }
   const report = selectionReport(next, snapshot.path);
   const changes = selectionChanges(snapshot.config, next);
   const applied = values.apply ? writeConfiguration(snapshot, next, values.expect) : null;
@@ -312,6 +338,18 @@ export function configCommand(argv) {
     revision: applied?.revision ?? snapshot.revision,
     changes,
     applied,
+    ...(values["panel-file"] === undefined
+      ? {}
+      : {
+          panel: {
+            state: values.apply ? "configured" : "proposed",
+            revision: panelRevision,
+            before: snapshot.config.panel ?? null,
+            after: next.panel,
+            changed: JSON.stringify(snapshot.config.panel) !== JSON.stringify(next.panel),
+            readiness: "unverified",
+          },
+        }),
     ...report,
   };
   if (values.rules) return process.stdout.write(report.composedRules);

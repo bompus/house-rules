@@ -125,6 +125,74 @@ contradictory flags, malformed config and composition errors stop the command
 before it writes configuration. Older skill names need the
 [skill name upgrade](skill-names.md) before composition.
 
+## Optional panel preferences
+
+Use `--panel-file <json>` with `config preview` or `config set` to replace only
+the configuration's `panel` section. The input contains the complete preferences
+object, without a surrounding `panel` key. It must be a regular JSON file.
+
+```json
+{
+  "version": 1,
+  "profile": "balanced",
+  "roles": [
+    { "id": "correctness", "candidates": ["review-primary", "review-alternative"] },
+    { "id": "contrarian", "candidates": ["challenge-primary"] }
+  ],
+  "policy": {
+    "fallback": "approved-only",
+    "roundLimit": 1,
+    "meteredRoutes": "explicit-approval-required",
+    "distinctFamilies": true,
+    "excludeAuthorFamily": true,
+    "allowReducedPanel": false
+  }
+}
+```
+
+```bash
+node compose.mjs config preview --config <config-path> --panel-file <panel-json>
+node compose.mjs config set --config <config-path> --panel-file <panel-json> \
+  --apply --expect <reviewed-config-revision> --expect-panel <reviewed-input-revision>
+```
+
+Preview shows the entire previous and proposed panel section, including ordered
+alternatives. Explicit apply replaces that section; it does not merge role lists.
+Normal selection flags can accompany a panel replacement, with both changes
+covered by the same revision guard. `--rules` cannot accompany `--panel-file`
+because rule output would hide the panel replacement preview.
+Panel input has its own SHA-256 revision. Apply requires `--expect-panel` from
+the preview as well as the config revision, so an edited input file cannot
+silently replace reviewed preferences. A changed input requires another preview.
+
+Version 1 requires `version`, a non-empty ordered `roles` array and `policy`.
+Each role has a unique `id` and a non-empty ordered `candidates` array without
+duplicates. Role IDs and candidate aliases start with a lowercase letter, use
+only lowercase letters, digits and hyphens, and contain at most 64 characters.
+Aliases refer to future local bindings; they are not provider/model identifiers.
+The optional `profile` is `quick`, `balanced` or `deep`. It records a preference,
+not a measured performance tier or a seat-count default.
+
+Policy requires `fallback` (`none` or `approved-only`), a positive safe-integer
+`roundLimit`, and `meteredRoutes` (`included-only` or
+`explicit-approval-required`). Optional `distinctFamilies`, `excludeAuthorFamily`
+and `allowReducedPanel` are booleans. An omitted policy option is unspecified,
+not permission to bypass a host or project limit. Unknown fields and unsupported
+versions fail an explicit panel operation before configuration writes.
+
+The preview reports `proposed`; an explicit save reports `configured`.
+Both report readiness as `unverified`. This feature stores preferences only.
+It does not discover or resolve providers, verify quota or effective effort,
+enforce policy at runtime, enable a skill, change subscriptions or invoke models.
+Exact routes and effort choices belong to local bindings, outside this portable
+schema. Saving preferences does not authorize spending or waive review gates.
+
+Ordinary setup, composition and selection operations preserve existing `panel`
+data without adopting or validating it, including older unrelated uses of that
+key. Before replacing such data, review the full preview. Other selections and
+custom keys are retained. Credentials and provider configuration do not belong
+in the panel input. Input validation checks structure, not secret detection.
+
 ## Write safeguards
 
 Saving requires the revision reported by status or preview. A stale revision

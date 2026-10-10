@@ -17,6 +17,7 @@
     "rule-references.mjs",
     "config.mjs",
     "config-view.mjs",
+    "panel.mjs",
     "setup.mjs",
     "rules/",
     "skills/",

@@ -124,6 +124,10 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   local timezone. The optional effort-estimates modifier includes whole-task
   and running-job forecasts with consistent numeric progress counts.
 
+- Add optional versioned panel preferences through guarded configuration preview
+  and save. Ordered aliases and policy are stored without discovering providers,
+  changing existing presets or invoking models. Unrelated settings are preserved.
+
 - Require review of the final diff before submitting pull requests to external
   upstream projects; owned repositories and maintained forks keep their policies.
 

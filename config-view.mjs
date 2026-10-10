@@ -75,12 +75,15 @@ export function renderHelp() {
     "    --enable-modifier <name>    --disable-modifier <name>",
     "    --enable-skill <name>       --disable-skill <name>",
     "    --questions plain|coded|cards",
+    "    --panel-file <json>        Replace portable panel preferences (preview/set)",
+    "    --expect-panel <revision>  Require reviewed panel input when applying",
     "",
     "  Output",
     "    --config <path>   --json   --rules (preview only)",
     "",
     "  Repeat toggle flags to change several selections together.",
     "  Saving config does not regenerate output or connect agent hosts.",
+    "  Panel preferences do not discover providers, enable a skill or run models.",
     "",
   ].join("\n");
 }
@@ -124,12 +127,24 @@ export function renderConfig(report) {
       }
       if (!removed.length && !added.length) detail("Selection order changed.");
     }
+    if (report.panel) {
+      section(report.panel.changed ? "Panel section replacement" : "Panel section unchanged");
+      detail(`Panel input revision  ${report.panel.revision}`);
+      detail("Before");
+      for (const line of JSON.stringify(report.panel.before, null, 2).split("\n")) detail(line);
+      detail("After");
+      for (const line of JSON.stringify(report.panel.after, null, 2).split("\n")) detail(line);
+      detail(
+        `Preferences ${report.applied ? "configured" : "proposed"} only. Route access, effort and permissions are unverified.`,
+      );
+    }
     lines.push("");
     if (!report.applied) {
+      const panelGuard = report.panel ? ` --expect-panel ${report.panel.revision}` : "";
       detail(
         report.command === "set"
-          ? `To save, repeat with --apply --expect ${report.revision}`
-          : `To save, run config set with the same selection flags plus --apply --expect ${report.revision}`,
+          ? `To save, repeat with --apply --expect ${report.revision}${panelGuard}`
+          : `To save, run config set with the same selection flags plus --apply --expect ${report.revision}${panelGuard}`,
       );
       detail("Review personal rule overrides below before choosing a question format.");
     } else

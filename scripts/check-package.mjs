@@ -45,6 +45,7 @@ try {
     "skills/hr-what-next/references/reporting.md",
     "config.mjs",
     "config-view.mjs",
+    "panel.mjs",
     "setup.mjs",
     "rules/core.md",
     "LICENSE",
@@ -109,6 +110,33 @@ try {
     );
     assert.equal(setup.command, "status");
     assert.equal(setup.applied, null);
+    const panelInput = join(scratch, "panel.json");
+    writeFileSync(
+      panelInput,
+      JSON.stringify({
+        version: 1,
+        roles: [{ id: "review", candidates: ["primary"] }],
+        policy: { fallback: "none", roundLimit: 1, meteredRoutes: "included-only" },
+      }),
+    );
+    const panelPreview = JSON.parse(
+      run(
+        runtime,
+        [
+          join(installed, "compose.mjs"),
+          "config",
+          "preview",
+          "--json",
+          "--config",
+          config,
+          "--panel-file",
+          panelInput,
+        ],
+        scratch,
+      ),
+    );
+    assert.equal(panelPreview.panel.after.roles[0].candidates[0], "primary");
+    assert.equal(panelPreview.applied, null);
     assert(setup.skills.some((skill) => skill.explicitOnly));
     const output = join(scratch, `skills-${index}`);
     run(

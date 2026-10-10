@@ -7,3 +7,20 @@ export function scratch(t, prefix = "house-rules-") {
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   return dir;
 }
+
+export const panelPreferences = {
+  version: 1,
+  profile: "deep",
+  roles: [
+    { id: "correctness", candidates: ["review-primary", "review-alternative"] },
+    { id: "contrarian", candidates: ["challenge-primary"] },
+  ],
+  policy: {
+    fallback: "approved-only",
+    roundLimit: 1,
+    meteredRoutes: "explicit-approval-required",
+    distinctFamilies: true,
+    excludeAuthorFamily: true,
+    allowReducedPanel: false,
+  },
+};
