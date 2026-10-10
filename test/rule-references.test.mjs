@@ -292,6 +292,9 @@ test("agent-work references follow modifier selection and preserve default APIs 
   assert.match(linked.rules, /read \[the agent-work procedure\]\(resources\/multi-agent.md\)/);
   assert.match(linked.rules, /further\s+fixes do not reset that limit/);
   assert.match(linked.rules, /disconnected or resumable session/);
+  assert.match(inline.rules, /treat each finding as a claim/);
+  assert.match(linked.rules, /treat each finding as a claim/);
+  assert.match(linked.rules, /proposed\s+remedy is a suggestion/);
   assert.equal(
     composeConfiguration({ skills: { include: [] } }, dir, {
       referencesDirectory: "resources",

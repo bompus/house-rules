@@ -4,6 +4,13 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- The agent-work rule now treats each review finding as a claim: fix it when a
+  reproduced failure or a cited requirement confirms it, with the smallest
+  change that clears it, and answer an unconfirmed finding with the reason. A
+  reviewer's proposed remedy counts as a suggestion. Before, only the
+  pull-request follow-up skill said this; the rule for local model reviews said
+  to fix findings.
+
 - The local-timezone rule now names the host clock zone (`date +%Z`, or
   `Get-TimeZone` on Windows) as part of the session environment and requires
   checking it before reporting UTC or saying the zone is unknown.

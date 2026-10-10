@@ -20,8 +20,12 @@ never in prose for either. When no second reviewer runs, the user's direction
 is the only judgment backstop; say so instead of assuming review happened.
 Asking an advisor model is not a second review.
 
-After a model review, fix its findings and run the relevant checks. A fix
-that changes code logic permits a follow-up review; it does not require one.
+After a model review, treat each finding as a claim. Fix it when a reproduced
+failure (a test that fails before the fix, where one fits) or a cited
+requirement confirms it, with the smallest change that clears it; a reviewer's
+proposed remedy is a suggestion. Answer an unconfirmed finding with the reason.
+Run the relevant checks. A fix that changes code logic permits a follow-up
+review; it does not require one.
 Code logic includes control flow, data handling, interfaces, queries and values
 a program reads. Request a follow-up only for a named remaining risk that
 local checks cannot resolve. Batch known fixes first, then focus the review on

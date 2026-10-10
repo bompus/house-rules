@@ -21,8 +21,12 @@ constraints. Put mechanically enforceable standards in tooling; reserve style
 and judgment for review. The user's direction is the judgment backstop when
 no second reviewer runs. An advisor model is not a second review.
 
-After review, fix findings and run relevant checks. A logic change permits a
-follow-up review but does not require one. Request it only for a named risk
+After review, treat each finding as a claim. Fix it when a reproduced failure
+(a test that fails before the fix, where one fits) or a cited requirement
+confirms it, with the smallest change that clears it; a reviewer's proposed
+remedy is a suggestion. Answer an unconfirmed finding with the reason. Run
+relevant checks. A logic change permits a follow-up review but does not
+require one. Request it only for a named risk
 local checks cannot resolve. Record its scope and round limit first; further
 fixes do not reset that limit. At the limit, get the user's direction before
 another model round. Required repository checks and review gates still apply.
