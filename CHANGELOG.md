@@ -11,6 +11,7 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   confirmation, with no model calls. Catalog entries record model, effort, source,
   checked date, sample count, metric and limits, and write `unknown` for anything
   not recorded.
+- The guidance-audit and guidance-refresh skills now say "install" and "reinstall" where they said "restoration" for copying selected files from source into an installed location, so the wording matches what happens.
 - `hr-what-next` now has a walk-through mode: when asked to go through the backlog
   item by item, it shows one visual of the ranked backlog grouped by what each
   item waits on, asks one group of questions per reply with one combined accept

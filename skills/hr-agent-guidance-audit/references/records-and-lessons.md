@@ -46,7 +46,7 @@ or role owner; guidance points there. Distinguish explicit user preferences,
 temporary workarounds and model-performance choices. An adopted framework or
 runtime dependency needs the same record.
 
-Recheck affected overrides during upgrades, restoration, guidance audits or
+Recheck affected overrides during upgrades, reinstalls, guidance audits or
 model re-evaluation. Reopen model routing when aliases, effort levels, plan
 limits or observed quality/usage change. Compare current official documentation
 and effective runtime behavior. Record coverage; an installation drift check

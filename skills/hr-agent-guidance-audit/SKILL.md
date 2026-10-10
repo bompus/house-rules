@@ -78,9 +78,9 @@ settles it or the resolution would loosen a prohibition or safety rule.
 ## Verify and report
 
 Check links, invocation metadata and affected installer behavior. Run required
-checks and verify installed bytes where restoration is in scope; do not claim
-runtime loading from file equality alone. Follow the repository's integration
-and cleanup boundary.
+checks and verify installed bytes where installing the files is in scope; do
+not claim runtime loading from file equality alone. Follow the repository's
+integration and cleanup boundary.
 
 Report what was removed or simplified, why it was safe, checks performed and
 remaining limits. Give each finding its `file:line`, quoted evidence, problem

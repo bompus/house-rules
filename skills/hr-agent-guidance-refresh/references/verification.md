@@ -39,7 +39,7 @@ a probe pass.
 Follow the owning source's supported pin, generator and scoped installer when
 adoption is selected. Preserve account settings, exclusions, invocation policy,
 local patches and repository safeguards. Check destinations and repeat the
-scoped restoration to verify no further writes. Do not infer approval or
+scoped install to verify it writes nothing further. Do not infer approval or
 active-context loading from byte equality or an upstream commit.
 
 Record each layer's result separately. Unsupported refresh paths remain
