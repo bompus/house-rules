@@ -4,6 +4,13 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- `hr-code-review` now has a panel setup procedure and a small dated recommendation
+  catalog, loaded only when the user asks to set up a panel or for recommendations.
+  Setup lists routes through the host's read-only interface, asks only open
+  questions, previews the portable preferences and saves them only after
+  confirmation, with no model calls. Catalog entries record model, effort, source,
+  checked date, sample count, metric and limits, and write `unknown` for anything
+  not recorded.
 - `hr-what-next` now has a walk-through mode: when asked to go through the backlog
   item by item, it shows one visual of the ranked backlog grouped by what each
   item waits on, asks one group of questions per reply with one combined accept

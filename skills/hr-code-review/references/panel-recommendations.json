@@ -1,0 +1,49 @@
+{
+  "version": 1,
+  "reviewed": "2026-10-10",
+  "entries": [
+    {
+      "id": "opus-5-5-bug-hunt",
+      "profiles": ["balanced"],
+      "task": "Find planted bugs: 105 across two repositories, count fixed",
+      "model": "claude-opus-5-5",
+      "harness": "unknown",
+      "route": "unknown",
+      "efforts": [
+        { "effort": "medium", "fixed": 30.3, "listCostUsd": 15.68, "wallMinutes": 17.0 },
+        { "effort": "high", "fixed": 31.7, "listCostUsd": 22.25, "wallMinutes": 23.9 },
+        { "effort": "xhigh", "fixed": 36.0, "listCostUsd": 34.98, "wallMinutes": 42.5 }
+      ],
+      "sourceUrl": "https://bughunt.productcompass.pm/data/benchmark.json",
+      "checked": "2026-10-05",
+      "samples": "3 runs per effort, non-superseded rows",
+      "metric": "planted bugs fixed, mean of 3, out of 105",
+      "timeDefinition": "wall clock of runs that shared the machine",
+      "costDefinition": "list-rate API price, not subscription billing",
+      "limitations": "Counts planted bugs, not review quality on real changes; repeated attempts are not independent replications; recorded from the maintainer's benchmark notes and not fetched again when this entry was written",
+      "rationale": "Medium used about 30% less cost and 29% less time than high for 1.4 fewer bugs; xhigh found more bugs at much higher cost and time. Medium supports a balanced starting point, not equivalence",
+      "status": "current"
+    },
+    {
+      "id": "sonnet-5-5-bug-hunt",
+      "profiles": ["balanced"],
+      "task": "Find planted bugs: 105 across two repositories, count fixed",
+      "model": "claude-sonnet-5-5",
+      "harness": "unknown",
+      "route": "unknown",
+      "efforts": [
+        { "effort": "high", "fixed": 34.3, "listCostUsd": "unknown", "wallMinutes": "unknown" },
+        { "effort": "xhigh", "fixed": 36.0, "listCostUsd": "unknown", "wallMinutes": "unknown" }
+      ],
+      "sourceUrl": "https://bughunt.productcompass.pm/data/benchmark.json",
+      "checked": "2026-10-05",
+      "samples": "3 runs per effort, non-superseded rows",
+      "metric": "planted bugs fixed, mean of 3, out of 105",
+      "timeDefinition": "unknown",
+      "costDefinition": "unknown",
+      "limitations": "Same board limits as the Opus entry; cost and time were not recorded for these rows",
+      "rationale": "Found about as many planted bugs as the Opus rows at its two top efforts; suggest it only where the user allows that model and effort",
+      "status": "current"
+    }
+  ]
+}
