@@ -68,10 +68,11 @@ When the user asks to go through the backlog item by item, run it in groups:
 2. Put items in one group when one answer can cover them: the same owner, the
    same action or one dependency. Ask one group per reply, one numbered
    question per item with one combined acceptance line.
-3. Record each answer in the ledger before acting. `go` selects the
-   recommendation in the latest open group only.
-4. After the last group, show the visual again with what closed and what
-   still waits.
+3. Record each answer in the ledger before acting, then close that group's
+   offer. Show the visual again with the next group marked before asking it.
+   `go` selects the recommendation in the latest open group only.
+4. After the last group, show the visual with what closed and what still
+   waits.
 
 For a full audit, save a mapping from reviewed source records to items or
 reviewed context-only dispositions. If `hr-handoff` and its reconciliation
