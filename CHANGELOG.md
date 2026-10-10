@@ -4,6 +4,13 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- `panel-plan.mjs` now rejects a metered route under `meteredRoutes: included-only`
+  (it was accepted, and an approval was never needed) and treats `included-only`
+  as the stricter setting when layers combine, so a project or task layer can no
+  longer loosen a user's `included-only` to `explicit-approval-required`. An alias
+  such as `constructor` with no binding is now reported as unbound instead of
+  resolving through the object prototype. A review panel found both.
+
 - `hr-code-review` now bundles `scripts/panel-plan.mjs`, which resolves stored
   panel preferences and a user-owned bindings file into the seats a panel would
   run, with skipped candidates and named blockers, before any model is called.

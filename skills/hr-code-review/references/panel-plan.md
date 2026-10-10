@@ -45,11 +45,13 @@ cannot be excluded.
    with `--approve-project` equal to the file's SHA-256 revision; otherwise the
    plan is blocked, not silently reduced to the user layer.
 2. Policy only tightens: the lowest `roundLimit`, `fallback: none`,
-   `explicit-approval-required`, and either layer's `distinctFamilies` or
+   `meteredRoutes: included-only`, and either layer's `distinctFamilies` or
    `excludeAuthorFamily`. A reduced panel needs the user layer to allow it and no
    other layer to forbid it.
 3. A candidate is skipped, with a reason, when it has no binding, an unknown or
-   author family under strict policy, or an unapproved metered route. With
+   author family under strict policy, or a metered route (never allowed under
+   `included-only`; under `explicit-approval-required` only with
+   `--approve-metered <alias>`). With
    `fallback: none` only the first candidate of each role is tried.
 4. A role with no eligible candidate blocks the plan, or is dropped when a
    reduced panel is allowed. Distinct families are found by trying later

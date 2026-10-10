@@ -92,9 +92,9 @@ function combinePolicy(layers) {
   return {
     fallback: policies.some((p) => p.fallback === "none") ? "none" : "approved-only",
     roundLimit: Math.min(...policies.map((p) => p.roundLimit)),
-    meteredRoutes: policies.some((p) => p.meteredRoutes === "explicit-approval-required")
-      ? "explicit-approval-required"
-      : "included-only",
+    meteredRoutes: policies.some((p) => p.meteredRoutes === "included-only")
+      ? "included-only"
+      : "explicit-approval-required",
     distinctFamilies: policies.some((p) => p.distinctFamilies === true),
     excludeAuthorFamily: policies.some((p) => p.excludeAuthorFamily === true),
     allowReducedPanel:
@@ -158,7 +158,7 @@ export function resolvePanel(request) {
     const options = [];
     const candidates = policy.fallback === "none" ? role.candidates.slice(0, 1) : role.candidates;
     for (const name of candidates) {
-      const binding = bindings.aliases[name];
+      const binding = Object.hasOwn(bindings.aliases, name) ? bindings.aliases[name] : undefined;
       const reject = (reason) => rejected.push({ role: role.id, alias: name, reason });
       if (binding === undefined) reject("no binding for this alias");
       else if (strictFamilies && binding.families === undefined) reject("model family is unknown");
@@ -167,11 +167,9 @@ export function resolvePanel(request) {
         binding.families.some((f) => authorFamilies.includes(f))
       )
         reject("shares a model family with the author");
-      else if (
-        binding.metered === true &&
-        policy.meteredRoutes === "explicit-approval-required" &&
-        !metered.has(name)
-      )
+      else if (binding.metered === true && policy.meteredRoutes === "included-only")
+        reject("metered route is not allowed by an included-only policy");
+      else if (binding.metered === true && !metered.has(name))
         reject("metered route needs explicit approval");
       else
         options.push({

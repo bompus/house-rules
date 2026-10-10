@@ -155,6 +155,43 @@ test("metered routes need explicit approval and fallback none keeps one candidat
   assert.equal(resolve({ user: none }).ok, false);
 });
 
+test("included-only allows no metered route, even an approved one, and cannot be loosened by a layer", () => {
+  const metered = {
+    ...bindings,
+    aliases: {
+      ...bindings.aliases,
+      "review-alternative": { ...bindings.aliases["review-alternative"], metered: true },
+    },
+  };
+  const strict = {
+    ...preferences,
+    policy: { ...preferences.policy, meteredRoutes: "included-only" },
+  };
+  const approved = { metered: ["review-alternative"] };
+  const plan = resolve({ user: strict, bindings: metered, approvals: approved });
+  assert.equal(plan.ok, false);
+  assert.match(plan.rejected.at(-1).reason, /included-only/);
+  const loosened = resolve({
+    user: strict,
+    task: {
+      ...preferences,
+      policy: { ...preferences.policy, meteredRoutes: "explicit-approval-required" },
+    },
+    bindings: metered,
+    approvals: approved,
+  });
+  assert.equal(loosened.policy.meteredRoutes, "included-only");
+  assert.equal(loosened.ok, false);
+});
+
+test("an alias that is only an Object.prototype name has no binding", () => {
+  const user = { ...preferences, roles: [{ id: "review", candidates: ["constructor"] }] };
+  const plan = resolve({ user, bindings: { version: 1, aliases: {} }, authorFamilies: [] });
+  assert.equal(plan.ok, false);
+  assert.deepEqual(plan.seats, []);
+  assert.equal(plan.rejected[0].reason, "no binding for this alias");
+});
+
 test("project and task layers replace roles but cannot loosen the user's limits", () => {
   const loose = {
     ...preferences,
@@ -173,7 +210,11 @@ test("project and task layers replace roles but cannot loosen the user's limits"
   assert.match(unapproved.blockers[0].message, /not approved/);
   const plan = resolve({ project: loose, approvals: { project: true } });
   assert.equal(plan.roundLimit, 1);
-  assert.deepEqual(plan.policy, { ...preferences.policy, allowReducedPanel: false });
+  assert.deepEqual(plan.policy, {
+    ...preferences.policy,
+    meteredRoutes: "included-only",
+    allowReducedPanel: false,
+  });
   assert.deepEqual(
     plan.seats.map((seat) => seat.alias),
     ["review-alternative", "challenge-primary"],
