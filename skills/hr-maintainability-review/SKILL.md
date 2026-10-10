@@ -45,8 +45,8 @@ change and what it owns now.
    an area assessed only after inspecting its implementation and relevant
    consumers; inventory or file counts alone do not establish coverage.
 
-Done when every inventoried area has an assessment or an explicit unreviewed
-disposition. Report gaps rather than claiming a complete audit from a sample.
+Done when every inventoried area has an assessment or an explicit note that it was
+not reviewed. Report gaps rather than claiming a complete audit from a sample.
 
 ## What to challenge
 

@@ -17,7 +17,7 @@ has a unique `id` and its original `text`. Record the original location and
 snapshot or range in the receipt's `snapshot` field. Name records by stable
 message IDs or ledger row IDs. Several records can map to the same item.
 
-When a record establishes a disposition, add an `outcome` with `item` and
+When a record settles an item's state, add an `outcome` with `item` and
 `state`, plus `at` as a UTC ISO timestamp. States are `done`, `open` and
 `deferred`. Use the evidence's time, not the export time. A later request or
 current contradictory evidence that reopens completed work also sets

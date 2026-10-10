@@ -312,5 +312,5 @@ and rework time. Keep returned usage units separate from attributable account
 charges; unknown attribution remains unknown.
 
 Record every experiment, rejected ones included, with the observed result and
-disposition. End with adopt, reject or inconclusive, and the evidence for that
+what was decided. End with adopt, reject or inconclusive, and the evidence for that
 decision. Any implementation or publication still follows the user's scope.

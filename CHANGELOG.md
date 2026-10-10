@@ -11,6 +11,7 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   sit last, next to the offer. Handbacks that do not run the skill are unchanged.
 - The core rules say "decision" and "the condition that would reopen it" where they said "disposition" and "deferral trigger", define "ledger" at first use, and spell out what "held evaluation inputs" means. The rules' meaning is unchanged; the `## Ledger` section and `trigger:` markers that scripts read are unchanged.
 - The coded-offers and plan-files rules say "what was decided about each" and "a one-line reason" where they said "dispositions" and "a one-line disposition". The rules' meaning is unchanged.
+- The skills `hr-what-next`, `hr-pr-followup`, `hr-maintainability-review`, `hr-benchmarking` and `hr-handoff` say what was decided about an item, or that a record was kept only as context, where they said "disposition". Their steps and the `outcome` states are unchanged.
 - Two phrases now say what they mean: "answer-blind probes" in `hr-agent-guidance-refresh` is "behavior checks that do not reveal the expected answer", and "stand down" in the squash-landing rules is "stop".
 - `hr-code-review` now has a panel setup procedure and a small dated recommendation
   catalog, loaded only when the user asks to set up a panel or for recommendations.

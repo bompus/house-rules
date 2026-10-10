@@ -31,7 +31,7 @@ completed state before the completion message; a report alone does not do so.
    ranges and missing, inaccessible or truncated records. Sweep other
    sessions' records only within the requested project and scope.
 2. Trace requests, unanswered questions, commitments, offered alternatives
-   and findings to their latest disposition. Reconcile duplicate, superseded
+   and findings to what was last decided or done about them. Reconcile duplicate, superseded
    and stale rows with completion or replacement evidence. Keep owners,
    deferred triggers and other sessions' context visible. An old task
    description alone does not establish current activity or ownership.
@@ -89,7 +89,7 @@ When the user asks to go through the backlog item by item, run it in groups:
    waits.
 
 For a full audit, save a mapping from reviewed source records to items or
-reviewed context-only dispositions. If `hr-handoff` and its reconciliation
+reviewed records kept only as context. If `hr-handoff` and its reconciliation
 resources are available, reuse its `references/reconciliation.md` procedure
 and `scripts/check-reconciliation.mjs` checker. Otherwise retain the mapping
 and coverage gaps without claiming a mechanical check. A passing checker

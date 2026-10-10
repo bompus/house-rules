@@ -22,7 +22,7 @@ Integrate fetched changes using the repository's history policy and preserve
 other owners' work. Ask when conflicting intent cannot be settled from the
 selected requirements.
 
-For each finding, record its disposition. Fix a demonstrated problem within
+For each finding, record what was decided about it. Fix a demonstrated problem within
 scope, explain why an unsupported finding does not apply, or name the decision
 or evidence still needed. Include findings in review bodies outside inline
 threads. Reply and resolve threads within the selected authority; a thread
