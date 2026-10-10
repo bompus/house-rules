@@ -4,6 +4,14 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- When three or more offers are open and unanswered, the core rules now tell the
+  agent to queue a new decision in a walk-through instead of presenting another
+  offer, and `hr-what-next` starts a walk-through over the stacked offers. The
+  walk-through asks first the group whose answers unblock the others, looks up
+  facts a read-only call can answer before asking, lets a later offer join the
+  queue with one line, and stops when no decision remains that the user can make
+  now. The end-of-reply eval has a `stacked-offers` scenario and a
+  `requiredPattern` scenario field for wording that may vary.
 - `hr-what-next` now sorts open items by what they wait on (actionable now, needs
   your decision, waiting on others with their trigger and owner) and does not
   recommend a waiting item as a next step before its trigger fires. Its backlog

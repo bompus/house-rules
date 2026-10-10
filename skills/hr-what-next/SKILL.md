@@ -25,7 +25,9 @@ completed state before the completion message; a report alone does not do so.
    run it and quote its result instead of recalling the ledger.
    Report each floor item, or state that the floor is empty. While any floor
    item remains, do not say that nothing is left or that nothing needs the
-   user; re-present the unanswered questions as an offer instead. When asked
+   user; re-present the unanswered questions as an offer instead. When three
+   or more offers from this conversation are open and unanswered, do not
+   re-present them one by one: start a walk-through over them. When asked
    for all current and past items, review the available session transcript,
    relevant plans, task lists, handoffs and linked follow-ups. Name source
    ranges and missing, inaccessible or truncated records. Sweep other
@@ -73,20 +75,32 @@ completed state before the completion message; a report alone does not do so.
 
 ## Walk-through
 
-When the user asks to go through the backlog item by item, run it in groups:
+When the user asks to go through the backlog item by item, or three or more
+offers are open and unanswered, run it in groups:
 
 1. Rank and save the report as above. Show one visual of the whole ranked
    backlog, grouped and ordered as in step 5, with the current group marked
    and last; use a text outline where the host cannot render one. The
-   decisions stay in the text offer.
+   decisions stay in the text offer. When stacked offers start the walk-through,
+   mark each superseded in the ledger, keep its option text, and queue its
+   questions as groups.
 2. Put items in one group when one answer can cover them: the same owner, the
    same action or one dependency. Ask one group per reply, one numbered
-   question per item with one combined acceptance line.
-3. Record each answer in the ledger before acting, then close that group's
+   question per item with one combined acceptance line. Ask first the group
+   whose answers change or unblock the others, then one with a date, then the
+   rest; a decision whose prerequisite is still open waits for a later group.
+   Say how many groups remain and name the next.
+3. Before asking a group, look up what one read-only call can answer (why a
+   run failed, whether a setting already exists) and show the finding beside
+   the question. Ask the user only the decision.
+4. Record each answer in the ledger before acting, then close that group's
    offer. Show the visual again with the next group marked before asking it.
-   `go` selects the recommendation in the latest open group only.
-4. After the last group, show the visual with what closed and what still
-   waits.
+   `go` selects the recommendation in the latest open group only. A result or
+   handoff that brings its own offer while the queue is open joins the queue
+   with one line; it does not become another standalone offer.
+5. Stop when no decision remains that the user can make now. Record each
+   leftover with the condition that would reopen it, and show the visual with
+   what closed and what still waits.
 
 For a full audit, save a mapping from reviewed source records to items or
 reviewed records kept only as context. If `hr-handoff` and its reconciliation

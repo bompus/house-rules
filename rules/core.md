@@ -56,6 +56,10 @@ option list is not an offer. When an option includes implementation, say what
 it changes and whether it lands; choosing it authorizes that scope, and asking
 about it authorizes nothing.
 
+When three or more offers are open and unanswered, do not present another one.
+Queue the new decision in a walk-through (load the `hr-what-next` skill) and
+give it one line.
+
 ## Finishing work
 
 Finish authorized work before asking what to do next. Status questions and

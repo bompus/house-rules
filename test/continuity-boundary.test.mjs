@@ -101,6 +101,12 @@ test("exact-source replay requires the action label on an offer option", () => {
   );
 });
 
+test("a required pattern is matched without regard to case", () => {
+  const options = { coded: true, requiredPattern: "walk-?through" };
+  assert.equal(grade(offer, "offer", options).pass, false);
+  assert.equal(grade(offer + "\nWalk-through of the open offers.", "offer", options).pass, true);
+});
+
 test("a later remaining-work claim contradicts completion", () => {
   for (const reply of [
     "Nothing remains to verify; publishing the source remains.",
