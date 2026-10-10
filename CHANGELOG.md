@@ -4,6 +4,9 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- `hr-what-next` now names the host render tools for its backlog visual (T3 Code:
+  `html_preview`, then `html_render`), so the text outline is used only where the
+  host has none.
 - When three or more offers are open and unanswered, the core rules and the
   coded-offers modifier (which replaces the core offers section) now tell the
   agent to queue a new decision in a walk-through instead of presenting another

@@ -67,7 +67,9 @@ completed state before the completion message; a report alone does not do so.
    owner), then needs your decision, then actionable now. Number a decision row
    with its offer question number, keep the actionable-now group even when it
    is empty ("Nothing"), and put the highest-ranked item last within a group.
-   Where the host cannot render a visual, give a text outline in the same order.
+   Render it with the host's own tool when one exists (T3 Code: `html_preview`,
+   then `html_render`); give a text outline in the same order only where the host
+   has none.
 6. Continue work that can advance under existing authorization. Ask only for
    unresolved choices using the governing offer format. Preserve schedules
    and ownership; this audit grants no authority to start, transfer, publish
