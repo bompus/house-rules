@@ -82,7 +82,7 @@ offers are open and unanswered, run it in groups:
 
 1. Rank and save the report as above. Show one visual of the whole ranked
    backlog, grouped and ordered as in step 5, with the current group marked
-   and last; use a text outline where the host cannot render one. The
+   and last; use a text outline only where the host has no render tool. The
    decisions stay in the text offer. When stacked offers start the walk-through,
    mark each superseded in the ledger, keep its option text, and queue its
    questions as groups.
