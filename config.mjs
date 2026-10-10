@@ -27,7 +27,7 @@ import {
   splitSections,
 } from "./composition.mjs";
 import { renderConfig, renderHelp } from "./config-view.mjs";
-import { changePanelPreferences } from "./panel.mjs";
+import { changePanelPreferences } from "./skills/hr-code-review/scripts/panel-preferences.mjs";
 
 const COMMANDS = ["catalog", "status", "validate", "preview", "set"];
 const TOGGLES = ["enable-modifier", "disable-modifier", "enable-skill", "disable-skill"];

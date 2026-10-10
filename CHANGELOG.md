@@ -4,6 +4,14 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- `hr-code-review` now bundles `scripts/panel-plan.mjs`, which resolves stored
+  panel preferences and a user-owned bindings file into the seats a panel would
+  run, with skipped candidates and named blockers, before any model is called.
+  Project and task layers can only tighten the user's policy, and project
+  preferences count only when approved by file revision. The preference
+  validation moved from the package root into the skill so the installed skill
+  carries it.
+
 - The agent-work rule now treats each review finding as a claim: fix it when a
   reproduced failure or a cited requirement confirms it, with the smallest
   change that clears it, and answer an unconfirmed finding with the reason. A

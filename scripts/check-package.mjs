@@ -45,7 +45,6 @@ try {
     "skills/hr-what-next/references/reporting.md",
     "config.mjs",
     "config-view.mjs",
-    "panel.mjs",
     "setup.mjs",
     "rules/core.md",
     "LICENSE",
