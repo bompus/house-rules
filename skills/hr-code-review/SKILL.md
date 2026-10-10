@@ -20,7 +20,7 @@ When a selected review uses an ACP stdio agent, read [the bundled client contrac
 
 When a panel uses stored preferences, read [the panel plan contract](references/panel-plan.md) to resolve the seats before launching any of them.
 
-When the user asks to set up a panel or for panel recommendations, read [the panel setup procedure](references/panel-setup.md); it loads [the recommendations](references/panel-recommendations.md) when needed.
+When the user asks to set up a panel, for panel recommendations, or to use a panel for the first time without naming every seat, read [the panel setup procedure](references/panel-setup.md); it loads [the recommendations](references/panel-recommendations.md) when needed.
 
 ## Process
 
