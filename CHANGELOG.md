@@ -11,6 +11,13 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   pull-request follow-up skill said this; the rule for local model reviews said
   to fix findings.
 
+- The `no-attribution` modifier and `hr-writing-pr` now make one exception:
+  when a repository's contribution guidelines or pull request template ask for
+  agent or model disclosure, give exactly what they ask for, where they ask for
+  it. Unrequested credit lines stay out. Before this, a template line such as
+  "if you used an agent, end with the model and harness" conflicted with the
+  rule and had to be skipped.
+
 - The local-timezone rule now names the host clock zone (`date +%Z`, or
   `Get-TimeZone` on Windows) as part of the session environment and requires
   checking it before reporting UTC or saying the zone is unknown.

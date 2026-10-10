@@ -52,7 +52,7 @@ Lead the body with the concrete problem and resulting behavior. A small change m
 
 Explain implementation details only when they clarify a decision or help assess correctness. Include compatibility, dependency, migration, or documentation implications when the diff creates them. When the change has a hard-to-reverse surface (host-level effects such as `sudo install-deps`, migrations, destructive actions), say so in one sentence; never a fixed risk section, and nothing on purely additive changes. Identify a useful review starting point for a complex change, using `path:line` anchors for load-bearing claims.
 
-Describe the final combined change. Leave out intermediate attempts, commit reshuffling, conversational history, and file inventories already visible in the diff. Write for the reviewer in plain language: no unexplained jargon, and no narrative about how the change was produced. Review panels, models consulted, harnesses, and agent process never appear in titles, bodies, or PR comments; that detail lives in plan files and session records. For routine clarifications, update the title and body. Material scope changes follow the replacement rule above.
+Describe the final combined change. Leave out intermediate attempts, commit reshuffling, conversational history, and file inventories already visible in the diff. Write for the reviewer in plain language: no unexplained jargon, and no narrative about how the change was produced. Review panels, models consulted, harnesses, and agent process never appear in titles, bodies, or PR comments, except for a disclosure the repository's contribution guidelines or PR template ask for, which is given as asked and no further; that detail otherwise lives in plan files and session records. For routine clarifications, update the title and body. Material scope changes follow the replacement rule above.
 
 ## Evidence that earns its space
 
@@ -99,6 +99,6 @@ Scale structure to the change. Omit empty optional sections, placeholder text, g
 
 ## Completion check
 
-Every factual claim must be supported by inspected code, the originating request, or observed results. The opening explains what changes and why; the remaining text helps review it. Deliver the title and body in the form requested. Apply them to a remote PR only within the user's authorized scope. When the user's rules turn attribution off, include no `Made with` or other host attribution. After `gh pr create` or `gh pr edit`, reread the published body and strip any footer a harness appended.
+Every factual claim must be supported by inspected code, the originating request, or observed results. The opening explains what changes and why; the remaining text helps review it. Deliver the title and body in the form requested. Apply them to a remote PR only within the user's authorized scope. When the user's rules turn attribution off, include no `Made with` or other host attribution beyond a disclosure the repository asks for. After `gh pr create` or `gh pr edit`, reread the published body and strip any footer a harness appended.
 
 Relevant validation stays in the description; extensive templates and review automation are outside this skill.
