@@ -1,7 +1,7 @@
 // ACP v1 read-only review transport. See ../references/acp-client.md.
 import { execFileSync, spawn } from "node:child_process";
 import { realpathSync, readFileSync, writeFileSync } from "node:fs";
-import { readFile, realpath, stat } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
 import { isAbsolute, relative, resolve, sep } from "node:path";
 import * as readline from "node:readline";
 const rawArgs = process.argv.slice(2);
@@ -82,7 +82,9 @@ async function underCwd(path) {
     return rel !== ".." && !rel.startsWith(".." + sep) && !isAbsolute(rel);
   };
   if (!inside(lexical)) return null;
-  const physical = await realpath(lexical);
+  // Same resolver as the root, so a runtime whose async and sync realpath spell a path
+  // differently cannot make an inside file look outside.
+  const physical = realpathSync(lexical);
   if (!inside(physical) || !(await stat(physical)).isFile()) return null;
   return physical;
 }
