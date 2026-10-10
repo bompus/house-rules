@@ -60,7 +60,7 @@ completed state before the completion message; a report alone does not do so.
    accounted for separately from whether selected work is complete.
    Whenever any item remains, add one visual beside the table, not only when
    the user asks to see the backlog. Group the rows by what each waits on and
-   order the groups bottom-up, so what needs the user sits last, next to the
+   order the groups bottom-up, so the items that can move sit last, next to the
    offer: waiting on others first (one compact row each with its trigger and
    owner), then needs your decision, then actionable now. Number a decision row
    with its offer question number, keep the actionable-now group even when it
