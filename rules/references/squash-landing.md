@@ -35,7 +35,7 @@ Fetch first, then:
   commits.
 - When an app manages the checkout, leave it: the app retires it, and the
   report does not mention it.
-- When the tree is dirty or ownership is in doubt, stand down: record the
+- When the tree is dirty or ownership is in doubt, stop: record the
   merged commit, the checkout path and the owner wherever you track the task.
 
 After each landing, update the task list and any active handoff with the

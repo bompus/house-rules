@@ -18,5 +18,5 @@ conditions in § Landing. After the merge, fetch first; move off a landed branch
 only when its content is in the base and the tree is clean. When the base is
 checked out elsewhere, detach at the fetched base. Never merge, reset or stash
 to move the checkout. Leave app-managed checkouts for the app to retire.
-If the tree is dirty or ownership is uncertain, stand down and record its owner.
+If the tree is dirty or ownership is uncertain, stop and record its owner.
 Update the task record and follow § Cleanup after each landing.

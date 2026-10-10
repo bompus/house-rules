@@ -54,7 +54,7 @@ A pushed-source notice remains pending until the affected component is deployed.
 
 When guidance verification is selected, read
 [the verification method](references/verification.md) for evidence layers,
-answer-blind probes and scoped adoption checks.
+behavior checks that do not reveal the expected answer, and scoped adoption checks.
 
 For an explicit source-update request, follow the owning checkout's adoption
 procedure and authorization before changing files. Upstream/source drift alone

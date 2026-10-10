@@ -4,6 +4,7 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Two phrases now say what they mean: "answer-blind probes" in `hr-agent-guidance-refresh` is "behavior checks that do not reveal the expected answer", and "stand down" in the squash-landing rules is "stop".
 - `hr-code-review` now has a panel setup procedure and a small dated recommendation
   catalog, loaded only when the user asks to set up a panel or for recommendations.
   Setup lists routes through the host's read-only interface, asks only open
