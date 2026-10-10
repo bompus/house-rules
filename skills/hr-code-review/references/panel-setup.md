@@ -32,9 +32,9 @@ choice afterwards is a separate opt-in.
    by the discovered routes and the user's limits. Show each seat's alias, model
    family, effort, route, ordered alternatives and unsupported controls, with the
    entry's checked date and limits. A suggestion is not a commitment.
-6. Write the portable preferences (the `panel` object in
-   [the configuration guide](../../../docs/configuration.md#optional-panel-preferences))
-   and, separately, the user's local bindings (see [the panel plan](panel-plan.md)).
+6. Write the portable preferences (the `panel` object described under "Optional
+   panel preferences" in house-rules' `docs/configuration.md`) and, separately,
+   the user's local bindings (see [the panel plan](panel-plan.md)).
    Run `config preview` and show the changed fields. Save with `config set --apply`
    only after the user confirms; a stale revision refuses.
 7. Report what was saved, what is unverified, and that no run was requested. Saved

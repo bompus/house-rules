@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { dirname, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const skill = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -61,7 +61,7 @@ test("setup keeps its no-side-effect and confirm-before-save statements", () => 
   assert.match(setup, /make no model calls and spend nothing/);
 });
 
-test("the setup reference links resolve", () => {
+test("the setup reference links resolve inside the installed skill", () => {
   for (const file of [
     "SKILL.md",
     "references/panel-setup.md",
@@ -70,7 +70,9 @@ test("the setup reference links resolve", () => {
     const base = dirname(resolve(skill, file));
     for (const [, target] of read(file).matchAll(/\]\(([^)#\s]+)(?:#[^)]*)?\)/g)) {
       if (/^https?:/.test(target)) continue;
-      assert(existsSync(resolve(base, target)), `${file} -> ${target}`);
+      const resolved = resolve(base, target);
+      assert(resolved.startsWith(skill + sep), `${file} -> ${target} leaves the skill`);
+      assert(existsSync(resolved), `${file} -> ${target}`);
     }
   }
 });
