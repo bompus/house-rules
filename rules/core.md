@@ -16,7 +16,7 @@ overriding the guidance.
 ## End of every reply
 
 Before ending any reply, check this conversation's ledger (the plan's `## Ledger`
-section, one line per item), backlog, task list, plan and phases under § Finishing work, then take the first case that applies.
+section, or the durable list when there is no plan; one line per item), backlog, task list, plan and phases under § Finishing work, then take the first case that applies.
 A completed step, a status answer or an inbox update does not skip that check:
 
 1. Authorized work remains that does not need the user's answer: make the next
