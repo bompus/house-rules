@@ -15,8 +15,8 @@ overriding the guidance.
 
 ## End of every reply
 
-Before ending any reply, check this conversation's ledger, backlog, task list,
-plan and phases under § Finishing work, then take the first case that applies.
+Before ending any reply, check this conversation's ledger (the plan's `## Ledger`
+section, one line per item), backlog, task list, plan and phases under § Finishing work, then take the first case that applies.
 A completed step, a status answer or an inbox update does not skip that check:
 
 1. Authorized work remains that does not need the user's answer: make the next
@@ -27,7 +27,7 @@ A completed step, a status answer or an inbox update does not skip that check:
    finish authorized work and owned changes that need landing. Present the next
    ready decision automatically; the user need not ask "next?".
 3. Otherwise, answer the current request and state the remaining blockers or
-   deferral triggers. Use § Finishing work's session-completion gate before
+   the conditions that would reopen deferred items. Use § Finishing work's session-completion gate before
    claiming nothing remains or that the session can close.
 
 Case 1 stops only when nothing left can advance without the user, when a rule
@@ -67,7 +67,7 @@ finished, a pull request landed, or the current task must wait:
 
 1. Reconcile this conversation's ledger, backlog, task list, plan and phases
    against the latest results. Mark completed items and identify each remaining
-   item's next unfinished step, authority, readiness and blocker or deferral trigger.
+   item's next unfinished step, authority, readiness and blocker or the condition that would reopen it.
 2. If authorized work can advance, make the next tool call in this reply.
    Waiting on one item does not stop independent authorized work.
 3. Otherwise, if a ready item needs selection, end with the highest-priority
@@ -82,10 +82,10 @@ including earlier requests, unanswered questions, open offers, findings,
 handoffs and linked plans. A current-task check or an empty displayed backlog
 is insufficient. Account for owned changes, checks, landing, adoption and
 running work. Blocked, deferred, unselected and scheduled items still remain;
-an explicit user disposition must close or transfer them before session completion.
+an explicit user decision must close or transfer them before session completion.
 Missing, inaccessible or truncated records leave completion unverified.
 
-Only when every item has a verified completion or explicit closing disposition,
+Only when every item has a verified completion or an explicit decision to close it,
 and no question, follow-up or obligation remains, update the session's own plan,
 tasks and ledger to completed, with the completion time and evidence. Save that
 state before saying: "This session is complete and can be closed."
@@ -100,7 +100,7 @@ work for that dependency and update the task record. Honor explicit stop or undo
 instructions; otherwise fix affected work within authorization and ask only
 about unresolved decisions.
 
-Keep every live candidate and disposition in the plan ledger, or a durable list
+Keep every live candidate and what was decided about it in the plan ledger, or a durable list
 when no plan exists. Include this task, earlier unfinished work, findings, resumed
 handoffs, owned changes and untriaged feedback.
 
@@ -115,12 +115,12 @@ other sessions' records remain subject to their ownership and sweep rules.
   them. Record the result and when it completed; partial progress updates the
   next unfinished step.
 - Keep duplicate and superseded entries as history, linking to the retained
-  item or replacement and its disposition. A replacement inherits only verified
+  item or replacement and what was decided about it. A replacement inherits only verified
   existing authority; it does not authorize a wider scope.
 - When evidence suggests a request is no longer relevant, record the reason
   and ask about dropping or changing unresolved user scope. Age, inactivity or
   a missing owner alone does not complete or discard an item. Preserve valid
-  unanswered offers, owners, schedules and deferral triggers.
+  unanswered offers, owners, schedules and the conditions that would reopen deferred items.
 
 - Work handbacks and "what next" replies show the recommended next step and
   every decision needed to finish authorized work, including owned uncommitted
@@ -312,7 +312,7 @@ the component, exact revision or fingerprint, affected paths and actions, and
 whether the change is pushed source or deployed. A source notice does not
 prove deployment. Use the host's supported update procedure and
 `hr-agent-guidance-refresh`; keep pending notices for idle or offline sessions
-until their next boundary or resume. Preserve held evaluation inputs. If no
+until their next boundary or resume. If an evaluation has fixed its guidance or tools, hold the update for it and leave its inputs unchanged until it ends. If no
 channel is authorized or reachable, record the missing delivery and report it.
 
 Stop only processes you started, by the PID you recorded when starting them.
