@@ -27,6 +27,8 @@ let next=1000;const waiting=new Map();
 const ask=(method,params)=>new Promise(resolve=>{const id=next++;waiting.set(id,resolve);send({id,method,params});});
 readline.createInterface({input:process.stdin}).on('line',async line=>{
  const m=JSON.parse(line);log(m);
+ if(cfg.deaf)return;
+ if(m.method==='session/cancel'&&cfg.honorCancel&&cfg.promptId)return send({id:cfg.promptId,result:{stopReason:'cancelled'}});
  if(!m.method){waiting.get(m.id)?.(m);return;}
  if(m.method==='initialize')return send({id:m.id,result:{protocolVersion:cfg.protocol||1,agentInfo:{name:cfg.codex?'codex-acp':'fake-agent'}}});
  if(m.method==='session/new')return send({id:m.id,result:{sessionId:'s',configOptions:options}});
@@ -37,6 +39,7 @@ readline.createInterface({input:process.stdin}).on('line',async line=>{
   return send({id:m.id,result:echoed});
  }
  if(m.method==='session/prompt'){
+  if(cfg.honorCancel)cfg.promptId=m.id;
   if(cfg.silent)return;
   if(cfg.hard){setInterval(()=>send({method:"session/update",params:{sessionId:"s",update:{sessionUpdate:"agent_message_chunk",content:{type:"text",text:"."}}}}),300);return;}
   const results=[];
@@ -65,7 +68,7 @@ function run(
   for (const request of config.requests || [])
     if (request.params?.path === "OUTSIDE_ABSOLUTE") request.params.path = join(dir, "outside.txt");
   try {
-    const out = join(dir, "out.txt"),
+    const out = config.outInRoot ? join(root, "answer.txt") : join(dir, "out.txt"),
       log = join(dir, "log.jsonl");
     const result = spawnSync(
       runtime,
@@ -212,6 +215,23 @@ test("idle deadline cancels and reaps a silent adapter", () => {
   const r = run({ silent: true }, ["--idle-min", "0.01"]);
   assert.equal(r.code, 124);
   assert.match(r.error, /IDLE TIMEOUT/);
+});
+test("idle deadline also covers an adapter that never answers initialize", () => {
+  const r = run({ deaf: true }, ["--idle-min", "0.01"]);
+  assert.equal(r.code, 124);
+  assert.match(r.error, /IDLE TIMEOUT/);
+});
+test("a deadline stays exit 124 when the adapter honors the cancel", () => {
+  const r = run({ silent: true, honorCancel: true }, ["--idle-min", "0.01"]);
+  assert.equal(r.code, 124);
+  assert.match(r.error, /IDLE TIMEOUT/);
+});
+test("an answer file inside the review root is not a workspace change", () => {
+  const r = run({ outInRoot: true }, [], (root) => {
+    assert.equal(spawnSync("git", ["init", "-q", root]).status, 0);
+  });
+  assert.equal(r.code, 0);
+  assert.match(r.text, /VERDICT:/);
 });
 test("streaming activity renews idle deadline", () => {
   const r = run({ chatty: true }, ["--idle-min", "0.01"]);

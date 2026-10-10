@@ -13,7 +13,7 @@ node <skill-directory>/scripts/acp-panel-client.mjs \
 
 Node 22+ and Bun can run the same file. Arguments after the output path are
 optional. The default is one turn, no required verdict, five minutes of idle
-silence and a sixty-minute hard deadline. The hard deadline has a one-minute
+silence counted from launch and a sixty-minute hard deadline. The hard deadline has a one-minute
 minimum. The caller supplies its environment and temporary-storage policy.
 
 The client advertises confined file reads, disables writes and terminal
@@ -35,8 +35,8 @@ The output contains collected agent text. Exit codes are:
 - 1: setup/protocol failure
 - 2: missing arguments
 - 3: incomplete verdict
-- 4: changed Git status
-- 124: deadline
+- 4: changed Git status (the answer file is written after this comparison)
+- 124: deadline, even when the agent honors the cancel
 
 A permission-cancelled turn may continue within `--max-turns`. A matching marker
 is a completion signal, not proof that the review is accurate.

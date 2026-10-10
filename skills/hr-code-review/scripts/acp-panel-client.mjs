@@ -167,21 +167,20 @@ rl.on("line", (line) => {
     return;
   }
 });
-let lastActivity = 0;
+let lastActivity = Date.now();
 let longestGapMs = 0;
 function noteActivity() {
-  if (!lastActivity) {
-    return;
-  }
   const now = Date.now();
   longestGapMs = Math.max(longestGapMs, now - lastActivity);
   lastActivity = now;
 }
 const gapNote = () => `longest silent gap ${Math.round(longestGapMs / 1000)}s`;
+let deadlineHit = false;
 function abort(reason) {
+  deadlineHit = true;
   console.error(`[client] ${reason} (${gapNote()}), killing server`);
   try {
-    request("session/cancel", { sessionId }).catch(() => {});
+    if (sessionId) send({ jsonrpc: "2.0", method: "session/cancel", params: { sessionId } });
   } catch {}
   setTimeout(() => {
     child.kill("SIGKILL");
@@ -191,7 +190,7 @@ function abort(reason) {
 const timer = setTimeout(() => abort("HARD TIMEOUT"), HARD_TIMEOUT_MS).unref();
 const idleCheck = setInterval(
   () => {
-    if (lastActivity && Date.now() - lastActivity > IDLE_MS) {
+    if (Date.now() - lastActivity > IDLE_MS) {
       clearInterval(idleCheck);
       abort(`IDLE TIMEOUT: no server message for ${Math.round(IDLE_MS / 1000)}s`);
     }
@@ -255,15 +254,13 @@ try {
         ? promptText
         : `Continue the panel task. Your previous reply did not contain ${JSON.stringify(verdictMarker)}. Do no new setup; use only read/glob/grep on the repo, no MCP tools, and now deliver the full answer ending with ${verdictMarker} plus a value. Keep it under 30 lines.`;
     console.error(`[client] turn ${turn}/${maxTurns}, sending prompt (${text.length} chars)...`);
-    if (!lastActivity) {
-      lastActivity = Date.now();
-    }
     const rejectionsBefore = rejections;
     const res = await request("session/prompt", {
       sessionId,
       prompt: [{ type: "text", text }],
     });
     stopReason = res?.stopReason;
+    if (deadlineHit) break;
     const hit = verdictMarker ? collected.includes(verdictMarker) : true;
     console.error(
       `[client] turn ${turn} finished, stopReason=${JSON.stringify(stopReason)} collected=${collected.length} chars hasVerdict=${hit}`,
@@ -276,8 +273,6 @@ try {
       break;
     }
   }
-  writeFileSync(outText, collected);
-  console.error(`[client] wrote ${collected.length} chars to ${outText}; ${gapNote()}`);
   clearTimeout(timer);
   clearInterval(idleCheck);
   child.stdin.end();
@@ -289,12 +284,16 @@ try {
       `[client] WORKSPACE CHANGED: git status in ${cwd} differs from launch; the seat wrote files`,
     );
   }
-  process.exitCode = changed ? 4 : ok ? 0 : 3;
+  // The answer is written after the status comparison so an output path inside the review
+  // root is not mistaken for a change the seat made.
+  writeFileSync(outText, collected);
+  console.error(`[client] wrote ${collected.length} chars to ${outText}; ${gapNote()}`);
+  process.exitCode = deadlineHit ? 124 : changed ? 4 : ok ? 0 : 3;
   setTimeout(() => process.exit(), 2500).unref();
 } catch (e) {
   console.error("[client] FATAL: " + (e instanceof Error ? e.message : String(e)));
   clearTimeout(timer);
   clearInterval(idleCheck);
   child.kill("SIGKILL");
-  process.exit(1);
+  process.exit(deadlineHit ? 124 : 1);
 }
