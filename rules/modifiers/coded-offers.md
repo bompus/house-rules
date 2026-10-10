@@ -20,7 +20,7 @@ Use § Finishing work to select displayed candidates. Each offer stands alone:
 Include alternatives the user raised or needed to explain a material tradeoff.
 Routine offers include an option to defer displayed proposals; say other ledger
 items remain pending. Full backlog offers include `All done`, which drops or defers
-every listed candidate. Record dispositions; deferral never means completion.
+every listed candidate. Record what was decided about each; deferral never means completion.
 
 Name implementation and landing scope in applicable options. Selection authorizes
 it; questions authorize nothing. Implementation after analysis needs selection.

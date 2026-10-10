@@ -27,7 +27,7 @@ at its plan.
 - When new work arrives mid-task, add it as pending before switching; never
   drop an in-progress item silently.
 - Keep the whole ledger in the plan: deferred items, follow-ups and incidental
-  findings with a one-line disposition (`user-flagged`, `deferred-by`,
+  findings with a one-line reason (`user-flagged`, `deferred-by`,
   `blocked-by`, `low priority`), and closed items with their outcome (landed
   commit, won't do and why, moved elsewhere) and start and end times. Note the
   start time when you pick an item up.
