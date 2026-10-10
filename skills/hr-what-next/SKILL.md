@@ -1,6 +1,6 @@
 ---
 name: hr-what-next
-description: "Reconcile remaining work and recommend priorities. Use for next, next?, what's next, what remains, backlog reviews, full-session audits of tasks and unanswered or past questions, and equivalent requests. Do not use for go or continue, which retain their acceptance/continuation meaning, or progress/ETA-only requests."
+description: "Reconcile remaining work and recommend priorities. Use for next, next?, what's next, what remains, backlog reviews, walk-throughs of the backlog item by item, full-session audits of tasks and unanswered or past questions, and equivalent requests. Do not use for go or continue, which retain their acceptance/continuation meaning, or progress/ETA-only requests."
 ---
 
 # What next
@@ -50,10 +50,28 @@ completed state before the completion message; a report alone does not do so.
    For a full audit, put the full individual table in a durable report
    and link it beside the immediate decisions. Answer whether items are
    accounted for separately from whether selected work is complete.
+   When the user asks to see the backlog, add one visual that groups the rows
+   by what each waits on, beside the table.
 6. Continue work that can advance under existing authorization. Ask only for
    unresolved choices using the governing offer format. Preserve schedules
    and ownership; this audit grants no authority to start, transfer, publish
    or clean up work merely because it appears in the inventory.
+
+## Walk-through
+
+When the user asks to go through the backlog item by item, run it in groups:
+
+1. Rank and save the report as above. Show one visual of the whole ranked
+   backlog, grouped by what each item waits on, with the current group marked;
+   use a text outline where the host cannot render one. The decisions stay in
+   the text offer.
+2. Put items in one group when one answer can cover them: the same owner, the
+   same action or one dependency. Ask one group per reply, one numbered
+   question per item with one combined acceptance line.
+3. Record each answer in the ledger before acting. `go` selects the
+   recommendation in the latest open group only.
+4. After the last group, show the visual again with what closed and what
+   still waits.
 
 For a full audit, save a mapping from reviewed source records to items or
 reviewed context-only dispositions. If `hr-handoff` and its reconciliation

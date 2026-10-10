@@ -4,6 +4,12 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- `hr-what-next` now has a walk-through mode: when asked to go through the backlog
+  item by item, it shows one visual of the ranked backlog grouped by what each
+  item waits on, asks one group of questions per reply with one combined accept
+  line, and records each answer before acting. A request to see the backlog adds
+  the same visual beside the table. The shared reporting reference is unchanged.
+
 - `panel-plan.mjs` now rejects a metered route under `meteredRoutes: included-only`
   (it was accepted, and an approval was never needed) and treats `included-only`
   as the stricter setting when layers combine, so a project or task layer can no
