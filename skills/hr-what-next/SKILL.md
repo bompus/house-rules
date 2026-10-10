@@ -39,6 +39,14 @@ completed state before the completion message; a report alone does not do so.
    durable ledger. Distinguish done, authorized unfinished, unselected,
    blocked, deferred and other-owner items. A completed implementation does
    not complete required checks or landing; deferral does not mean done.
+   Sort every open item by what it waits on: **actionable now** (this session
+   can advance it under existing authority), **needs your decision** (a
+   selection or answer only the user can give) or **waiting on others** (an
+   external release, issue or pull request, another project or owner, a date,
+   or an app that retires it). Keep each waiting item's trigger and owner. A
+   waiting item stays in the ledger and in the report with its trigger, but it
+   is not work this session can do yet: do not recommend it as a next step
+   before its trigger fires.
 4. Rank remaining items toward the current goal and explicit priorities.
    Explain the objective and weigh expected impact, next-decision value,
    urgency, dependencies, effort and evidence confidence. Keep priority,
@@ -50,8 +58,14 @@ completed state before the completion message; a report alone does not do so.
    For a full audit, put the full individual table in a durable report
    and link it beside the immediate decisions. Answer whether items are
    accounted for separately from whether selected work is complete.
-   When the user asks to see the backlog, add one visual that groups the rows
-   by what each waits on, beside the table.
+   Whenever any item remains, add one visual beside the table, not only when
+   the user asks to see the backlog. Group the rows by what each waits on and
+   order the groups bottom-up, so what needs the user sits last, next to the
+   offer: waiting on others first (one compact row each with its trigger and
+   owner), then needs your decision, then actionable now. Number a decision row
+   with its offer question number, keep the actionable-now group even when it
+   is empty ("Nothing"), and put the highest-ranked item last within a group.
+   Where the host cannot render a visual, give a text outline in the same order.
 6. Continue work that can advance under existing authorization. Ask only for
    unresolved choices using the governing offer format. Preserve schedules
    and ownership; this audit grants no authority to start, transfer, publish
@@ -62,9 +76,9 @@ completed state before the completion message; a report alone does not do so.
 When the user asks to go through the backlog item by item, run it in groups:
 
 1. Rank and save the report as above. Show one visual of the whole ranked
-   backlog, grouped by what each item waits on, with the current group marked;
-   use a text outline where the host cannot render one. The decisions stay in
-   the text offer.
+   backlog, grouped and ordered as in step 5, with the current group marked
+   and last; use a text outline where the host cannot render one. The
+   decisions stay in the text offer.
 2. Put items in one group when one answer can cover them: the same owner, the
    same action or one dependency. Ask one group per reply, one numbered
    question per item with one combined acceptance line.

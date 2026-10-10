@@ -4,6 +4,11 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- `hr-what-next` now sorts open items by what they wait on (actionable now, needs
+  your decision, waiting on others with their trigger and owner) and does not
+  recommend a waiting item as a next step before its trigger fires. Its backlog
+  visual appears whenever any item remains, not only when the user asks, with the groups ordered so what needs the user sits
+  last, next to the offer. Handbacks that do not run the skill are unchanged.
 - Two phrases now say what they mean: "answer-blind probes" in `hr-agent-guidance-refresh` is "behavior checks that do not reveal the expected answer", and "stand down" in the squash-landing rules is "stop".
 - `hr-code-review` now has a panel setup procedure and a small dated recommendation
   catalog, loaded only when the user asks to set up a panel or for recommendations.
