@@ -64,3 +64,5 @@ jobs:
         run: npm run check:package -- --bun
       - name: Skill scripts
         run: bun test skills/
+      - name: Skill scripts that use node:test, under Node
+        run: node --test skills/hr-code-review/test/acp-client.test.mjs
