@@ -44,12 +44,12 @@ in the acceptance line. For sequential landing phases, label
 options "(Recommended, phase 1)" and "(Recommended, phase 2)". `go` covers phase 1
 only; offer phase 2 after phase 1 lands. Record conditional work with its trigger.
 
-When the host can render a visual, show an offer with two or more questions, or
-with a phased option, as an offer visual beside the text offer. It is a rendered
-page, not a question-card tool, so § Question cards does not gate it. Give each
-question one block. Show every option's code, a short label and its steps from start to
-finish, and mark the recommended options. Add a short box on how to reply. The
-text offer stays complete and carries the acceptance line.
+Make an offer visual only when the user asks for one, and only where the host
+can render a visual. It is a rendered page, not a question-card tool, so
+§ Question cards does not gate it. It sits beside the complete text offer, which
+still carries the acceptance line. Give each question one block. Show every
+option's code, a short label and its steps from start to finish, and mark the
+recommended options. Add a short box on how to reply.
 
 Use text for questions unless § Question cards is enabled. Tool availability
 alone does not enable it. When enabled, follow it beside the complete text offer.
