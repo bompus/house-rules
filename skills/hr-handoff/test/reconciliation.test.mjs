@@ -346,3 +346,89 @@ test("Node and Bun give identical results; repeated execution changes no snapsho
   expect(node.stdout).toBe(first.stdout);
   expect(bytes()).toEqual(before);
 });
+
+// A predecessor plan read straight from Markdown: each `## Ledger` line is a record named by its line.
+const previousPlan = [
+  "Owner: session-before",
+  "Status: paused",
+  "",
+  "## Ledger",
+  "- [x] parser fix ... evidence: PR 7",
+  "- [ ] widget docs",
+  "- [~] cache experiment ... trigger: next release",
+  "",
+  "## Log",
+  "- [ ] a box outside the ledger is not a record",
+].join("\n");
+
+function withPlan(change = () => {}, plan = previousPlan) {
+  const paths = setup((receipt) => {
+    receipt.sources.push({
+      id: "previous",
+      file: "previous-plan.md",
+      snapshot: "Fictional predecessor plan at handoff",
+      expectedRecords: 3,
+      gaps: [],
+    });
+    receipt.accounting.push(
+      { source: "previous", record: "L5", context: "done before the handoff; PR 7 landed" },
+      { source: "previous", record: "L6", items: ["docs"] },
+      { source: "previous", record: "L7", items: ["cache"] },
+    );
+    for (const [id, record, state] of [
+      ["docs", "L6", "open"],
+      ["cache", "L7", "deferred"],
+    ])
+      receipt.items.push({
+        id,
+        owner: "session-example",
+        state,
+        evidence: [{ source: "previous", record }],
+        next: "Carried over from the predecessor plan.",
+      });
+    change(receipt);
+  });
+  writeFileSync(join(paths.directory, "previous-plan.md"), plan);
+  return paths;
+}
+
+test("a predecessor plan's ledger lines are records that need accounting", () => {
+  expect(run(withPlan().file).report).toMatchObject({ status: "complete", records: 7, errors: [] });
+  const omitted = run(withPlan((r) => r.accounting.pop()).file);
+  expect(omitted.report.errors).toContain('unaccounted record ["previous","L7"]');
+});
+
+test("an open or deferred predecessor line cannot be set aside as context", () => {
+  const result = run(
+    withPlan((r) => {
+      r.accounting[r.accounting.length - 1] = {
+        source: "previous",
+        record: "L7",
+        context: "reopen only if asked",
+      };
+      r.items.pop();
+    }).file,
+  );
+  expect(result.code).toBe(1);
+  expect(result.report.errors).toEqual([
+    expect.stringContaining("previous/L7: an open or deferred ledger line needs an item"),
+  ]);
+});
+
+test("one item that absorbs several open predecessor lines must say why they are one", () => {
+  const merged = (reason) =>
+    withPlan((r) => {
+      r.accounting.at(-1).items = ["docs"];
+      r.items.pop();
+      if (reason) r.items.at(-1).merges = reason;
+    }).file;
+  expect(run(merged()).report.errors).toEqual([
+    expect.stringContaining("item docs: absorbs 2 open or deferred ledger lines"),
+  ]);
+  expect(run(merged("both lines describe the same docs page")).report.errors).toEqual([]);
+});
+
+test("a Markdown source without a ledger is an error", () => {
+  const result = run(withPlan(() => {}, "Owner: x\nStatus: paused\n").file);
+  expect(result.report.errors).toContain("source previous: no `## Ledger` section in the plan");
+});

@@ -45,7 +45,8 @@ decisions and recommendations in priority order.
 For a handoff unrelated to quota, follow
 [reconciliation.md](references/reconciliation.md) to compare the current and
 preceding source transcripts, linked ledgers and Git inventory with this
-inventory. Save its receipt and run the offline checker. Report coverage gaps
+inventory. Name each predecessor plan as a source, so every open or deferred
+line in its ledger carries over as an item. Save its receipt and run the offline checker. Report coverage gaps
 and mechanical results separately from the reviewed claim that all items are
 addressed. Include owned unlanded PRs, dependency PRs and own commits without a
 PR; preserve their owners and landing authority.

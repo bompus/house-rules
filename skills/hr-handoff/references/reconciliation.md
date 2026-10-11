@@ -19,6 +19,15 @@ has a unique `id` and its original `text`. Record the original location and
 snapshot or range in the receipt's `snapshot` field. Name records by stable
 message IDs or ledger row IDs. Several records can map to the same item.
 
+A predecessor plan needs no conversion. Name its `plan.md` as the source
+`file`; the checker reads each line of its `## Ledger` section as a record
+named `L<line>` (`L12`). Take a copy of the plan as it stood at the handoff,
+because later edits renumber the lines. Each open or deferred line must map to
+an item; a context-only reason such as "the rest, reopen only if asked" is
+rejected. When one item absorbs several open or deferred lines, give the item
+a `merges` field saying why they are one piece of work. A ledger kept as a
+table is not read; normalize it to JSON records instead.
+
 When a record settles an item's state, add an `outcome` with `item` and
 `state`, plus `at` as a UTC ISO timestamp. States are `done`, `open` and
 `deferred`. Use the evidence's time, not the export time. A later request or
@@ -49,7 +58,8 @@ relative to the receipt; the checker reads only explicitly named snapshots.
   Add nonempty `items` containing extracted item IDs, or a `context` reason
   explaining why the record creates no candidate. Review user requests and
   assistant commitments and options before assigning context-only status.
-- Each `items` entry has `id`, `owner`, `state`, `evidence` and `next`.
+- Each `items` entry has `id`, `owner`, `state`, `evidence` and `next`, plus
+  `merges` when it carries over more than one open or deferred plan line.
   Evidence references use `{ "source": "source-id", "record": "record-id" }`.
   Include the latest declared outcome. For deferred work, `next` gives its
   trigger; for done work, give its result and any separately tracked follow-up.

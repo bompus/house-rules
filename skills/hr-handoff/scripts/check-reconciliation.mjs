@@ -53,6 +53,22 @@ function unique(entries, label) {
   return map;
 }
 
+// A plan file (`.md`) is read as its `## Ledger` lines, one record per line, named `L<line>`.
+// Open (`- [ ]`) and deferred (`- [~]`) lines are remembered: they must carry over as items.
+function ledgerRecords(raw) {
+  const lines = raw.split(/\r?\n/);
+  const start = lines.findIndex((line) => /^#{1,6}\s+Ledger\s*$/i.test(line));
+  if (start < 0) return null;
+  const level = lines[start].match(/^#+/)[0].length;
+  const records = [];
+  for (let i = start + 1; i < lines.length; i++) {
+    if (new RegExp(`^#{1,${level}}\\s`).test(lines[i])) break;
+    const match = lines[i].match(/^\s*[-*]\s+\[([ x~-])\]\s+(.*)$/i);
+    if (match) records.push({ id: `L${i + 1}`, text: match[2], mark: match[1] });
+  }
+  return { records };
+}
+
 function check(receipt, directory) {
   if (!object(receipt)) throw new Error("receipt: expected an object");
   if (receipt.version !== 1) errors.push("version: expected 1");
@@ -63,6 +79,7 @@ function check(receipt, directory) {
   const sources = unique(entries(receipt.sources, "sources"), "source");
   const items = unique(entries(receipt.items, "items"), "item");
   const records = new Map();
+  const openLines = new Set();
   const outcomes = new Map();
   if (sources.size === 0) gaps.push("no source snapshots supplied");
 
@@ -90,12 +107,19 @@ function check(receipt, directory) {
       continue;
     }
     let data;
-    try {
-      data = JSON.parse(raw);
-    } catch {
-      errors.push(`${label}: invalid snapshot JSON`);
-      continue;
-    }
+    if (source.file.endsWith(".md")) {
+      data = ledgerRecords(raw);
+      if (!data) {
+        errors.push(`${label}: no \`## Ledger\` section in the plan`);
+        continue;
+      }
+    } else
+      try {
+        data = JSON.parse(raw);
+      } catch {
+        errors.push(`${label}: invalid snapshot JSON`);
+        continue;
+      }
     if (!object(data)) {
       errors.push(`${label}: snapshot must be an object`);
       continue;
@@ -107,6 +131,8 @@ function check(receipt, directory) {
     for (const row of rows.values()) {
       requireText(row.text, `${label} record ${row.id}.text`);
       records.set(key(source.id, row.id), row);
+      if (source.file.endsWith(".md") && /[ ~]/.test(row.mark))
+        openLines.add(key(source.id, row.id));
       if (row.outcome !== undefined) {
         if (!object(row.outcome) || !states.includes(row.outcome.state)) {
           errors.push(`${label} record ${row.id}: invalid outcome`);
@@ -136,8 +162,22 @@ function check(receipt, directory) {
     for (const item of mapped) {
       if (!items.has(item)) errors.push(`${label}: unknown item ${item}`);
     }
+    if (openLines.has(ref) && text(row.context))
+      errors.push(
+        `${label}: an open or deferred ledger line needs an item, not a context-only reason`,
+      );
     accounting.set(ref, mapped);
   }
+  // A summary row ("the rest, reopen only if asked") that swallows many open lines loses them;
+  // an item fed by more than one open line must say in `merges` why they are one piece of work.
+  const absorbed = new Map();
+  for (const ref of openLines)
+    for (const item of accounting.get(ref) ?? []) absorbed.set(item, (absorbed.get(item) ?? 0) + 1);
+  for (const [item, count] of absorbed)
+    if (count > 1 && !text(items.get(item)?.merges))
+      errors.push(
+        `item ${item}: absorbs ${count} open or deferred ledger lines; split it, or say in merges why they are one`,
+      );
   for (const ref of records.keys()) {
     if (!accounting.has(ref)) errors.push(`unaccounted record ${ref}`);
   }

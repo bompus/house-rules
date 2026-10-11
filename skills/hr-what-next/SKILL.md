@@ -123,7 +123,10 @@ offers are open and unanswered, run it in groups:
    what closed and what still waits.
 
 For a full audit, save a mapping from reviewed source records to items or
-reviewed records kept only as context. If `hr-handoff` and its reconciliation
+reviewed records kept only as context. When the report rebuilds a ledger or
+inventory from an earlier one, treat the earlier one as a source. Carry each of
+its open or deferred lines over as its own item, or record why it closed. A
+summary row such as "the rest, reopen only if asked" loses those lines. If `hr-handoff` and its reconciliation
 resources are available, reuse its `references/reconciliation.md` procedure
 and `scripts/check-reconciliation.mjs` checker. Otherwise retain the mapping
 and coverage gaps without claiming a mechanical check. A passing checker

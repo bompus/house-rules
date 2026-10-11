@@ -17,7 +17,11 @@ the sweep below. Update the plan when you update the list, add findings as they
 turn up, and use the same item states in both. At each reconciliation event in
 § Finishing work, update both records before choosing the next action. Point at
 the plan or handoff that owns an item instead of copying it; a handoff points
-at its plan.
+at its plan. When you rebuild a ledger or inventory from an earlier one, carry
+each open or deferred line over as its own item or record why it closed. A
+summary row such as "the rest, reopen only if asked" loses them. The
+`hr-handoff` skill's `scripts/check-reconciliation.mjs` checks this when the
+earlier plan is named as a source.
 
 - Head the plan with `Owner:` (session name, or `none` for a shared backlog)
   and `Status:` (`active`, `paused`, `blocked-on-user`, `completed`); update both
