@@ -41,9 +41,10 @@ the hidden gems". Do that work the first time.
 1. Search their rules, skills, docs and settings for the same idea before judging
    it. "We lack this" needs a search showing the gap; "we have this" needs the
    path.
-2. Search earlier sessions and decisions for standing constraints and options
-   already rejected. Do not recommend what was ruled out without saying so and
-   saying what changed.
+2. Search the earlier sessions and decisions you can reach for standing
+   constraints and options already rejected. Name any records you could not
+   reach, and do not read their absence as "never decided". Do not recommend
+   what was ruled out without saying so and saying what changed.
 3. State exactly what the comparison ran against: which fork or version of ours,
    which release of theirs, the competitor's real name.
 
@@ -67,11 +68,12 @@ ideas you dropped and why, so the recommended set and the table agree.
 1. Name the layer that owns each kept idea: shared portable rules, host or
    machine setup, one project, or a portfolio-level record. Use the user's own
    ownership map when they have one.
-2. A deferred idea gets the condition that reopens it and a home in the owning
-   repository; it does not live only in this reply.
-3. If you adopt something vendored, record where it came from so upstream
-   changes are noticed. If evaluating it exposed an upstream bug, offer to file
-   it.
+2. A deferred idea gets the condition that reopens it and a proposed home in
+   the owning repository; offer to save it there rather than leaving it only in
+   this reply.
+3. If an idea means adopting something vendored, offer to record where it came
+   from so upstream changes are noticed. If evaluating it exposed an upstream
+   bug, offer to file it.
 4. Wording adopted into rules describes behavior and carries no "borrowed from"
    history. Provenance belongs in the research record.
 
@@ -89,7 +91,9 @@ ideas you dropped and why, so the recommended set and the table agree.
    expected wall-clock time and check host load first); get independent opinions
    from other models or a review panel, with a brief that includes your findings
    and the candidates you rejected, choosing the reviewers yourself; build or
-   adopt one idea; stop here.
+   adopt one idea, saying which steps that option includes (file changes,
+   installing the tool, a pull request, landing) and which it leaves for a later
+   offer; stop here.
 
 "Tell me more" and "thoughts?" authorize research and nothing else. Changing
 files, installing the tool or opening a pull request needs the user's selection.
