@@ -78,8 +78,8 @@ completed state before the completion message; a report alone does not do so.
 6. Continue work that can advance under existing authorization. Ask only for
    unresolved choices using the governing offer format. Invoking this skill is
    asking for the backlog (§ Session purpose), so present every needs-your-decision
-   item as an offer, or as a walk-through when three or more questions are open
-   questions, instead of only counting it. Record each answer as yes, no
+   item as an offer, or as a walk-through when three or more questions are open,
+   instead of only counting it. Record each answer as yes, no
    (dropped) or defer with a trigger other than the user's selection, so the
    item is not asked again on every run. Items waiting on others stay listed
    with their trigger and are not asked. Preserve schedules
