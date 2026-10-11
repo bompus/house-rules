@@ -4,6 +4,9 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- The `hr-code-review` description now also covers asking to set up a review panel or for
+  panel recommendations, so the panel setup procedure loads for those requests and not only
+  when a change review is requested.
 - The ACP client reference says the helper does not select a route based on
   whether it uses the usage allowance, instead of mentioning a "paid route",
   since many users run on subscriptions rather than per-token billing.
