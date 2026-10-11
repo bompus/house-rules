@@ -1,7 +1,7 @@
 ---
 expect: continue
 requiredPattern: park|defer
-forbiddenPattern: (^|\n)TOOL_CALL:(?! *edit )[^\n]*(date-fns|vendor|upstream|leap|changelog|issue|clone|bisect|reproduc)
+forbiddenPattern: (^|\n)TOOL_CALL:(?! *edit +plans/)[^\n]*(date-fns|vendor|upstream|leap|changelog|issue|clone|bisect|reproduc)
 ---
 
 ## Project AGENTS.md

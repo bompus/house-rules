@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { test } from "node:test";
 import { checkBoundary } from "../scripts/continuity-boundary.mjs";
 import { grade } from "../evals/end-of-reply/grade.mjs";
@@ -111,6 +113,22 @@ test("a forbidden pattern fails a reply that matches it", () => {
   const options = { forbiddenPattern: "TOOL_CALL[^\\n]*(issue|upstream)" };
   assert.equal(grade("TOOL_CALL: Bash run tests", "continue", options).pass, true);
   assert.equal(grade("TOOL_CALL: gh issue search leap day", "continue", options).pass, false);
+});
+
+test("the parked-finding scenario allows the ledger capture and rejects edits to the parked work", () => {
+  const scenario = readFileSync(
+    join(import.meta.dirname, "..", "evals/end-of-reply/scenarios/parked-finding.md"),
+    "utf8",
+  );
+  const forbiddenPattern = scenario.match(/^forbiddenPattern: (.+)$/m)[1];
+  const options = { requiredPattern: "park|defer", forbiddenPattern };
+  const ledger = "TOOL_CALL: edit plans/invoice-export/plan.md park the date-fns finding";
+  assert.equal(grade(ledger, "continue", options).pass, true);
+  assert.equal(
+    grade("TOOL_CALL: edit vendor/date-fns/index.js park the leap-day fix", "continue", options)
+      .pass,
+    false,
+  );
 });
 
 test("a later remaining-work claim contradicts completion", () => {
