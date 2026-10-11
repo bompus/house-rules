@@ -4,6 +4,13 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- `hr-writing-pr` now says how to brief a large change or a stacked one. A change too big to read
+  in file order gets a numbered reading order, with the mechanical files last and a line on what
+  was checked in them. A "Decisions for you" list appears only when the reviewer has a call tests
+  cannot make, and a "Not covered" line names adjacent work left out on purpose. A stacked pull
+  request opens with its parent, describes only its own layer and names other layers by number.
+  The evidence line now names the head commit the checks ran against. Before, the skill asked only
+  for a review starting point.
 - The always-on Writing rule now says how to write plainly in every reply, status note and
   question. Write for a reader who has not seen your working notes. Name a thing by what it is or
   does, not by a label you coined, a file or section name, or a term from a tool, repository or
