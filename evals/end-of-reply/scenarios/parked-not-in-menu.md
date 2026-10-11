@@ -1,7 +1,7 @@
 ---
 expect: offer-or-continue
-requiredPattern: ^(?=[\s\S]*(`\d+[A-Z]`|(^|\n)1\.))
-forbiddenPattern: (^|\n)(`\d+[A-Z]`|\d+\.|\*\*Question)[^\n]*(leap|date-fns|vendor|flaky|retry)
+minOptions: 2
+forbiddenInOffer: leap|date-fns|vendor|flaky|retry
 ---
 
 ## Project AGENTS.md

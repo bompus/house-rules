@@ -4,6 +4,11 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- The end-of-reply eval's `parked-not-in-menu` and `spin-off-batch` scenarios read the offer with the
+  shared parser (`minOptions`, `forbiddenInOffer`), and each run reports whether the turn was right
+  apart from the scenario's declared checks. `--baseline` prints a `behavior only` line. Before,
+  `parked-not-in-menu` scanned only numbered lines that started in column zero, so a bulleted or
+  indented option that named a parked item passed, and a format-only miss looked like a changed turn. `stacked-offers` also accepts a reply that loads `hr-what-next` to queue the decision, which the rules prescribe, without the word "walk-through".
 - The "Keep every live candidate" paragraph in the core rules is split into three, since a recent addition
   had grown it past 900 characters. Eight skill descriptions are shorter (290 bytes in all:
   hr-extract-shared-steps, hr-audit-choices, hr-code-review, hr-stock-ui-audit, hr-design-exploration,

@@ -32,6 +32,7 @@ test("--baseline reports each arm and warns about scenarios every arm passes", (
   const r = baseline(t, `() => "TOOL_CALL: Bash run tests\\n"`);
   assert.equal(r.status, 1, r.stderr);
   assert.match(r.stdout, /^rules 2\/18, one-line 2\/18, no-rules 2\/18$/m);
+  assert.match(r.stdout, /^behavior only: rules \d+\/18, one-line \d+\/18, no-rules \d+\/18$/m);
   assert.match(r.stdout, /^WARN continue\.md /m);
   assert.match(r.stdout, /^WARN followups\.md /m);
   assert.doesNotMatch(r.stdout, /WARN parked-finding\.md/);
@@ -56,6 +57,7 @@ test("--baseline exits on the rules arm alone and stays quiet when only the rule
   );
   assert.equal(r.status, 0, r.stdout);
   assert.match(r.stdout, /^rules 18\/18, one-line 1\/18, no-rules 1\/18$/m);
+  assert.match(r.stdout, /^behavior only: rules 18\/18, /m);
   assert.match(r.stdout, /WARN complete\.md/);
   assert.equal((r.stdout.match(/^WARN /gm) ?? []).length, 1);
 });

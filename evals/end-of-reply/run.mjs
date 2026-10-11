@@ -57,7 +57,12 @@ const scenarios = readdirSync(dir)
     const { meta, body } = parseFragment(readFileSync(join(dir, file), "utf8"), file);
     if (!EXPECTS.includes(meta.expect))
       fail(`${file}: expect: must be one of ${EXPECTS.join(", ")}`);
-    for (const key of ["requiredPattern", "forbiddenPattern", "forbiddenCall"]) {
+    for (const key of [
+      "requiredPattern",
+      "forbiddenPattern",
+      "forbiddenInOffer",
+      "forbiddenCall",
+    ]) {
       try {
         new RegExp(meta[key] ?? "", "i");
       } catch (e) {
@@ -73,6 +78,8 @@ const scenarios = readdirSync(dir)
       requiredPattern: meta.requiredPattern,
       forbiddenPattern: meta.forbiddenPattern,
       options: meta.options,
+      minOptions: meta.minOptions,
+      forbiddenInOffer: meta.forbiddenInOffer,
       forbiddenCall: meta.forbiddenCall,
     };
   });
@@ -85,6 +92,7 @@ if (values.baseline)
     { name: "no-rules", text: "(none)", coded: false, sliced: 0 },
   );
 const passes = new Map(arms.map((a) => [a.name, new Map()]));
+const behaviors = new Map(arms.map((a) => [a.name, 0]));
 const indent = (text) =>
   text
     .trim()
@@ -102,6 +110,8 @@ for (const {
   requiredPattern,
   forbiddenPattern,
   options,
+  minOptions,
+  forbiddenInOffer,
   forbiddenCall,
 } of scenarios) {
   for (const arm of arms) {
@@ -140,8 +150,11 @@ for (const {
         requiredPattern,
         forbiddenPattern,
         options,
+        minOptions,
+        forbiddenInOffer,
         forbiddenCall,
       });
+      if (g.behavior) behaviors.set(arm.name, behaviors.get(arm.name) + 1);
       if (g.pass) passed++;
       else if (arm.name === "rules") failed++;
       console.log(`${g.pass ? "PASS" : "FAIL"} ${label} run ${i + 1}: ${JSON.stringify(g)}`);
@@ -154,6 +167,10 @@ if (values.baseline) {
   const total = scenarios.length * runs;
   const sum = (name) => [...passes.get(name).values()].reduce((a, b) => a + b, 0);
   console.log(arms.map((a) => `${a.name} ${sum(a.name)}/${total}`).join(", "));
+  // Whether the reply took the right turn, apart from the scenario's declared labels, calls and patterns.
+  console.log(
+    `behavior only: ${arms.map((a) => `${a.name} ${behaviors.get(a.name)}/${total}`).join(", ")}`,
+  );
   for (const { file } of scenarios)
     if (arms.every((a) => passes.get(a.name).get(file) === runs))
       console.log(

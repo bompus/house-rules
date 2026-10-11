@@ -32,7 +32,14 @@ It is tested on each `&&`, `||`, `;` or `|` segment of a call (only `&&` and
 it to the segment's start (`^…`) and name the mutating command, so a read-only call or a ledger entry that mentions the
 action does not match. With it, any other call is allowed. Without it, any call
 fails except keeping the ledger, a plan, notes or a handoff (`TOOL_CALL: edit
-the plan's ledger …`). These checks enforce declared replay facts, not semantics
+the plan's ledger …`). `minOptions: 2` requires at least that many options, and
+`forbiddenInOffer: <pattern>` rejects a pattern in the offer's questions and
+options but not in the prose around it. A run's result lists `behavior` (the expectation met, including the offer
+shape the rules ask for: the recommendation marker, the reply line, at least one option
+and, with `--coded`, the coded form) and `declared` (the scenario's own labels,
+calls and patterns held). `pass` needs both, and `--baseline` prints a
+`behavior only` line, so a wrong label shows as a declared-check miss, not a
+changed turn. These checks enforce declared replay facts, not semantics
 for arbitrary replies.
 
 `scripts/continuity-boundary.mjs` checks an explicit version-1 record with

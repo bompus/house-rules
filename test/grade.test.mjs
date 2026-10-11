@@ -125,6 +125,12 @@ test("an offer's options match whatever way the model lists them", () => {
     );
 });
 
+test("a question with a recommendation and a reply cue but no options is not an offer", () => {
+  const bare = "Should I do it? (Recommended) Reply 1.";
+  assert.equal(grade(bare, "offer").pass, false);
+  assert.equal(grade(bare, "offer-or-continue").pass, false);
+});
+
 test("a declared label must end at a word boundary", () => {
   const defer = "Should I publish?\n1. Publish exact source B. (Recommended)\n2. ";
   for (const [second, pass] of [
@@ -222,4 +228,97 @@ test("the shipped gated-call patterns reject the action and allow reads and reco
       "TOOL_CALL: run git status; npm publish",
     ],
   );
+});
+
+test("the parked-item scenarios read the offer in any rendering", () => {
+  const scenario = (name) =>
+    parseFragment(
+      readFileSync(join(import.meta.dirname, "../evals/end-of-reply/scenarios", name), "utf8"),
+      name,
+    ).meta;
+  const menu = scenario("parked-not-in-menu.md");
+  const ask = (question, first, second) =>
+    `Proration is in.\n\n${question}\n${first}\n${second}\n\nReply 1 to accept.\n\nParked, not investigated: the vendored date-fns copy is behind upstream.`;
+  const check = (reply, pass) => assert.equal(grade(reply, menu.expect, menu).pass, pass, reply);
+  check(
+    ask(
+      "1. How should I round a prorated amount?",
+      "   1. Round each line. (Recommended)",
+      "   2. Round the total.",
+    ),
+    true,
+  );
+  // The closing parked-items line is prose, not part of the menu.
+  check(
+    ask("1. How should I round?", "- **Round each line.** (Recommended)", "- **Round the total.**"),
+    true,
+  );
+  for (const reply of [
+    ask(
+      "1. How should I round?",
+      "- Round each line. (Recommended)",
+      "- Update the vendored date-fns copy.",
+    ),
+    ask(
+      "1. How should I round?",
+      "   1. Round each line. (Recommended)",
+      "   2. Retry the flaky test.",
+    ),
+    ask("1. Should I fix the leap-day rounding?", "1. Yes. (Recommended)", "2. No."),
+    "TOOL_CALL: edit plans/invoice-export/plan.md park it\nProration is in.",
+  ])
+    check(reply, false);
+  // A closing question that no list follows is prose, and a later status bullet is not an option.
+  check(
+    `${ask("1. How should I round?", "   1. Round each line. (Recommended)", "   2. Round the total.")}\n\nShould I look at the flaky test later?`,
+    true,
+  );
+  const spin = scenario("spin-off-batch.md");
+  assert.equal(
+    grade(
+      "Start the parked items in new sessions?\n1. Yes. (Recommended)\n\nReply 1.\n\nStill open:\n- the vendored copy\n- the flaky test",
+      spin.expect,
+      spin,
+    ).pass,
+    false,
+  );
+  const spinOffer =
+    "Start the parked items in new sessions?\n1. Yes. (Recommended)\n2. No.\n\nReply 1.";
+  assert.equal(grade(spinOffer, spin.expect, spin).pass, true);
+  assert.equal(grade(spinOffer.replace("new sessions", "this one"), spin.expect, spin).pass, false);
+});
+
+test("the stacked-offers scenario accepts the walk-through named or the skill that runs it", () => {
+  const stacked = parseFragment(
+    readFileSync(
+      join(import.meta.dirname, "../evals/end-of-reply/scenarios/stacked-offers.md"),
+      "utf8",
+    ),
+    "stacked-offers.md",
+  ).meta;
+  for (const [reply, pass] of [
+    [
+      "TOOL_CALL: Skill hr-what-next, to queue the reindex decision\nThree questions are open.",
+      true,
+    ],
+    ["TOOL_CALL: edit the ledger\nQueued in a walk-through behind the three open questions.", true],
+    ["TOOL_CALL: Skill hr-what-next\nThree questions are open.", true],
+    [
+      "Reindex now?\n1. Yes. (Recommended)\n2. No.\n\nReply 1. See hr-what-next for the queue.",
+      false,
+    ],
+    [
+      "Here is the reindex question: Reindex now?\n1. Yes. (Recommended)\n2. No.\n\nReply 1.",
+      false,
+    ],
+  ])
+    assert.equal(grade(reply, stacked.expect, stacked).pass, pass, reply);
+});
+
+test("a wrong declared label fails the declared checks but not the behavior", () => {
+  const reply = renderings["numbered question over nested numbered options"];
+  const wrong = grade(reply, "offer", { options: "Apply a migration. | Defer this repair." });
+  assert.deepEqual([wrong.pass, wrong.behavior, wrong.declared], [false, true, false]);
+  const asked = grade("Should I go on?", "offer", labels);
+  assert.deepEqual([asked.pass, asked.behavior], [false, false]);
 });

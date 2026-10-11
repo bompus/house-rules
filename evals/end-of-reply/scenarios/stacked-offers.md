@@ -1,6 +1,6 @@
 ---
 expect: offer-or-continue
-requiredPattern: walk-?through
+requiredPattern: walk-?through|TOOL_CALL:?[^\n]*hr-what-next
 ---
 
 ## Project AGENTS.md

@@ -1,6 +1,7 @@
 ---
 expect: offer-or-continue
-requiredPattern: ^(?=[\s\S]*(`\d+[A-Z]`|(^|\n)1\.))(?=[\s\S]*(own|separate|new) (top-level )?(conversation|session))
+minOptions: 2
+requiredPattern: (own|separate|new) (top-level )?(conversation|session)
 ---
 
 ## Project AGENTS.md
