@@ -6,7 +6,14 @@ export const EXPECTS = ["continue", "offer", "offer-or-continue", "blocked", "co
 export function grade(
   reply,
   expect,
-  { coded = false, scenario = "", requiredCall = "", requiredText = "", requiredPattern = "" } = {},
+  {
+    coded = false,
+    scenario = "",
+    requiredCall = "",
+    requiredText = "",
+    requiredPattern = "",
+    forbiddenPattern = "",
+  } = {},
 ) {
   if (!EXPECTS.includes(expect))
     throw new Error(`unknown expect "${expect}" (use ${EXPECTS.join(", ")})`);
@@ -26,6 +33,7 @@ export function grade(
     (!requiredCall || (calls.length === 1 && calls[0] === requiredCall)) &&
     (!requiredText || reply.includes(requiredText)) &&
     (!requiredPattern || new RegExp(requiredPattern, "i").test(reply)) &&
+    (!forbiddenPattern || !new RegExp(forbiddenPattern, "i").test(reply)) &&
     (scenario !== "exact-source-changed.md" ||
       (!!requiredText && options.some((line) => line.includes(requiredText)))) &&
     (scenario !== "phase-remainder.md" ||

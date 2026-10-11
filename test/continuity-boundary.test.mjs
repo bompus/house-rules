@@ -107,6 +107,12 @@ test("a required pattern is matched without regard to case", () => {
   assert.equal(grade(offer + "\nWalk-through of the open offers.", "offer", options).pass, true);
 });
 
+test("a forbidden pattern fails a reply that matches it", () => {
+  const options = { forbiddenPattern: "TOOL_CALL[^\\n]*(issue|upstream)" };
+  assert.equal(grade("TOOL_CALL: Bash run tests", "continue", options).pass, true);
+  assert.equal(grade("TOOL_CALL: gh issue search leap day", "continue", options).pass, false);
+});
+
 test("a later remaining-work claim contradicts completion", () => {
   for (const reply of [
     "Nothing remains to verify; publishing the source remains.",

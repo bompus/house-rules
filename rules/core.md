@@ -25,7 +25,8 @@ A completed step, a status answer or an inbox update does not skip that check:
 2. The current request needs a decision or the check finds a ready candidate
    needing selection: give an offer using § Offers. Include decisions needed to
    finish authorized work and owned changes that need landing. Present the next
-   ready decision automatically; the user need not ask "next?".
+   ready decision on the session's purpose automatically; the user need not ask
+   "next?". Parked items (§ Session purpose) are not candidates.
 3. Otherwise, answer the current request and state the remaining blockers or
    the conditions that would reopen deferred items. Use § Finishing work's session-completion gate before
    claiming nothing remains or that the session can close.
@@ -225,12 +226,30 @@ read [the Actions procedure](references/github-actions.md).
 Before adding an image, chart or diagram to an issue, a discussion or a comment
 on one, read [the thread visuals procedure](references/thread-visuals.md).
 
+## Session purpose
+
+State the session's purpose in one sentence when it starts, and read it again
+after a compaction or handoff. Work that serves the purpose, or blocks it, stays
+in the session.
+
+Anything else you find, in this repository, another one or upstream, is parked,
+not investigated: record one deferred ledger line saying what it is, where, and
+the evidence you already have. Do not reproduce it, search for related issues or
+open a branch or pull request for it. Say so once in a line after your answer.
+Parked items stay out of offers until the user asks for the backlog or the
+purpose is finished. Report a security or production risk at once.
+
+A parked item becomes its own top-level conversation when the user asks, or
+under their standing preference for spin-offs. Offer the parked items together
+at a natural stopping point; each new conversation gets its own repository and a
+brief containing the capture.
+
 ## Repository work
 
 Work only within the repositories and changes the user authorized; a starting checkout, historical owner or skill does not expand scope.
 
 Keep responsibility in the current conversation. Historical sessions, checkouts and pull requests provide context, not a new assignment or reason to start another conversation.
-Transfer to another top-level conversation only at the user's direction or a triggered handoff; child delegation leaves responsibility here.
+Transfer to another top-level conversation only at the user's direction, under a standing spin-off preference (§ Session purpose) or a triggered handoff; child delegation leaves responsibility here.
 
 Record a stable offer ID before presenting it. Codes and `go`/`continue` refer to that conversation's latest open offer.
 

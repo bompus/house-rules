@@ -64,6 +64,7 @@ const scenarios = readdirSync(dir)
       requiredCall: meta.requiredCall,
       requiredText: meta.requiredText,
       requiredPattern: meta.requiredPattern,
+      forbiddenPattern: meta.forbiddenPattern,
     };
   });
 
@@ -83,7 +84,15 @@ const indent = (text) =>
     .join("\n");
 
 let failed = 0;
-for (const { file, expect, body, requiredCall, requiredText, requiredPattern } of scenarios) {
+for (const {
+  file,
+  expect,
+  body,
+  requiredCall,
+  requiredText,
+  requiredPattern,
+  forbiddenPattern,
+} of scenarios) {
   for (const arm of arms) {
     const label = values.baseline ? `[${arm.name}] ${file}` : file;
     const prompt = [
@@ -119,6 +128,7 @@ for (const { file, expect, body, requiredCall, requiredText, requiredPattern } o
         requiredCall,
         requiredText,
         requiredPattern,
+        forbiddenPattern,
       });
       if (g.pass) passed++;
       else if (arm.name === "rules") failed++;

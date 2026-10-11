@@ -50,6 +50,7 @@ function readPlan(path) {
   const errors = [];
   const status = field("Status");
   const owner = field("Owner");
+  const purpose = field("Purpose");
   if (!status) errors.push("no `Status:` line in the first 40 lines");
   if (!owner) errors.push("no `Owner:` line in the first 40 lines");
   const start = lines.findIndex((line) => /^#{1,6}\s+Ledger\s*$/i.test(line));
@@ -86,7 +87,7 @@ function readPlan(path) {
     if (!inLedger && i > 0 && (NARRATIVE.test(line) || /^\s*[-*]\s+\[ \]/.test(line)))
       narrative.push({ line: i + 1, text: line.trim() });
   });
-  return { status, owner, items, errors, narrative };
+  return { status, owner, purpose, items, errors, narrative };
 }
 
 function notesRoot(planPath) {
@@ -192,6 +193,10 @@ function run(options) {
         report.findings,
       );
   }
+  if (!plan.purpose)
+    report.warnings.push(
+      "no `Purpose:` line in the first 40 lines (the session's purpose, one sentence)",
+    );
   for (const entry of plan.narrative.slice(0, 5))
     report.warnings.push(`L${entry.line} outside the ledger: ${clip(entry.text, 70)}`);
   if (plan.narrative.length > 5)

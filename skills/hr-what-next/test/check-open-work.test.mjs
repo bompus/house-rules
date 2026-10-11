@@ -1,6 +1,14 @@
 import { afterEach, expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -17,9 +25,16 @@ function setup({ status = "active", ledger = [], extra = "", owner = "Alice, ses
   roots.push(notes);
   const topic = join(notes, "plans", "demo");
   mkdirSync(topic, { recursive: true });
-  const body = [`Owner: ${owner}`, `Status: ${status}`, "", "## Ledger", ...ledger, "", extra].join(
-    "\n",
-  );
+  const body = [
+    `Owner: ${owner}`,
+    `Status: ${status}`,
+    "Purpose: demo",
+    "",
+    "## Ledger",
+    ...ledger,
+    "",
+    extra,
+  ].join("\n");
   writeFileSync(join(topic, "plan.md"), body);
   return { notes, topic, plan: join(topic, "plan.md") };
 }
@@ -223,4 +238,13 @@ test("marker lines outside the ledger warn but do not change the result", () => 
   const { code, report } = check(plan);
   expect(code).toBe(0);
   expect(report.warnings).toHaveLength(2);
+});
+
+test("a plan without a Purpose line warns but does not change the result", () => {
+  const { plan } = setup({ status: "completed", ledger: ["- [x] a: shipped - evidence: x"] });
+  const text = readFileSync(plan, "utf8").replace("Purpose: demo\n", "");
+  writeFileSync(plan, text);
+  const { code, report } = check(plan);
+  expect(code).toBe(0);
+  expect(report.warnings).toEqual([expect.stringContaining("Purpose:")]);
 });

@@ -12,6 +12,17 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   with `gh ... --attach` (`gh issue create`, `edit`, `comment` and `gh pr comment`),
   and where no attach route exists (`gh discussion`), hand the user the text and
   the file. The bug-reporting reference points to it.
+- The core rules have a Session purpose section: the session states its purpose
+  in one sentence, work that serves or blocks it stays, and anything else found
+  (here, in another repository or upstream) is parked as one deferred ledger line
+  instead of being investigated. Parked items are mentioned once after the
+  answer, stay out of offers until the user asks for the backlog or the purpose
+  is finished, and are then offered together as separate conversations. The
+  transfer line now allows that, and the offer rule presents the next decision on
+  the session's purpose. The plan-files rule adds a `Purpose:` header line, and
+  `hr-what-next`'s `check-open-work.mjs` warns when a plan has none. The
+  end-of-reply eval has `parked-finding`, `parked-not-in-menu` and `spin-off-batch`
+  scenarios and a `forbiddenPattern` scenario field.
 - `hr-what-next` now names the host render tools for its backlog visual (T3 Code:
   `html_preview`, then `html_render`), so the text outline is used only where the
   host has none.

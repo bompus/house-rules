@@ -20,7 +20,8 @@ a smoke test; use `--runs 3` before trusting a wording change.
 offer or completion claim. `complete` requires an explicit nothing-remains
 statement. A scenario may declare `requiredCall` or `requiredText` for its exact
 operation or blocker, or `requiredPattern` (a case-insensitive regular
-expression) for wording that may vary. These checks enforce declared replay facts, not semantics
+expression) for wording that may vary, or `forbiddenPattern` for wording that
+must not appear (an action the rules say to skip). These checks enforce declared replay facts, not semantics
 for arbitrary replies.
 
 `scripts/continuity-boundary.mjs` checks an explicit version-1 record with

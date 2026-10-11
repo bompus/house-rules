@@ -21,7 +21,8 @@ at its plan.
 
 - Head the plan with `Owner:` (session name, or `none` for a shared backlog)
   and `Status:` (`active`, `paused`, `blocked-on-user`, `completed`); update both
-  when they change.
+  when they change. Add `Purpose:` with the session's purpose in one sentence
+  (§ Session purpose).
 - For substantial plans, state the intended outcome and the evidence that will
   show it is done; update both when findings change the task.
 - When new work arrives mid-task, add it as pending before switching; never
