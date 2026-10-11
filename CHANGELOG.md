@@ -4,6 +4,11 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Offers now say how far each option goes. An option that produces a change names what it changes,
+  the steps it includes (pull request, review, landing, cleanup) and what it leaves for a later
+  offer. The acceptance line keeps its exact form, and anything `go` leaves out goes in its own
+  line. Where the host can render a visual, an offer with two or more questions or a phased option
+  also gets a card beside the text offer, and `hr-what-next` points to it.
 - `hr-what-next` now asks about deferred items nobody decided. A deferral is not a yes or a
   no, so an item deferred with only the user's selection as its trigger counts as awaiting a
   decision, and invoking the skill is asking for the backlog: those items are presented as an

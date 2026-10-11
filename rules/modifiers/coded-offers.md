@@ -16,14 +16,18 @@ Use § Finishing work to select displayed candidates. Each offer stands alone:
    "(Not Recommended)"; name partial combinations, such as "(Combinable with 1A)".
 4. The exact acceptance line. One question uses "Recommended: reply `<code>` or `go`".
    Several use "Recommended combination: reply `<code>, <code>` or `go`".
+   Keep that line to that form. Say what `go` leaves out, such as a later phase
+   or a follow-up offer, in its own line.
 
 Include alternatives the user raised or needed to explain a material tradeoff.
 Routine offers include an option to defer or drop displayed proposals; say other ledger
 items remain pending. Full backlog offers include `All done`, which drops or defers
 every listed candidate. Record what was decided about each; deferral never means completion.
 
-Name implementation and landing scope in applicable options. Selection authorizes
-it; questions authorize nothing. Implementation after analysis needs selection.
+Name what each applicable option produces and how far it goes. Cover the change,
+the steps it includes (such as the pull request, review, landing and cleanup) and
+what it leaves for a later offer. Selection authorizes that scope; questions authorize
+nothing. Implementation after analysis needs selection.
 The coded list makes an offer; a prose recommendation alone does not.
 `go` or `continue` selects the recommendation in the latest open offer. Keep that
 offer and its scope in the ledger; status or inbox updates leave it open. Record
@@ -39,6 +43,12 @@ exclusive option. Independent options may each be recommended; state their
 combined scope in the acceptance line. For sequential landing phases, label
 options "(Recommended, phase 1)" and "(Recommended, phase 2)". `go` covers phase 1
 only; offer phase 2 after phase 1 lands. Record conditional work with its trigger.
+
+When the host can render a visual, show an offer with two or more questions, or
+with a phased option, as a card beside the text offer. Give each question one
+block. Show every option's code, a short label and its steps from start to
+finish, and mark the recommended options. Add a short box on how to reply. The
+text offer stays complete and carries the acceptance line.
 
 Use text for questions unless § Question cards is enabled. Tool availability
 alone does not enable it. When enabled, follow it beside the complete text offer.

@@ -53,9 +53,11 @@ Write the offer as normal text that stands alone, with these parts in order:
 4. One line saying exactly what to reply to accept the recommendation.
 
 A recommendation in prose without the
-option list is not an offer. When an option includes implementation, say what
-it changes and whether it lands; choosing it authorizes that scope, and asking
-about it authorizes nothing.
+option list is not an offer. When an option produces a change (code, a
+document, a pull request), say what it changes and which steps it includes,
+such as the pull request, review, landing and cleanup. Also say what it leaves
+for a later offer. Choosing it authorizes that scope, and asking about it
+authorizes nothing.
 
 When three or more offers are open and unanswered, do not present another one.
 Queue the new decision in a walk-through (load the `hr-what-next` skill) and
