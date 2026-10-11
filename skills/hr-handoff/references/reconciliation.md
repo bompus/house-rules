@@ -9,9 +9,10 @@ replace reading their content or reviewing context-only classifications.
 Review the current transcript and the preceding handoff's source transcript
 when available. Include linked plans, child ledgers, pending decisions, owned
 Git work and what the host binds to the outgoing thread (scheduled tasks, PR
-watches, agent-mail registration), as listed in the skill's thread-move step. Use the host's existing export and session-search
-tools. Preserve source IDs and text rather than exporting only the items you
-already remembered.
+watches, agent-mail registration and subscriptions), as listed in the skill's
+thread-move step. Use the host's existing export and session-search tools.
+Preserve source IDs and text rather than exporting only the items you already
+remembered.
 
 Normalize each source into a JSON object with a `records` array. Each record
 has a unique `id` and its original `text`. Record the original location and
