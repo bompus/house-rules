@@ -1,6 +1,6 @@
 ---
 name: hr-audit-choices
-description: "Audit the decisions an implementing agent made for the user, not its diff: trace the work into a choices ledger with a verdict per choice, changing no code. Use when asked which choices or assumptions went into implemented work, before landing delegated work the user wants reviewed by decision, or when a fix may be shaped to one failing case."
+description: "Audit the decisions an implementing agent made for the user, not its diff: trace the work into a choices ledger with a verdict per choice, changing no code. Use when asked which choices or assumptions went into implemented work, before landing delegated or AI-implemented work the user wants reviewed by decision, or when a fix may be shaped to one failing case."
 ---
 
 # Audit choices

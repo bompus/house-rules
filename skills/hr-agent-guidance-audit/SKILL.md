@@ -1,6 +1,6 @@
 ---
 name: hr-agent-guidance-audit
-description: Audit and simplify agent-facing rules, skills and linked documentation within the requested repository scope. Use for guidance cleanup, skill description accuracy, token/clarity audits, contradictions and duplication across agent instructions, or deciding which skills, docs and scripts to retire or merge.
+description: Audit and simplify agent-facing rules, skills and linked docs within the requested repository scope. Use for guidance cleanup, skill description accuracy, token/clarity audits, contradictions and duplication across instructions, or deciding which skills, docs and scripts to retire or merge.
 ---
 
 # Agent guidance audit
