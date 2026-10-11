@@ -45,8 +45,9 @@ options "(Recommended, phase 1)" and "(Recommended, phase 2)". `go` covers phase
 only; offer phase 2 after phase 1 lands. Record conditional work with its trigger.
 
 When the host can render a visual, show an offer with two or more questions, or
-with a phased option, as a card beside the text offer. Give each question one
-block. Show every option's code, a short label and its steps from start to
+with a phased option, as an offer visual beside the text offer. It is a rendered
+page, not a question-card tool, so § Question cards does not gate it. Give each
+question one block. Show every option's code, a short label and its steps from start to
 finish, and mark the recommended options. Add a short box on how to reply. The
 text offer stays complete and carries the acceptance line.
 

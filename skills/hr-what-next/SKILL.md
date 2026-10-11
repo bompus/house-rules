@@ -74,7 +74,7 @@ completed state before the completion message; a report alone does not do so.
    is empty ("Nothing"), and put the highest-ranked item last within a group.
    Render it with the host's own tool when one exists (T3 Code: `html_preview`,
    then `html_render`); give a text outline in the same order only where the host
-   has none. The offer itself follows the offer rules, including the offer card
+   has none. The offer itself follows the offer rules, including the offer visual
    where they call for one.
 6. Continue work that can advance under existing authorization. Ask only for
    unresolved choices using the governing offer format. Invoking this skill is
