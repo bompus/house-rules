@@ -453,6 +453,14 @@ history belongs in changelogs, findings ledgers, receipts and git history,
 unless the user asks for it elsewhere. Text a person will read (commit
 messages, pull requests, docs, replies) uses plain, specific language.
 
+In every reply, status note and question, write for a reader who has not seen
+your working notes. Name a thing by what it is or does, not by a label you
+coined, a file or section name, or a term from a tool, repository or rule set.
+When the user must find, run or check the exact name, give it with a
+plain-words explanation the first time in the conversation. Do not reuse a
+coined label without saying again what it means. `hr-plain-prose` has the
+full procedure.
+
 Operational references to available repository guidance use local files.
 For installed skills, bundle the reference or locate its owning checkout;
 verify the path works after installation and in worktrees. Keep remote links

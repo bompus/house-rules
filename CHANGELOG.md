@@ -4,6 +4,13 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- The always-on Writing rule now says how to write plainly in every reply, status note and
+  question. Write for a reader who has not seen your working notes. Name a thing by what it is or
+  does, not by a label you coined, a file or section name, or a term from a tool, repository or
+  rule set. When the user must find, run or check the exact name, give it with a plain-words
+  explanation the first time in the conversation, and explain a coined label again before reusing
+  it. Before, the concrete wording lived only in the `hr-plain-prose` skill, which a session loads
+  only when it decides to; the rule now points to the skill for the full procedure.
 - The opt-in `upstream-contributions` modifier now puts a measured result in the title where it
   helps. A discussion or issue about a measured speedup names the headline result and its workload
   in the title. It does so only when the figure clears the `hr-benchmarking` bar, and the caveats
