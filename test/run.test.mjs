@@ -31,7 +31,7 @@ const baseline = (t, reply) => {
 test("--baseline reports each arm and warns about scenarios every arm passes", (t) => {
   const r = baseline(t, `() => "TOOL_CALL: Bash run tests\\n"`);
   assert.equal(r.status, 1, r.stderr);
-  assert.match(r.stdout, /^rules 2\/17, one-line 2\/17, no-rules 2\/17$/m);
+  assert.match(r.stdout, /^rules 2\/18, one-line 2\/18, no-rules 2\/18$/m);
   assert.match(r.stdout, /^WARN continue\.md /m);
   assert.match(r.stdout, /^WARN followups\.md /m);
   assert.doesNotMatch(r.stdout, /WARN parked-finding\.md/);
@@ -50,10 +50,10 @@ test("--baseline exits on the rules arm alone and stays quiet when only the rule
   const spinOffer = offer.replace("Apply it", "Start the parked items in new sessions.");
   const r = baseline(
     t,
-    `(p) => /All selected work is verified/.test(p) ? "Done. Nothing remains." : !p.includes("RULES-MARKER") ? "Done." : /slot is occupied/.test(p) ? "Publication remains blocked. The integration slot is occupied." : /explicitly paused/.test(p) ? "Work is paused. Resume only when the user asks." : /input explicitly frozen/.test(p) ? "Blocked. The evaluation input is frozen." : /one exact revision|already authorized/.test(p) ? "Blocked. The integration slot is occupied." : /exactly this call|Replay action label/.test(p) ? "TOOL_CALL: verify installed configuration\\n" : /research checkout/.test(p) ? "${keepOffer}" : /Reindex the docs search/.test(p) ? "${queueOffer}" : /Purpose done/.test(p) ? "${spinOffer}" : /round each line/.test(p) ? "${offer}" : /leap days/.test(p) ? "TOOL_CALL: edit plans/invoice-export/plan.md park the date-fns finding\\n" : /unselected/i.test(p) ? "${decision}" : /source revision A/.test(p) ? "${sourceOffer}" : /approval|not selected/.test(p) ? "${offer}" : "TOOL_CALL: Bash run tests\\n"`,
+    `(p) => /All selected work is verified/.test(p) ? "Done. Nothing remains." : !p.includes("RULES-MARKER") ? "Done." : /passed over/.test(p) ? "Done. Nothing remains." : /slot is occupied/.test(p) ? "Publication remains blocked. The integration slot is occupied." : /explicitly paused/.test(p) ? "Work is paused. Resume only when the user asks." : /input explicitly frozen/.test(p) ? "Blocked. The evaluation input is frozen." : /one exact revision|already authorized/.test(p) ? "Blocked. The integration slot is occupied." : /exactly this call|Replay action label/.test(p) ? "TOOL_CALL: verify installed configuration\\n" : /research checkout/.test(p) ? "${keepOffer}" : /Reindex the docs search/.test(p) ? "${queueOffer}" : /Purpose done/.test(p) ? "${spinOffer}" : /round each line/.test(p) ? "${offer}" : /leap days/.test(p) ? "TOOL_CALL: edit plans/invoice-export/plan.md park the date-fns finding\\n" : /unselected/i.test(p) ? "${decision}" : /source revision A/.test(p) ? "${sourceOffer}" : /approval|not selected/.test(p) ? "${offer}" : "TOOL_CALL: Bash run tests\\n"`,
   );
   assert.equal(r.status, 0, r.stdout);
-  assert.match(r.stdout, /^rules 17\/17, one-line 1\/17, no-rules 1\/17$/m);
+  assert.match(r.stdout, /^rules 18\/18, one-line 1\/18, no-rules 1\/18$/m);
   assert.match(r.stdout, /WARN complete\.md/);
   assert.equal((r.stdout.match(/^WARN /gm) ?? []).length, 1);
 });

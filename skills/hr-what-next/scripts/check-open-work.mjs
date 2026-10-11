@@ -7,7 +7,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, statSync 
 import { basename, dirname, join, resolve, sep } from "node:path";
 
 const usage =
-  "usage: check-open-work.mjs <plan.md> [--checkout <path>]... [--scratch <dir>] [--archive] [--json]";
+  "usage: check-open-work.mjs <plan.md> [--checkout <path>]... [--app-managed <path>]... [--scratch <dir>] [--archive] [--json]";
 const TERMINAL_STATUS = /^(completed?|done|archived)\b/i;
 const COMPLETED_STATUS = /^completed\b/i;
 const MARKS = { " ": "open", "~": "deferred", x: "done", "-": "dropped" };
@@ -20,15 +20,23 @@ const NARRATIVE =
   /^\s*(?:[-*]\s+|#+\s+)?\**(pending|waiting|deferred|blocked-on-user|blocked-by|todo)\b/i;
 
 function parseArguments(argv) {
-  const options = { plan: null, checkouts: [], scratch: null, archive: false, json: false };
+  const options = {
+    plan: null,
+    checkouts: [],
+    appManaged: [],
+    scratch: null,
+    archive: false,
+    json: false,
+  };
   for (let index = 0; index < argv.length; index++) {
     const argument = argv[index];
     if (argument === "--archive") options.archive = true;
     else if (argument === "--json") options.json = true;
-    else if (argument === "--checkout" || argument === "--scratch") {
+    else if (["--checkout", "--app-managed", "--scratch"].includes(argument)) {
       const value = argv[++index];
       if (!value) throw new Error(`${argument} needs a value\n${usage}`);
       if (argument === "--checkout") options.checkouts.push(value);
+      else if (argument === "--app-managed") options.appManaged.push(value);
       else options.scratch = value;
     } else if (argument.startsWith("--") || options.plan) throw new Error(usage);
     else options.plan = argument;
@@ -191,6 +199,15 @@ function run(options) {
         [path, ...(GENERIC_BRANCHES.includes(state.branch) ? [] : [state.branch])],
         plan.items,
         report.findings,
+      );
+  }
+  // An app retires its own checkouts, so their state is reported but is not a finding.
+  for (const path of options.appManaged) {
+    const state = checkoutState(path);
+    if (state.error) report.errors.push(state.error);
+    else if (state.dirty || state.unpushed)
+      report.warnings.push(
+        `app-managed checkout ${path} (${state.dirty} changed file(s), ${state.unpushed} unpushed commit(s)) is left for the app to retire`,
       );
   }
   if (!plan.purpose)

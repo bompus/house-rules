@@ -206,6 +206,33 @@ test("a dirty or unpushed checkout must be named by an open item", () => {
   expect(report.open).toHaveLength(1);
 });
 
+test("an app-managed checkout is reported as a warning, not a finding", () => {
+  const { notes, plan } = setup({
+    status: "completed",
+    ledger: ["- [x] a: shipped - evidence: x"],
+  });
+  const checkout = join(notes, "app-worktree");
+  repository(checkout, 2);
+  const { code, report } = check(plan, "--app-managed", checkout);
+  expect(code).toBe(0);
+  expect(report.findings).toEqual([]);
+  expect(report.warnings.join("\n")).toContain("2 unpushed commit(s)");
+});
+
+test("options the user passed over, dropped as not selected, leave nothing open", () => {
+  const { plan } = setup({
+    status: "completed",
+    ledger: [
+      "- [x] 1B: chosen change - evidence: PR 4",
+      "- [-] 1A: option not picked - by: user, not selected (answered 1B)",
+      "- [-] 1C: option not picked - by: user, not selected (answered 1B)",
+    ],
+  });
+  const { code, report } = check(plan);
+  expect(code).toBe(0);
+  expect(report.open).toEqual([]);
+});
+
 test("archiving moves only a completed plan with nothing open", () => {
   const active = setup({ status: "active", ledger: ["- [x] a: shipped - evidence: x"] });
   let { code, report } = check(active.plan, "--archive");

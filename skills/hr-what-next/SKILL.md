@@ -19,10 +19,11 @@ completed state before the completion message; a report alone does not do so.
    floor whatever the scope: every question from an earlier offer in this
    conversation that the user has not answered, every owned uncommitted file,
    unpushed commit or held checkout, and the number of other live ledger items
-   (deferred, unselected, blocked or follow-up) with a link to the ledger.
+   (deferred, awaiting selection, blocked or follow-up) with a link to the ledger.
    When the session keeps a plan file, `scripts/check-open-work.mjs <plan>`
-   computes this floor (add `--checkout <path>` for each checkout touched):
-   run it and quote its result instead of recalling the ledger.
+   computes this floor (add `--checkout <path>` for each checkout touched, or
+   `--app-managed <path>` for one an app retires, which is reported but not a
+   finding): run it and quote its result instead of recalling the ledger.
    Report each floor item, or state that the floor is empty. While any floor
    item remains, do not say that nothing is left or that nothing needs the
    user; re-present the unanswered questions as an offer instead. When three
@@ -38,7 +39,7 @@ completed state before the completion message; a report alone does not do so.
    deferred triggers and other sessions' context visible. An old task
    description alone does not establish current activity or ownership.
 3. Preserve the latest selected scope and valid unanswered offer in the
-   durable ledger. Distinguish done, authorized unfinished, unselected,
+   durable ledger. Distinguish done, authorized unfinished, awaiting selection, dropped,
    blocked, deferred and other-owner items. A completed implementation does
    not complete required checks or landing; deferral does not mean done.
    Sort every open item by what it waits on: **actionable now** (this session

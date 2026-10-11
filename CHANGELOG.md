@@ -4,6 +4,15 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- A session no longer treats options the user passed over as work that remains. When the
+  user picks from an offer, the unpicked options are dropped as "not selected" in that step,
+  ideas the agent generated stay in the report instead of the ledger unless the user asked for
+  them or the agent owes the work, and the session-completion gate counts only items someone
+  owes work or a decision on. A checkout an app retires is reported but does not block
+  completion: `hr-what-next`'s `check-open-work.mjs` takes `--app-managed <path>` and lists
+  such a checkout as a warning. Routine offers say "defer or drop", and `hr-what-next` says
+  "awaiting selection" for options not yet answered. The end-of-reply eval has a
+  `passed-over-options` scenario.
 - The `hr-code-review` description now also covers asking to set up a review panel or for
   panel recommendations, so the panel setup procedure loads for those requests and not only
   when a change review is requested.

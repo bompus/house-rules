@@ -42,7 +42,8 @@ at its plan.
 - Keep the ledger as a `## Ledger` section of item lines a script can read:
   `- [ ] text` is open, `- [~] text … trigger: <what reopens it>` deferred,
   `- [x] text … evidence: <result>` done and `- [-] text … by: <who dropped it>`
-  dropped. Name each scratch directory, checkout and branch you own in an item.
+  dropped (`by: user, not selected` for an option the user passed over). Name
+  each scratch directory, checkout and branch you own in an item.
 - Before claiming that nothing remains or the session can close, and before
   archiving a plan, run the `hr-what-next` skill's
   `scripts/check-open-work.mjs <plan>`, adding `--checkout <path>` for each

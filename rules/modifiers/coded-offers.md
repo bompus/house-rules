@@ -18,7 +18,7 @@ Use § Finishing work to select displayed candidates. Each offer stands alone:
    Several use "Recommended combination: reply `<code>, <code>` or `go`".
 
 Include alternatives the user raised or needed to explain a material tradeoff.
-Routine offers include an option to defer displayed proposals; say other ledger
+Routine offers include an option to defer or drop displayed proposals; say other ledger
 items remain pending. Full backlog offers include `All done`, which drops or defers
 every listed candidate. Record what was decided about each; deferral never means completion.
 

@@ -86,8 +86,10 @@ Before claiming the session is complete, reconcile the full available session,
 including earlier requests, unanswered questions, open offers, findings,
 handoffs and linked plans. A current-task check or an empty displayed backlog
 is insufficient. Account for owned changes, checks, landing, adoption and
-running work. Blocked, deferred, unselected and scheduled items still remain;
-an explicit user decision must close or transfer them before session completion.
+running work. Open, blocked, deferred, scheduled and awaiting-selection items
+still remain; an explicit user decision must close or transfer them before
+session completion. Options passed over by answering an offer are dropped, not
+remaining. A checkout an app retires is reported, not a blocker.
 Missing, inaccessible or truncated records leave completion unverified.
 
 Only when every item has a verified completion or an explicit decision to close it,
@@ -107,7 +109,9 @@ about unresolved decisions.
 
 Keep every live candidate and what was decided about it in the plan ledger, or a durable list
 when no plan exists. Include this task, earlier unfinished work, findings, resumed
-handoffs, owned changes and untriaged feedback.
+handoffs, owned changes and untriaged feedback. When the user picks from an offer,
+drop its unpicked options (not selected) in that step. Keep ideas you generated in
+the report, not the ledger, unless the user asked for them or you owe the work.
 
 Reconcile those records on resume, when a new request or result changes an item's
 state, at phase completion, and before offers or handoffs. Update the records
