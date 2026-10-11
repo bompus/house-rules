@@ -4,6 +4,7 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- The README says that linked procedures hold detail and that each guard stays written in the rules, because an agent may act without opening a linked file.
 - A test caps the fresh install's composed rules at 30,000 bytes (28,125 today), so growth in what every new session loads needs a reason stated in the change that raises the cap.
 - New skill `hr-forgotten-work-audit`: a read-only audit of a project's past sessions, plans,
   handoffs and pull requests for work that was asked for, promised or deferred and then dropped

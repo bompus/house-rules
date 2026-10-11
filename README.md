@@ -105,8 +105,9 @@ Then connect the composed file to your agent. Claude Code reads
 `@~/.config/house-rules/rules.md` on its own line in `~/.claude/CLAUDE.md`;
 other hosts take a copy in their user-level rules file, with the
 `house-rules-references/` directory placed beside it. Written rules link to the
-procedures in that directory; stdout and configuration previews keep them
-inline. See [reference output](docs/configuration.md#reference-output). To change modifiers or
+procedures in that directory, which hold detail; an agent may act without opening
+one, so each guard stays written in the rules themselves. Stdout and configuration
+previews keep the procedures inline. See [reference output](docs/configuration.md#reference-output). To change modifiers or
 skills, change to the checkout directory and run `node compose.mjs setup`,
 or `bun compose.mjs setup` when Node.js is unavailable. Review the numbered
 choices and use `save` to change only the configuration. Then run the
