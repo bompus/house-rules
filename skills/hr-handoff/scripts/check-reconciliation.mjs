@@ -172,7 +172,8 @@ function check(receipt, directory) {
   // an item fed by more than one open line must say in `merges` why they are one piece of work.
   const absorbed = new Map();
   for (const ref of openLines)
-    for (const item of accounting.get(ref) ?? []) absorbed.set(item, (absorbed.get(item) ?? 0) + 1);
+    for (const item of new Set(accounting.get(ref) ?? []))
+      absorbed.set(item, (absorbed.get(item) ?? 0) + 1);
   for (const [item, count] of absorbed)
     if (count > 1 && !text(items.get(item)?.merges))
       errors.push(

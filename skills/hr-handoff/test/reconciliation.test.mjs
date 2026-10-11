@@ -426,6 +426,10 @@ test("one item that absorbs several open predecessor lines must say why they are
     expect.stringContaining("item docs: absorbs 2 open or deferred ledger lines"),
   ]);
   expect(run(merged("both lines describe the same docs page")).report.errors).toEqual([]);
+  const repeated = withPlan((r) => {
+    r.accounting.at(-2).items = ["docs", "docs"];
+  }).file;
+  expect(run(repeated).report.errors).toEqual([]);
 });
 
 test("a Markdown source without a ledger is an error", () => {

@@ -125,7 +125,8 @@ offers are open and unanswered, run it in groups:
 For a full audit, save a mapping from reviewed source records to items or
 reviewed records kept only as context. When the report rebuilds a ledger or
 inventory from an earlier one, treat the earlier one as a source. Carry each of
-its open or deferred lines over as its own item, or record why it closed. A
+its open or deferred lines over as an item, marked done with its outcome when it
+has closed. Several lines share one item only when they are one piece of work. A
 summary row such as "the rest, reopen only if asked" loses those lines. If `hr-handoff` and its reconciliation
 resources are available, reuse its `references/reconciliation.md` procedure
 and `scripts/check-reconciliation.mjs` checker. Otherwise retain the mapping
