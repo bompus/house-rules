@@ -20,14 +20,16 @@ snapshot or range in the receipt's `snapshot` field. Name records by stable
 message IDs or ledger row IDs. Several records can map to the same item.
 
 A predecessor plan needs no conversion. Name its `plan.md` as the source
-`file`; the checker reads each line of its `## Ledger` section as a record
-named `L<line>` (`L12`). Take a copy of the plan as it stood at the handoff,
+`file`; the checker reads each item line of its `## Ledger` section (`- [ ]`,
+`- [~]`, `- [x]`, `- [-]`) as a record named `L<line>` (`L12`). Other text in
+the section is not read, so turn any follow-up written there into an item line
+before the handoff. Take a copy of the plan as it stood at the handoff,
 because later edits renumber the lines. Each open or deferred line must map to
 an item; a context-only reason such as "the rest, reopen only if asked" is
 rejected. When one item absorbs several open or deferred lines, give the item
 a `merges` field saying how one next action and one piece of completion evidence
-satisfy every line. A ledger kept as a
-table is not read; normalize it to JSON records instead.
+satisfy every line. A ledger kept as a table is not read; normalize it to JSON
+records instead.
 
 When a record settles an item's state, add an `outcome` with `item` and
 `state`, plus `at` as a UTC ISO timestamp. States are `done`, `open` and

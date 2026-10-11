@@ -53,7 +53,8 @@ function unique(entries, label) {
   return map;
 }
 
-// A plan file (`.md`) is read as its `## Ledger` lines, one record per line, named `L<line>`.
+// A plan file (`.md`) is read as its `## Ledger` item lines, one record per item, named `L<line>`;
+// other text in the section, wrapped continuation lines included, is not read.
 // Open (`- [ ]`) and deferred (`- [~]`) lines are remembered: they must carry over as items.
 function ledgerRecords(raw) {
   const lines = raw.split(/\r?\n/);

@@ -6,8 +6,8 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 - Rebuilding a ledger, inventory or handoff from an earlier plan now has to carry every open or
   deferred line over. `hr-handoff`'s reconciliation checker reads a predecessor `plan.md` directly,
-  one record per `## Ledger` line. It rejects a context-only reason for an open or deferred line,
-  and an item that absorbs several of them needs a `merges` reason. The plan-files rule,
+  one record per `## Ledger` item line. It rejects a context-only reason for an open or deferred
+  line, and an item that absorbs several of them needs a `merges` reason. The plan-files rule,
   `hr-handoff` and `hr-what-next` say so. Before, a rebuild could fold dozens of open lines into
   one "reopen only if asked" row and the checker passed it.
 - `hr-what-next`'s open-work check now catches items that a plan has lost track of. It lists open
