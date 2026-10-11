@@ -4,6 +4,9 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- The ACP client reference says the helper does not choose a "route that uses
+  the usage allowance" instead of a "paid route", since many users run on
+  subscriptions rather than per-token billing.
 - The core rules have a Visuals in issues, discussions and comments section that
   points to a new reference procedure: add an image, chart or diagram only where
   it shows a spatial interface state, a before/after comparison, a trend across

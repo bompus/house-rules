@@ -2,7 +2,7 @@
 
 Use the bundled `../scripts/acp-panel-client.mjs` when the selected review needs
 an ACP v1 agent over stdio. This helper does not choose a provider, model,
-effort, paid route or review scope. Launch it only within the user's authorization.
+effort, route that uses the usage allowance or review scope. Launch it only within the user's authorization.
 
 ```sh
 node <skill-directory>/scripts/acp-panel-client.mjs \
