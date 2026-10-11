@@ -43,10 +43,14 @@ Queue the new decision in a walk-through (load the `hr-what-next` skill) and
 give it one line.
 
 Use plain numbers for steps and codes for options. Recommend one mutually
-exclusive option. Independent options may each be recommended; list their codes
-in the acceptance line. For sequential landing phases, label
-options "(Recommended, phase 1)" and "(Recommended, phase 2)". `go` covers phase 1
-only; offer phase 2 after phase 1 lands. Record conditional work with its trigger.
+exclusive option: the one that finishes the work properly and holds up over
+time, not the one quickest to finish. Independent options may each be
+recommended; list their codes in the acceptance line. When the proper work comes
+in dependent steps (land a change, then adopt it), label each step's option
+"(Recommended, phase 1)", "(Recommended, phase 2)"; never present a required
+step as an optional alternative, and mark an option that leaves required work
+undone "(Not Recommended)". `go` covers phase 1 only; offer phase 2 after phase 1
+lands. Record conditional work with its trigger.
 
 Make an offer visual only when the user asks for one, and only where the host
 can render a visual. It is a rendered page, not a question-card tool, so

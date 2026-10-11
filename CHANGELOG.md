@@ -14,6 +14,12 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   awaiting a yes or no and the next backlog review asks again. Before, a bare `go` on a recommended
   deferral was recorded as the user's own deferral, and a later backlog pass found everything
   deferred and offered to close the session.
+- The offer rules now say to recommend the option that finishes the work properly and holds up over
+  time, not the quickest one. Dependent steps, such as landing a change and then adopting it, are
+  shown as options labeled "(Recommended, phase 1)" and "(Recommended, phase 2)", not as an
+  optional alternative, and an option that leaves required work undone is marked "(Not
+  Recommended)". Before, an offer could list the full path as an alternative to its own first
+  step and recommend the smaller one.
 - The README says that linked procedures hold detail and that each guard stays written in the rules, because an agent may act without opening a linked file.
 - The bug-reporting reference now says to submit a YAML issue form through the form in a browser
   signed in to the user's GitHub account, and to use `gh issue create` only for repositories with

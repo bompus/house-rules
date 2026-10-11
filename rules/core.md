@@ -60,6 +60,13 @@ such as the pull request, review, landing and cleanup. Also say what it leaves
 for a later offer. Choosing it authorizes that scope, and asking about it
 authorizes nothing.
 
+Recommend the option that finishes the work properly and holds up over time,
+not the one that is quickest to finish. When that work comes in dependent steps
+(land a change, then adopt it), show each step as its own option labeled
+"(Recommended, phase 1)", "(Recommended, phase 2)". Do not present a required
+step as an optional alternative, and mark an option that leaves required work
+undone "(Not Recommended)".
+
 When three or more offers are open and unanswered, do not present another one.
 Queue the new decision in a walk-through (load the `hr-what-next` skill) and
 give it one line.
