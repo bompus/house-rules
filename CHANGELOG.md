@@ -5,6 +5,12 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 ## Unreleased
 
 - The README says that linked procedures hold detail and that each guard stays written in the rules, because an agent may act without opening a linked file.
+- The bug-reporting reference now says to submit a YAML issue form through the form in a browser
+  signed in to the user's GitHub account, and to use `gh issue create` only for repositories with
+  no issue form. The visuals reference adds how to attach an image in a browser form and to
+  replace the default alt text. Before, "tooling that preserves the form" left an agent free to
+  pick `gh issue create`, which cannot set the form's labels, and to propose it without
+  considering the browser.
 - A test caps the fresh install's composed rules at 30,000 bytes (28,125 today), so growth in what every new session loads needs a reason stated in the change that raises the cap.
 - New skill `hr-forgotten-work-audit`: a read-only audit of a project's past sessions, plans,
   handoffs and pull requests for work that was asked for, promised or deferred and then dropped

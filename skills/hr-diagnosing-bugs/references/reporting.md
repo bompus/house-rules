@@ -53,10 +53,15 @@ parts are necessary before asking whether to submit the broader case.
 
 Read the repository's contribution guidance and matching issue template,
 including organization defaults. Complete required fields and checklists.
-Submit issue forms through the form or tooling that preserves required fields,
-labels and routing; copied headings alone do not preserve form metadata.
-Verify the published body and metadata. If available tooling cannot preserve
-the form, prepare the report and ask for access or user submission.
+Submit a YAML issue form (`.github/ISSUE_TEMPLATE/*.yml`) through the form
+itself. `gh issue create` cannot submit one, so the form's labels, dropdowns
+and checklist are lost, and copied headings alone do not preserve form
+metadata. When the host has a browser signed in to the user's GitHub account,
+open `https://github.com/<owner>/<repo>/issues/new?template=<file>.yml`, fill
+every field and submit it there. Use the CLI only when the repository has no
+issue form or only a Markdown template. Verify the published body and labels.
+With no signed-in browser, prepare the report and ask for access or user
+submission; do not fall back to `gh issue create` and drop the form's labels.
 
 When an issue needs major or material changes, replace it with a new issue
 in any repository. Compare the proposed revision with the published report.
