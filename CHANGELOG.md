@@ -4,6 +4,13 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- The core rules have a Visuals in issues, discussions and comments section that
+  points to a new reference procedure: add an image, chart or diagram only where
+  it shows what text cannot say as fast, keep the exact facts in text beside it
+  with alt text, check the capture for private paths and credentials, attach it
+  with `gh ... --attach` (`gh issue create`, `edit`, `comment` and `gh pr comment`),
+  and where no attach route exists (`gh discussion`), hand the user the text and
+  the file. The bug-reporting reference points to it.
 - `hr-what-next` now names the host render tools for its backlog visual (T3 Code:
   `html_preview`, then `html_render`), so the text outline is used only where the
   host has none.

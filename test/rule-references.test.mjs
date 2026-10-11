@@ -31,7 +31,7 @@ test("inline callers and disabled modifiers preserve policy without requiring a 
   assert.doesNotMatch(disabled.rules, /## Release batching/);
   assert.deepEqual(
     [...disabled.references.keys()],
-    ["reporting.md", "github-actions.md", "landing.md"],
+    ["reporting.md", "github-actions.md", "thread-visuals.md", "landing.md"],
   );
   const config = join(dir, "config.json");
   writeFileSync(config, JSON.stringify(selected));
@@ -181,7 +181,7 @@ test("a personal replacement omits the overridden public reference from resource
   assert.equal(result.references.has("release-batching.md"), false);
   assert.deepEqual(
     [...result.references.keys()],
-    ["reporting.md", "github-actions.md", "landing.md"],
+    ["reporting.md", "github-actions.md", "thread-visuals.md", "landing.md"],
   );
 });
 
@@ -208,6 +208,7 @@ test("core landing and selected squash references preserve inline callers and pe
     "landing.md",
     "reporting.md",
     "squash-landing.md",
+    "thread-visuals.md",
   ]);
   assert.match(linked.rules, /Never bypass required checks/);
   assert.match(linked.rules, /During integration, never switch, reset, force-move or remove/);
@@ -315,9 +316,11 @@ test("core reference lists retain scalar compatibility and reject malformed inpu
   const { body } = parseFragment(current, "core");
   const reporting = readFileSync(join(root, "skills/hr-what-next/references/reporting.md"), "utf8");
   const actions = readFileSync(join(root, "rules/references/github-actions.md"), "utf8");
+  const visuals = readFileSync(join(root, "rules/references/thread-visuals.md"), "utf8");
   const inlineBody = body
     .replace(/## Reporting\n[\s\S]*?(?=\n## )/, reporting.trim())
-    .replace(/## GitHub Actions\n[\s\S]*?(?=\n## )/, actions.trim());
+    .replace(/## GitHub Actions\n[\s\S]*?(?=\n## )/, actions.trim())
+    .replace(/## Visuals in issues, discussions and comments\n[\s\S]*?(?=\n## )/, visuals.trim());
   const scalar = `---\nreference: references/landing.md\n---\n${inlineBody}`;
   assert.equal(compose(current, []), compose(scalar, []));
   for (const metadata of [

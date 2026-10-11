@@ -37,6 +37,10 @@ and the versions and environment needed to reproduce it. Check the current
 stable release; identify development builds separately when tested. A verified
 small reproduction can be reported while its internal cause remains unknown.
 
+Add an image or chart to the report only as the "Visuals in issues, discussions
+and comments" section of your loaded guidance describes; locate it in `rules/core.md`
+when it is not loaded.
+
 Show direct reproduction commands. Omit incidental scheduling, resource-control
 and observer wrappers from issue and pull request examples. When a control is
 required to reproduce the defect, include it and explain why. Keep exact executed

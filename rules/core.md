@@ -1,5 +1,5 @@
 ---
-references: references/landing.md, references/github-actions.md, ../skills/hr-what-next/references/reporting.md
+references: references/landing.md, references/github-actions.md, references/thread-visuals.md, ../skills/hr-what-next/references/reporting.md
 ---
 
 # House rules
@@ -219,6 +219,11 @@ during the work.
 
 Before editing GitHub Actions workflows or changing their repository settings,
 read [the Actions procedure](references/github-actions.md).
+
+## Visuals in issues, discussions and comments
+
+Before adding an image, chart or diagram to an issue, a discussion or a comment
+on one, read [the thread visuals procedure](references/thread-visuals.md).
 
 ## Repository work
 
