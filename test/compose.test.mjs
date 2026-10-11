@@ -344,6 +344,26 @@ test("the skills the core rules name are declared, shipped and selected by defau
   assert.deepEqual(composeConfiguration(sample, dir).warnings, []);
 });
 
+// The fresh install is what a new user's agent loads in every session, so growth past this
+// ceiling needs a reason stated in the change that raises it. v0.10.0 was 18 KB, v0.11.0 26 KB.
+const FRESH_INSTALL_CEILING_BYTES = 30_000;
+
+test("the fresh install's composed rules stay under the size ceiling", (t) => {
+  const dir = scratch(t);
+  // The config is copied alone: the composer reads a sibling rules/ directory as a person layer.
+  writeFileSync(
+    join(dir, "house-rules.json"),
+    readFileSync(join(root, "examples/person/house-rules.json")),
+  );
+  const out = join(dir, "rules.md");
+  composeCli(["--config", join(dir, "house-rules.json"), "--out", out]);
+  const bytes = readFileSync(out).length;
+  assert.ok(
+    bytes <= FRESH_INSTALL_CEILING_BYTES,
+    `the fresh install composes to ${bytes} bytes, over the ${FRESH_INSTALL_CEILING_BYTES}-byte ceiling in test/compose.test.mjs; raise the ceiling in the same change and state why`,
+  );
+});
+
 test("excluding a skill the core rules rely on warns instead of composing silently", (t) => {
   const dir = scratch(t);
   const skills = { include: ["hr-what-next", "hr-code-review", "hr-diagnosing-bugs"] };

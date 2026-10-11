@@ -4,6 +4,7 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- A test caps the fresh install's composed rules at 30,000 bytes (28,125 today), so growth in what every new session loads needs a reason stated in the change that raises the cap.
 - New skill `hr-forgotten-work-audit`: a read-only audit of a project's past sessions, plans,
   handoffs and pull requests for work that was asked for, promised or deferred and then dropped
   from every live list. It gives a brief template for each slice of the history, five verdicts
