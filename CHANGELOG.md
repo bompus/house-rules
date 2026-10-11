@@ -17,7 +17,7 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 - The offer rules now say to recommend the option that finishes the work properly and holds up over
   time, not the quickest one. Dependent steps, such as landing a change and then adopting it, are
   shown as options labeled "(Recommended, phase 1)" and "(Recommended, phase 2)", not as an
-  optional alternative, and an option that leaves required work undone is marked "(Not
+  optional alternative, and an alternative that drops required work from the plan is marked "(Not
   Recommended)". Before, an offer could list the full path as an alternative to its own first
   step and recommend the smaller one.
 - The README says that linked procedures hold detail and that each guard stays written in the rules, because an agent may act without opening a linked file.
