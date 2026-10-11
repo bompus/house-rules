@@ -11,6 +11,13 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   request opens with its parent, describes only its own layer and names other layers by number.
   The evidence line now names the head commit the checks ran against. Before, the skill asked only
   for a review starting point.
+- A "no" is now treated as decided and dropped, not as a deferral, even when the user names what
+  would make them reconsider. The core rules' ledger paragraph and `hr-what-next` say so, and
+  say to defer only work the user wants done later. Routine offers now word the no-option
+  "decline or defer" instead of "defer or drop", so a "defer" label no longer stands for "no
+  change", and `All done` drops every listed candidate unless the user asks for some to be done
+  later. Before, an agent could keep a declined option open in its ledger with a reopen condition
+  and be unable to claim session completion until the user explicitly closed it.
 - The always-on Writing rule now says how to write plainly in every reply, status note and
   question. Write for a reader who has not seen your working notes. Name a thing by what it is or
   does, not by a label you coined, a file or section name, or a term from a tool, repository or

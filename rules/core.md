@@ -114,6 +114,8 @@ when no plan exists. Include this task, earlier unfinished work, findings, resum
 handoffs, owned changes and untriaged feedback. When the user picks from an offer,
 drop its unpicked options (not selected) in that step. Keep ideas you generated in
 the report, not the ledger, unless the user asked for them or you owe the work.
+A no is decided and dropped, even when the user names what would make them
+reconsider. Defer only work the user wants done later.
 
 Reconcile those records on resume, when a new request or result changes an item's
 state, at phase completion, and before offers or handoffs. Update the records
