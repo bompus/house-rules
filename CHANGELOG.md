@@ -4,6 +4,11 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- A session that has finished and landed its own work now ends with a close-out question that
+  recommends dropping the remaining items, and recommends pausing only when the user asked for one
+  to be done later. Work already filed upstream or handed to another owner is closed in the ledger
+  with a link instead of staying deferred. Before, nothing said which to recommend, so an agent
+  offered a pause and kept items the user had answered "no" to or that another owner held.
 - `hr-writing-pr` now says how to brief a large change or a stacked one. A change too big to read
   in file order gets a numbered reading order, with the mechanical files last and a line on what
   was checked in them. A "Decisions for you" list appears only when the reviewer has a call tests
