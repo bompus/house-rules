@@ -1,6 +1,6 @@
 ---
 name: hr-research-shared-links
-description: "Research a shared link, post, article, repository or tool in depth and say what is worth using in the user's own setup. Use when a session opens with a link, or the user shares one and asks for thoughts, research, ideas, what to borrow or cherry-pick, whether it is worth using, or how it compares to what they have. Not for answering a factual question from a page, and not for building what it describes."
+description: "Research a shared link or repo in depth, compare it with the user's setup and rate each idea. Use when a session opens with a link or asks for thoughts or what to borrow. Not for factual lookups, and not for implementing or fixing things the link describes."
 ---
 
 # Research shared links

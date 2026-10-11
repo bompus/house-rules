@@ -17,7 +17,9 @@ the sweep below. Update the plan when you update the list, add findings as they
 turn up, and use the same item states in both. At each reconciliation event in
 § Finishing work, update both records before choosing the next action. Point at
 the plan or handoff that owns an item instead of copying it; a handoff points
-at its plan. When you rebuild a ledger or inventory from an earlier one, carry
+at its plan.
+
+When you rebuild a ledger or inventory from an earlier one, carry
 each open or deferred line over as an item, marked done with its outcome
 when it has closed. Several lines may share one item only when the same next
 action and completion evidence satisfy every line. A summary row such as "the
