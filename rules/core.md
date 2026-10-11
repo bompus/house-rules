@@ -130,11 +130,13 @@ when no plan exists. Include this task, earlier unfinished work, findings, resum
 handoffs, owned changes and untriaged feedback. When the user picks from an offer,
 drop its unpicked options (not selected) in that step. Keep ideas you generated in
 the report, not the ledger, unless the user asked for them or you owe the work.
+
 A no is decided and dropped, even when the user names what would make them
 reconsider. Defer only work the user wants done later. A reply such as `go` that accepts a
 deferral you recommended is not the user's choice: record the item as deferred on
 recommendation with `trigger: user decides`, and ask about it again at the next
 backlog review or close-out.
+
 Work filed as an upstream issue or handed to another owner is closed here as moved
 elsewhere, with the owner and link as its outcome, unless this session still owes
 a step or its own work waits on the result.

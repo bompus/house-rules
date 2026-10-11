@@ -1,6 +1,6 @@
 ---
 name: hr-extract-shared-steps
-description: Pull operational steps that several workflows repeat into shared functions with explicit inputs and results, leaving each workflow's own decisions with its caller. Use when the same low-level operation (a provider call, a command run, a message sent, a resource provisioned) appears in two or more callers, when a fix landed in one copy but not the others, or when a new feature needs mechanics an existing flow already has. Not for single-caller logic, naming, or general interface design.
+description: Pull steps that several workflows repeat (a provider call, a command run, a message sent) into shared functions with explicit inputs and results, leaving each workflow's decisions with its caller. Use when the same operation appears in two or more callers, a fix landed in one copy but not the others, or a new feature needs mechanics an existing flow has. Not for single-caller logic, naming or interface design.
 ---
 
 # Extract shared steps

@@ -1,6 +1,6 @@
 ---
 name: hr-design-exploration
-description: "Explore visual design or redesign alternatives through four ranked directions, top-two feedback and successive refinement toward one chosen design, or compare variants of one component in place. Use when asked to propose or compare UI design directions or component variants; ordinary UI fixes and implementing an already chosen design do not need this workflow."
+description: "Explore visual design or redesign alternatives through four ranked directions, top-two feedback and refinement toward one chosen design, or compare variants of one component in place. Use when asked to propose or compare UI design directions or component variants; ordinary UI fixes and implementing a chosen design do not need it."
 ---
 
 # Design exploration

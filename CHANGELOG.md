@@ -4,6 +4,11 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- The "Keep every live candidate" paragraph in the core rules is split into three, since a recent addition
+  had grown it past 900 characters. Seven skill descriptions are shorter (293 bytes in all:
+  hr-extract-shared-steps, hr-audit-choices, hr-code-review, hr-stock-ui-audit, hr-design-exploration,
+  hr-benchmarking and hr-plain-prose), keeping each one's use-when triggers, so a host that caps the
+  combined catalog at 12,000 bytes can take the new hr-forgotten-work-audit skill without raising the cap.
 - Before asking the user to do something, the agent checks the actual state and does what it can do
   itself. It asks only for what the check shows it cannot do, says what it checked, and does not
   assume whether the user is present. Before, an agent could assume the user was away and ask them

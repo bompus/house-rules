@@ -1,6 +1,6 @@
 ---
 name: hr-code-review
-description: Review a branch, PR, working-tree changes or changes since a revision for repository standards, spec conformance and what the change can break beyond its diff. Use when the user requests a change review, asks what a change might break before merging, or asks to set up or change a review panel or for panel recommendations. Do not use for simplification-only or strictest maintainability audits.
+description: Review a branch, PR, working-tree changes or changes since a revision for repository standards, spec conformance and what the change can break beyond its diff. Use when asked for a change review, what a change might break before merging, or to set up or change a review panel or for panel recommendations. Not for simplification-only or strictest maintainability audits.
 ---
 
 Two-axis review of the changes the user requested: working-tree changes, a committed branch, or changes since a named revision.
