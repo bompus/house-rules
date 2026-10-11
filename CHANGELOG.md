@@ -4,6 +4,15 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- `hr-what-next` now asks about deferred items nobody decided. A deferral is not a yes or a
+  no, so an item deferred with only the user's selection as its trigger counts as awaiting a
+  decision, and invoking the skill is asking for the backlog: those items are presented as an
+  offer, or as a walk-through when there are more than three questions, instead of only being
+  counted. Each answer is recorded as yes, no (dropped) or defer with a trigger other than the
+  user's selection, so the same item is not asked on every run. Items waiting on others keep
+  their trigger and are not asked. `check-open-work.mjs` lists such deferrals in a separate
+  "awaiting your yes/no" group (`awaitingUser` in `--json`), matched by a heuristic on the
+  trigger text that is documented in the script's header.
 - New opt-in `upstream-contributions` modifier: a measured optimization, fix or defect found
   in a third-party project is offered for submission to that project as soon as the evidence is
   complete, through the channel its contribution guide names (comment, issue, discussion or pull

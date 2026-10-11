@@ -17,16 +17,18 @@ completed state before the completion message; a report alone does not do so.
 1. Choose the review scope from the request and its context. For a short
    "next?", check the current task, its ledger and latest results, plus this
    floor whatever the scope: every question from an earlier offer in this
-   conversation that the user has not answered, every owned uncommitted file,
-   unpushed commit or held checkout, and the number of other live ledger items
-   (deferred, awaiting selection, blocked or follow-up) with a link to the ledger.
+   conversation that the user has not answered, every item deferred with only the
+   user's selection as its trigger, every owned uncommitted file, unpushed commit
+   or held checkout, and the number of other live ledger items (deferred,
+   awaiting selection, blocked or follow-up) with a link to the ledger.
    When the session keeps a plan file, `scripts/check-open-work.mjs <plan>`
    computes this floor (add `--checkout <path>` for each checkout touched, or
    `--app-managed <path>` for one an app retires, which is reported but not a
-   finding): run it and quote its result instead of recalling the ledger.
+   finding): run it and quote its result instead of recalling the ledger. Its
+   "awaiting your yes/no" group lists the user-trigger deferrals by a text match.
    Report each floor item, or state that the floor is empty. While any floor
    item remains, do not say that nothing is left or that nothing needs the
-   user; re-present the unanswered questions as an offer instead. When three
+   user; re-present the unanswered questions and ask the undecided items (step 6). When three
    or more offers from this conversation are open and unanswered, do not
    re-present them one by one: start a walk-through over them. When asked
    for all current and past items, review the available session transcript,
@@ -41,7 +43,9 @@ completed state before the completion message; a report alone does not do so.
 3. Preserve the latest selected scope and valid unanswered offer in the
    durable ledger. Distinguish done, authorized unfinished, awaiting selection, dropped,
    blocked, deferred and other-owner items. A completed implementation does
-   not complete required checks or landing; deferral does not mean done.
+   not complete required checks or landing; deferral does not mean done. A
+   deferral is not a yes or no: an item deferred with only the user's selection
+   as its trigger is undecided, so it sorts under needs your decision.
    Sort every open item by what it waits on: **actionable now** (this session
    can advance it under existing authority), **needs your decision** (a
    selection or answer only the user can give) or **waiting on others** (an
@@ -72,7 +76,13 @@ completed state before the completion message; a report alone does not do so.
    then `html_render`); give a text outline in the same order only where the host
    has none.
 6. Continue work that can advance under existing authorization. Ask only for
-   unresolved choices using the governing offer format. Preserve schedules
+   unresolved choices using the governing offer format. Invoking this skill is
+   asking for the backlog (§ Session purpose), so present every needs-your-decision
+   item as an offer, or as a walk-through when there are more than three
+   questions, instead of only counting it. Record each answer as yes, no
+   (dropped) or defer with a trigger other than the user's selection, so the
+   item is not asked again on every run. Items waiting on others stay listed
+   with their trigger and are not asked. Preserve schedules
    and ownership; this audit grants no authority to start, transfer, publish
    or clean up work merely because it appears in the inventory.
 

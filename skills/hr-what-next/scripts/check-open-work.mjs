@@ -2,12 +2,19 @@
 // Open-work check for a session plan: lists what is still open before anyone says
 // "nothing remains" or archives the plan. See ../SKILL.md and the plan-files rule.
 // Exit 0: nothing open; 1: invalid input; 2: open work remains or archiving refused.
+// "awaiting your yes/no" lists the deferred items whose trigger is only the user's own action
+// ("user selects", "user's decision", "user asks for the backlog"): they were deferred, not decided,
+// so the user still owes a yes, a no or a trigger other than their own. The match is a heuristic on the
+// trigger text, which must be the user plus a verb such as selects, picks, decides, asks or approves and
+// at most a short object ("it", "the backlog"); a trigger with a date, event or another condition
+// stays an ordinary deferred item. The group is a subset of `open` and does not change the exit code.
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, statSync } from "node:fs";
 import { basename, dirname, join, resolve, sep } from "node:path";
 
 const usage =
-  "usage: check-open-work.mjs <plan.md> [--checkout <path>]... [--app-managed <path>]... [--scratch <dir>] [--archive] [--json]";
+  "usage: check-open-work.mjs <plan.md> [--checkout <path>]... [--app-managed <path>]... [--scratch <dir>] [--archive] [--json]\n" +
+  'The output lists deferred items whose trigger is only the user\'s own action ("user selects", "user asks for the backlog") as "awaiting your yes/no"; this is a text match, see the header.';
 const TERMINAL_STATUS = /^(completed?|done|archived)\b/i;
 const COMPLETED_STATUS = /^completed\b/i;
 const MARKS = { " ": "open", "~": "deferred", x: "done", "-": "dropped" };
@@ -16,6 +23,8 @@ const REQUIRED = {
   x: ["evidence", "evidence"],
   "-": ["by", "who dropped it"],
 };
+const USER_ONLY_TRIGGER =
+  /^(?:when |once |until )?(?:the )?user(?:'s)?\s+(?:select\w*|pick\w*|choos\w*|decid\w*|decision|choice|answer\w*|direction|approv\w*|ask\w*|say\w*|request\w*)(?:\s+(?:for |to )?(?:it|this|them|that|one|the backlog|the item|a decision))?$/i;
 const NARRATIVE =
   /^\s*(?:[-*]\s+|#+\s+)?\**(pending|waiting|deferred|blocked-on-user|blocked-by|todo)\b/i;
 
@@ -150,6 +159,12 @@ function mentions(text, name) {
   return new RegExp(`(^|[^\\w./-])${escaped}($|[^\\w./-])`).test(text);
 }
 
+function awaitsUser(item) {
+  if (item.mark !== "~") return false;
+  const trigger = item.text.match(/\btrigger:\s*(.+)$/i)?.[1];
+  return USER_ONLY_TRIGGER.test(trigger?.trim().replace(/[.)\s]+$/, "") ?? "");
+}
+
 function accountFor(resource, names, items, findings) {
   const naming = items.filter((item) => names.some((name) => mentions(item.text, name)));
   if (!naming.length) findings.push(`${resource} is not named in any ledger item`);
@@ -169,13 +184,16 @@ function run(options) {
     status: plan.status ?? null,
     owner: plan.owner ?? null,
     open: [],
+    awaitingUser: [],
     findings: [],
     warnings: [],
     errors: [...plan.errors],
   };
   if (report.errors.length) return report;
   const open = plan.items.filter((item) => item.mark === " " || item.mark === "~");
-  report.open = open.map((item) => `L${item.line} [${item.mark}] ${clip(item.text)}`);
+  const row = (item) => `L${item.line} [${item.mark}] ${clip(item.text)}`;
+  report.open = open.map(row);
+  report.awaitingUser = open.filter(awaitsUser).map(row);
   if (TERMINAL_STATUS.test(plan.status) && open.length)
     report.findings.push(
       `Status says "${plan.status}" but ${open.length} ledger item(s) are open or deferred`,
@@ -259,6 +277,7 @@ function main() {
     for (const [label, rows] of [
       ["error", report.errors],
       ["open", report.open],
+      ["awaiting your yes/no", report.awaitingUser],
       ["finding", report.findings],
       ["warning", report.warnings],
     ])
@@ -269,7 +288,7 @@ function main() {
         ? "result: nothing open"
         : code === 1
           ? "result: invalid input"
-          : `result: ${report.open.length} open item(s), ${report.findings.length} finding(s)`,
+          : `result: ${report.open.length} open item(s) (${report.awaitingUser.length} awaiting your yes/no), ${report.findings.length} finding(s)`,
     );
   }
   process.exit(code);

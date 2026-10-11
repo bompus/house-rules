@@ -75,6 +75,40 @@ test("open and deferred items are listed and make the exit code 2", () => {
   expect(report.open[1]).toContain("[~]");
 });
 
+test("a deferral whose only trigger is the user's own action is listed as awaiting a yes or no", () => {
+  const { plan } = setup({
+    ledger: [
+      "- [~] a: rename the flag - trigger: user selects",
+      "- [~] b: split the module - trigger: user's decision.",
+      "- [~] c: vendored copy is old - trigger: user asks for the backlog",
+      "- [ ] d: open question about wording",
+    ],
+  });
+  const { code, report } = check(plan);
+  expect(code).toBe(2);
+  expect(report.awaitingUser).toHaveLength(3);
+  expect(report.awaitingUser.join("\n")).toContain("L6 [~] a: rename the flag");
+  expect(report.open).toHaveLength(4);
+  const text = spawnSync("node", [script, plan], { encoding: "utf8" }).stdout;
+  expect(text).toContain("awaiting your yes/no: L6 [~] a: rename the flag");
+  expect(text).toContain("3 awaiting your yes/no");
+});
+
+test("a deferral with a dated, event or compound trigger is not listed as awaiting a yes or no", () => {
+  const { plan } = setup({
+    ledger: [
+      "- [~] a: later - trigger: 2026-10-16",
+      "- [~] b: upstream fix - trigger: release 1.4 ships",
+      "- [~] c: later - trigger: user selects after the release ships",
+      "- [~] d: waits on an owner - trigger: owner of the pin replies",
+      "- [ ] e: open item with no trigger",
+    ],
+  });
+  const { report } = check(plan);
+  expect(report.awaitingUser).toEqual([]);
+  expect(report.open).toHaveLength(5);
+});
+
 test("all items done under a completed status is the only clean result", () => {
   const { plan } = setup({
     status: "completed",
