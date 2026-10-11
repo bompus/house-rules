@@ -7,7 +7,7 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 - `hr-what-next` now asks about deferred items nobody decided. A deferral is not a yes or a
   no, so an item deferred with only the user's selection as its trigger counts as awaiting a
   decision, and invoking the skill is asking for the backlog: those items are presented as an
-  offer, or as a walk-through when there are more than three questions, instead of only being
+  offer, or as a walk-through when there are three or more questions, instead of only being
   counted. Each answer is recorded as yes, no (dropped) or defer with a trigger other than the
   user's selection, so the same item is not asked on every run. Items waiting on others keep
   their trigger and are not asked. `check-open-work.mjs` lists such deferrals in a separate
