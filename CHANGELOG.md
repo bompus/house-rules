@@ -4,11 +4,11 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
-- Performance submissions now put the result in the title where it helps. A discussion or issue
-  about a measured speedup names the headline result and its workload in the title. It does so only
-  when the figure clears the `hr-benchmarking` bar, and the caveats stay in the body. A pull
-  request keeps the project's title convention and carries the figure in its opening body sentence,
-  since the title becomes the squash commit line.
+- The opt-in `upstream-contributions` modifier now puts a measured result in the title where it
+  helps. A discussion or issue about a measured speedup names the headline result and its workload
+  in the title. It does so only when the figure clears the `hr-benchmarking` bar, and the caveats
+  stay in the body. `hr-writing-pr` keeps the figure out of a squash-merged pull request title and
+  carries it in the opening body sentence.
 - `hr-handoff` now covers what the host binds to the thread being handed off. A handoff that
   moves work to another thread inventories scheduled tasks, linked pull requests and PR watches,
   and the agent-mail registration, then moves each one or records why it stays. Where the host
