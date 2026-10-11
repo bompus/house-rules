@@ -4,8 +4,8 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
-- The `hr-research-shared-links` description is shorter (408 to 257 bytes), so the skill costs less
-  of the catalog every session loads, and it still selects on the link-and-ideas requests and not on
+- The `hr-research-shared-links` description is shorter (406 to 257 bytes), so the skill costs less
+  of the catalog every session loads, and it selects on the link-and-ideas requests and not on
   requests to implement what an article describes. The plan-files rule's rebuild-a-ledger sentences
   moved into their own paragraph; their wording is unchanged.
 - Rebuilding a ledger, inventory or handoff from an earlier plan now has to carry every open or
