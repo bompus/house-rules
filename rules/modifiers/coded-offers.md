@@ -16,8 +16,8 @@ Use § Finishing work to select displayed candidates. Each offer stands alone:
    "(Not Recommended)"; name partial combinations, such as "(Combinable with 1A)".
 4. The exact acceptance line. One question uses "Recommended: reply `<code>` or `go`".
    Several use "Recommended combination: reply `<code>, <code>` or `go`".
-   Keep that line to that form. Say what `go` leaves out, such as a later phase
-   or a follow-up offer, in its own line.
+   Nothing follows that line. Each option's own paragraph says what it leaves
+   for a later offer.
 
 Include alternatives the user raised or needed to explain a material tradeoff.
 Routine offers include an option to defer or drop displayed proposals; say other ledger
@@ -39,8 +39,8 @@ Queue the new decision in a walk-through (load the `hr-what-next` skill) and
 give it one line.
 
 Use plain numbers for steps and codes for options. Recommend one mutually
-exclusive option. Independent options may each be recommended; state their
-combined scope in the acceptance line. For sequential landing phases, label
+exclusive option. Independent options may each be recommended; list their codes
+in the acceptance line. For sequential landing phases, label
 options "(Recommended, phase 1)" and "(Recommended, phase 2)". `go` covers phase 1
 only; offer phase 2 after phase 1 lands. Record conditional work with its trigger.
 

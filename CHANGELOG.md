@@ -13,8 +13,8 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   gets a row per bound item. The low-quota stop is unchanged.
 - Offers now say how far each option goes. An option that produces a change names what it changes,
   the steps it includes (pull request, review, landing, cleanup) and what it leaves for a later
-  offer. The acceptance line keeps its exact form, and anything `go` leaves out goes in its own
-  line. Where the host can render a visual, an offer with two or more questions or a phased option
+  offer. The acceptance line keeps its exact form and nothing follows it; what an option leaves
+  for later stays in that option's paragraph. Where the host can render a visual, an offer with two or more questions or a phased option
   also gets an offer visual (a rendered page, not a question-card tool) beside the text offer, and
   `hr-what-next` points to it.
 - `hr-what-next` now asks about deferred items nobody decided. A deferral is not a yes or a
