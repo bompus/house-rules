@@ -1,14 +1,15 @@
 ---
-description: A measured optimization, fix or defect found in a third-party project is submitted to that project through its own contribution route.
+description: A measured optimization, fix or defect found in a third-party project is offered for submission to that project through its own contribution route.
 after: Repository work
 ---
 
 ## Upstream contributions
 
 When work on a third-party project produces a finding that is worth a
-maintainer's time, submit it to that project rather than leaving it in a local
-branch or a note. It qualifies when you reproduced or measured the effect, the
-project would act on it, and it fits what its guide says it accepts.
+maintainer's time, offer to submit it to that project rather than leaving it in
+a local branch or a note. It qualifies when you reproduced or measured the
+effect and it matches a kind of change the project's contribution guide or open
+issues invite, such as performance fixes or a reported defect.
 
 1. Offer the submission under § Offers as soon as the evidence is complete.
    Name the channel and the scope.
