@@ -82,5 +82,53 @@
     "target": "hr-benchmarking",
     "should_select": false,
     "request": "Is the shared host free to run this test suite now? Check session reservations, not performance."
+  },
+  {
+    "id": "rs-link-thoughts",
+    "target": "hr-research-shared-links",
+    "should_select": true,
+    "request": "https://example.com/blog/agent-memory-layers thoughts?"
+  },
+  {
+    "id": "rs-borrow",
+    "target": "hr-research-shared-links",
+    "should_select": true,
+    "request": "Here is a repo that does something similar to our setup. What can we borrow or cherry-pick from it?"
+  },
+  {
+    "id": "rs-compare",
+    "target": "hr-research-shared-links",
+    "should_select": true,
+    "request": "Look at this project and tell me how it compares to what we have, and whether it is worth using."
+  },
+  {
+    "id": "rs-multi-link",
+    "target": "hr-research-shared-links",
+    "should_select": true,
+    "request": "Read these three posts and tell me which ideas are worth trying in our workflow."
+  },
+  {
+    "id": "rs-fact",
+    "target": "hr-research-shared-links",
+    "should_select": false,
+    "request": "Open this page and tell me which Node version the installer requires."
+  },
+  {
+    "id": "rs-implement",
+    "target": "hr-research-shared-links",
+    "should_select": false,
+    "request": "Implement the caching technique described in this article in our API client."
+  },
+  {
+    "id": "rs-summarize-own",
+    "target": "hr-research-shared-links",
+    "should_select": false,
+    "request": "Summarize the attached meeting notes in five bullets."
+  },
+  {
+    "id": "rs-bug-link",
+    "target": "hr-research-shared-links",
+    "should_select": false,
+    "request": "This stack trace links to a library issue. Why does our build fail with it?"
   }
 ]

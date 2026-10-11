@@ -286,6 +286,7 @@ want and explains these limits before changing the configuration.
 | `hr-pr-followup`            | Address conflicts, feedback and failing checks for a requested PR; honor existing landing authority.      |
 | `hr-read-reddit`            | Read Reddit feed output while supported; RSS support ends November 13, 2026. Partial web-search fallback. |
 | `hr-read-x-links`           | Read the full content of X posts.                                                                         |
+| `hr-research-shared-links`  | Research a shared link or repository in depth, compare it with your setup and rate each idea.             |
 | `hr-split-to-prs`           | Divide work into coherent PRs while preserving recovery points and verifying each slice.                  |
 | `hr-stock-ui-audit`         | Find and triage template-default styling in frontend code.                                                |
 | `hr-tdd`                    | Implement requested test-first work through one red-green slice at a time; simplify during review.        |

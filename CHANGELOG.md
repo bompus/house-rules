@@ -20,6 +20,12 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   that do not say what happened to the options the user did not pick. The plan-files rule defines
   the `recheck:` field and asks for a reply route on questions sent to other threads. Before,
   these items stayed open, or dropped out of every list, until someone happened to look.
+- New skill `hr-research-shared-links`: when a session opens with a shared link, or the user asks for
+  thoughts, ideas or what to borrow from one, the agent follows the link to its primary source, reads
+  past the README, checks the claims, searches the user's own rules and past decisions, rates each
+  idea adopt, consider or skip with evidence on both sides, and routes what is worth keeping. Before,
+  the first answer usually summarized only the page that was shared, and the user had to ask again to
+  look closer, compare with their setup or find the hidden gems.
 - The core rules now declare the skills they name, and composing warns when one is missing from
   the composed set. A fresh install selects eight skills, but the core rules named two others,
   `hr-writing-pr` and `hr-agent-guidance-refresh`, so a new user's agent was told to follow skills
