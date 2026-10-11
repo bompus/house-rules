@@ -13,6 +13,15 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   their trigger and are not asked. `check-open-work.mjs` lists such deferrals in a separate
   "awaiting your yes/no" group (`awaitingUser` in `--json`), matched by a heuristic on the
   trigger text that is documented in the script's header.
+- The `hr-code-review` panel recommendations were checked against the live Bug Hunt benchmark
+  instead of the maintainer's notes. Every Opus 5.5 figure and the Sonnet 5.5 bug counts matched
+  the recorded values. The two Sonnet 5.5 entries now carry the list cost and wall time the board
+  publishes, the harness (Claude Code) and route (Anthropic first-party API), and the board's
+  caveats on those figures, including that the Opus times came from a shared machine and the
+  Sonnet times from an idle one. The recommendations page says the `quick` and `deep` profiles
+  still have no entry because no recorded evidence tests those shapes. A request to change a
+  panel, not only to set one up, now reaches the setup procedure, and the panel configuration
+  docs point to it.
 - New opt-in `upstream-contributions` modifier: a measured optimization, fix or defect found
   in a third-party project is offered for submission to that project as soon as the evidence is
   complete, through the channel its contribution guide names (comment, issue, discussion or pull

@@ -186,7 +186,7 @@ It does not discover or resolve providers, verify quota or effective effort,
 enforce policy at runtime, enable a skill, change subscriptions or invoke models.
 Exact routes and effort choices belong to local bindings, outside this portable
 schema; the `hr-code-review` skill's `panel-plan.mjs` resolves preferences and
-bindings into seats without calling a model ([contract](../skills/hr-code-review/references/panel-plan.md)). Saving preferences does not authorize spending or waive review gates.
+bindings into seats without calling a model ([contract](../skills/hr-code-review/references/panel-plan.md)). To choose or change seats with the agent, ask it to set up or change your review panel; the skill's [setup procedure](../skills/hr-code-review/references/panel-setup.md) suggests seats from dated recommendations and saves nothing until you confirm. Saving preferences does not authorize spending or waive review gates.
 
 Ordinary setup, composition and selection operations preserve existing `panel`
 data without adopting or validating it, including older unrelated uses of that

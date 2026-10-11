@@ -7,20 +7,20 @@
       "profiles": ["balanced"],
       "task": "Find planted bugs: 105 across two repositories, count fixed",
       "model": "claude-opus-5-5",
-      "harness": "unknown",
-      "route": "unknown",
+      "harness": "Claude Code",
+      "route": "Anthropic first-party API",
       "efforts": [
         { "effort": "medium", "fixed": 30.3, "listCostUsd": 15.68, "wallMinutes": 17.0 },
         { "effort": "high", "fixed": 31.7, "listCostUsd": 22.25, "wallMinutes": 23.9 },
         { "effort": "xhigh", "fixed": 36.0, "listCostUsd": 34.98, "wallMinutes": 42.5 }
       ],
       "sourceUrl": "https://bughunt.productcompass.pm/data/benchmark.json",
-      "checked": "2026-10-05",
-      "samples": "3 runs per effort, non-superseded rows",
+      "checked": "2026-10-10",
+      "samples": "3 runs per effort, non-superseded rows; each run covers both repositories",
       "metric": "planted bugs fixed, mean of 3, out of 105",
-      "timeDefinition": "wall clock of runs that shared the machine",
-      "costDefinition": "list-rate API price, not subscription billing",
-      "limitations": "Counts planted bugs, not review quality on real changes; repeated attempts are not independent replications; recorded from the maintainer's benchmark notes and not fetched again when this entry was written",
+      "timeDefinition": "wall clock summed over both repositories; the board says these runs shared the machine with other work",
+      "costDefinition": "list-rate API price estimated from usage counts, summed over both repositories; not an invoice or subscription billing",
+      "limitations": "Counts planted bugs, not review quality on real changes; repeated attempts are not independent replications; runs used a 1M context window, and the board says its older Opus 5 rows are not comparable to these; the board also lists low and max rungs that this entry leaves out",
       "rationale": "Medium used about 30% less cost and 29% less time than high for 1.4 fewer bugs; xhigh found more bugs at much higher cost and time. Medium supports a balanced starting point, not equivalence",
       "status": "current"
     },
@@ -29,20 +29,20 @@
       "profiles": ["balanced"],
       "task": "Find planted bugs: 105 across two repositories, count fixed",
       "model": "claude-sonnet-5-5",
-      "harness": "unknown",
-      "route": "unknown",
+      "harness": "Claude Code",
+      "route": "Anthropic first-party API",
       "efforts": [
-        { "effort": "high", "fixed": 34.3, "listCostUsd": "unknown", "wallMinutes": "unknown" },
-        { "effort": "xhigh", "fixed": 36.0, "listCostUsd": "unknown", "wallMinutes": "unknown" }
+        { "effort": "high", "fixed": 34.3, "listCostUsd": 19.85, "wallMinutes": 27.9 },
+        { "effort": "xhigh", "fixed": 36.0, "listCostUsd": 42.86, "wallMinutes": 72.7 }
       ],
       "sourceUrl": "https://bughunt.productcompass.pm/data/benchmark.json",
-      "checked": "2026-10-05",
-      "samples": "3 runs per effort, non-superseded rows",
+      "checked": "2026-10-10",
+      "samples": "3 runs per effort, non-superseded rows; each run covers both repositories",
       "metric": "planted bugs fixed, mean of 3, out of 105",
-      "timeDefinition": "unknown",
-      "costDefinition": "unknown",
-      "limitations": "Same board limits as the Opus entry; cost and time were not recorded for these rows",
-      "rationale": "Found about as many planted bugs as the Opus rows at its two top efforts; suggest it only where the user allows that model and effort",
+      "timeDefinition": "wall clock summed over both repositories; the board says the machine was idle for these runs, so the times do not compare with the Opus entry's",
+      "costDefinition": "list-rate API price estimated from usage counts, summed over both repositories; the board notes its harness priced this model on another model's table, so the dollar figure is less certain than the usage counts",
+      "limitations": "Same board limits as the Opus entry; its older Sonnet 5 rows are not comparable to these; the board also lists low, medium and max rungs that this entry leaves out",
+      "rationale": "At high and xhigh it found 34.3 and 36.0 planted bugs against Opus's 31.7 and 36.0, at similar cost ($19.85 and $42.86 against $22.25 and $34.98); the times are not comparable. Suggest it only where the user allows that model and effort",
       "status": "current"
     }
   ]

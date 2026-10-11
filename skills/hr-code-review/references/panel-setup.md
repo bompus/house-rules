@@ -1,7 +1,7 @@
 # Panel setup
 
-Use this procedure on first use of a panel, or when the user asks to set one up
-or to see recommendations. It chooses and saves preferences only. It never
+Use this procedure on first use of a panel, or when the user asks to set one up,
+change it or see recommendations. It chooses and saves preferences only. It never
 launches a seat, probes a provider, buys anything or changes a provider setting.
 An explicit request that names every seat can run without setup; saving that
 choice afterwards is a separate opt-in.

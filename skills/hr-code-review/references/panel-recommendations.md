@@ -16,6 +16,14 @@ a user's catalog, over their limit or excluded by them; the user's limits win.
 | `balanced` | A substantive review with explicit criteria   | Two models, with an explicitly permitted residual tie-break |
 | `deep`     | A broad or difficult review the user selected | A named larger panel, with receipt checks and adjudication  |
 
+The `quick` and `deep` profiles have no entry yet; current entries are tagged
+`balanced` only. The only recorded evidence here, the Bug Hunt board,
+measures single model-and-effort runs on a find-every-planted-bug task. It does not
+test a two-model panel with a limited reply scope, or a larger panel with receipt
+checks and adjudication, so tagging an entry `quick` or `deep` would extrapolate.
+For those profiles, suggest only the shape in the table and the user's own limits,
+and say that no recorded evidence backs a seat choice.
+
 ## Reading an entry
 
 Each entry names the task the evidence measures, the exact model and effort, the

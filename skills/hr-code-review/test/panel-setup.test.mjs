@@ -50,6 +50,31 @@ test("every catalog entry records the evidence the setup procedure promises", ()
   }
 });
 
+test("a current entry was fetched from its source and defines every figure it records", () => {
+  for (const entry of catalog.entries.filter((e) => e.status === "current")) {
+    assert(entry.checked <= catalog.reviewed, `${entry.id}: checked after the catalog review date`);
+    assert.doesNotMatch(entry.limitations, /not fetched again/i, entry.id);
+    const numeric = (key) => entry.efforts.some((row) => Number.isFinite(row[key]));
+    if (numeric("listCostUsd")) assert.notEqual(entry.costDefinition, "unknown", entry.id);
+    if (numeric("wallMinutes")) assert.notEqual(entry.timeDefinition, "unknown", entry.id);
+  }
+});
+
+test("the recommendations page names each profile that has no entry", () => {
+  const page = read("references/panel-recommendations.md");
+  for (const profile of ["quick", "balanced", "deep"]) {
+    const covered = catalog.entries.some((e) => e.profiles.includes(profile));
+    const said = new RegExp(`\`${profile}\`[^.|]*no entry`).test(page);
+    assert.equal(said, !covered, `${profile}: page and entries disagree about coverage`);
+  }
+});
+
+test("setup and change requests reach the setup procedure", () => {
+  const skillText = read("SKILL.md");
+  assert.match(skillText, /^description:.*set up or change a review panel/m);
+  assert.match(skillText, /asks to set up or change a panel[^\n]*\(references\/panel-setup\.md\)/);
+});
+
 test("the catalog names no account, path or credential", () => {
   assert.doesNotMatch(JSON.stringify(catalog), /\/home\/|\/Users\/|api[_-]?key|token|@/i);
 });
