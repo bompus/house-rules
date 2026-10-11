@@ -50,6 +50,24 @@ and mechanical results separately from the reviewed claim that all items are
 addressed. Include owned unlanded PRs, dependency PRs and own commits without a
 PR; preserve their owners and landing authority.
 
+When a handoff unrelated to quota moves work to another thread, also move what
+the host binds to the outgoing thread:
+
+1. Inventory it: scheduled or recurring tasks, linked pull requests and PR
+   watches, and the agent-mail registration and its subscriptions. On T3 Code,
+   read `list_scheduled_tasks` (each task's `boundThreadId`),
+   `list_thread_pull_requests` and any `watch_pull_request` watches.
+2. Move or record each item. Where the host lets the receiving thread bind it,
+   the handoff names the exact call the receiver makes; on T3 Code a thread can
+   bind a task only to itself, so the outgoing thread cannot move it. Otherwise
+   record why it stays. Read each item back after the move; a move without a
+   read-back is unfinished.
+3. Follow any thread-switch checklist the owning repository or the user's
+   guidance names, and list it in the handoff.
+4. Keep the outgoing registration until the user closes the old thread, then
+   retire it.
+5. Give each bound item a row in the receipt, with owner, state and next action.
+
 At a low-quota stop, save essential state first and record partial coverage
 when feasible. An unfinished receipt or failing check never delays that stop.
 

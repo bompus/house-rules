@@ -4,6 +4,13 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- `hr-handoff` now covers what the host binds to the thread being handed off. A handoff that
+  moves work to another thread inventories scheduled tasks, linked pull requests and PR watches,
+  and the agent-mail registration, then moves each one or records why it stays. Where the host
+  lets only the receiving thread bind an item (T3 Code binds a task only to its own thread), the
+  handoff names the receiver's exact call. Every move is read back, any thread-switch checklist is
+  listed, the outgoing registration stays until the user closes the old thread, and the receipt
+  gets a row per bound item. The low-quota stop is unchanged.
 - Offers now say how far each option goes. An option that produces a change names what it changes,
   the steps it includes (pull request, review, landing, cleanup) and what it leaves for a later
   offer. The acceptance line keeps its exact form, and anything `go` leaves out goes in its own
