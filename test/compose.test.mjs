@@ -6,6 +6,7 @@ import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { compose, modifierList, parseFragment, splitSections } from "../compose.mjs";
+import { composeConfiguration } from "../composition.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const core = readFileSync(join(root, "rules/core.md"), "utf8");
@@ -323,3 +324,31 @@ for (const excludeIndependent of [false, true]) {
     assert.equal(existsSync(join(dir, "out", "hr-read-reddit")), false);
   });
 }
+
+test("the skills the core rules name are declared, shipped and selected by default", (t) => {
+  const named = [...new Set(core.match(/hr-[a-z][a-z-]*/g))].sort();
+  const { meta } = parseFragment(core, "core");
+  const declared = meta.requires
+    .split(",")
+    .map((s) => s.trim())
+    .sort();
+  assert.deepEqual(
+    declared,
+    named,
+    "core.md front matter requires: lists every skill the text names",
+  );
+  const dir = scratch(t);
+  const sample = JSON.parse(readFileSync(join(root, "examples/person/house-rules.json"), "utf8"));
+  for (const skill of named)
+    assert.ok(sample.skills.include.includes(skill), `${skill} is in the fresh-install skill set`);
+  assert.deepEqual(composeConfiguration(sample, dir).warnings, []);
+});
+
+test("excluding a skill the core rules rely on warns instead of composing silently", (t) => {
+  const dir = scratch(t);
+  const skills = { include: ["hr-what-next", "hr-code-review", "hr-diagnosing-bugs"] };
+  const { warnings } = composeConfiguration({ skills }, dir);
+  assert.deepEqual(warnings, [
+    'rules/core.md expects the "hr-plain-prose" skill, which is not in the composed set',
+  ]);
+});

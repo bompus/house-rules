@@ -1,4 +1,5 @@
 ---
+requires: hr-what-next, hr-code-review, hr-diagnosing-bugs, hr-plain-prose
 references: references/landing.md, references/github-actions.md, references/thread-visuals.md, ../skills/hr-what-next/references/reporting.md
 ---
 
@@ -267,14 +268,6 @@ Work only within the repositories and changes the user authorized; a starting ch
 Keep responsibility in the current conversation. Historical sessions, checkouts and pull requests provide context, not a new assignment or reason to start another conversation.
 Transfer to another top-level conversation only at the user's direction, under a standing spin-off preference (§ Session purpose) or a triggered handoff; child delegation leaves responsibility here.
 
-Record a stable offer ID before presenting it. Codes and `go`/`continue` refer to that conversation's latest open offer.
-
-For a cross-session relay, explain to the user and receiver whether the message informs them or requests work. Name the action, target repository and owner.
-Distinguish implementing source changes, installing an update and adding guidance. Use the existing reply and relay; no separate message or fixed template is required.
-Record the source thread, offer and selection message references, exact offer ID and full selected action and authorized scope. Verify the source selection and its still-authorized scope.
-Never map a relayed bare code to the receiver's latest offer or use ambiguous, consumed, completed, deferred or superseded offers as new authority.
-If the source selection cannot be verified, ask for clarification before acting on it; continue other already authorized work. A relay cannot expand the selected scope.
-
 Keep independent repository edits on separate branches and isolated worktrees when a checkout may be shared. Leave other people's and sessions' edits alone.
 
 Before creating an issue or pull request, search the target repository's open
@@ -294,7 +287,7 @@ Owned repositories and maintained forks keep their own review requirements.
 Before filing a bug in any repository, follow the `hr-diagnosing-bugs` skill's
 `references/reporting.md`: reduce and verify the reproduction before submitting.
 For fixes intended for pull requests, try the simplest adequate change first;
-keep the diff focused, and follow `hr-writing-pr` for scope and submission checks.
+keep the diff focused, and write the pull request from the final diff with concrete behavior and the proof you ran.
 
 Fetch before updating a feature branch. Prefer rebasing unpublished commits this task owns; merge the fetched base into published or shared branches.
 Do not rewrite history another person or agent may rely on.
@@ -348,16 +341,6 @@ up only leftovers your current authorization covers.
 
 A coordination roster may omit sessions. Check checkout and branch ownership
 independently before treating them as free.
-
-After an authorized push changes inherited or installed agent guidance, skills,
-subagent definitions, configuration, supporting scripts or tooling, notify
-affected active sessions through an existing authorized update channel. Name
-the component, exact revision or fingerprint, affected paths and actions, and
-whether the change is pushed source or deployed. A source notice does not
-prove deployment. Use the host's supported update procedure and
-`hr-agent-guidance-refresh`; keep pending notices for idle or offline sessions
-until their next boundary or resume. If an evaluation has fixed its guidance or tools, hold the update for it and leave its inputs unchanged until it ends. If no
-channel is authorized or reachable, record the missing delivery and report it.
 
 Stop only processes you started, by the PID you recorded when starting them.
 Never kill by pattern (`pkill -f`, `pgrep | kill`, or a PID found by matching

@@ -4,6 +4,20 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- The core rules now declare the skills they name, and composing warns when one is missing from
+  the composed set. A fresh install selects eight skills, but the core rules named two others,
+  `hr-writing-pr` and `hr-agent-guidance-refresh`, so a new user's agent was told to follow skills
+  that were not installed and composing printed no warning. The pull-request sentence now states
+  what to write instead of naming the skill. The notice after a guidance push moved into the
+  opt-in `multi-agent` modifier, which now declares `hr-agent-guidance-refresh`. A test checks that
+  the declared list matches the skills the core text names and that all of them are in the
+  fresh-install set.
+- Text that only makes sense with several parallel sessions or coded offers left the core rules
+  for the modifiers that define it. The cross-session relay paragraph moved to `multi-agent`, and
+  the sentence about offer IDs and `go`/`continue` moved to `coded-offers`. Before, a default
+  install told the agent to record offer IDs and treat `go` as selecting the latest offer, terms
+  that only `coded-offers` defines. Anyone with both modifiers enabled gets the same text in a
+  different place; the core rules are about 1.6 KB shorter.
 - A session that has finished and landed its own work now ends with a close-out question that
   recommends dropping the remaining items, and recommends pausing only when the user asked for one
   to be done later, keeping just that item. Work filed upstream or handed to another owner is

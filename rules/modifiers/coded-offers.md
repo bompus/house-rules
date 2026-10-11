@@ -31,6 +31,8 @@ the steps it includes (such as the pull request, review, landing and cleanup) an
 what it leaves for a later offer. Selection authorizes that scope; questions authorize
 nothing. Implementation after analysis needs selection.
 The coded list makes an offer; a prose recommendation alone does not.
+Record a stable offer ID before presenting it. Codes and `go`/`continue` refer to that
+conversation's latest open offer.
 `go` or `continue` selects the recommendation in the latest open offer. Keep that
 offer and its scope in the ledger; status or inbox updates leave it open. Record
 replacements. Accepted, completed, deferred or superseded offers cannot authorize

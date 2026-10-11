@@ -340,7 +340,8 @@ export function composeConfiguration(config, configDir, { referencesDirectory } 
   const references = new Map([...candidates].map(([name, value]) => [name, value.text]));
   const skills = skillSources(config, configDir);
   const warnings = [];
-  for (const f of fragments) {
+  const core = parseFragment(readFileSync(join(BASE, "rules/core.md"), "utf8"), "rules/core.md");
+  for (const f of [core, ...fragments]) {
     for (const need of (f.meta.requires ?? "")
       .split(",")
       .map((s) => s.trim())
