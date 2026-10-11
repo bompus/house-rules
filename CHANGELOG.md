@@ -4,6 +4,11 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- New opt-in `upstream-contributions` modifier: a measured optimization, fix or defect found
+  in a third-party project is offered for submission to that project as soon as the evidence is
+  complete, through the channel its contribution guide names (comment, issue, discussion or pull
+  request). The user sees the exact text once before it is posted unless they have waived that
+  for a named kind of submission and set of projects.
 - A session no longer treats options the user passed over as work that remains. When the
   user picks from an offer, the unpicked options are dropped as "not selected" in that step,
   ideas the agent generated stay in the report instead of the ledger unless the user asked for
