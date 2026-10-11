@@ -7,6 +7,7 @@ import {
   readFileSync,
   readdirSync,
   rmSync,
+  symlinkSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -308,4 +309,202 @@ test("a plan without a Purpose line warns but does not change the result", () =>
   const { code, report } = check(plan);
   expect(code).toBe(0);
   expect(report.warnings).toEqual([expect.stringContaining("Purpose:")]);
+});
+
+// A stand-in `gh` on PATH: answers `gh api repos/<o>/<r>/issues/<n>` from a JSON map of
+// "o/r#n" to "open", "closed" or "merged", logs each call, and fails like an offline host on "fail".
+function fakeGh(states) {
+  const bin = mkdtempSync(join(process.env.HOUSE_RULES_TEST_TMP ?? tmpdir(), "open-work-bin-"));
+  roots.push(bin);
+  symlinkSync(process.execPath, join(bin, "node"));
+  writeFileSync(join(bin, "states.json"), JSON.stringify(states));
+  writeFileSync(
+    join(bin, "gh"),
+    [
+      "#!/usr/bin/env node",
+      'const { appendFileSync, readFileSync } = require("node:fs");',
+      'const { join } = require("node:path");',
+      'appendFileSync(join(__dirname, "calls.log"), process.argv.slice(2).join(" ") + "\\n");',
+      'const states = JSON.parse(readFileSync(join(__dirname, "states.json"), "utf8"));',
+      'if (states.fail) { console.error("error connecting to api.github.com"); process.exit(1); }',
+      "const [, owner, repo, , number] = process.argv[3].split('/');",
+      "const state = states[`${owner}/${repo}#${number}`];",
+      'if (!state) { console.error("gh: Not Found (HTTP 404)"); process.exit(1); }',
+      "console.log(JSON.stringify({ state: state === 'open' ? 'open' : 'closed',",
+      "  ...(state === 'merged' ? { pull_request: { merged_at: '2026-01-01T00:00:00Z' } } : state === 'closed' ? { pull_request: { merged_at: null } } : {}) }));",
+    ].join("\n"),
+    { mode: 0o755 },
+  );
+  const calls = () =>
+    existsSync(join(bin, "calls.log"))
+      ? readFileSync(join(bin, "calls.log"), "utf8").split("\n").filter(Boolean)
+      : [];
+  return { env: { ...process.env, PATH: bin }, calls };
+}
+
+function checkWith(env, plan, ...args) {
+  const run = spawnSync(process.execPath, [script, plan, "--json", ...args], {
+    encoding: "utf8",
+    env,
+  });
+  return { code: run.status, report: run.stdout ? JSON.parse(run.stdout) : null };
+}
+
+test("an open item whose every named pull request or issue is merged or closed is listed as possibly finished", () => {
+  const { plan } = setup({
+    ledger: [
+      "- [ ] a: land acme/tool#1",
+      "- [~] b: wait on https://github.com/acme/tool/issues/2 ... trigger: maintainer reply recheck: 2099-01-01",
+      "- [ ] c: release acme/tool#1 and acme/tool#3",
+      "- [ ] d: land PR #4",
+      "- [ ] e: land #9 in another repository",
+    ],
+  });
+  const gh = fakeGh({
+    "acme/tool#1": "merged",
+    "acme/tool#2": "closed",
+    "acme/tool#3": "open",
+    "acme/tool#4": "merged",
+  });
+  const { code, report } = checkWith(gh.env, plan, "--repo", "acme/tool");
+  expect(code).toBe(2);
+  expect(report.stale).toEqual([
+    expect.stringMatching(/^L6 .*acme\/tool#1 merged/),
+    expect.stringMatching(/^L7 .*acme\/tool#2 closed/),
+    expect.stringMatching(/^L9 .*acme\/tool#4 merged/),
+  ]);
+  expect(report.skipped).toEqual([]);
+  // #9 is looked up in --repo too, and a reference GitHub does not know leaves the item alone.
+  expect(gh.calls()).toHaveLength(5);
+});
+
+test("bare pull request numbers are not checked without --repo", () => {
+  const { plan } = setup({ ledger: ["- [ ] d: land PR #4"] });
+  const gh = fakeGh({ "acme/tool#4": "merged" });
+  const { report } = checkWith(gh.env, plan);
+  expect(report.stale).toEqual([]);
+  expect(gh.calls()).toHaveLength(0);
+  expect(report.skipped).toEqual([expect.stringContaining("--repo")]);
+});
+
+test("without gh, offline or with --offline the GitHub check is skipped and says so", () => {
+  const { plan } = setup({ ledger: ["- [ ] a: land acme/tool#1", "- [ ] b: land acme/tool#2"] });
+  const missing = fakeGh({});
+  rmSync(join(missing.env.PATH, "gh"));
+  const offline = fakeGh({ fail: true });
+  const flag = fakeGh({ "acme/tool#1": "merged" });
+  for (const [env, args, reason] of [
+    [missing.env, [], /gh not found/],
+    [offline.env, [], /error connecting/],
+    [flag.env, ["--offline"], /--offline/],
+  ]) {
+    const { code, report } = checkWith(env, plan, ...args);
+    expect(code).toBe(2);
+    expect(report.stale).toEqual([]);
+    expect(report.skipped).toEqual([expect.stringMatching(reason)]);
+  }
+  expect(offline.calls()).toHaveLength(1);
+  expect(flag.calls()).toHaveLength(0);
+});
+
+test("a named commit outside the default branch keeps an item open, a landed one decides nothing", () => {
+  const { notes, plan } = setup();
+  const checkout = join(notes, "repo");
+  repository(checkout, 2);
+  const git = (...args) =>
+    spawnSync("git", ["-C", checkout, ...args], { encoding: "utf8" }).stdout.trim();
+  const landed = git("rev-parse", "HEAD~1").slice(0, 9);
+  git("update-ref", "refs/remotes/origin/main", landed);
+  git("symbolic-ref", "refs/remotes/origin/HEAD", "refs/remotes/origin/main");
+  const local = git("rev-parse", "HEAD").slice(0, 9);
+  writeFileSync(
+    plan,
+    readFileSync(plan, "utf8").replace(
+      "## Ledger\n",
+      [
+        "## Ledger",
+        `- [ ] a: land acme/tool#1 (${landed})`,
+        `- [ ] b: land acme/tool#1 (${local})`,
+        `- [ ] c: the pin is still ${landed}`,
+        "",
+      ].join("\n"),
+    ),
+  );
+  const gh = fakeGh({ "acme/tool#1": "merged" });
+  const env = { ...gh.env, PATH: `${gh.env.PATH}:${process.env.PATH}` };
+  const { report } = checkWith(env, plan, "--checkout", checkout);
+  expect(report.stale).toEqual([
+    expect.stringMatching(new RegExp(`^L6 .*acme/tool#1 merged, ${landed} in origin/main`)),
+  ]);
+});
+
+test("a reference the line already reports as merged or left out is context, not the subject", () => {
+  const { plan } = setup({
+    ledger: [
+      "- [~] a: the part left out of acme/tool#1 ... trigger: next release",
+      "- [~] b: residual advisories after acme/tool#1 merged ... trigger: next audit",
+    ],
+  });
+  const gh = fakeGh({ "acme/tool#1": "merged" });
+  const { report } = checkWith(gh.env, plan);
+  expect(report.stale).toEqual([]);
+  expect(gh.calls()).toHaveLength(0);
+});
+
+test("follow-up markers in prose and stray deferred boxes warn, ordinary prose does not", () => {
+  const { plan } = setup({
+    status: "completed",
+    ledger: ["- [x] a: shipped - evidence: x"],
+    extra: [
+      "## Log",
+      "- Follow-up: edge order needs a re-tune first.",
+      "Landed the fix. Still open for later: the perf batch.",
+      "Merged it. Deferred: the directory listing.",
+      "- [~] stray deferred box ... trigger: x",
+      "Recent panel follow-up: recovered the newer decisions.",
+      "Offer 3 remains open and unselected.",
+      "We can look at this later if it matters.",
+    ].join("\n"),
+  });
+  const { code, report } = check(plan);
+  expect(code).toBe(0);
+  expect(report.warnings.map((w) => w.match(/^L\d+/)?.[0])).toEqual(["L9", "L10", "L11", "L12"]);
+});
+
+test("an answered offer line that does not say what happened to the other options warns", () => {
+  const { plan } = setup({
+    status: "completed",
+    ledger: [
+      "- [x] Offer DEMO-1 selected 1B ... evidence: PR 1",
+      "- [x] Offer DEMO-2 selected 1A; 1B not selected ... evidence: PR 2",
+      "- [x] Offer DEMO-3 selected 2A ... evidence: PR 3",
+      "- [-] Offer DEMO-3 option 2B ... by: user, not selected",
+      "- [x] Presented the offer ... evidence: reply text",
+    ],
+  });
+  const { code, report } = check(plan);
+  expect(code).toBe(0);
+  expect(report.warnings).toEqual([expect.stringMatching(/^L6 .*answered offer/)]);
+});
+
+test("items tied to another thread need a re-check date, and dates within a week are listed", () => {
+  const { plan } = setup({
+    ledger: [
+      "- [~] a: comment on acme/tool#5 ... trigger: maintainer reply",
+      "- [~] b: upstream review ... trigger: maintainer reply recheck: 2026-10-01",
+      "- [ ] c: asked the release session about the tag; reply route: its plan ... recheck: 2026-10-15",
+      "- [~] d: wait for the upstream release ... trigger: release recheck: 2026-11-30",
+      "- [~] e: unrelated local idea ... trigger: next failure",
+      "- [ ] f: asked the design thread which layout to keep",
+    ],
+  });
+  const { report } = check(plan, "--offline", "--today", "2026-10-11");
+  expect(report.recheckDue).toEqual([
+    expect.stringMatching(/^L7 .*overdue since 2026-10-01/),
+    expect.stringMatching(/^L8 .*due 2026-10-15/),
+  ]);
+  expect(report.warnings).toEqual([
+    expect.stringMatching(/^L6 .*recheck:/),
+    expect.stringMatching(/^L11 .*recheck:/),
+  ]);
 });

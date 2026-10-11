@@ -8,12 +8,18 @@
 // trigger text, which must be the user plus a verb such as selects, picks, decides, asks or approves and
 // at most a short object ("it", "the backlog"); a trigger with a date, event or another condition
 // stays an ordinary deferred item. The group is a subset of `open` and does not change the exit code.
-import { spawnSync } from "node:child_process";
+// "possibly finished" lists open or deferred items whose every named pull request or issue is merged or
+// closed on GitHub: done work left open, or a trigger that has fired. A named commit that a --checkout has
+// outside its default branch keeps the item off the list. Bare numbers ("PR #4") are looked up only in
+// --repo. The check needs `gh`; without it, offline, or with --offline it is skipped and "skipped" says so.
+// "re-check due" lists items whose `recheck: YYYY-MM-DD` date is past or within 7 days. Both groups are
+// subsets of `open` and do not change the exit code.
+import { spawn, spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, statSync } from "node:fs";
 import { basename, dirname, join, resolve, sep } from "node:path";
 
 const usage =
-  "usage: check-open-work.mjs <plan.md> [--checkout <path>]... [--app-managed <path>]... [--scratch <dir>] [--archive] [--json]\n" +
+  "usage: check-open-work.mjs <plan.md> [--checkout <path>]... [--app-managed <path>]... [--scratch <dir>] [--repo <owner/repo>] [--offline] [--today <YYYY-MM-DD>] [--archive] [--json]\n" +
   'The output lists deferred items whose trigger is only the user\'s own action ("user selects", "user asks for the backlog") as "awaiting your yes/no"; this is a text match, see the header.';
 const TERMINAL_STATUS = /^(completed?|done|archived)\b/i;
 const COMPLETED_STATUS = /^completed\b/i;
@@ -26,7 +32,27 @@ const REQUIRED = {
 const USER_ONLY_TRIGGER =
   /^(?:when |once |until )?(?:the )?user(?:'s)?\s+(?:select\w*|pick\w*|choos\w*|decid\w*|decision|choice|answer\w*|direction|approv\w*|ask\w*|say\w*|request\w*)(?:\s+(?:for |to )?(?:it|this|them|that|one|the backlog|the item|a decision))?$/i;
 const NARRATIVE =
-  /^\s*(?:[-*]\s+|#+\s+)?\**(pending|waiting|deferred|blocked-on-user|blocked-by|todo)\b/i;
+  /^\s*(?:[-*]\s+|#+\s+)?\**(pending|waiting|deferred|blocked-on-user|blocked-by|todo|follow-?ups?)\b/i;
+// A labelled follow-up inside a prose sentence ("Merged. Deferred: the listing", "Still open for later: x").
+const PROSE_MARKER =
+  /(?:^|[.;!?]\s+|\*\*)\s*(?:follow-?ups?|deferred|todo|(?:still )?open for later)\**\s*:/i;
+// An offer line that records an answer, and words that say what happened to the other options.
+const ANSWERED_OFFER =
+  /\boffer\b.*\b(?:selected|chose|picked|answered)\b|\b(?:selected|chose|picked|answered)\b.*\boffer\b|\boffer\b.*\buser (?:reply|go)\b/i;
+const DISPOSITION =
+  /not selected|unselected|unpicked|dropped|declined|deferred|superseded|passed over|only option|all selected|no other options?/i;
+const OFFER_ID = /\b[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+\b/g;
+// A deferred item that waits on another thread (an upstream issue or pull request, a maintainer, another
+// session), or an open question sent to one, needs a `recheck:` date: "trigger: reply" never fires itself.
+const EXTERNAL =
+  /https:\/\/github\.com\/|\b[\w.-]+\/[\w.-]+#\d+|\bupstream\b|\bmaintainers?\b|\b(?:another|other|the [\w-]+) (?:session|thread)\b/i;
+const SENT_QUESTION =
+  /\b(?:asked|relayed|sent)\b.*\b(?:session|thread|owner|maintainer)s?\b|\b(?:awaiting|waiting (?:on|for)) (?:a |the )?(?:reply|answer|response)\b/i;
+const RECHECK = /\brecheck:\s*(\d{4}-\d{2}-\d{2})/i;
+const GITHUB_URL = /https:\/\/github\.com\/([\w.-]+)\/([\w.-]+)\/(?:pull|issues)\/(\d+)/g;
+const GITHUB_REF = /(?<![\w./-])([\w.-]+)\/([\w.-]+)#(\d+)\b/g;
+const BARE_REF = /(?:\bPR\s*#?\s*|(?<![\w/#&])#)(\d{1,6})\b/gi;
+const COMMIT = /\b(?=[0-9a-f]*[a-f])(?=[0-9a-f]*\d)[0-9a-f]{7,40}\b/g;
 
 function parseArguments(argv) {
   const options = {
@@ -34,6 +60,9 @@ function parseArguments(argv) {
     checkouts: [],
     appManaged: [],
     scratch: null,
+    repo: null,
+    offline: false,
+    today: new Date().toLocaleDateString("sv"),
     archive: false,
     json: false,
   };
@@ -41,12 +70,20 @@ function parseArguments(argv) {
     const argument = argv[index];
     if (argument === "--archive") options.archive = true;
     else if (argument === "--json") options.json = true;
-    else if (["--checkout", "--app-managed", "--scratch"].includes(argument)) {
+    else if (argument === "--offline") options.offline = true;
+    else if (["--checkout", "--app-managed", "--scratch", "--repo", "--today"].includes(argument)) {
       const value = argv[++index];
       if (!value) throw new Error(`${argument} needs a value\n${usage}`);
       if (argument === "--checkout") options.checkouts.push(value);
       else if (argument === "--app-managed") options.appManaged.push(value);
-      else options.scratch = value;
+      else if (argument === "--repo") {
+        if (!/^[\w.-]+\/[\w.-]+$/.test(value)) throw new Error(`--repo needs owner/repo\n${usage}`);
+        options.repo = value;
+      } else if (argument === "--today") {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(value))
+          throw new Error(`--today needs YYYY-MM-DD\n${usage}`);
+        options.today = value;
+      } else options.scratch = value;
     } else if (argument.startsWith("--") || options.plan) throw new Error(usage);
     else options.plan = argument;
   }
@@ -101,7 +138,11 @@ function readPlan(path) {
   const narrative = [];
   lines.forEach((line, i) => {
     const inLedger = start >= 0 && i > start && i < end;
-    if (!inLedger && i > 0 && (NARRATIVE.test(line) || /^\s*[-*]\s+\[ \]/.test(line)))
+    if (
+      !inLedger &&
+      i > 0 &&
+      (NARRATIVE.test(line) || PROSE_MARKER.test(line) || /^\s*[-*]\s+\[[ ~]\]/.test(line))
+    )
       narrative.push({ line: i + 1, text: line.trim() });
   });
   return { status, owner, purpose, items, errors, narrative };
@@ -174,7 +215,191 @@ function accountFor(resource, names, items, findings) {
     );
 }
 
-function run(options) {
+// The pull requests, issues and commits an item names. A bare number is looked up in `repo` only.
+// A reference the line already reports as merged, landed or superseded ("fix landed in #120",
+// "left out of #182") is context for a remaining part, not the item's subject, so it is skipped.
+const REPORTED = /\b(?:merged?|landed|closed|superseded|left out of|squash\w*)\b/i;
+function references(text, repo) {
+  const github = new Set();
+  let bare = 0;
+  const reported = (offset, length) =>
+    REPORTED.test(text.slice(Math.max(0, offset - 25), offset + length + 25));
+  let rest = text;
+  for (const pattern of [GITHUB_URL, GITHUB_REF])
+    rest = rest.replace(pattern, (match, owner, name, number, offset) => {
+      if (!reported(offset, match.length)) github.add(`${owner}/${name}#${number}`);
+      return " ".repeat(match.length);
+    });
+  for (const match of rest.matchAll(BARE_REF)) {
+    if (reported(match.index, match[0].length)) continue;
+    if (repo) github.add(`${repo}#${match[1]}`);
+    else bare++;
+  }
+  return { github: [...github], bare, commits: [...new Set(rest.match(COMMIT) ?? [])] };
+}
+
+function gh(...args) {
+  return new Promise((done) => {
+    let stdout = "";
+    let stderr = "";
+    const child = spawn("gh", args, { timeout: 30_000 });
+    child.stdout.on("data", (chunk) => (stdout += chunk));
+    child.stderr.on("data", (chunk) => (stderr += chunk));
+    child.on("error", (error) =>
+      done({ error: error.code === "ENOENT" ? "gh not found" : error.message }),
+    );
+    child.on("close", (code) =>
+      done(code === 0 ? { stdout } : { error: stderr.trim() || `gh exit ${code}` }),
+    );
+  });
+}
+
+// "merged", "closed", "open" or "unknown" (not found) per reference; null when GitHub cannot be asked.
+async function githubStates(refs, offline) {
+  const states = new Map();
+  if (!refs.length) return { states };
+  if (offline) return { states, skipped: "GitHub check skipped: --offline" };
+  const lookup = async (ref) => {
+    const [, owner, name, number] = ref.match(/^(.+)\/(.+)#(\d+)$/);
+    const result = await gh("api", `repos/${owner}/${name}/issues/${number}`);
+    if (result.error) {
+      if (/\b404\b|not found/i.test(result.error) && result.error !== "gh not found")
+        return states.set(ref, "unknown");
+      throw new Error(result.error.split("\n")[0]);
+    }
+    const issue = JSON.parse(result.stdout);
+    states.set(ref, issue.pull_request?.merged_at ? "merged" : issue.state);
+  };
+  try {
+    // The first lookup runs alone, so an offline host or a missing gh costs one call, not one per item.
+    await lookup(refs[0]);
+    const queue = refs.slice(1);
+    await Promise.all(
+      Array.from({ length: 8 }, async () => {
+        while (queue.length) await lookup(queue.shift());
+      }),
+    );
+  } catch (error) {
+    return { states: new Map(), skipped: `GitHub check skipped: ${error.message}` };
+  }
+  return { states };
+}
+
+function defaultBranch(path) {
+  const head = git(path, "rev-parse", "--abbrev-ref", "origin/HEAD")?.trim();
+  if (head && head !== "origin/HEAD") return head;
+  return ["origin/main", "origin/master"].find((ref) =>
+    git(path, "rev-parse", "--verify", "--quiet", ref),
+  );
+}
+
+// "landed" when a checkout's default branch contains the commit, "not landed" when a checkout has it
+// elsewhere, and undefined when no checkout knows it (a session id or other hex text, not a commit).
+// Open items name landed commits mostly as context ("pin is still 6b5c7aef"), so a landed commit never
+// marks an item finished by itself; an unlanded one keeps it off the list.
+function commitState(sha, checkouts) {
+  let state;
+  for (const { path, base } of checkouts) {
+    if (git(path, "rev-parse", "--verify", "--quiet", `${sha}^{commit}`) === null) continue;
+    if (
+      base &&
+      spawnSync("git", ["-C", path, "merge-base", "--is-ancestor", sha, base]).status === 0
+    )
+      return { state: "landed", label: `${sha} in ${base}` };
+    state = { state: "not landed", label: sha };
+  }
+  return state;
+}
+
+async function possiblyFinished(open, options, report) {
+  const named = open.map((item) => ({ item, ...references(item.text, options.repo) }));
+  const bare = named.reduce((total, entry) => total + entry.bare, 0);
+  if (bare)
+    report.skipped.push(
+      `${bare} bare pull request or issue number(s) not checked: pass --repo <owner/repo>`,
+    );
+  const { states, skipped } = await githubStates(
+    [...new Set(named.flatMap((entry) => entry.github))],
+    options.offline,
+  );
+  if (skipped) report.skipped.push(skipped);
+  const checkouts = options.checkouts.map((path) => ({ path, base: defaultBranch(path) }));
+  const finished = [];
+  for (const { item, github, bare, commits } of named) {
+    if (bare) continue;
+    const refs = github.map((ref) => ({
+      state: states.get(ref) ?? "unknown",
+      label: `${ref} ${states.get(ref) ?? "unchecked"}`,
+    }));
+    for (const sha of commits) {
+      const commit = commitState(sha, checkouts);
+      if (commit) refs.push(commit);
+    }
+    if (
+      refs.some((ref) => ref.state !== "landed") &&
+      refs.every((ref) => ["merged", "closed", "landed"].includes(ref.state))
+    )
+      finished.push(`${row(item)} — ${refs.map((ref) => ref.label).join(", ")}`);
+  }
+  return finished;
+}
+
+const row = (item) => `L${item.line} [${item.mark}] ${clip(item.text)}`;
+
+function addDays(date, days) {
+  const next = new Date(`${date}T00:00:00Z`);
+  next.setUTCDate(next.getUTCDate() + days);
+  return next.toISOString().slice(0, 10);
+}
+
+// Long plans can carry dozens of one kind of warning; show five and count the rest.
+function capped(warnings, entries, kind) {
+  warnings.push(...entries.slice(0, 5));
+  if (entries.length > 5) warnings.push(`${entries.length - 5} more ${kind}`);
+}
+
+function rechecks(open, today, warnings) {
+  const due = [];
+  const undated = [];
+  const soon = addDays(today, 7);
+  for (const item of open) {
+    const date = item.text.match(RECHECK)?.[1];
+    if (date && date < today) due.push(`${row(item)} — overdue since ${date}`);
+    else if (date && date <= soon) due.push(`${row(item)} — due ${date}`);
+    else if (
+      !date &&
+      ((item.mark === "~" && EXTERNAL.test(item.text)) || SENT_QUESTION.test(item.text))
+    )
+      undated.push(
+        `L${item.line} waits on another thread but has no \`recheck: YYYY-MM-DD\` date: ${clip(item.text, 60)}`,
+      );
+  }
+  capped(warnings, undated, "item(s) waiting on another thread without a recheck: date");
+  return due;
+}
+
+// An answered offer must say what happened to the options the user did not pick, on its own line or on
+// another ledger line that names the same offer ID.
+function offerWarnings(items, warnings) {
+  const missing = [];
+  for (const item of items) {
+    if (!ANSWERED_OFFER.test(item.text) || DISPOSITION.test(item.text)) continue;
+    const ids = new Set(item.text.match(OFFER_ID) ?? []);
+    const recorded = items.some(
+      (other) =>
+        other !== item &&
+        DISPOSITION.test(other.text) &&
+        (other.text.match(OFFER_ID) ?? []).some((id) => ids.has(id)),
+    );
+    if (!recorded)
+      missing.push(
+        `L${item.line} answered offer without the other options' outcome (not selected, deferred): ${clip(item.text, 60)}`,
+      );
+  }
+  capped(warnings, missing, "answered offer(s) without the other options' outcome");
+}
+
+async function run(options) {
   const planPath = resolve(options.plan);
   if (!existsSync(planPath) || !statSync(planPath).isFile())
     throw new Error(`cannot read ${options.plan}`);
@@ -185,13 +410,15 @@ function run(options) {
     owner: plan.owner ?? null,
     open: [],
     awaitingUser: [],
+    stale: [],
+    recheckDue: [],
+    skipped: [],
     findings: [],
     warnings: [],
     errors: [...plan.errors],
   };
   if (report.errors.length) return report;
   const open = plan.items.filter((item) => item.mark === " " || item.mark === "~");
-  const row = (item) => `L${item.line} [${item.mark}] ${clip(item.text)}`;
   report.open = open.map(row);
   report.awaitingUser = open.filter(awaitsUser).map(row);
   if (TERMINAL_STATUS.test(plan.status) && open.length)
@@ -236,6 +463,9 @@ function run(options) {
     report.warnings.push(`L${entry.line} outside the ledger: ${clip(entry.text, 70)}`);
   if (plan.narrative.length > 5)
     report.warnings.push(`${plan.narrative.length - 5} more narrative marker line(s)`);
+  offerWarnings(plan.items, report.warnings);
+  report.recheckDue = rechecks(open, options.today, report.warnings);
+  report.stale = await possiblyFinished(open, options, report);
   if (options.archive && !report.errors.length) {
     if (!COMPLETED_STATUS.test(plan.status))
       report.findings.push(`archiving refused: Status is "${plan.status}", not completed`);
@@ -258,12 +488,12 @@ function run(options) {
   return report;
 }
 
-function main() {
+async function main() {
   let options;
   let report;
   try {
     options = parseArguments(process.argv.slice(2));
-    report = run(options);
+    report = await run(options);
   } catch (error) {
     console.error(error.message);
     process.exit(1);
@@ -278,6 +508,9 @@ function main() {
       ["error", report.errors],
       ["open", report.open],
       ["awaiting your yes/no", report.awaitingUser],
+      ["possibly finished", report.stale],
+      ["re-check due", report.recheckDue],
+      ["skipped", report.skipped],
       ["finding", report.findings],
       ["warning", report.warnings],
     ])
@@ -294,4 +527,4 @@ function main() {
   process.exit(code);
 }
 
-main();
+await main();

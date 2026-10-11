@@ -43,12 +43,21 @@ at its plan.
   `- [ ] text` is open, `- [~] text … trigger: <what reopens it>` deferred,
   `- [x] text … evidence: <result>` done and `- [-] text … by: <who dropped it>`
   dropped (`by: user, not selected` for an option the user passed over). Name
-  each scratch directory, checkout and branch you own in an item.
+  each scratch directory, checkout and branch you own in an item. Write each
+  follow-up as an item, not as a sentence elsewhere in the plan.
+- An item that waits on another thread (an upstream issue or pull request, a
+  maintainer, another session) carries `recheck: YYYY-MM-DD`, because a
+  trigger such as "maintainer replies" does not fire by itself. A question you
+  send to another thread is an open item that names where the reply will
+  arrive and carries a `recheck:` date. On that date, look at the thread,
+  record what you found, and set a new date or close the item.
 - Before claiming that nothing remains or the session can close, and before
   archiving a plan, run the `hr-what-next` skill's
   `scripts/check-open-work.mjs <plan>`, adding `--checkout <path>` for each
-  checkout you touched, and quote its result. Open or deferred items, and owned
-  resources no open item names, mean work remains.
+  checkout you touched and `--repo <owner/repo>` when items name pull requests
+  by number alone, and quote its result. Open or deferred items, and owned
+  resources no open item names, mean work remains. Check each item it lists as
+  possibly finished or due for a re-check, and update its line.
 - Before archiving a completed plan, save its completed status, completion
   time and evidence. Apply § Finishing work before marking the whole session
   completed. Then archive with the same script's `--archive` flag; it moves the

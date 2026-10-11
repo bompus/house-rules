@@ -4,6 +4,16 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- `hr-what-next`'s open-work check now catches items that a plan has lost track of. It lists open
+  or deferred items whose named pull requests or issues are all merged or closed on GitHub. That
+  separates finished work and fired triggers from live work. Without `gh`, offline or with
+  `--offline`, it says the check was skipped. It lists items whose new `recheck: YYYY-MM-DD` date
+  is past or within a week. It warns when an item that waits on another thread, or a question sent
+  to one, has no such date. It also warns on follow-ups written in prose outside the ledger
+  ("Follow-up:", "Deferred:", "Still open for later:") and on answered offers that do not say
+  what happened to the options the user did not pick. The plan-files rule defines the `recheck:`
+  field and asks for a reply route on questions sent to other threads. Before, these items stayed
+  open, or dropped out of every list, until someone happened to look.
 - The core rules now declare the skills they name, and composing warns when one is missing from
   the composed set. A fresh install selects eight skills, but the core rules named two others,
   `hr-writing-pr` and `hr-agent-guidance-refresh`, so a new user's agent was told to follow skills
