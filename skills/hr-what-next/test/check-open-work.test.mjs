@@ -384,7 +384,7 @@ posixOnly(
   },
 );
 
-test("bare pull request numbers are not checked without --repo", () => {
+posixOnly("bare pull request numbers are not checked without --repo", () => {
   const { plan } = setup({ ledger: ["- [ ] d: land PR #4"] });
   const gh = fakeGh({ "acme/tool#4": "merged" });
   const { report } = checkWith(gh.env, plan);
@@ -500,12 +500,17 @@ test("an answered offer line that does not say what happened to the other option
       "- [x] Offer DEMO-2 selected 1A; 1B not selected ... evidence: PR 2",
       "- [x] Offer DEMO-3 selected 2A ... evidence: PR 3",
       "- [-] Offer DEMO-3 option 2B ... by: user, not selected",
+      "- [x] Offer DEMO-4 selected 1A; rollout deferred until the release ... evidence: PR 4",
+      "- [x] Offer DEMO-5 selected 1A, 1B deferred ... evidence: PR 5",
       "- [x] Presented the offer ... evidence: reply text",
     ],
   });
   const { code, report } = check(plan);
   expect(code).toBe(0);
-  expect(report.warnings).toEqual([expect.stringMatching(/^L6 .*answered offer/)]);
+  expect(report.warnings).toEqual([
+    expect.stringMatching(/^L6 .*answered offer/),
+    expect.stringMatching(/^L10 .*answered offer/),
+  ]);
 });
 
 test("items tied to another thread need a re-check date, and dates within a week are listed", () => {
@@ -517,6 +522,7 @@ test("items tied to another thread need a re-check date, and dates within a week
       "- [~] d: wait for the upstream release ... trigger: release recheck: 2026-11-30",
       "- [~] e: unrelated local idea ... trigger: next failure",
       "- [ ] f: asked the design thread which layout to keep",
+      "- [~] g: wait for PR #4 to merge ... trigger: merge",
     ],
   });
   const { report } = check(plan, "--offline", "--today", "2026-10-11");
@@ -527,5 +533,6 @@ test("items tied to another thread need a re-check date, and dates within a week
   expect(report.warnings).toEqual([
     expect.stringMatching(/^L6 .*recheck:/),
     expect.stringMatching(/^L11 .*recheck:/),
+    expect.stringMatching(/^L12 .*recheck:/),
   ]);
 });

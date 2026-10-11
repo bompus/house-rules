@@ -39,13 +39,15 @@ const PROSE_MARKER =
 // An offer line that records an answer, and words that say what happened to the other options.
 const ANSWERED_OFFER =
   /\boffer\b.*\b(?:selected|chose|picked|answered)\b|\b(?:selected|chose|picked|answered)\b.*\boffer\b|\boffer\b.*\buser (?:reply|go)\b/i;
+// "deferred" and "dropped" count only next to an option code ("1B deferred"), since a line can defer
+// something else ("rollout deferred until the release").
 const DISPOSITION =
-  /not selected|unselected|unpicked|dropped|declined|deferred|superseded|passed over|only option|all selected|no other options?/i;
+  /not selected|unselected|unpicked|declined|superseded|passed over|only option|all selected|no other options?|\b\d+[a-z]\b[^.;]{0,30}\b(?:deferred|dropped)\b|\b(?:deferred|dropped)\b[^.;]{0,15}\b\d+[a-z]\b/i;
 const OFFER_ID = /\b[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+\b/g;
 // A deferred item that waits on another thread (an upstream issue or pull request, a maintainer, another
 // session), or an open question sent to one, needs a `recheck:` date: "trigger: reply" never fires itself.
 const EXTERNAL =
-  /https:\/\/github\.com\/|\b[\w.-]+\/[\w.-]+#\d+|\bupstream\b|\bmaintainers?\b|\b(?:another|other|the [\w-]+) (?:session|thread)\b/i;
+  /https:\/\/github\.com\/|\b[\w.-]+\/[\w.-]+#\d+|\bPR\s*#?\s*\d+|(?<![\w/#&])#\d+\b|\bupstream\b|\bmaintainers?\b|\b(?:another|other|the [\w-]+) (?:session|thread)\b/i;
 const SENT_QUESTION =
   /\b(?:asked|relayed|sent)\b.*\b(?:session|thread|owner|maintainer)s?\b|\b(?:awaiting|waiting (?:on|for)) (?:a |the )?(?:reply|answer|response)\b/i;
 const RECHECK = /\brecheck:\s*(\d{4}-\d{2}-\d{2})/i;

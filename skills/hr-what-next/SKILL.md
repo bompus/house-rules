@@ -28,6 +28,7 @@ completed state before the completion message; a report alone does not do so.
    "awaiting your yes/no" group lists the user-trigger deferrals by a text match.
    Its "possibly finished" group lists items whose named pull requests or
    issues are all merged or closed (add `--repo <owner/repo>` for bare numbers),
+   unless a named commit sits outside a `--checkout`'s default branch,
    and "re-check due" lists `recheck:` dates that are past or within a week.
    Look at each before reporting it as done or still waiting.
    Report each floor item, or state that the floor is empty. While any floor
