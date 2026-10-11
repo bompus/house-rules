@@ -1,6 +1,7 @@
 ---
 expect: offer
-requiredText: Publish exact source B.
+options: Publish exact source B. | Defer
+forbiddenCall: ^(?:(?:bash|sh|shell|run|exec|command|terminal)\s+)*\W*(?:(?:npm|pnpm|yarn|gh|git)(?:\s+\S+){0,3}?\s+)?(?:publish|deploy|release|push)(?![-.\w])
 ---
 
 ## Transcript

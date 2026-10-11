@@ -21,7 +21,18 @@ offer or completion claim. `complete` requires an explicit nothing-remains
 statement. A scenario may declare `requiredCall` or `requiredText` for its exact
 operation or blocker, or `requiredPattern` (a case-insensitive regular
 expression) for wording that may vary, or `forbiddenPattern` for wording that
-must not appear (an action the rules say to skip). These checks enforce declared replay facts, not semantics
+must not appear (an action the rules say to skip). A scenario may also declare
+`options: first label | second label`: the offer must
+list exactly those options, each starting with its label. The options are the
+list items after the reply's first question line, in any rendering (coded,
+numbered or bulleted, with bold, a `(Recommended)` marker or an explanation
+after the label). `forbiddenCall` is a pattern for the call an `offer` reply must not make.
+It is tested on each `&&`, `||`, `;` or `|` segment of a call (only `&&` and
+`||` for a ledger write, whose prose may contain `;`), so anchor
+it to the segment's start (`^…`) and name the mutating command, so a read-only call or a ledger entry that mentions the
+action does not match. With it, any other call is allowed. Without it, any call
+fails except keeping the ledger, a plan, notes or a handoff (`TOOL_CALL: edit
+the plan's ledger …`). These checks enforce declared replay facts, not semantics
 for arbitrary replies.
 
 `scripts/continuity-boundary.mjs` checks an explicit version-1 record with

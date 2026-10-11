@@ -91,14 +91,10 @@ test("final dispositions reject declared tool calls", () => {
 });
 
 test("exact-source replay requires the action label on an offer option", () => {
-  const options = {
-    coded: true,
-    scenario: "exact-source-changed.md",
-    requiredText: "Publish exact source B.",
-  };
+  const options = { coded: true, options: "Publish exact source B. | Defer" };
   assert.equal(grade(offer + "\nPublish exact source B.", "offer", options).pass, false);
   assert.equal(
-    grade(offer.replace("Run the assessment.", options.requiredText), "offer", options).pass,
+    grade(offer.replace("Run the assessment.", "Publish exact source B."), "offer", options).pass,
     true,
   );
 });

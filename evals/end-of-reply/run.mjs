@@ -57,6 +57,13 @@ const scenarios = readdirSync(dir)
     const { meta, body } = parseFragment(readFileSync(join(dir, file), "utf8"), file);
     if (!EXPECTS.includes(meta.expect))
       fail(`${file}: expect: must be one of ${EXPECTS.join(", ")}`);
+    for (const key of ["requiredPattern", "forbiddenPattern", "forbiddenCall"]) {
+      try {
+        new RegExp(meta[key] ?? "", "i");
+      } catch (e) {
+        fail(`${file}: ${key}: ${e.message}`);
+      }
+    }
     return {
       file,
       expect: meta.expect,
@@ -65,6 +72,8 @@ const scenarios = readdirSync(dir)
       requiredText: meta.requiredText,
       requiredPattern: meta.requiredPattern,
       forbiddenPattern: meta.forbiddenPattern,
+      options: meta.options,
+      forbiddenCall: meta.forbiddenCall,
     };
   });
 
@@ -92,6 +101,8 @@ for (const {
   requiredText,
   requiredPattern,
   forbiddenPattern,
+  options,
+  forbiddenCall,
 } of scenarios) {
   for (const arm of arms) {
     const label = values.baseline ? `[${arm.name}] ${file}` : file;
@@ -124,11 +135,12 @@ for (const {
       }
       const g = grade(r.stdout ?? "", expect, {
         coded: arm.coded,
-        scenario: file,
         requiredCall,
         requiredText,
         requiredPattern,
         forbiddenPattern,
+        options,
+        forbiddenCall,
       });
       if (g.pass) passed++;
       else if (arm.name === "rules") failed++;

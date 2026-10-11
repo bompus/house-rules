@@ -44,7 +44,9 @@ test("--baseline exits on the rules arm alone and stays quiet when only the rule
   const offer = "Apply the change?\\n\\n1. Apply it (Recommended)\\n2. Wait\\n\\nReply 1 to apply.";
   const decision =
     "Fix the validation bug?\\n\\n1. Fix and land the configuration validation bug. (Recommended)\\n2. Defer this repair.\\n\\nReply 1 to proceed.";
-  const sourceOffer = offer.replace("Apply it", "Publish exact source B.");
+  const sourceOffer = offer
+    .replace("Apply it", "Publish exact source B.")
+    .replace("2. Wait", "2. Defer");
   const keepOffer = offer.replace("Apply it", "Keep the research checkout.");
   const queueOffer = offer.replace("Apply it", "Start the walk-through over the open offers.");
   const spinOffer = offer.replace("Apply it", "Start the parked items in new sessions.");

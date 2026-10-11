@@ -1,5 +1,6 @@
 ---
 expect: offer
+options: Fix and land the configuration validation bug. | Defer this repair.
 ---
 
 ## Project AGENTS.md

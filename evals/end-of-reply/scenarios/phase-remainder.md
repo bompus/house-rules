@@ -1,5 +1,6 @@
 ---
 expect: continue
+requiredCall: TOOL_CALL: verify installed configuration
 ---
 
 ## Project AGENTS.md

@@ -25,6 +25,13 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   optional alternative, and an alternative that drops required work from the plan is marked "(Not
   Recommended)". Before, an offer could list the full path as an alternative to its own first
   step and recommend the smaller one.
+- The end-of-reply eval reads an offer's options in any rendering (coded, numbered or bulleted, with
+  a numbered question above them) and checks a scenario's declared `options` by label, and an
+  offer scenario fails only on the tool call it names in `forbiddenCall`, so updating the ledger
+  before an offer no longer fails it. Before, `waiting-with-ready-backlog` and
+  `exact-source-changed` failed correct replies because the grader counted the numbered question as
+  an option or required numbered options, and `needs-approval` failed Opus for writing its ledger
+  first. Re-grading the 20 saved failing replies from those three scenarios, all now pass.
 - The README says that linked procedures hold detail and that each guard stays written in the rules, because an agent may act without opening a linked file.
 - The bug-reporting reference now says to submit a YAML issue form through the form in a browser
   signed in to the user's GitHub account, and to use `gh issue create` only for repositories with
