@@ -19,8 +19,9 @@ turn up, and use the same item states in both. At each reconciliation event in
 the plan or handoff that owns an item instead of copying it; a handoff points
 at its plan. When you rebuild a ledger or inventory from an earlier one, carry
 each open or deferred line over as an item, marked done with its outcome
-when it has closed. Several lines may share one item only when the same next action and completion evidence satisfy every line. A summary row such as "the rest, reopen only if asked" loses
-them. The `hr-handoff` skill's `scripts/check-reconciliation.mjs` checks that
+when it has closed. Several lines may share one item only when the same next
+action and completion evidence satisfy every line. A summary row such as "the
+rest, reopen only if asked" loses them. The `hr-handoff` skill's `scripts/check-reconciliation.mjs` checks that
 every such line maps to an item when the earlier plan is named as a source; it
 does not judge the outcome.
 
