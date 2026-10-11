@@ -18,9 +18,10 @@ state, such as a required theme.
 Attach the file through the project host's supported route. On GitHub,
 `gh issue create`, `gh issue edit`, `gh issue comment` and `gh pr comment`
 accept `--attach '<file>#<alt text>'` in recent `gh` versions (check
-`gh <command> --help`). In a browser form (the route for an issue form), add
-the file through a text field's attach control and replace the default alt text
-`Image` that the upload inserts. Do not commit the image to the repository or use a
+`gh <command> --help`). In a browser form (the route for an issue form), use
+the form's upload field when it renders. When it does not, add the file through
+a text field's attach control and replace the default alt text `Image` that the
+upload inserts. Do not commit the image to the repository or use a
 third-party image host. Where no supported attach route exists (`gh discussion`
 has no `--attach` flag) or the upload is refused, such as for lack of write
 access to the repository, hand the user the exact text and the file instead of
