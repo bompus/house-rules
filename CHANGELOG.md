@@ -4,6 +4,12 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- An offer no longer recommends deferring, pausing or closing while the session purpose has a ready
+  next step. When a reply such as `go` accepts a deferral the session recommended, the ledger records
+  it as deferred on recommendation with `trigger: user decides`, so `hr-what-next` lists it as
+  awaiting a yes or no and the next backlog review asks again. Before, a bare `go` on a recommended
+  deferral was recorded as the user's own deferral, and a later backlog pass found everything
+  deferred and offered to close the session.
 - The README says that linked procedures hold detail and that each guard stays written in the rules, because an agent may act without opening a linked file.
 - The bug-reporting reference now says to submit a YAML issue form through the form in a browser
   signed in to the user's GitHub account, and to use `gh issue create` only for repositories with

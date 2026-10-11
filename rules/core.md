@@ -121,7 +121,10 @@ handoffs, owned changes and untriaged feedback. When the user picks from an offe
 drop its unpicked options (not selected) in that step. Keep ideas you generated in
 the report, not the ledger, unless the user asked for them or you owe the work.
 A no is decided and dropped, even when the user names what would make them
-reconsider. Defer only work the user wants done later.
+reconsider. Defer only work the user wants done later. A reply such as `go` that accepts a
+deferral you recommended is not the user's choice: record the item as deferred on
+recommendation with `trigger: user decides`, and ask about it again at the next
+backlog review or close-out.
 Work filed as an upstream issue or handed to another owner is closed here as moved
 elsewhere, with the owner and link as its outcome, unless this session still owes
 a step or its own work waits on the result.
@@ -153,7 +156,8 @@ other sessions' records remain subject to their ownership and sweep rules.
   live candidate by next unfinished step, earlier tasks, owned changes and follow-ups.
 
 Recommend the current task's next unfinished step first. A finished step does
-not end the task. Keep "don't start until asked" candidates in the ledger; offer them as
+not end the task. While the session purpose has a ready next step, never recommend
+deferring it, pausing or closing. Keep "don't start until asked" candidates in the ledger; offer them as
 "(Not Recommended)" and name the safeguard. Full backlog offers show deferred
 work and its unmet trigger. Keep schedules unless the user directs a change.
 
