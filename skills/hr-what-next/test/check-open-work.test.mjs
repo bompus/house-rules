@@ -311,6 +311,9 @@ test("a plan without a Purpose line warns but does not change the result", () =>
   expect(report.warnings).toEqual([expect.stringContaining("Purpose:")]);
 });
 
+// The stand-in `gh` below is a shebang script, which Windows cannot run from PATH.
+const posixOnly = test.skipIf(process.platform === "win32");
+
 // A stand-in `gh` on PATH: answers `gh api repos/<o>/<r>/issues/<n>` from a JSON map of
 // "o/r#n" to "open", "closed" or "merged", logs each call, and fails like an offline host on "fail".
 function fakeGh(states) {
@@ -350,33 +353,36 @@ function checkWith(env, plan, ...args) {
   return { code: run.status, report: run.stdout ? JSON.parse(run.stdout) : null };
 }
 
-test("an open item whose every named pull request or issue is merged or closed is listed as possibly finished", () => {
-  const { plan } = setup({
-    ledger: [
-      "- [ ] a: land acme/tool#1",
-      "- [~] b: wait on https://github.com/acme/tool/issues/2 ... trigger: maintainer reply recheck: 2099-01-01",
-      "- [ ] c: release acme/tool#1 and acme/tool#3",
-      "- [ ] d: land PR #4",
-      "- [ ] e: land #9 in another repository",
-    ],
-  });
-  const gh = fakeGh({
-    "acme/tool#1": "merged",
-    "acme/tool#2": "closed",
-    "acme/tool#3": "open",
-    "acme/tool#4": "merged",
-  });
-  const { code, report } = checkWith(gh.env, plan, "--repo", "acme/tool");
-  expect(code).toBe(2);
-  expect(report.stale).toEqual([
-    expect.stringMatching(/^L6 .*acme\/tool#1 merged/),
-    expect.stringMatching(/^L7 .*acme\/tool#2 closed/),
-    expect.stringMatching(/^L9 .*acme\/tool#4 merged/),
-  ]);
-  expect(report.skipped).toEqual([]);
-  // #9 is looked up in --repo too, and a reference GitHub does not know leaves the item alone.
-  expect(gh.calls()).toHaveLength(5);
-});
+posixOnly(
+  "an open item whose every named pull request or issue is merged or closed is listed as possibly finished",
+  () => {
+    const { plan } = setup({
+      ledger: [
+        "- [ ] a: land acme/tool#1",
+        "- [~] b: wait on https://github.com/acme/tool/issues/2 ... trigger: maintainer reply recheck: 2099-01-01",
+        "- [ ] c: release acme/tool#1 and acme/tool#3",
+        "- [ ] d: land PR #4",
+        "- [ ] e: land #9 in another repository",
+      ],
+    });
+    const gh = fakeGh({
+      "acme/tool#1": "merged",
+      "acme/tool#2": "closed",
+      "acme/tool#3": "open",
+      "acme/tool#4": "merged",
+    });
+    const { code, report } = checkWith(gh.env, plan, "--repo", "acme/tool");
+    expect(code).toBe(2);
+    expect(report.stale).toEqual([
+      expect.stringMatching(/^L6 .*acme\/tool#1 merged/),
+      expect.stringMatching(/^L7 .*acme\/tool#2 closed/),
+      expect.stringMatching(/^L9 .*acme\/tool#4 merged/),
+    ]);
+    expect(report.skipped).toEqual([]);
+    // #9 is looked up in --repo too, and a reference GitHub does not know leaves the item alone.
+    expect(gh.calls()).toHaveLength(5);
+  },
+);
 
 test("bare pull request numbers are not checked without --repo", () => {
   const { plan } = setup({ ledger: ["- [ ] d: land PR #4"] });
@@ -387,7 +393,7 @@ test("bare pull request numbers are not checked without --repo", () => {
   expect(report.skipped).toEqual([expect.stringContaining("--repo")]);
 });
 
-test("without gh, offline or with --offline the GitHub check is skipped and says so", () => {
+posixOnly("without gh, offline or with --offline the GitHub check is skipped and says so", () => {
   const { plan } = setup({ ledger: ["- [ ] a: land acme/tool#1", "- [ ] b: land acme/tool#2"] });
   const missing = fakeGh({});
   rmSync(join(missing.env.PATH, "gh"));
@@ -407,36 +413,39 @@ test("without gh, offline or with --offline the GitHub check is skipped and says
   expect(flag.calls()).toHaveLength(0);
 });
 
-test("a named commit outside the default branch keeps an item open, a landed one decides nothing", () => {
-  const { notes, plan } = setup();
-  const checkout = join(notes, "repo");
-  repository(checkout, 2);
-  const git = (...args) =>
-    spawnSync("git", ["-C", checkout, ...args], { encoding: "utf8" }).stdout.trim();
-  const landed = git("rev-parse", "HEAD~1").slice(0, 9);
-  git("update-ref", "refs/remotes/origin/main", landed);
-  git("symbolic-ref", "refs/remotes/origin/HEAD", "refs/remotes/origin/main");
-  const local = git("rev-parse", "HEAD").slice(0, 9);
-  writeFileSync(
-    plan,
-    readFileSync(plan, "utf8").replace(
-      "## Ledger\n",
-      [
-        "## Ledger",
-        `- [ ] a: land acme/tool#1 (${landed})`,
-        `- [ ] b: land acme/tool#1 (${local})`,
-        `- [ ] c: the pin is still ${landed}`,
-        "",
-      ].join("\n"),
-    ),
-  );
-  const gh = fakeGh({ "acme/tool#1": "merged" });
-  const env = { ...gh.env, PATH: `${gh.env.PATH}:${process.env.PATH}` };
-  const { report } = checkWith(env, plan, "--checkout", checkout);
-  expect(report.stale).toEqual([
-    expect.stringMatching(new RegExp(`^L6 .*acme/tool#1 merged, ${landed} in origin/main`)),
-  ]);
-});
+posixOnly(
+  "a named commit outside the default branch keeps an item open, a landed one decides nothing",
+  () => {
+    const { notes, plan } = setup();
+    const checkout = join(notes, "repo");
+    repository(checkout, 2);
+    const git = (...args) =>
+      spawnSync("git", ["-C", checkout, ...args], { encoding: "utf8" }).stdout.trim();
+    const landed = git("rev-parse", "HEAD~1").slice(0, 9);
+    git("update-ref", "refs/remotes/origin/main", landed);
+    git("symbolic-ref", "refs/remotes/origin/HEAD", "refs/remotes/origin/main");
+    const local = git("rev-parse", "HEAD").slice(0, 9);
+    writeFileSync(
+      plan,
+      readFileSync(plan, "utf8").replace(
+        "## Ledger\n",
+        [
+          "## Ledger",
+          `- [ ] a: land acme/tool#1 (${landed})`,
+          `- [ ] b: land acme/tool#1 (${local})`,
+          `- [ ] c: the pin is still ${landed}`,
+          "",
+        ].join("\n"),
+      ),
+    );
+    const gh = fakeGh({ "acme/tool#1": "merged" });
+    const env = { ...gh.env, PATH: `${gh.env.PATH}:${process.env.PATH}` };
+    const { report } = checkWith(env, plan, "--checkout", checkout);
+    expect(report.stale).toEqual([
+      expect.stringMatching(new RegExp(`^L6 .*acme/tool#1 merged, ${landed} in origin/main`)),
+    ]);
+  },
+);
 
 test("a reference the line already reports as merged or left out is context, not the subject", () => {
   const { plan } = setup({
