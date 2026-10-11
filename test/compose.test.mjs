@@ -350,7 +350,8 @@ const FRESH_INSTALL_CEILING_BYTES = 30_000;
 
 test("the fresh install's composed rules stay under the size ceiling", (t) => {
   const dir = scratch(t);
-  // The config is copied alone: the composer reads a sibling rules/ directory as a person layer.
+  // The config is copied alone, so the sample person layer beside it is left out: a user's own
+  // layer is theirs and is not part of what house-rules ships.
   writeFileSync(
     join(dir, "house-rules.json"),
     readFileSync(join(root, "examples/person/house-rules.json")),
