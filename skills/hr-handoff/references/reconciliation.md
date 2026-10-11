@@ -25,7 +25,8 @@ named `L<line>` (`L12`). Take a copy of the plan as it stood at the handoff,
 because later edits renumber the lines. Each open or deferred line must map to
 an item; a context-only reason such as "the rest, reopen only if asked" is
 rejected. When one item absorbs several open or deferred lines, give the item
-a `merges` field saying why they are one piece of work. A ledger kept as a
+a `merges` field saying how one next action and one piece of completion evidence
+satisfy every line. A ledger kept as a
 table is not read; normalize it to JSON records instead.
 
 When a record settles an item's state, add an `outcome` with `item` and

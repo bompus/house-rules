@@ -169,7 +169,7 @@ function check(receipt, directory) {
     accounting.set(ref, mapped);
   }
   // A summary row ("the rest, reopen only if asked") that swallows many open lines loses them;
-  // an item fed by more than one open line must say in `merges` why they are one piece of work.
+  // an item fed by more than one open line must say in `merges` how one next action and one piece of evidence satisfy them all.
   const absorbed = new Map();
   for (const ref of openLines)
     for (const item of new Set(accounting.get(ref) ?? []))
