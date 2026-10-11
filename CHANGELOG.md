@@ -13,8 +13,9 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   the declared list matches the skills the core text names and that all of them are in the
   fresh-install set.
 - Text that only makes sense with several parallel sessions or coded offers left the core rules
-  for the modifiers that define it. The cross-session relay paragraph moved to `multi-agent`, and
-  the sentence about offer IDs and `go`/`continue` moved to `coded-offers`. Before, a default
+  for the modifiers that define it. The cross-session relay paragraph moved to `multi-agent`, where it asks for
+  an offer ID only when the source uses coded offers, and the sentence about offer IDs and
+  `go`/`continue` moved to `coded-offers`. Before, a default
   install told the agent to record offer IDs and treat `go` as selecting the latest offer, terms
   that only `coded-offers` defines. Anyone with both modifiers enabled gets the same text in a
   different place; the core rules are about 1.6 KB shorter.

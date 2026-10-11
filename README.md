@@ -222,9 +222,9 @@ Use pnpm for JavaScript projects unless the repository uses another manager.
 The operations are `replaces:`, `after:`, `before:` and `removes:`; a
 `removes:` file has no body. A file without frontmatter is added at the end.
 Frontmatter may also hold `description:` and `requires:` (a comma-separated
-list of skills the section relies on; the core rules and every modifier declare
-theirs, and composing warns when one is not in the composed set); any other key
-is an error. Files apply
+list of skills the section relies on; the core rules and any modifier that relies
+on skills declare them, and composing warns when one is not in the composed
+set); any other key is an error. Files apply
 in name order, after the modifiers.
 
 ## Modifiers
