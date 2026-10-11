@@ -69,6 +69,9 @@ give it one line.
 Finish authorized work before asking what to do next. Status questions and
 acknowledgments do not cancel work or require approval again. If a decision
 blocks only part, ask about it and continue the rest in the same reply.
+Before asking the user to do something, check the actual state and do what you
+can do yourself. Ask only for what that check shows you cannot do, and say what
+it checked. Do not assume whether the user is present.
 
 Before handing work back, complete this check even when only a step or phase
 finished, a pull request landed, or the current task must wait:

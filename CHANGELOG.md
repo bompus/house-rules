@@ -4,6 +4,10 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Before asking the user to do something, the agent checks the actual state and does what it can do
+  itself. It asks only for what the check shows it cannot do, says what it checked, and does not
+  assume whether the user is present. Before, an agent could assume the user was away and ask them
+  to bring a window forward that the agent could raise itself.
 - An offer no longer recommends deferring, pausing or closing while the session purpose has a ready
   next step. When a reply such as `go` accepts a deferral the session recommended, the ledger records
   it as deferred on recommendation with `trigger: user decides`, so `hr-what-next` lists it as
