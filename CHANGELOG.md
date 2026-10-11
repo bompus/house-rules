@@ -4,6 +4,14 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- New skill `hr-forgotten-work-audit`: a read-only audit of a project's past sessions, plans,
+  handoffs and pull requests for work that was asked for, promised or deferred and then dropped
+  from every live list. It gives a brief template for each slice of the history, five verdicts
+  (done, tracked, dropped, forgotten, unclear), a result format with a coverage row per slice, and
+  a last-audit record at `audits/<project>/last-audit.json` in the notes directory.
+  `hr-what-next`'s open-work check warns when a plan with a `Project: <name>` line has no such
+  record, an unreadable one, or one older than 30 days. Before, the per-session checks saw only
+  lines already in a ledger, and nothing noticed when no one had looked at the history for weeks.
 - The `hr-research-shared-links` description is shorter (406 to 257 bytes), so the skill costs less
   of the catalog every session loads, and it selects on the link-and-ideas requests and not on
   requests to implement what an article describes. The plan-files rule's rebuild-a-ledger sentences

@@ -14,6 +14,9 @@
 // --repo. The check needs `gh`; without it, offline, or with --offline it is skipped and "skipped" says so.
 // "re-check due" lists items whose `recheck: YYYY-MM-DD` date is past or within 7 days. Both groups are
 // subsets of `open` and do not change the exit code.
+// A plan with a `Project: <name>` line is checked against <notes>/audits/<name>/last-audit.json, the record
+// hr-forgotten-work-audit writes: a missing, unreadable or older-than-30-days record is a warning. A plan
+// without that line gets no audit warning.
 import { spawn, spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, statSync } from "node:fs";
 import { basename, dirname, join, resolve, sep } from "node:path";
@@ -55,6 +58,9 @@ const GITHUB_URL = /https:\/\/github\.com\/([\w.-]+)\/([\w.-]+)\/(?:pull|issues)
 const GITHUB_REF = /(?<![\w./-])([\w.-]+)\/([\w.-]+)#(\d+)\b/g;
 const BARE_REF = /(?:\bPR\s*#?\s*|(?<![\w/#&])#)(\d{1,6})\b/gi;
 const COMMIT = /\b[0-9a-f]{7,40}\b/g;
+// Monthly: items in a full audit were lost within two to four weeks of being promised.
+const AUDIT_DAYS = 30;
+const PROJECT_NAME = /^\w[\w.-]*$/;
 // A real calendar date: "2026-02-31" has the shape but not the round trip.
 function validDate(value) {
   const date = new Date(`${value}T00:00:00Z`);
@@ -115,6 +121,7 @@ function readPlan(path) {
   const status = field("Status");
   const owner = field("Owner");
   const purpose = field("Purpose");
+  const project = field("Project");
   if (!status) errors.push("no `Status:` line in the first 40 lines");
   if (!owner) errors.push("no `Owner:` line in the first 40 lines");
   const start = lines.findIndex((line) => /^#{1,6}\s+Ledger\s*$/i.test(line));
@@ -155,7 +162,7 @@ function readPlan(path) {
     )
       narrative.push({ line: i + 1, text: line.trim() });
   });
-  return { status, owner, purpose, items, errors, narrative };
+  return { status, owner, purpose, project, items, errors, narrative };
 }
 
 function notesRoot(planPath) {
@@ -369,6 +376,33 @@ function addDays(date, days) {
   return next.toISOString().slice(0, 10);
 }
 
+// The project's last forgotten-work audit: missing, unreadable or older than AUDIT_DAYS is a warning.
+function auditWarning(project, roots, today) {
+  if (!PROJECT_NAME.test(project))
+    return `\`Project: ${clip(project, 40)}\` is not a plain project name, so its audit record was not checked`;
+  if (!roots)
+    return `cannot locate the audit record for ${project}: the plan is not under a plans/ directory`;
+  const path = join(roots.notes, "audits", project, "last-audit.json");
+  if (!existsSync(path))
+    return `no forgotten-work audit recorded for ${project} (expected ${path}); run hr-forgotten-work-audit`;
+  let record;
+  try {
+    record = JSON.parse(readFileSync(path, "utf8"));
+    if (
+      !validDate(record?.date) ||
+      typeof record.scope !== "string" ||
+      typeof record.result !== "string"
+    )
+      throw new Error();
+  } catch {
+    return `cannot read the audit record ${path} (needs a JSON object with date YYYY-MM-DD, scope and result)`;
+  }
+  const age = Math.round((Date.parse(today) - Date.parse(record.date)) / 86_400_000);
+  if (age > AUDIT_DAYS)
+    return `last forgotten-work audit for ${project} was ${record.date}, ${age} days ago (over ${AUDIT_DAYS}); run hr-forgotten-work-audit`;
+  return null;
+}
+
 // Long plans can carry dozens of one kind of warning; show five and count the rest.
 function capped(warnings, entries, kind) {
   warnings.push(...entries.slice(0, 5));
@@ -486,6 +520,8 @@ async function run(options) {
   if (plan.narrative.length > 5)
     report.warnings.push(`${plan.narrative.length - 5} more narrative marker line(s)`);
   offerWarnings(plan.items, report.warnings);
+  const audit = plan.project && auditWarning(plan.project, roots, options.today);
+  if (audit) report.warnings.push(audit);
   report.recheckDue = rechecks(open, options.today, report.warnings);
   report.stale = await possiblyFinished(open, options, report);
   if (options.archive && !report.errors.length) {

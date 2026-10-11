@@ -130,5 +130,41 @@
     "target": "hr-research-shared-links",
     "should_select": false,
     "request": "This stack trace links to a library issue. Why does our build fail with it?"
+  },
+  {
+    "id": "fw-cracks",
+    "target": "hr-forgotten-work-audit",
+    "should_select": true,
+    "request": "Go through all our past sessions on this project and find anything I asked for that fell through the cracks."
+  },
+  {
+    "id": "fw-overdue",
+    "target": "hr-forgotten-work-audit",
+    "should_select": true,
+    "request": "The open-work check says the last forgotten-work audit for this project is 45 days old. Run it."
+  },
+  {
+    "id": "fw-promises",
+    "target": "hr-forgotten-work-audit",
+    "should_select": true,
+    "request": "Check every plan, handoff and transcript since September for promises we never followed through on."
+  },
+  {
+    "id": "fw-next",
+    "target": "hr-forgotten-work-audit",
+    "should_select": false,
+    "request": "next?"
+  },
+  {
+    "id": "fw-handoff",
+    "target": "hr-forgotten-work-audit",
+    "should_select": false,
+    "request": "Write a handoff so the next session can pick this up."
+  },
+  {
+    "id": "fw-choices",
+    "target": "hr-forgotten-work-audit",
+    "should_select": false,
+    "request": "Which assumptions did the agent make on my behalf in this implementation?"
   }
 ]

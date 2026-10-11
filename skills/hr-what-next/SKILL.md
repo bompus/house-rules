@@ -31,6 +31,9 @@ completed state before the completion message; a report alone does not do so.
    unless a named commit sits outside a `--checkout`'s default branch,
    and "re-check due" lists `recheck:` dates that are past or within a week.
    Look at each before reporting it as done or still waiting.
+   When the plan's header has a `Project: <name>` line, it also warns when that
+   project's last `hr-forgotten-work-audit` record is missing or over 30 days
+   old; offer the audit then.
    Report each floor item, or state that the floor is empty. While any floor
    item remains, do not say that nothing is left or that nothing needs the
    user; re-present the unanswered questions and ask the undecided items (step 6). When three

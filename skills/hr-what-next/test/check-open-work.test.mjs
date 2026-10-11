@@ -536,3 +536,84 @@ test("items tied to another thread need a re-check date, and dates within a week
     expect.stringMatching(/^L12 .*recheck:/),
   ]);
 });
+
+// notes/audits/<project>/last-audit.json, the record hr-forgotten-work-audit writes.
+function auditRecord(notes, project, record) {
+  mkdirSync(join(notes, "audits", project), { recursive: true });
+  const text = typeof record === "string" ? record : JSON.stringify(record);
+  writeFileSync(join(notes, "audits", project, "last-audit.json"), text);
+}
+
+function withProject(plan, project) {
+  writeFileSync(
+    plan,
+    readFileSync(plan, "utf8").replace("Purpose: demo\n", `Purpose: demo\nProject: ${project}\n`),
+  );
+}
+
+const auditWarnings = (report) => report.warnings.filter((warning) => /audit/i.test(warning));
+
+test("a plan without a Project line gets no audit warning", () => {
+  const { plan } = setup({ status: "completed", ledger: ["- [x] a: shipped - evidence: x"] });
+  const { code, report } = check(plan, "--today", "2026-10-11");
+  expect(code).toBe(0);
+  expect(report.warnings).toEqual([]);
+});
+
+test("a project with no audit record warns and names where the record belongs", () => {
+  const { plan, notes } = setup({
+    status: "completed",
+    ledger: ["- [x] a: shipped - evidence: x"],
+  });
+  withProject(plan, "demo-app");
+  const { code, report } = check(plan, "--today", "2026-10-11");
+  expect(code).toBe(0);
+  expect(auditWarnings(report)).toEqual([
+    expect.stringContaining(join(notes, "audits", "demo-app", "last-audit.json")),
+  ]);
+  expect(auditWarnings(report)[0]).toContain("no forgotten-work audit");
+});
+
+test("an audit older than 30 days warns; one 30 days old or newer does not", () => {
+  const { plan, notes } = setup({
+    status: "completed",
+    ledger: ["- [x] a: shipped - evidence: x"],
+  });
+  withProject(plan, "demo-app");
+  const record = { project: "demo-app", date: "2026-09-10", scope: "all sessions", result: "r.md" };
+  auditRecord(notes, "demo-app", record);
+  const old = check(plan, "--today", "2026-10-11");
+  expect(old.code).toBe(0);
+  expect(auditWarnings(old.report)).toEqual([
+    expect.stringMatching(/last forgotten-work audit .*2026-09-10, 31 days ago/),
+  ]);
+  auditRecord(notes, "demo-app", { ...record, date: "2026-09-11" });
+  expect(auditWarnings(check(plan, "--today", "2026-10-11").report)).toEqual([]);
+});
+
+test("an unreadable or incomplete audit record warns instead of passing", () => {
+  const { plan, notes } = setup({
+    status: "completed",
+    ledger: ["- [x] a: shipped - evidence: x"],
+  });
+  withProject(plan, "demo-app");
+  for (const record of [
+    "not json",
+    { project: "demo-app", date: "2026-02-31", scope: "x", result: "r.md" },
+    { project: "demo-app", date: "2026-10-01", result: "r.md" },
+  ]) {
+    auditRecord(notes, "demo-app", record);
+    const { code, report } = check(plan, "--today", "2026-10-11");
+    expect(code).toBe(0);
+    expect(auditWarnings(report)).toEqual([
+      expect.stringContaining("cannot read the audit record"),
+    ]);
+  }
+});
+
+test("a Project value that is not a plain name warns instead of reading outside the audits folder", () => {
+  const { plan } = setup({ status: "completed", ledger: ["- [x] a: shipped - evidence: x"] });
+  withProject(plan, "../elsewhere");
+  const { report } = check(plan, "--today", "2026-10-11");
+  expect(auditWarnings(report)).toEqual([expect.stringContaining("not a plain project name")]);
+});

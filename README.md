@@ -273,6 +273,7 @@ want and explains these limits before changing the configuration.
 | `hr-diagnosing-bugs`        | Work a hard bug or regression to a confirmed cause.                                                       |
 | `hr-explain-code`           | Trace how existing code works, read-only, before changing it.                                             |
 | `hr-extract-shared-steps`   | Move operations repeated across workflows into shared functions.                                          |
+| `hr-forgotten-work-audit`   | Audit past sessions, plans and handoffs for promised work that dropped off every list.                    |
 | `hr-handoff`                | Write a handoff a fresh session can resume from.                                                          |
 | `hr-house-rules-setup`      | Choose modifiers, create your layer and connect your hosts.                                               |
 | `hr-issue-tracker-setup`    | Configure project tracker, domain-term and ADR conventions; explicit-only.                                |
