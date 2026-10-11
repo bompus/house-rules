@@ -121,7 +121,11 @@ function readPlan(path) {
   const status = field("Status");
   const owner = field("Owner");
   const purpose = field("Purpose");
-  const project = field("Project");
+  // Only an exact `Project:` field: "Project URL: ..." is a different header.
+  const project = header
+    .map((line) => line.match(/^\s*(?:\*\*)?Project(?:\*\*)?:(?:\*\*)?\s*(.+)$/i))
+    .find(Boolean)?.[1]
+    .trim();
   if (!status) errors.push("no `Status:` line in the first 40 lines");
   if (!owner) errors.push("no `Owner:` line in the first 40 lines");
   const start = lines.findIndex((line) => /^#{1,6}\s+Ledger\s*$/i.test(line));
@@ -397,6 +401,8 @@ function auditWarning(project, roots, today) {
   } catch {
     return `cannot read the audit record ${path} (needs a JSON object with date YYYY-MM-DD, scope and result)`;
   }
+  if (record.date > today)
+    return `the audit record ${path} is dated after today (${record.date}), so it was not counted`;
   const age = Math.round((Date.parse(today) - Date.parse(record.date)) / 86_400_000);
   if (age > AUDIT_DAYS)
     return `last forgotten-work audit for ${project} was ${record.date}, ${age} days ago (over ${AUDIT_DAYS}); run hr-forgotten-work-audit`;

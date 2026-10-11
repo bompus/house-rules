@@ -10,16 +10,20 @@ see a promise that exists only in a transcript, a follow-up written as prose,
 or an item a handoff rewrite left out. This audit reads the history itself
 and checks every candidate against the records that should hold it.
 
-The audit is read-only. It edits, commits, posts, comments, builds and cleans
-up nothing. Workers may write only their own result file; the coordinator
-writes the consolidated report and the last-audit record.
+The audit reads only. It edits, commits, posts, comments, builds and cleans
+up nothing. Workers may write only their own result file. The coordinator
+writes the consolidated report and the last-audit record. After the report,
+step 5 may add owed items to a plan this session owns; that is the only
+other write.
 
 ## 1. Set the scope
 
 Fill these before starting, and put them at the top of the report:
 
-- **Project**: the name used in plans' `Project:` line (letters, digits, `.`,
-  `_`, `-`), and the repositories and checkouts it covers.
+- **Project**: the name used in plans' `Project:` line, and the repositories
+  and checkouts it covers. The name starts with a letter, digit or `_` and
+  holds only those and `.` or `-`. It names folders, so stop if it has any
+  other character.
 - **Window**: from the last audit's date (or the project's first session)
   to today.
 - **Records**: the live plan and handoff folders, archived plans, the
@@ -30,7 +34,10 @@ Fill these before starting, and put them at the top of the report:
   project directory and date. Use the one the host names. Do not write
   per-provider transcript scanners. Without such a tool, transcripts are a
   coverage gap.
-- **Previous audit**: the result named by the last-audit record, if any.
+- **Previous audit**: the result named by the last-audit record, if any, and
+  its `gaps`. Each gap whose source is now readable becomes a slice of this
+  audit over its whole uncovered range, whatever the window. A gap still not
+  readable is copied into this audit's `gaps`.
 
 ## 2. Slice the sources
 
@@ -115,8 +122,9 @@ day the report was saved. A partial audit still writes the record, and its
 `scope` and `gaps` say what it left out.
 
 `hr-what-next`'s open-work check reads this record for any plan whose header
-has a `Project: <name>` line. It warns when the record is missing, unreadable
-or more than 30 days old. A plan without that line gets no audit warning.
+has a `Project: <name>` line. It warns when the record is missing, unreadable,
+more than 30 days old, or dated after today. A plan without that line gets no
+audit warning.
 
 Thirty days is a default, not a measurement of the best interval. In the
 audit this skill is based on, items went missing within two to four weeks.

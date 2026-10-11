@@ -617,3 +617,32 @@ test("a Project value that is not a plain name warns instead of reading outside 
   const { report } = check(plan, "--today", "2026-10-11");
   expect(auditWarnings(report)).toEqual([expect.stringContaining("not a plain project name")]);
 });
+
+test("a Project URL header is not a Project line", () => {
+  const { plan } = setup({ status: "completed", ledger: ["- [x] a: shipped - evidence: x"] });
+  writeFileSync(
+    plan,
+    readFileSync(plan, "utf8").replace(
+      "Purpose: demo\n",
+      "Purpose: demo\nProject URL: https://example.com\n",
+    ),
+  );
+  expect(auditWarnings(check(plan, "--today", "2026-10-11").report)).toEqual([]);
+});
+
+test("an audit dated after today is reported, not counted as fresh", () => {
+  const { plan, notes } = setup({
+    status: "completed",
+    ledger: ["- [x] a: shipped - evidence: x"],
+  });
+  withProject(plan, "demo-app");
+  auditRecord(notes, "demo-app", {
+    project: "demo-app",
+    date: "2026-12-01",
+    scope: "x",
+    result: "r.md",
+  });
+  expect(auditWarnings(check(plan, "--today", "2026-10-11").report)).toEqual([
+    expect.stringContaining("dated after today"),
+  ]);
+});

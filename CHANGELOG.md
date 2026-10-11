@@ -10,8 +10,9 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   (done, tracked, dropped, forgotten, unclear), a result format with a coverage row per slice, and
   a last-audit record at `audits/<project>/last-audit.json` in the notes directory.
   `hr-what-next`'s open-work check warns when a plan with a `Project: <name>` line has no such
-  record, an unreadable one, or one older than 30 days. Before, the per-session checks saw only
-  lines already in a ledger, and nothing noticed when no one had looked at the history for weeks.
+  record, an unreadable one, or one older than 30 days. Before, the checks read only the current
+  plan, so promises left in earlier sessions' transcripts went unseen, and nothing noticed when no
+  one had looked at that history for weeks.
 - The `hr-research-shared-links` description is shorter (406 to 257 bytes), so the skill costs less
   of the catalog every session loads, and it selects on the link-and-ideas requests and not on
   requests to implement what an article describes. The plan-files rule's rebuild-a-ledger sentences

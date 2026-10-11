@@ -33,7 +33,7 @@ Previous audit: <result path, or none>.
 
 Counts overlap between slices; the list below is deduplicated.
 
-Gaps: <one line per source not covered>.
+Gaps: <one line per source not covered, filter that dropped records, or truncation>.
 
 ## Findings, ranked
 
