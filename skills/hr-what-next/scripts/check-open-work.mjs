@@ -52,7 +52,16 @@ const RECHECK = /\brecheck:\s*(\d{4}-\d{2}-\d{2})/i;
 const GITHUB_URL = /https:\/\/github\.com\/([\w.-]+)\/([\w.-]+)\/(?:pull|issues)\/(\d+)/g;
 const GITHUB_REF = /(?<![\w./-])([\w.-]+)\/([\w.-]+)#(\d+)\b/g;
 const BARE_REF = /(?:\bPR\s*#?\s*|(?<![\w/#&])#)(\d{1,6})\b/gi;
-const COMMIT = /\b(?=[0-9a-f]*[a-f])(?=[0-9a-f]*\d)[0-9a-f]{7,40}\b/g;
+const COMMIT = /\b[0-9a-f]{7,40}\b/g;
+// A real calendar date: "2026-02-31" has the shape but not the round trip.
+function validDate(value) {
+  const date = new Date(`${value}T00:00:00Z`);
+  return (
+    /^\d{4}-\d{2}-\d{2}$/.test(value) &&
+    !Number.isNaN(date.getTime()) &&
+    date.toISOString().slice(0, 10) === value
+  );
+}
 
 function parseArguments(argv) {
   const options = {
@@ -80,8 +89,7 @@ function parseArguments(argv) {
         if (!/^[\w.-]+\/[\w.-]+$/.test(value)) throw new Error(`--repo needs owner/repo\n${usage}`);
         options.repo = value;
       } else if (argument === "--today") {
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(value))
-          throw new Error(`--today needs YYYY-MM-DD\n${usage}`);
+        if (!validDate(value)) throw new Error(`--today needs YYYY-MM-DD\n${usage}`);
         options.today = value;
       } else options.scratch = value;
     } else if (argument.startsWith("--") || options.plan) throw new Error(usage);
@@ -222,8 +230,15 @@ const REPORTED = /\b(?:merged?|landed|closed|superseded|left out of|squash\w*)\b
 function references(text, repo) {
   const github = new Set();
   let bare = 0;
-  const reported = (offset, length) =>
-    REPORTED.test(text.slice(Math.max(0, offset - 25), offset + length + 25));
+  // Only the clause around the reference counts: in "#1 merged; cleanup #2" the word belongs to #1.
+  const reported = (offset, length) => {
+    const before = text
+      .slice(Math.max(0, offset - 25), offset)
+      .split(/[;,()]|\.\s/)
+      .at(-1);
+    const after = text.slice(offset + length, offset + length + 25).split(/[;,()]|\.\s/)[0];
+    return REPORTED.test(`${before} ${after}`);
+  };
   let rest = text;
   for (const pattern of [GITHUB_URL, GITHUB_REF])
     rest = rest.replace(pattern, (match, owner, name, number, offset) => {
@@ -363,7 +378,12 @@ function rechecks(open, today, warnings) {
   const undated = [];
   const soon = addDays(today, 7);
   for (const item of open) {
-    const date = item.text.match(RECHECK)?.[1];
+    const written = item.text.match(RECHECK)?.[1];
+    if (written && !validDate(written)) {
+      undated.push(`L${item.line} has \`recheck: ${written}\`, which is not a calendar date`);
+      continue;
+    }
+    const date = written;
     if (date && date < today) due.push(`${row(item)} — overdue since ${date}`);
     else if (date && date <= soon) due.push(`${row(item)} — due ${date}`);
     else if (

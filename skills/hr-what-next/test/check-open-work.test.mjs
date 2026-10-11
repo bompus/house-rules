@@ -447,17 +447,29 @@ posixOnly(
   },
 );
 
-test("a reference the line already reports as merged or left out is context, not the subject", () => {
-  const { plan } = setup({
-    ledger: [
-      "- [~] a: the part left out of acme/tool#1 ... trigger: next release",
-      "- [~] b: residual advisories after acme/tool#1 merged ... trigger: next audit",
-    ],
-  });
-  const gh = fakeGh({ "acme/tool#1": "merged" });
-  const { report } = checkWith(gh.env, plan);
-  expect(report.stale).toEqual([]);
-  expect(gh.calls()).toHaveLength(0);
+posixOnly(
+  "a reference the line already reports as merged or left out is context, not the subject",
+  () => {
+    const { plan } = setup({
+      ledger: [
+        "- [~] a: the part left out of acme/tool#1 ... trigger: next release",
+        "- [~] b: residual advisories after acme/tool#1 merged ... trigger: next audit",
+        "- [ ] c: acme/tool#1 merged; clean up acme/tool#2",
+      ],
+    });
+    const gh = fakeGh({ "acme/tool#1": "merged", "acme/tool#2": "merged" });
+    const { report } = checkWith(gh.env, plan);
+    expect(report.stale).toEqual([expect.stringMatching(/^L8 .*acme\/tool#2 merged$/)]);
+    expect(gh.calls()).toHaveLength(1);
+  },
+);
+
+test("dates that are not on the calendar are rejected or reported", () => {
+  const { plan } = setup({ ledger: ["- [~] a: wait ... trigger: x recheck: 2026-02-31"] });
+  expect(check(plan, "--today", "2026-13-45").code).toBe(1);
+  const { report } = check(plan, "--offline", "--today", "2026-03-01");
+  expect(report.recheckDue).toEqual([]);
+  expect(report.warnings).toEqual([expect.stringContaining("not a calendar date")]);
 });
 
 test("follow-up markers in prose and stray deferred boxes warn, ordinary prose does not", () => {

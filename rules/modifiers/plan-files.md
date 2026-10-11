@@ -55,7 +55,7 @@ at its plan.
   archiving a plan, run the `hr-what-next` skill's
   `scripts/check-open-work.mjs <plan>`, adding `--checkout <path>` for each
   checkout you touched and `--repo <owner/repo>` when items name pull requests
-  by number alone, and quote its result. Open or deferred items, and owned
+  or issues by number alone, and quote its result. Open or deferred items, and owned
   resources no open item names, mean work remains. Check each item it lists as
   possibly finished or due for a re-check, and update its line.
 - Before archiving a completed plan, save its completed status, completion
