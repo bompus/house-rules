@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync, statSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const script = fileURLToPath(new URL("../scripts/inspect-sqlite.py", import.meta.url));
@@ -21,12 +21,12 @@ function fixture(t) {
   return dir;
 }
 
-function createDatabase(dir, extra = "") {
+function createDatabase(dir, extra = "", name = "app.db") {
   const made = python(
     ["-", dir],
     `
 import sqlite3, sys
-c = sqlite3.connect(sys.argv[1] + "/app.db")
+c = sqlite3.connect(sys.argv[1] + "/" + ${JSON.stringify(name)})
 c.execute("PRAGMA journal_mode=WAL")
 c.execute("CREATE TABLE notes(id INTEGER PRIMARY KEY, body TEXT)")
 c.execute("CREATE INDEX notes_body ON notes(body)")
@@ -37,7 +37,7 @@ c.close()
 `,
   );
   assert.equal(made.status, 0, made.stderr);
-  return join(dir, "app.db");
+  return join(dir, name);
 }
 
 const inspect = (...args) => {
@@ -101,13 +101,21 @@ test("source scan flags journal_mode before busy_timeout or without one", (t) =>
   );
   writeFileSync(join(src, "unrelated.py"), "print('no sqlite here')\n");
   const result = inspect(database, "--source", src);
-  const byName = Object.fromEntries(result.source.map((f) => [f.file.split("/").pop(), f]));
+  const byName = Object.fromEntries(result.source.map((f) => [basename(f.file), f]));
   assert.deepEqual(Object.keys(byName).sort(), ["bad.ts", "good.py", "missing.js"]);
   assert.equal(byName["bad.ts"].ok, false);
   assert.match(byName["bad.ts"].status, /comes before busy_timeout/);
   assert.equal(byName["missing.js"].ok, false);
   assert.match(byName["missing.js"].status, /no busy_timeout/);
   assert.equal(byName["good.py"].ok, true);
+});
+
+test("opens a database whose path contains percent and hash characters", (t) => {
+  const dir = fixture(t);
+  const database = createDatabase(dir, "", "a%41#b.db");
+  const result = inspect(database);
+  assert.equal(result.journalMode, "wal");
+  assert.equal(result.tables, 1);
 });
 
 test("fails with a message for a missing file", (t) => {

@@ -18,6 +18,7 @@ those lines as places to read, not verdicts.
 import argparse
 import json
 import os
+import pathlib
 import re
 import sqlite3
 import sys
@@ -85,7 +86,7 @@ def inspect(path, quick_check=False):
     result = {"path": os.path.abspath(path)}
     size = os.path.getsize(path)
     result["fileBytes"] = size
-    uri = "file:" + result["path"].replace("?", "%3f").replace("#", "%23") + "?mode=ro"
+    uri = pathlib.Path(result["path"]).as_uri() + "?mode=ro"
     connection = sqlite3.connect(uri, uri=True, timeout=2)
     try:
         connection.execute("PRAGMA busy_timeout = 2000")
@@ -209,7 +210,7 @@ def main(argv=None):
         return 2
     try:
         result = inspect(args.database, args.quick_check)
-    except sqlite3.Error as error:
+    except (sqlite3.Error, OSError) as error:
         print("error: %s" % error, file=sys.stderr)
         return 2
     source = scan_source(args.source) if args.source else None
