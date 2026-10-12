@@ -74,10 +74,11 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   whether any project could use it unchanged, and what was searched. With `coded-offers`, the
   acceptance line keeps its exact form with nothing after it, and `go` covers phase 1 only. Each
   option is a list item of a line or two, so consecutive options cannot run together into one
-  paragraph. The acceptance line follows the list as a plain paragraph. An offer visual (a
-  rendered page beside the complete text offer) is made only when the user asks and the host can
-  render one. When three or more offers are open and unanswered, a new decision is queued
-  in a `hr-what-next` walk-through instead of presented as another offer.
+  paragraph. The acceptance line follows the list as a plain paragraph, and a parked-item note or
+  any other closing line the rules ask for goes before the offer. An offer visual (a rendered page
+  beside the complete text offer) is made only when the user asks and the host can render one. When
+  three or more offers are open and unanswered, a new decision is queued in a `hr-what-next`
+  walk-through instead of presented as another offer.
 - `hr-benchmarking` keeps the portable method. It covers defining and confirming the comparison,
   isolation and normal scheduling with the effective priority recorded. It also covers screening,
   repetition against a variation criterion, saved evidence, memory measurement and reporting with

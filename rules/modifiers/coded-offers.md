@@ -18,8 +18,9 @@ Use § Finishing work to select displayed candidates. Each offer stands alone:
    only when the user asks.
 4. The exact acceptance line, a plain paragraph after the list. One question uses
    "Recommended: reply `<code>` or `go`". Several use "Recommended combination: reply
-   `<code>, <code>` or `go`". Nothing follows that line. Each option's own line says
-   what it leaves for a later offer.
+   `<code>, <code>` or `go`". Nothing follows that line, so a parked-item note, or any
+   other closing line the rules ask for, goes before the offer. Each option's own line
+   says what it leaves for a later offer.
 
 Include alternatives the user raised or needed to explain a material tradeoff.
 Routine offers include an option to decline or defer displayed proposals; say other
