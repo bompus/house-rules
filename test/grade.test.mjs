@@ -198,6 +198,12 @@ test("a coded offer's options must not share a paragraph and nothing may follow 
     ),
     [],
   );
+  // Options written above a table in the same paragraph are still run together.
+  assert.equal(
+    layoutProblems(offer("`1A` Fix it.\n`1B` Defer it.\nCode | Option\n--- | ---\n`1C` | Later."))
+      .length,
+    1,
+  );
   // Text after the acceptance line fails when a second acceptance line ends the reply, and when it
   // sits on the acceptance line itself.
   assert.equal(

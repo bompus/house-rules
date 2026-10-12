@@ -66,8 +66,11 @@ export function layoutProblems(reply) {
   const problems = [];
   for (const paragraph of reply.split(/\r?\n[ \t]*\r?\n/)) {
     const rows = paragraph.split(/\r?\n/);
-    if (rows.some((row) => row.includes("|") && TABLE_DELIMITER.test(row))) continue;
-    const bare = rows.filter((row) => BARE_OPTION.test(row));
+    // Rows from a table's header row to the end of the paragraph are table rows, not options.
+    const delimiter = rows.findIndex((row) => row.includes("|") && TABLE_DELIMITER.test(row));
+    const bare = (delimiter < 0 ? rows : rows.slice(0, Math.max(delimiter - 1, 0))).filter((row) =>
+      BARE_OPTION.test(row),
+    );
     if (bare.length > 1)
       problems.push(
         `${bare.length} options share one paragraph: ${bare.map((row) => row.trim().slice(0, 4)).join(" ")}`,
