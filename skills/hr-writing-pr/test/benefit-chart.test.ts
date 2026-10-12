@@ -80,6 +80,19 @@ describe.skipIf(!hasMatplotlib)("benefit-chart.py", () => {
     expect(alt).toContain("Renders: Dev build only.");
   });
 
+  test("escapes pipes in table labels and prints the workload line", () => {
+    const { alt } = chart(
+      {
+        headline: "Read | write takes 5 ms, was 9 ms",
+        workload: "3 runs, dev build",
+        rows: [{ label: "read | write", before: 9, after: 5, unit: "ms" }],
+      },
+      ["--table"],
+    );
+    expect(alt).toContain("| read \\| write | 9 ms | 5 ms |");
+    expect(alt).toContain("Workload: 3 runs, dev build");
+  });
+
   test("rejects negative values instead of drawing them", () => {
     const { result } = chart({
       headline: "Delta",

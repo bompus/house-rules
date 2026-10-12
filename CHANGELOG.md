@@ -12,7 +12,8 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   in a visual must also appear as body text, because many readers are agents that cannot parse images.
   The upstream-contributions rule titles a defect by what the person sees and asks for the title and
   opening lines to be updated when a later measurement moves the headline. Before, the chart was
-  optional and the opening sentence led with the problem, so results sat in the verification section.
+  optional, and the skill told authors both to lead the body with the problem and to put the result in the
+  opening sentence.
 - The end-of-reply eval's `parked-not-in-menu` and `spin-off-batch` scenarios read the offer with the
   shared parser (`minOptions`, `forbiddenInOffer`), and each run reports whether the turn was right
   apart from the scenario's declared checks. `--baseline` prints a `behavior only` line. Before,

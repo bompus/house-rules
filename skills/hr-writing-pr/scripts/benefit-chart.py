@@ -154,9 +154,11 @@ def table(spec):
     for row in spec["rows"]:
         suffix = f" {row['unit']}" if row.get("unit") else ""
         change = judge(row, band)[2]
-        lines.append(f"| {row['label']} | {fmt(float(row['before']))}{suffix} | "
+        label = row["label"].replace("|", "\\|")
+        lines.append(f"| {label} | {fmt(float(row['before']))}{suffix} | "
                      f"{fmt(float(row['after']))}{suffix} | {change} |")
-    notes = [spec["note"]] if spec.get("note") else []
+    notes = [f"Workload: {spec['workload']}"] if spec.get("workload") else []
+    notes += [spec["note"]] if spec.get("note") else []
     notes += [f"{row['label']}: {row['note']}" for row in spec["rows"] if row.get("note")]
     if notes:
         lines += ["", *notes]
