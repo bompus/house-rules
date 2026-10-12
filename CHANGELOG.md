@@ -5,10 +5,10 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 ## Unreleased
 
 - Announcement-readiness fixes. The README, the end-of-reply eval README and the overview image carried
-  figures from an early three-scenario run. They now cite the 2026-10-11 Claude Code replay (18 scenarios,
-  two runs each). The rules scored 22 and 27 of 36 for Opus 5.5 and Sonnet 5.5, against 18 and 16 with a
-  one-sentence instruction and 17 and 16 with none. The limits are stated, and the image shows no eval
-  figures. The `plan-files` and `upstream-contributions` modifiers now declare the skills they name, so
+  figures from an early three-scenario run. The two READMEs now cite the 2026-10-11 Claude Code replay (18
+  scenarios, two runs each). The rules scored 22 and 27 of 36 for Opus 5.5 and Sonnet 5.5, against 18 and 16
+  with a one-sentence instruction and 17 and 16 with none. The limits are stated, and the image drops the
+  eval figures. The `plan-files` and `upstream-contributions` modifiers now declare the skills they name, so
   composing warns when one is missing. `hr-what-next` and `hr-handoff` no longer name T3 Code tools.
   `upstream-contributions` uses neutral examples. The README's evaluation prompt no longer promotes
   Swarmail, and `hr-house-rules-setup` no longer links the product when the user wants its modifier.
