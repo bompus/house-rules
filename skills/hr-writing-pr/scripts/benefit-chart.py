@@ -76,7 +76,10 @@ def judge(row, band):
     words = row.get("words") or default_words
     word = words[0] if improved else words[1]
     percent = abs(change) * 100
-    percent_text = f"{percent:,.0f}%" if percent >= 10 else f"{percent:,.1f}%"
+    if 99 <= percent < 100:
+        percent_text = f"{int(percent * 10) / 10:.1f}%"  # never rounds up to "100%"
+    else:
+        percent_text = f"{percent:,.0f}%" if percent >= 10 else f"{percent:,.1f}%"
     ratio = max(before, after) / min(before, after) if min(before, after) > 0 else None
     times = f" ({ratio:,.1f}×)" if ratio and ratio >= 1.5 else ""
     text = f"{percent_text} {word}{times}"

@@ -57,6 +57,15 @@ describe.skipIf(!hasMatplotlib)("benefit-chart.py", () => {
     expect(out).toContain("| Build | 67.7 s | 46.2 s | 32% faster |");
   });
 
+  test("never rounds a near-total reduction up to 100%", () => {
+    const { result, alt } = chart({
+      headline: "Node read takes 0.08 ms, was 119 ms",
+      rows: [{ label: "Read", before: 119.1, after: 0.083, unit: "ms" }],
+    });
+    expect(result.exitCode).toBe(0);
+    expect(alt).toContain("Read: 119 ms to 0.083 ms, 99.9% lower (1,434.9×)");
+  });
+
   test("rejects negative values instead of drawing them", () => {
     const { result } = chart({
       headline: "Delta",
