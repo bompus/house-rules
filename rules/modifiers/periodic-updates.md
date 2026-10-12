@@ -11,11 +11,11 @@ no estimate. This covers a build, test suite, benchmark, CI run, long search or
 similar. The default interval is 5 minutes. That figure is a default, not a
 measured value; use the interval the user names instead.
 
-Each update is a short line, posted even when nothing has changed. It gives
-completed/total or a percent (the current step when the job reports no total),
-the ETA with its basis or the word "unmeasured", and a one-line summary of
-findings so far. A milestone, failure, stall or change in the forecast goes in
-full instead.
+Each update is one short line, not a report, posted even when nothing has
+changed. It gives completed/total or a percent (the current step when the job
+reports no total), the ETA with its basis or the word "unmeasured", and a
+one-line summary of findings so far. A milestone, failure, stall or change in
+the forecast goes in full instead.
 
 Where the host can run a background watcher or timer, arm it to post the
 updates. Otherwise post at the first natural checkpoint after each interval has
