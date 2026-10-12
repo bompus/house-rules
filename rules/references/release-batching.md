@@ -21,11 +21,13 @@ the README and package READMEs, comparisons, performance metrics, graphics and
 visuals (banners, charts, diagrams, screenshots and demo recordings, with their
 alt text), relevant documentation, registry and marketplace listing text,
 announcement plans and drafts, release notes and the release announcement.
+
 Check each for old version numbers, figures and behavior. Regenerate or replace
 a visual that shows them; where that is not possible, remove it or label the
 version it shows. Record which materials were checked and the evidence for
 claims in the task plan. Correct, add, remove or update content to resolve
 outdated instructions, omissions, contradictions and unsupported claims.
+
 Distinguish released, deployed and planned behavior; give performance claims
 measurement conditions and evidence, and label unverified results. Preserve
 historical results with their tested versions instead of presenting them as
