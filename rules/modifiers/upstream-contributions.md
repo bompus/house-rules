@@ -30,8 +30,9 @@ issues invite, such as performance fixes or a reported defect.
    threads, 0.17 s with paging". Use a figure only when it clears the
    `hr-benchmarking` bar (outside the reporting band, variation criterion met,
    repetitions stated) and keep the caveats in the body. Title a defect by what
-   the person sees and how often, not by the code involved. Open the body with
-   the same headline and a chart of it (`hr-writing-pr`). A pull request keeps
+   the person sees, not by the code involved, and add how often only when the
+   evidence supports a rate. Open the body with the same headline. A qualified
+   measured result also gets a chart of it (`hr-writing-pr`). A pull request keeps
    the project's title convention; its opening body sentence carries the figure
    (`hr-writing-pr`).
 6. When a later measurement or review changes the headline, edit the title and

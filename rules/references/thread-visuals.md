@@ -3,14 +3,19 @@
 Use an image, chart or diagram only to show a spatial interface state, compare
 before and after, show a trend across multiple measurements, or explain a flow
 with branches. Otherwise use text, a table or a short code block. Most comments
-are text. The exception is a measured result outside the reporting band. An
+are text. The exception is a qualified measured result. It lies outside the reporting band
+and meets its declared variation criterion. An
 issue, discussion or pull request that reports one opens with a headline chart
 of it, so a reader sees the benefit before reading the body.
 `hr-writing-pr`'s `scripts/benefit-chart.py` draws it. A comment that only adds data to an
 existing thread stays text and a table.
 
 Keep the exact numbers, steps or states in text beside the visual, and give the
-image alt text, so a reader who cannot see it loses nothing. Label a mockup as an
+image alt text, so a reader who cannot see it loses nothing. Many readers of an
+issue or pull request are agents that cannot parse an image. Every value, label
+and caveat in the visual also appears as body text, such as a table, a list or a
+described state. The alt text says what the image shows, not only that it is a
+chart. Label a mockup as an
 illustration. Preview a chart or diagram design you have not used before with the
 user before posting it.
 

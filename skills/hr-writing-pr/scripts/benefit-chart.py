@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Render a before/after benefit chart as a PNG for a pull request, issue or discussion.
 
-Usage: benefit-chart.py <spec.json> <out.png>
+Usage: benefit-chart.py <spec.json> <out.png> [--table]
 
 The spec holds a headline, a workload line and one row per measured metric:
 
@@ -24,7 +24,9 @@ change; default "lower"/"higher", or "higher"/"lower" when lower_is_better is fa
 note (extra text under the label). A change inside band (default 0.03) is
 labeled "no clear change". Bars start at zero and share a scale per row.
 
-Prints the alt text for the image on stdout. Requires matplotlib.
+Values must be non-negative. Prints the alt text for the image on stdout. With --table it
+also prints a Markdown table of the same values, the text version of the chart
+for readers and agents that cannot parse the image. Requires matplotlib.
 """
 import json
 import sys
@@ -83,6 +85,9 @@ def judge(row, band):
 
 def render(spec, out_path):
     rows = spec["rows"]
+    for row in rows:
+        if float(row["before"]) < 0 or float(row["after"]) < 0:
+            sys.exit(f"row {row['label']!r}: negative values are not supported (bars start at zero).")
     band = float(spec.get("band", 0.03))
     arms = spec.get("arms", ["Before", "After"])
     count = len(rows)
@@ -135,12 +140,28 @@ def render(spec, out_path):
     return f"{spec['headline']}. " + "; ".join(alts) + "."
 
 
+def table(spec):
+    band = float(spec.get("band", 0.03))
+    arms = spec.get("arms", ["Before", "After"])
+    lines = [f"| Metric | {arms[0]} | {arms[1]} | Change |", "| --- | ---: | ---: | --- |"]
+    for row in spec["rows"]:
+        suffix = f" {row['unit']}" if row.get("unit") else ""
+        change = judge(row, band)[2]
+        lines.append(f"| {row['label']} | {fmt(float(row['before']))}{suffix} | "
+                     f"{fmt(float(row['after']))}{suffix} | {change} |")
+    return "\n".join(lines)
+
+
 def main():
-    if len(sys.argv) != 3:
+    args = [a for a in sys.argv[1:] if a != "--table"]
+    if len(args) != 2:
         sys.exit(__doc__)
-    with open(sys.argv[1]) as handle:
+    with open(args[0]) as handle:
         spec = json.load(handle)
-    print(render(spec, sys.argv[2]))
+    print(render(spec, args[1]))
+    if "--table" in sys.argv[1:]:
+        print()
+        print(table(spec))
 
 
 if __name__ == "__main__":

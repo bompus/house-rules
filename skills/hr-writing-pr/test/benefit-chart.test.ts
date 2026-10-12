@@ -5,16 +5,16 @@ import { join } from "node:path";
 
 const script = join(import.meta.dir, "../scripts/benefit-chart.py");
 const hasMatplotlib =
-  Bun.spawnSync(["python3", "-c", "import matplotlib"], { stderr: "ignore" }).exitCode === 0;
+  Bun.spawnSync(["python3", "-I", "-c", "import matplotlib"], { stderr: "ignore" }).exitCode === 0;
 const dirs: string[] = [];
 
-function chart(spec: object) {
+function chart(spec: object, extra: string[] = []) {
   const dir = mkdtempSync(join(process.env.HOUSE_RULES_TEST_TMP ?? tmpdir(), "benefit-chart-"));
   dirs.push(dir);
   const specPath = join(dir, "spec.json");
   const out = join(dir, "chart.png");
   writeFileSync(specPath, JSON.stringify(spec));
-  const result = Bun.spawnSync(["python3", "-I", script, specPath, out]);
+  const result = Bun.spawnSync(["python3", "-I", script, specPath, out, ...extra]);
   return { result, alt: result.stdout.toString().trim(), out };
 }
 
@@ -39,6 +39,31 @@ describe.skipIf(!hasMatplotlib)("benefit-chart.py", () => {
     expect(alt).toContain("Idle: 100 ms to 101 ms, no clear change");
     expect(alt).toContain("Throughput: 100 ops/s to 150 ops/s, 50% higher (1.5×)");
     expect(readFileSync(out).subarray(1, 4).toString()).toBe("PNG");
+  });
+
+  test("prints the same values as a Markdown table with --table", () => {
+    const { result } = chart(
+      {
+        headline: "Build time",
+        arms: ["Main", "Branch"],
+        rows: [
+          { label: "Build", before: 67.741, after: 46.181, unit: "s", words: ["faster", "slower"] },
+        ],
+      },
+      ["--table"],
+    );
+    const out = result.stdout.toString();
+    expect(out).toContain("| Metric | Main | Branch | Change |");
+    expect(out).toContain("| Build | 67.7 s | 46.2 s | 32% faster |");
+  });
+
+  test("rejects negative values instead of drawing them", () => {
+    const { result } = chart({
+      headline: "Delta",
+      rows: [{ label: "Gain", before: -100, after: -50 }],
+    });
+    expect(result.exitCode).not.toBe(0);
+    expect(result.stderr.toString()).toContain("negative values are not supported");
   });
 
   test("reports a missing baseline instead of dividing by zero", () => {
