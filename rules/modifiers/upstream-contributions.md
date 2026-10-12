@@ -24,11 +24,11 @@ issues invite, such as performance fixes or a reported defect.
 4. Show the user the exact text and channel once before posting. Posting is
    public and cannot be undone; this rule makes submitting the expected next
    step, not a waiver of that look. Only a user instruction naming the kind of
-   submission and projects, such as "post issue comments on projects I have
-   contributed to without asking", removes it.
+   submission and the projects, such as "post issue comments on project X
+   without asking", removes it.
 5. Title a performance discussion or issue with its headline result and the
-   workload it holds for, such as "typing one letter takes 1.1 s at 1,300
-   threads, 0.17 s with paging". Use a figure only when it clears the
+   workload it holds for, such as "saving a file takes 1.1 s with 500
+   open tabs, 0.17 s with the fix". Use a figure only when it clears the
    `hr-benchmarking` bar (outside the reporting band, variation criterion met,
    repetitions stated) and keep the caveats in the body. Title a defect by what
    the person sees, not by the code involved, and add how often only when the
