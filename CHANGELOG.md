@@ -4,6 +4,9 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- `hr-usage-report` counts Claude Code sessions run with a separate `CLAUDE_CONFIG_DIR`. It reads
+  `projects` under `~/.claude` and every other `~/.claude_*` or `~/.claude-*` directory, a linked
+  directory once; `--claude-projects <dir,dir>` replaces the list.
 - `hr-benchmarking` adds three method points. Attribute time to a suspected component in the real
   workload before changing it, and time the change inside that workload, because a standalone gain
   can vanish there. Include an A/A arm, which runs the same variant twice in the alternation, when the

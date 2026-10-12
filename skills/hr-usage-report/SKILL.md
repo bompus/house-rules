@@ -12,10 +12,13 @@ skill's directory with Bun.
 ## 1. Measure where usage went
 
 ```bash
-bun scripts/usage-by-model.ts --days 7 [--providers claude,codex,opencode] [--prices <api.json>] [--json]
+bun scripts/usage-by-model.ts --days 7 [--providers claude,codex,opencode] [--claude-projects <dir,dir>] [--prices <api.json>] [--json]
 ```
 
-It reads Claude Code transcripts (`~/.claude/projects`), Codex rollouts
+It reads Claude Code transcripts (`projects` under `~/.claude` and under every
+other `~/.claude_*` or `~/.claude-*` configuration directory, so sessions run
+with a separate `CLAUDE_CONFIG_DIR` count; `--claude-projects` replaces that
+list), Codex rollouts
 (`~/.codex/sessions`) and the OpenCode database, all read-only and local. It
 prices each request at [models.dev](https://models.dev) list rates, including
 long-context tiers, and splits usage by provider, model and role: main session,

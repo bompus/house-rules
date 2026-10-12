@@ -10,7 +10,7 @@
 // conversion. Read the shares beside the provider's live quota readings, not as an
 // invoice. Method and report shape: ../SKILL.md.
 import { Database } from "bun:sqlite";
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, realpathSync, statSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
@@ -112,11 +112,33 @@ const claudeTokens = (u: ClaudeUsage): Tokens => ({
   cacheWrite: u.cache_creation_input_tokens ?? 0,
 });
 
+/**
+ * Claude Code transcript roots under a home directory: the default `~/.claude/projects` and the
+ * `projects` directory of every other `~/.claude*` configuration directory, such as a separate
+ * `CLAUDE_CONFIG_DIR` used for a gateway. A directory reached through a link counts once.
+ */
+export function claudeProjectRoots(home: string): string[] {
+  const roots = new Map<string, string>();
+  for (const name of readdirSync(home).sort()) {
+    if (name !== ".claude" && !name.startsWith(".claude_") && !name.startsWith(".claude-")) {
+      continue;
+    }
+    const root = join(home, name, "projects");
+    if (existsSync(root)) {
+      roots.set(realpathSync(root), root);
+    }
+  }
+  return [...roots.values()];
+}
+
 /** Claude Code transcripts: one row per API response, streamed duplicates removed, advisor calls split out. */
-export function claudeRequests(root: string, since: number): Request[] {
+export function claudeRequests(roots: string | string[], since: number): Request[] {
   const out: Request[] = [];
   const seen = new Set<string>();
-  for (const file of jsonlFiles(root, since)) {
+  const files = (Array.isArray(roots) ? roots : [roots]).flatMap((root) =>
+    Array.from(jsonlFiles(root, since)),
+  );
+  for (const file of files) {
     const fileRole = file.includes("/subagents/") ? "subagent" : "main";
     for (const raw of lines(file)) {
       const e = raw as ClaudeEntry;
@@ -400,7 +422,10 @@ async function main(args: string[]) {
   const home = homedir();
   const reqs = [
     ...(providers.includes("claude")
-      ? claudeRequests(join(home, ".claude", "projects"), since)
+      ? claudeRequests(
+          arg(args, "--claude-projects")?.split(",") ?? claudeProjectRoots(home),
+          since,
+        )
       : []),
     ...(providers.includes("codex") ? codexRequests(join(home, ".codex", "sessions"), since) : []),
     ...(providers.includes("opencode")

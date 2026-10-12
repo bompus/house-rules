@@ -1,9 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import { mkdtempSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { mkdtempSync, readFileSync, writeFileSync, mkdirSync, symlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { check, render, type ReportData } from "../scripts/render-report.ts";
 import {
+  claudeProjectRoots,
   claudeRequests,
   codexRequests,
   priceFor,
@@ -107,6 +108,31 @@ describe("usage-by-model", () => {
     const s = summarize(reqs, prices);
     expect(s.rows[0]?.model).toBe("claude-fable-5-1");
     expect(s.unpriced).toEqual([]);
+  });
+
+  test("transcript roots cover every Claude config directory once, links included", () => {
+    const home = mkdtempSync(join(tmpdir(), "usage-home-"));
+    for (const name of [".claude", ".claude_hub", ".claude-other", ".codex"]) {
+      mkdirSync(join(home, name, "projects"), { recursive: true });
+    }
+    symlinkSync(join(home, ".claude", "projects"), join(home, ".claude_linked"));
+    mkdirSync(join(home, ".claude_empty"));
+    writeFileSync(join(home, ".claude.json"), "{}");
+    expect(claudeProjectRoots(home).map((root) => root.slice(home.length))).toEqual([
+      "/.claude/projects",
+      "/.claude-other/projects",
+      "/.claude_hub/projects",
+    ]);
+    const entry = (id: string) =>
+      JSON.stringify({
+        timestamp: "2026-10-09T12:00:00Z",
+        sessionId: id,
+        message: { id, model: "claude-haiku-5-5", usage: { input_tokens: 1, output_tokens: 1 } },
+      });
+    writeFileSync(join(home, ".claude", "projects", "a.jsonl"), entry("a"));
+    mkdirSync(join(home, ".claude_hub", "projects", "p"));
+    writeFileSync(join(home, ".claude_hub", "projects", "p", "b.jsonl"), entry("b"));
+    expect(claudeRequests(claudeProjectRoots(home), 0)).toHaveLength(2);
   });
 
   test("Codex cached input is not counted again as fresh input; model comes from the turn context", () => {
