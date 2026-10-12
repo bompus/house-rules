@@ -73,19 +73,24 @@ test("leaves the database file unchanged", (t) => {
   assert.equal(statSync(database).mtimeMs, mtime);
 });
 
-test("lists FTS5 virtual tables without counting their shadow tables", (t) => {
+test("lists FTS5 virtual tables and keeps a similarly named application table", (t) => {
+  const probe = python([
+    "-c",
+    "import sqlite3; sqlite3.connect(':memory:').execute('CREATE VIRTUAL TABLE t USING fts5(x)')",
+  ]);
+  if (probe.status !== 0) return t.skip("this Python's SQLite has no FTS5");
   const dir = fixture(t);
   const database = createDatabase(
     dir,
-    "try:\n    c.execute('CREATE VIRTUAL TABLE docs USING fts5(body)'); c.commit()\nexcept sqlite3.OperationalError:\n    pass",
+    "c.execute('CREATE VIRTUAL TABLE docs USING fts5(body)')\nc.execute('CREATE TABLE docs_backup(id INTEGER)')\nc.commit()",
   );
   const result = inspect(database);
-  if (!result.virtualTables.docs) return; // This Python's SQLite has no FTS5.
   assert.equal(result.virtualTables.docs, "fts5");
-  assert.equal(result.tables, 1);
+  assert.equal(result.tables, 2);
+  assert.ok(result.statistics.tablesWithoutStatistics.includes("docs_backup"));
 });
 
-test("source scan flags journal_mode before busy_timeout or without one", (t) => {
+test("source scan checks each journal_mode mention against earlier busy_timeout mentions", (t) => {
   const dir = fixture(t);
   const database = createDatabase(dir);
   const src = join(dir, "src");
@@ -99,15 +104,24 @@ test("source scan flags journal_mode before busy_timeout or without one", (t) =>
     join(src, "good.py"),
     'c.execute("PRAGMA busy_timeout=5000")\nc.execute("PRAGMA journal_mode=WAL")\n',
   );
+  writeFileSync(
+    join(src, "second.py"),
+    'a.execute("PRAGMA busy_timeout=5000")\na.execute("PRAGMA journal_mode=WAL")\nb.execute("PRAGMA journal_mode=WAL")\n',
+  );
   writeFileSync(join(src, "unrelated.py"), "print('no sqlite here')\n");
   const result = inspect(database, "--source", src);
-  const byName = Object.fromEntries(result.source.map((f) => [basename(f.file), f]));
-  assert.deepEqual(Object.keys(byName).sort(), ["bad.ts", "good.py", "missing.js"]);
-  assert.equal(byName["bad.ts"].ok, false);
-  assert.match(byName["bad.ts"].status, /comes before busy_timeout/);
-  assert.equal(byName["missing.js"].ok, false);
-  assert.match(byName["missing.js"].status, /no busy_timeout/);
-  assert.equal(byName["good.py"].ok, true);
+  const rows = result.source.map((f) => [basename(f.file), f.line, f.ok]);
+  assert.deepEqual(rows.sort(), [
+    ["bad.ts", 1, false],
+    ["good.py", 2, true],
+    ["missing.js", 1, false],
+    ["second.py", 2, true],
+    ["second.py", 3, true],
+  ]);
+  const bad = result.source.find((f) => basename(f.file) === "bad.ts");
+  assert.match(bad.status, /comes before busy_timeout/);
+  const missing = result.source.find((f) => basename(f.file) === "missing.js");
+  assert.match(missing.status, /no busy_timeout/);
 });
 
 test("opens a database whose path contains percent and hash characters", (t) => {

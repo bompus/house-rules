@@ -6,8 +6,9 @@ description: Checklist of settings, failure patterns and measured effects for SQ
 # SQLite
 
 Run `scripts/inspect-sqlite.py <database>` first when you have a database file
-(`--source <directory>` also scans source text for files that mention
-`journal_mode` with no earlier `busy_timeout`; it does not establish run order). It opens the file read-only and reports what the file
+(`--source <directory>` also scans source text for each `journal_mode` mention
+with no earlier `busy_timeout` in the same file; it does not establish run
+order or which connection each belongs to). It opens the file read-only and reports what the file
 records, the WAL size and the mount options. It cannot show connection
 settings, because SQLite does not store them in the file; read the code that
 opens the connection for those.
@@ -56,7 +57,8 @@ different engine, driver or pool, read
    SQLite and a native module's bundled SQLite shared one process, and the WAL
    state was corrupted in about a third of runs. The lock-registry mechanism is
    asserted (M). Open the file with one library. Give the other a checkpointed
-   copy.
+   copy, and close its connections deterministically: one run in five still
+   hit SIGBUS from a connection closed only at garbage collection (M).
 7. **Set per-connection pragmas on every connection.** `busy_timeout`,
    `synchronous`, `foreign_keys` and `cache_size` do not persist in the file;
    `journal_mode=WAL` does (D).

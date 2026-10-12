@@ -11,10 +11,10 @@ WAL database that no process has open.
 
 Connection settings such as busy_timeout, synchronous, foreign_keys and
 cache_size are not stored in the file, so no database inspection can show what
-an application sets. `--source` is a text scan: for each file that mentions
-journal_mode it reports whether busy_timeout appears and whether its first
-mention comes earlier. It does not establish run order. Treat those lines as
-places to read, not verdicts.
+an application sets. `--source` is a text scan: for each mention of
+journal_mode it reports whether a busy_timeout mention comes earlier in the
+same file. It does not establish run order or which connection each belongs
+to. Treat those lines as places to read, not verdicts.
 """
 import argparse
 import json
@@ -25,6 +25,7 @@ import sqlite3
 import sys
 
 NETWORK_FILESYSTEMS = {"9p", "drvfs", "cifs", "smb3", "smbfs", "nfs", "nfs4", "fuse.sshfs", "virtiofs"}
+SHADOW_SUFFIXES = ("_data", "_idx", "_content", "_docsize", "_config", "_segments", "_segdir", "_stat", "_node", "_parent", "_rowid")
 SOURCE_SUFFIXES = {".py", ".js", ".mjs", ".cjs", ".ts", ".tsx", ".rs", ".go", ".rb", ".java", ".kt", ".cs", ".c", ".cc", ".cpp", ".swift", ".php", ".sql"}
 
 
@@ -69,17 +70,17 @@ def scan_source(paths):
                 lines = handle.read().splitlines()
         except OSError:
             continue
-        journal = next((i + 1 for i, l in enumerate(lines) if re.search(r"journal_mode", l, re.I)), None)
-        timeout = next((i + 1 for i, l in enumerate(lines) if re.search(r"busy_timeout|busyTimeout|set_busy_timeout", l, re.I)), None)
-        if journal is None:
-            continue
-        if timeout is None:
-            status = "journal_mode at line %d; no busy_timeout in this file" % journal
-        elif timeout > journal:
-            status = "journal_mode at line %d comes before busy_timeout at line %d" % (journal, timeout)
-        else:
-            status = "busy_timeout at line %d comes before journal_mode at line %d" % (timeout, journal)
-        findings.append({"file": file, "status": status, "ok": timeout is not None and timeout < journal})
+        journals = [i + 1 for i, l in enumerate(lines) if re.search(r"journal_mode", l, re.I)]
+        timeouts = [i + 1 for i, l in enumerate(lines) if re.search(r"busy_timeout|busyTimeout|set_busy_timeout", l, re.I)]
+        for journal in journals:
+            earlier = [t for t in timeouts if t < journal]
+            if earlier:
+                status = "busy_timeout at line %d comes before journal_mode at line %d" % (earlier[-1], journal)
+            elif timeouts:
+                status = "journal_mode at line %d comes before busy_timeout at line %d" % (journal, timeouts[0])
+            else:
+                status = "journal_mode at line %d; no busy_timeout in this file" % journal
+            findings.append({"file": file, "line": journal, "status": status, "ok": bool(earlier)})
     return findings
 
 
@@ -112,9 +113,7 @@ def inspect(path, quick_check=False):
         ).fetchall()
         tables = [n for n, _ in names if not n.startswith("sqlite_")]
         virtual = {n: s for n, s in names if s and s.upper().startswith("CREATE VIRTUAL TABLE")}
-        shadow = set()
-        for table in virtual:
-            shadow.update(n for n in tables if n.startswith(table + "_"))
+        shadow = {n for table in virtual for n in tables if n in {table + s for s in SHADOW_SUFFIXES}}
         plain = [n for n in tables if n not in virtual and n not in shadow]
         result["tables"] = len(plain)
         result["indexes"] = connection.execute(
@@ -193,7 +192,7 @@ def render(result, source):
     for note in notes(result):
         lines.append("note: " + note)
     if source is not None:
-        lines.append("source scan (journal_mode mentions): %d file(s)" % len(source))
+        lines.append("source scan (journal_mode mentions): %d" % len(source))
         for item in source:
             lines.append("  %s: %s%s" % (item["file"], item["status"], "" if item["ok"] else "  <- read this"))
     return "\n".join(lines)
