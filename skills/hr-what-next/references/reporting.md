@@ -59,9 +59,11 @@ written between tool calls, or an answer followed by even one more tool call,
 can be hidden while a short closing line stays visible. Finish bookkeeping
 (ledger, plan and note updates, cleanup) before writing the answer. If a tool
 call is still needed after the answer, write the whole answer again in the final
-message. Never end a reply with a short closing line after a tool call when the
-substance came before it. When the reply ends with a question card, that text
-goes after every other tool call, right before the card.
+message. A line the rules ask for after the answer, such as the parked-item
+note, belongs in that same final message. Never end a reply with a short closing
+line after a tool call when the substance came before it. When the reply ends
+with a question card, that text goes after every other tool call, right before
+the card.
 
 Verify work with completed checks and their output. Confirm each check's exit status or final
 result before claiming a pass, and do not hide failures by filtering output. Report changes,
