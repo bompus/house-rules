@@ -4,6 +4,14 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Announcement-readiness fixes. The README, the end-of-reply eval README and the overview image carried
+  figures from an early three-scenario run. They now cite the 2026-10-11 Claude Code replay (18 scenarios,
+  two runs each). The rules scored 22 and 27 of 36 for Opus 5.5 and Sonnet 5.5, against 18 and 16 with a
+  one-sentence instruction and 17 and 16 with none. The limits are stated, and the image shows no eval
+  figures. The `plan-files` and `upstream-contributions` modifiers now declare the skills they name, so
+  composing warns when one is missing. `hr-what-next` and `hr-handoff` no longer name T3 Code tools.
+  `upstream-contributions` uses neutral examples. The README's evaluation prompt no longer promotes
+  Swarmail. `docs/npm-release.md` describes the current release procedure and stays out of the npm package.
 - The thread-visuals fallback now tries a browser signed in to the user's GitHub account before handing
   over text and a file. Before, a refused `gh issue create --attach` (for example "attaching files requires
   write access to the repository") sent the agent straight to a manual handover, even where the issue page's
