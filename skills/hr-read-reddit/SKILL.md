@@ -1,6 +1,6 @@
 ---
 name: hr-read-reddit
-description: Read Reddit threads (post plus comments) and search subreddits in full text, with links kept inline. Use whenever a task needs Reddit content or needs to collect links posted on Reddit; generic web fetch and reddit.com JSON are blocked for agents.
+description: Read Reddit threads (post plus comments) and search subreddits in full text, with links kept inline. Use whenever a task needs Reddit content or needs to collect links posted on Reddit; generic web fetch and reddit.com JSON are blocked for agents. Reddit's RSS support ends November 13, 2026; a partial search fallback remains.
 ---
 
 # Read Reddit
