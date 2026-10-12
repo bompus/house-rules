@@ -126,5 +126,5 @@ has a `Project: <name>` line. It warns when the record is missing, unreadable,
 more than 30 days old, or dated after today. A plan without that line gets no
 audit warning.
 
-Thirty days is a default, not a measured interval, and a shorter one needs
-evidence that it finds more.
+Thirty days is a default, not a measured interval. A shorter one needs evidence
+that it surfaces more lost work than thirty-day audits did over the same period.
