@@ -4,6 +4,12 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- The reporting rule now explains why the answer must come after the last tool call and how to keep it
+  there. Some hosts fold every message of a finished turn except the last behind a summary row, so an answer
+  written before a final bookkeeping tool call was hidden and only a short closing line showed. The rule now
+  says to finish bookkeeping first, to repeat the whole answer if a tool call must follow it, and never to
+  end on a short closing line after a tool call. Before, it said only that text between tool calls can be
+  collapsed or lost.
 - Announcement-readiness fixes. The README, the end-of-reply eval README and the overview image carried
   figures from an early three-scenario run. The two READMEs now cite the 2026-10-11 Claude Code replay (18
   scenarios, two runs each). The rules scored 22 and 27 of 36 for Opus 5.5 and Sonnet 5.5, against 18 and 16
