@@ -7,8 +7,8 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 - The squash-landing reference now says how to treat a review bot's start: let an enabled automatic review
   begin instead of commenting to request one, check the integration's status when none starts rather than
   tagging the bot again, and do not take a config file in the repository as proof the bot is enabled. An
-  existing check on the head must report completion before merging; for CodeRabbit that is a status
-  description starting with "Review completed". The low-quota handoff modifier now also says that five-hour
+  existing check on the head must report completion before merging; for CodeRabbit that is a successful
+  status whose description starts with "Review completed". The low-quota handoff modifier now also says that five-hour
   limits do not trigger it and that a usage reading must never cost model turns or read credentials.
 - The reporting rule now explains why the answer must come after the last tool call and how to keep it
   there. Some hosts fold every message of a finished turn except the last behind a summary row, so an answer

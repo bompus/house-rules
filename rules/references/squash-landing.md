@@ -20,7 +20,7 @@ Let an enabled automatic review start; do not comment to request one. When none
 starts, check the integration's status instead of tagging the bot again. A bot's
 config file in the repository does not show that it is enabled, and an existing
 check on the head must report completion before you merge (for CodeRabbit, a
-status description starting with "Review completed").
+successful status whose description starts with "Review completed").
 
 During integration, never switch, reset or remove the session's own checkout: no
 `checkout` or `switch` to another ref, no `reset` or branch force-move, and no
