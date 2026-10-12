@@ -16,6 +16,12 @@ When a review bot reviews pull requests, merge only after its check finishes
 and each finding is fixed or answered with a reason, threads resolved. Read
 the review body too: findings outside the diff arrive there, not as threads.
 
+Let an enabled automatic review start; do not comment to request one. When none
+starts, check the integration's status instead of tagging the bot again. A bot's
+config file in the repository does not show that it is enabled, and an existing
+check on the head must report completion before you merge (for CodeRabbit, a
+status description starting with "Review completed").
+
 During integration, never switch, reset or remove the session's own checkout: no
 `checkout` or `switch` to another ref, no `reset` or branch force-move, and no
 `worktree remove` on it. Updating the default branch it has checked out
