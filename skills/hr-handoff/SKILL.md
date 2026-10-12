@@ -55,16 +55,14 @@ When a handoff unrelated to quota moves work to another thread, also move what
 the host binds to the outgoing thread:
 
 1. Inventory it: scheduled or recurring tasks, linked pull requests and PR
-   watches, and the agent-mail registration and its subscriptions. On T3 Code,
-   read `list_scheduled_tasks` (each task's `boundThreadId`),
-   `list_thread_pull_requests` and any `watch_pull_request` watches.
+   watches, and any agent-mail or messaging registration and its subscriptions.
+   Use the host's own list or status commands for each.
 2. Move or record each item. Where the host lets the receiving thread bind it,
-   the handoff names the exact call the receiver makes; on T3 Code a thread can
+   the handoff names the exact call the receiver makes; some hosts let a thread
    bind a task only to itself, so the outgoing thread cannot move it. Otherwise
    record why it stays. Read each item back after the move; a move without a
    read-back is unfinished. Retire the outgoing copy of a task only after the
-   receiver's read-back confirms its replacement (on T3 Code,
-   `delete_scheduled_task`), so the work neither runs twice nor is lost.
+   receiver's read-back confirms its replacement, so the work neither runs twice nor is lost.
 3. Follow any thread-switch checklist the owning repository or the user's
    guidance names, and list it in the handoff.
 4. Keep the outgoing registration until the user closes the old thread, then

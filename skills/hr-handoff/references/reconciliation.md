@@ -9,7 +9,7 @@ replace reading their content or reviewing context-only classifications.
 Review the current transcript and the preceding handoff's source transcript
 when available. Include linked plans, child ledgers, pending decisions, owned
 Git work and what the host binds to the outgoing thread (scheduled tasks, PR
-watches, agent-mail registration and subscriptions), as listed in the skill's
+watches, mail or messaging registration and subscriptions), as listed in the skill's
 thread-move step. Use the host's existing export and session-search tools.
 Preserve source IDs and text rather than exporting only the items you already
 remembered.
@@ -66,8 +66,8 @@ relative to the receipt; the checker reads only explicitly named snapshots.
   Evidence references use `{ "source": "source-id", "record": "record-id" }`.
   Include the latest declared outcome. For deferred work, `next` gives its
   trigger; for done work, give its result and any separately tracked follow-up.
-- Thread-bound state (scheduled or recurring tasks, PR watches, the agent-mail
-  registration and subscriptions) is an `items` entry like any other. `next`
+- Thread-bound state (scheduled or recurring tasks, PR watches, any mail or
+  messaging registration and subscriptions) is an `items` entry like any other. `next`
   names the receiver's exact call to bind it and how to read it back, or why it
   stays with the outgoing thread until the user closes it.
 - `git` records `scope`, `checkedAt` and `evidence`, plus explicit `ownedPrs`,

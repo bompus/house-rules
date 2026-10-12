@@ -80,9 +80,8 @@ completed state before the completion message; a report alone does not do so.
    owner), then needs your decision, then actionable now. Number a decision row
    with its offer question number, keep the actionable-now group even when it
    is empty ("Nothing"), and put the highest-ranked item last within a group.
-   Render it with the host's own tool when one exists (T3 Code: `html_preview`,
-   then `html_render`); give a text outline in the same order only where the host
-   has none. The offer itself follows the offer rules, which make an offer visual
+   Render it with the host's own preview or rendering tool when one exists; give
+   a text outline in the same order only where the host has none. The offer itself follows the offer rules, which make an offer visual
    only when the user asks for one.
 6. Continue work that can advance under existing authorization. Ask only for
    unresolved choices using the governing offer format. Invoking this skill is
