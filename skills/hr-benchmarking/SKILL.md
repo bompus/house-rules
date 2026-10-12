@@ -77,8 +77,8 @@ the experiment separately justifies using it to reject a run.
 
 Before collecting results, set the criteria for rejecting a run: competing
 load, swapping and memory-limit or OOM events, each with its metric and
-threshold. Check the machine against them before each arm. A run that fails
-them, or whose inputs change, is rejected even when the benchmark caused the
+threshold. Check the machine against them before each arm and watch them
+throughout the measured interval. A run that fails them, or whose inputs change, is rejected even when the benchmark caused the
 failure. A rejection invalidates that measurement; it does not by itself show
 an implementation defect. Keep rejected runs outside the accepted sample and
 report them; a later passing run neither erases a rejection nor loosens the

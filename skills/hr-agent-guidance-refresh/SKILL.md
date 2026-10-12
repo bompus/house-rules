@@ -12,19 +12,21 @@ installation, configuration changes, model calls, new probes or provider restart
 1. At start or resume, and at the next affected-action boundary after an update
    signal, list what the session inherits or uses. That is the repository
    instruction root, the rules, docs and skills it names with their resources,
-   and any subagent definitions. Compare them with this session's last refresh
-   record. If no record exists, read the applicable guidance and establish that
-   baseline.
+   any subagent definitions, and the configuration, supporting scripts and tools
+   it relies on. Compare them with this session's last refresh record. If no
+   record exists, read the applicable guidance and establish that baseline.
 2. Finish the active operation before refreshing. When an evaluation fixes its
    guidance or tools, hold the update until that context is released and leave
    its inputs unchanged.
 3. Reread changed instructions, affected skill resources and subagent definitions
-   through their indexes and the references they need. Recheck assumptions the
-   changes invalidate. A reread does not prove that injected context, effective
-   subagent definitions or tool discovery changed. Use a context or catalog
-   refresh only when the host supports it and you are authorized. If a restart,
-   reinstall or reload is needed, report the component and the action as a
-   blocker; do not perform it without existing authorization.
+   through their indexes and the references they need. Inspect changed
+   configuration through redacted summaries, never secret values, and check the
+   versions or interfaces of the scripts and tools the session will use next.
+   Recheck assumptions the changes invalidate. A reread does not prove that
+   injected context, effective subagent definitions or tool discovery changed.
+   Use a context or catalog refresh only when the host supports it and you are
+   authorized. If a restart, reinstall or reload is needed, report the component
+   and the action as a blocker; do not perform it without existing authorization.
 4. Record what you reread, the identity you observed for each component and
    what stays unverified. Report changed behavior or a blocker when it needs
    attention; an unchanged check stays quiet.

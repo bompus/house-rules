@@ -49,8 +49,8 @@ iowait and steal time. A CPU brought online or offline during the interval
 reports `null`.
 The collector uses its own `/proc/self/status` `VmHWM` for peak RSS;
 `ru_maxrss` can retain a launcher's inherited high-water mark.
-It records observer CPU and scan duration. Include those costs in the declared
-measurement budget; no negligible-impact claim follows from successful collection.
+It records observer CPU and scan duration. Report those costs beside the results; no
+negligible-impact claim follows from successful collection.
 
 On Windows, `scripts/process-attribution.ps1` accepts mandatory `OutputPath`
 and `StopPath` arguments. It saves process PID, start time, name and cumulative

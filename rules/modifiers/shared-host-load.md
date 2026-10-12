@@ -1,5 +1,5 @@
 ---
-description: On a shared machine, follow its resource budgets, get operator direction before parallel whole-repository work, and use memory controls.
+description: On a shared machine, follow its resource budgets; without one, get operator direction before parallel workers or whole-repository commands, and use memory controls.
 after: Coordination and isolation
 ---
 
