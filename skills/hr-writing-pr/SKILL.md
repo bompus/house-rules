@@ -42,7 +42,9 @@ Resolve mismatches between the description and the implementation before calling
 
 ## Title and body
 
-Write a title naming the resulting behavior or fixed failure, in the words of the person who feels it ("fork threads open faster"), not the mechanism ("skip hidden ancestor payloads"). Use the repository's title convention when it has one. When the PR title becomes the squash commit line, keep a measured speedup out of it, because the figure goes stale there. A repository whose convention asks for the figure keeps it. Put the qualified result, with the workload it holds for, in the body's opening sentence. Check the title's type and scope against the diff's dominant change. A `docs:` title on a diff that adds an executable installer misfiles the squash commit. When no PR template exists, the title convention is the only template; default to Conventional Commits `type(scope):` unless the repository's recent history uses another style. Flag a mixed diff as a possible split into separate PRs (the `hr-split-to-prs` skill, where installed) instead of stretching the title to cover it.
+Write a title naming the resulting behavior or fixed failure, in the words of the person who feels it ("fork threads open faster"), not the mechanism ("skip hidden ancestor payloads"). Use the repository's title convention when it has one. When the PR title becomes the squash commit line, keep a measured speedup out of it, because the figure goes stale there. A repository whose convention asks for the figure keeps it. Put the qualified result, with the workload it holds for, in the body's opening sentence.
+
+Check the title's type and scope against the diff's dominant change. A `docs:` title on a diff that adds an executable installer misfiles the squash commit. When no PR template exists, the title convention is the only template; default to Conventional Commits `type(scope):` unless the repository's recent history uses another style. Flag a mixed diff as a possible split into separate PRs (the `hr-split-to-prs` skill, where installed) instead of stretching the title to cover it.
 
 Open the body with one sentence that states the benefit, before any problem detail. For a measured change it carries the qualified figure and its workload ("Clean Android builds finish 32% faster, 67.7 s to 46.2 s on a warm Gradle cache"). For a bug fix it says who hit the bug and what now works ("Cursor title generation no longer leaks a SQLite file handle on every call"). The problem and resulting behavior follow. A small change may need only a paragraph and a validation sentence. Expand only where the reviewer needs more context:
 
@@ -96,6 +98,7 @@ a JSON spec and writes a dark PNG with labeled units, zero-based bars and a
 benefit badge per row. Skip the chart only when every row is no clear change,
 or the one row moved by less than 10%. Set the spec's top-level `band` to the declared variation
 threshold when it exceeds 0.03, and name that threshold beside the chart.
+
 Show the workload and material limits beside it; a synthetic benchmark is not a
 production or UI speedup. Preview a chart in a different style with the user
 before publishing it. The image is never the only place a value or caveat
