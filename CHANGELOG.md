@@ -33,7 +33,7 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   budgets, checks load before resource-intensive work, gets operator direction before parallel workers or
   whole-repository commands when there is no budget, constrains memory-hungry work, and checks pressure
   evidence before a larger retry. Its name and position are unchanged, so existing configurations still
-  resolve. The modifier goes from 2,716 to 1,002 bytes, its description changed, and the exclusive-slot,
+  resolve. The modifier goes from 2,716 to 1,083 bytes, its description changed, and the exclusive-slot,
   reservation and light-work-allowance text is gone.
 - `hr-forgotten-work-audit` no longer describes the audit it was based on. It says only that thirty days
   is a default, not a measured interval, and that a shorter one needs evidence that it surfaces more lost

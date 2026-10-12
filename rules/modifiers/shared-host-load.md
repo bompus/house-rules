@@ -15,4 +15,5 @@ entire repository or dataset; bounded reads and edits may continue.
 Work risks exhausting memory when its expected or last measured peak leaves
 little headroom in the memory available to it, or when its peak is unknown and
 its input is large. Constrain such work using the host's supported controls.
-Check host evidence of memory pressure before retrying with a larger budget.
+Retry with a larger budget only when host evidence shows memory pressure caused
+the failure; without that evidence, find the cause before raising the budget.
