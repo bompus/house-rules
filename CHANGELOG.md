@@ -7,8 +7,8 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 - `hr-benchmarking` adds three method points. Attribute time to a suspected component in the real
   workload before changing it, and time the change inside that workload, because a standalone gain
   can vanish there. Include an A/A arm, which runs the same variant twice in the alternation, when the
-  workload's run-to-run variation is not already known, so the comparison's noise floor is
-  measured. Check each case in an agent or model comparison for a ceiling, report cases every arm
+  workload's variation is not already known from equivalent earlier runs, so the comparison's noise
+  floor is measured. Check each case in an agent or model comparison for a ceiling, report cases every arm
   already passes apart from the rest, and report any metric they do not saturate on its own.
 - Before the first publish step of any version bump (tag, package publish, GitHub release or
   announcement), the release procedure runs two audits and lands their corrections first. The
