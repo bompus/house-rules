@@ -4,6 +4,41 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Host-bound text left `hr-benchmarking`. The admission, pressure, observer and fenced-core procedures
+  and the nice-value experiment record described one machine's setup, so they now live with the host that
+  uses them. `SKILL.md` keeps the portable method. It covers defining and confirming the comparison,
+  isolation, normal scheduling with the effective priority recorded, screening, repetition against a
+  variation criterion, saved evidence, memory measurement and reporting with the 3% band. One short
+  paragraph says to reject a run on competing load, swapping or an out-of-memory event, using criteria
+  set before the run. Removed from `SKILL.md`: the priority-pilot and fenced-core triggers, the
+  heavy/light classification with its bounded trial and owner contact, the benchmark lock and
+  remote-inference exemption, observer declarations and budgets, admission gates, activity cutoffs,
+  pressure-rejection thresholds, retry budgets and reservations. `references/tools.md` loses the fenced-core arm and its clauses and keeps the scheduling
+  table, process attribution and both collector scripts. `references/priority-findings-20261006.md` is
+  deleted. `SKILL.md` goes from 19,686 to 12,613 bytes and the skill's files from 56,246 to 38,607.
+- `hr-agent-guidance-refresh` is trimmed to the portable core. It rereads changed instructions, skills and
+  subagent definitions, holds the update while an evaluation fixes its context, and treats a reread as no
+  proof that injected context or tool discovery changed. The deployed-versus-source and pending-notice
+  steps and the product-specific update paragraph moved out, and the description now says what is left.
+  The name, the path and `references/verification.md` are unchanged. `SKILL.md` goes from 4,599 to
+  2,048 bytes.
+- New opt-in modifier `cross-session-relay`. The paragraph on relaying work between sessions and the
+  paragraph on notifying sessions after an authorized push that changes guidance or tooling moved out of
+  `multi-agent` into it, unchanged. The new modifier declares `hr-agent-guidance-refresh`, which
+  `multi-agent` no longer names, so `multi-agent` stops declaring it. Anyone who has `multi-agent` enabled
+  and wants those two paragraphs enables `cross-session-relay` as well. The fresh install is unchanged
+  because modifiers start off.
+- `shared-host-load` is trimmed to what holds on any shared machine. It follows the host's declared
+  budgets, checks load before resource-intensive work, gets operator direction before parallel
+  whole-repository work when there is no budget, constrains memory-hungry work, and checks pressure
+  evidence before a larger retry. Its name and position are unchanged, so existing configurations still resolve. The modifier
+  goes from 2,716 to 735 bytes, its description changed, and the exclusive-slot, reservation and
+  light-work-allowance text is gone.
+- `hr-forgotten-work-audit` no longer describes the audit it was based on. It says only that thirty days
+  is a default, not a measured interval, and that a shorter one needs evidence that it finds more.
+- The fresh-install composed rules are 25,571 bytes before and after, and its composed skills are
+  byte-identical, because none of the changed skills or modifiers is in that set.
+
 - New opt-in modifier `periodic-updates`. A job expected to run longer than about 10 minutes posts a
   status update on its own schedule, without the user asking. So does a job that has run that long with no
   estimate. That covers a build, test suite, benchmark, CI run or long search. The interval is 5 minutes

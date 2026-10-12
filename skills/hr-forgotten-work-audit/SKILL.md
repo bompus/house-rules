@@ -126,9 +126,5 @@ has a `Project: <name>` line. It warns when the record is missing, unreadable,
 more than 30 days old, or dated after today. A plan without that line gets no
 audit warning.
 
-Thirty days is a default, not a measurement of the best interval. In the
-audit this skill is based on, items went missing within two to four weeks.
-A handoff rewrite dropped five items overnight. A maintainer's question sat
-unanswered for two weeks. A time-limited offer was six days from ending.
-A full audit is a large run of model sessions, so a shorter interval needs
+Thirty days is a default, not a measured interval, and a shorter one needs
 evidence that it finds more.

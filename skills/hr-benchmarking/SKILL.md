@@ -56,10 +56,8 @@ input. When the generator limits the result, report that limit.
 
 ## Measure without changing the experiment
 
-Coordinate resource use under the host's rules. During isolated local performance
-measurements, the measuring session only monitors. Other sessions may do light
-work within the run's resource limits. Keep measured files, toolchains and
-services unchanged.
+Keep measured files, toolchains and services unchanged, and keep other work on
+the machine from competing with the run.
 
 Prefer removing competing work to raising priority. Record effective CPU and
 I/O scheduling policies and memory protections; keep them equal across arms.
@@ -69,139 +67,37 @@ rather than assuming their omission resets either. Use restricted affinity or
 changed priority only for representative deployment settings, an explicit resource
 agreement or a stated sensitivity question. Record the reason and effective values.
 Preserve frozen protocols and report constrained results within their tested scope.
-
-Treat a priority or affinity change as a separate sensitivity pilot under the host's rules, with preset variation
-criteria and retained raw results. Verify that the controls apply and that
-dependencies and monitoring still progress before adopting them for the
-declared experiment. Priority changes never replace admission checks, resource
-caps or pressure rejection. Read [scheduling controls](references/tools.md#scheduling-controls)
-before choosing them. When brief bursts from other sessions keep failing host-wide
-admission on a shared host, read the [fenced-core arm](references/tools.md#fenced-core-arm)
-before proposing one; it needs the user's authorization. For questions about negative, zero or positive nice values,
-read the [recorded priority findings](references/priority-findings-20261006.md)
-before proposing another experiment.
-
-Classify the timed region against the host's budget for concurrent light work.
-A local phase is heavy when measured or expected CPU, memory or I/O exceeds
-that budget. Inspect the command, its hooks, wrappers and children before calling
-demand
-unknown. Inspection can qualify bounded ordinary work within that budget;
-missing resource samples alone does not require a trial. When inspection leaves
-potentially incompatible demand unresolved, contact the active reservation owner
-or host coordinator. If neither is identified, ask the operator. Launch that
-workload only after recording agreement on a bounded trial with CPU, memory and
-I/O limits, or an exclusive run window. Resolve input and authorization conflicts
-separately; resource admission does not override them.
+Read [scheduling controls](references/tools.md#scheduling-controls) before
+choosing them.
 
 Apply worker limits to requested processing concurrency. Report sampled OS-thread
 counts separately; runtime background threads are not processing workers. A
-thread count alone does not establish CPU contention. Use CPU, memory, I/O and
-elapsed-time controls for the admitted resource budget. Keep thread count
-diagnostic unless a host limit or experiment requirement separately justifies
-using it to stop or reject a run.
+thread count alone does not establish CPU contention; keep it diagnostic unless
+the experiment separately justifies using it to reject a run.
 
-When an existing admission binds thread count, obtain revised admission before
-relaxing that condition. Preserve the other controls, held inputs and original
-run verdicts. Record the revised observer and limits before execution.
+Before collecting results, set the criteria for rejecting a run: competing
+load, swapping and memory-limit or OOM events, each with its metric and
+threshold. Check the machine against them before each arm. A run that fails
+them, or whose inputs change, is rejected even when the benchmark caused the
+failure. A rejection invalidates that measurement; it does not by itself show
+an implementation defect. Keep rejected runs outside the accepted sample and
+report them; a later passing run neither erases a rejection nor loosens the
+criteria.
 
-For an unknown competing job, record a preset time or query limit, then inspect
-its process identity, actual demand and access to measured inputs. Stop at that
-limit. A cap, service name or active state alone does not establish incompatible
-work. Keep unresolved overlap or observer gaps unqualified; input mutation remains
-incompatible even at low demand.
+Attribute CPU, load and resident memory to the recorded benchmark process tree
+or resource scope before calling them competing work. Expected benchmark
+utilization is not contention, and total host CPU and load average include it.
+Keep an activity counter diagnostic until separate evidence shows its cutoff
+matters. Collect boundary counters adjacent to the measured work, with
+unrelated probes outside that interval, and record sample times. A counter
+interval extending past completion cannot by itself establish overlap; keep
+post-run observations diagnostic and let the machine settle before the next arm.
 
-A retained benchmark lock does not pause other sessions or reserve every phase
-of their tasks. Qualified non-heavy checks, edits and coordination proceed without
-acquiring that lock while staying within the concurrent-work budget and preserving
-measured inputs. Classify actual commands and children, including hooks; reuse
-qualification only for comparable inputs, runtimes and worker counts. When
-inspection leaves demand unresolved, identify the missing evidence and arrange
-the bounded qualification above. Defer only the incompatible phase, naming its
-resource or input conflict;
-do not use lock ownership alone to block qualified non-heavy work. Keep repository
-integration and installation write locks separate from benchmark admission.
-
-Reserve the host only for heavy local phases or deliberately isolated local
-performance measurements. Remote model
-inference, light CLI/API work and remote waits need no exclusive slot; a
-memory cap or elapsed-time record alone does not establish heavy work. For
-remote agent/model evaluations, record the timing regime and concurrent local
-work. Apply the local admission and pressure rules below when measuring local
-performance, rather than treating every model call as a CPU benchmark.
-
-Before collecting results, declare required observers, their measurement interval
-and coverage criteria. Require successful execution and recorded coverage that
-meets those criteria. Preserve observer exit status, errors and missing samples;
-reject evidence with unexplained observer failures or insufficient coverage.
-Require empty stderr only when the observer's declared contract requires it;
-documented harmless diagnostics alone do not invalidate observation.
-
-Declare observer CPU, resident-memory and I/O budgets separately from foreign-load
-and pressure gates. Include every collector and reader, with process birth
-identities and aligned intervals. Record CPU time, average core-equivalent use,
-workload-relative CPU, resident peaks, logical log bytes and attributable storage
-I/O. Separate setup from collection; disclose missing platform counters and
-shared provider or writeback costs. A log-byte count is not physical disk I/O.
-Retain over-budget runs with an over-budget status and exclude them from accepted
-performance evidence. Declare any stop rule and replacement limit before
-execution. When automation applies a stop rule, compute it with the same code as
-the acceptance analysis. Record budget failures separately from foreign-load and pressure
-failures.
-
-Choose budgets for the host, workload duration and decision precision; there is
-no universal workload-relative CPU percentage. A budget permits collection but
-does not prove unchanged latency. Before claiming negligible observer impact or
-a small decisive gain, test sensitivity to observation separately with balanced
-controls and a preset precision criterion. Retain inconclusive controls; do not
-subtract observer CPU from workload wall time. Assign and record each run's
-protocol version before execution. A changed observer budget creates a new
-protocol version. Keep historical rejection verdicts with their original version.
-
-Before each arm, inspect CPU outside the measuring scope, memory headroom and
-pressure, swap and competing CPU, memory or I/O jobs. Use the host's admission
-limits; when it has none, declare the metrics and pass/fail thresholds before
-collecting performance results. Start only when every admission condition passes.
-During measurements, attribute CPU, load and resident memory to the recorded
-benchmark process tree or resource scope before calling them competing work.
-Expected benchmark utilization is not contention; total host CPU and load
-average include it. Collect boundary counters adjacent to the measured work,
-with unrelated probes outside that interval. Record sample times and observer
-overhead. A counter interval extending past completion cannot by itself
-establish overlap. Keep post-run observations diagnostic and use a fresh
-settled interval before the next arm.
-
-Keep uncalibrated activity counters diagnostic. Before using an activity cutoff
-to reject measurements, establish its relevance through separate sensitivity
-evidence with comparison conditions and an interference criterion set before
-analysis. Retain raw observations and inconclusive outcomes. Preserve declared
-pressure and observer checks; distinguish a conservative limit from evidence
-that interference occurred.
-
-Reject a run when inputs change, competing work crosses a declared contention
-limit, or a declared pressure condition fails. Before collecting performance
-results, define pressure rejection using stall duration, swap activity and
-memory-limit/OOM events; name any additional signals and their thresholds.
-Set a stall-duration budget from the experiment's timing precision. Record
-smaller stalls without rejecting them. Stalls exceeding the budget, swapping
-or memory-limit/OOM events invalidate measurements even when the benchmark
-causes them. Resource rejection invalidates the measurement; it alone does not
-establish an implementation defect. Investigate uncertain overlap and repeat
-affected runs within authorized retry budgets before a decisive comparison.
-A light session's presence alone is not rejection evidence.
-
-Declare per-case retry budgets before attempts; a budget grants no retry
-authority. Retain rejected attempts outside accepted samples. A later qualifying
-attempt neither erases a rejection nor relaxes its gates. After rejecting a case,
-continue other independently selected cases only when their admission passes
-and the failure cannot invalidate shared controls. Otherwise hold affected cases.
-
-Hold reservations during heavy local phases or declared isolated local performance
-measurements. Release them during remote waits, light work and reviews.
-Declare finite phase boundaries or stopping conditions, release at those
-boundaries and seek fresh admission for the next phase. While waiting, keep the
-blocked phase in the ledger and advance already-authorized independent light
-work within the active measurement's allowance. Preserve measured inputs;
-backlog presence does not authorize new implementation.
+Before claiming negligible observer impact or a small decisive gain, test
+sensitivity to observation separately with balanced controls and a preset
+precision criterion. Retain inconclusive controls; do not subtract observer CPU
+from workload wall time. For remote agent or model evaluations, record the
+timing regime and concurrent local work.
 
 Screen correctness and quality first, then use one run per selected arm to
 explore timing and resource behavior. Preserve screened-out results and their
@@ -224,7 +120,7 @@ threshold an absolute floor or use a percentile or count metric; a percentage
 of a single small maximum can fail on the workload's own variation.
 Retain every result. Keep pilots that informed the plan separate from the
 claim's sample. Capture raw results, exit status, elapsed time, CPU and memory
-observations. Report admission and monitoring overhead separately from the
+observations. Report monitoring overhead separately from the
 measured workload; batch compatible probes when they dominate elapsed time.
 Report the selected repetition count or stopping rule, variation statistic and
 threshold, sample count, median and range. Apply the preset
@@ -268,8 +164,8 @@ Batch latency percentiles describe batches, not individual requests.
 
 Keep the full workload, versions, conditions, repetitions, output identity,
 errors and measurement units in the measurement record. Include excluded costs,
-coverage limits, collector overhead, scheduling, resource caps, admission checks
-and rejected attempts there.
+coverage limits, collector overhead, scheduling, resource caps, pre-run
+machine checks and rejected attempts there.
 
 Pull requests and other change summaries show the workload, baseline and
 candidate, measured results, relevant checks and limits that affect the claim.
