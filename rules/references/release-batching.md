@@ -46,7 +46,8 @@ verified, not copied, and no transient number stays. Keep entries plain and no
 longer than their reader needs. Merge entries that describe iterations of one
 concern into one entry that states the final behavior; how a change evolved
 stays in git. Keep whole any entry a user must act on (a breaking change, an
-upgrade or a repair step); never merge it away.
+upgrade or a repair step); never merge it away. An urgent release does not narrow
+this audit.
 
 Recheck affected claims when the candidate or supporting evidence changes.
 Before publishing, resolve unsupported or contradictory claims by correcting,
