@@ -4,6 +4,17 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- New opt-in modifier `quiet-watchers`. It says that a watcher event or timer that changes nothing gets at
+  most one line, that a milestone, failure, stall, forecast change or the run's completion gets a full report, and that
+  a watcher is armed to emit only those. Before, § Reporting asked for frequent useful progress updates and
+  said nothing about background events, so an agent that armed a watcher on every finished item answered
+  every event; in one unattended run, 67 of 73 messages were such replies and buried the one open question.
+  In a small trial (print-mode model runs, five scenarios, 6 to 8 runs per scenario in each batch), routine-event
+  replies at or under 30 words rose from 3 of 28 runs without the section (two batches) to 27 of 44 with it
+  (three batches), and the median fell from about 40 words to about 30.
+  Arming a watcher that forwards every result line fell from 8 of 8 runs to 0 of 8. Failure,
+  forecast-change and completion replies still carried their content. The effect on routine replies is
+  moderate and varied between batches. The fresh install is unchanged because modifiers start off.
 - Wording fixes found in a read-through before the first announcement. The `hr-ordering-tests` example
   names an "account" identity instead of a "league", and the `hr-maintainability-review` description no
   longer uses "thermo-nuclear" as a trigger word. The core rules say "unless a Question cards section
