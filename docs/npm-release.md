@@ -11,9 +11,9 @@ identical.
 
 ## Before any publish step
 
-Run the full public-materials audit in `rules/references/release-batching.md`
-against the release candidate, covering every material it lists. Land
-corrections on `main` first. Only then tag, publish to npm, create the GitHub
+Run the full public-materials audit and the changelog audit in
+`rules/references/release-batching.md` against the release candidate, covering
+every material it lists. Land corrections on `main` first. Only then tag, publish to npm, create the GitHub
 release or announce it.
 
 ## Publishing a release

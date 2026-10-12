@@ -348,7 +348,7 @@ verify remote containment with a fresh fetch. Leave alone a checkout another
 session or job uses, or whose use you cannot tell. Never merge, reset, stash or
 switch it to make it match the default.
 
-Before the first publish step of a version bump (tag, publish, release, announcement), review public materials (READMEs, charts, graphics with alt text, listing text, announcement) and fix what is stale first; an urgent release may limit this to what it affects.
+Before the first publish step of a version bump (tag, publish, release, announcement), review the unreleased changelog entries and public materials (READMEs, charts, graphics with alt text, listing text, announcement) and fix what is stale first; an urgent release may limit this to what it affects.
 
 ## Cleanup
 

@@ -39,6 +39,15 @@ each correction first. Landing the corrections is part of the audit; one made
 after publishing means the audit did not finish. This applies to every public
 repository, including ones created later.
 
+Audit the pending changelog entries at the same point on every version bump,
+public or private, and land the corrected changelog first. Check each entry
+against the code that will ship: names, commands, counts and figures are
+verified, not copied, and no transient number stays. Keep entries plain and no
+longer than their reader needs. Merge entries that describe iterations of one
+concern into one entry that states the final behavior; how a change evolved
+stays in git. Keep whole any entry a user must act on (a breaking change, an
+upgrade or a repair step); never merge it away.
+
 Recheck affected claims when the candidate or supporting evidence changes.
 Before publishing, resolve unsupported or contradictory claims by correcting,
 qualifying or removing them; record any remaining accuracy blocker. Do not

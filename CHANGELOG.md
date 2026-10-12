@@ -4,6 +4,12 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- The release procedure now audits the pending changelog before the first publish step of any version
+  bump, public or private. Every entry is checked against the code that will ship and kept plain and
+  brief. Entries that iterate on one concern merge into one entry that states the final behavior.
+  Entries a user must act on stay whole. `rules/references/release-batching.md` holds
+  the step; the `release-batching` modifier, `AGENTS.md`, `docs/npm-release.md` and the pre-publish
+  line in `rules/core.md` point to it.
 - The open-work check's unanswered-offer count no longer drops a pending offer. "Offer DEMO-1 sent; awaiting
   user reply" stays unanswered because "user reply" and "user go" no longer count as an answer, "chosen"
   counts as an answer as the unanswered-offer entry below documents, and only "by", "into" and "with" mark a replacement
