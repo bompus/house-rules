@@ -189,6 +189,24 @@ band still needs qualified evidence and must meet the declared variation criteri
 precision target before collecting results when the workload requires it;
 changing presentation does not change frozen acceptance or rejection gates.
 
+Show a comparison of three or more variants or conditions as a chart beside the
+before/after table, unless every row is no clear change. Choose the chart for the
+question:
+
+| Question                         | Chart                                      |
+| -------------------------------- | ------------------------------------------ |
+| Repeated runs of each variant    | Dot plot of every run, mean marked         |
+| Conditions crossed with variants | Grouped bars, baseline as a reference line |
+| Ranking of options               | Sorted horizontal bars                     |
+| Resource cost (CPU, memory)      | Bars per variant, one panel per resource   |
+| Change with load or time         | Line chart                                 |
+
+Put units and run counts on the axes, start bars at zero, mark a gap inside the
+reporting band as no clear change, and give the chart an explicit background colour so
+it reads the same on a light or a dark page.
+In a pull request, the headline chart and when it may be skipped come from
+`hr-writing-pr`; this table applies to any other chart.
+
 For agent, model, rule or skill comparisons, distinguish development cases
 from held-out cases and report runs per case. Include a one-line instruction
 control when claiming an improvement from a rule or skill. Keep helper,

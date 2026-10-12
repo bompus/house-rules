@@ -25,6 +25,10 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   where new guidance will live before choosing, so a wrong home is caught at the offer instead of after
   the edit. The fresh-install size ceiling in `test/compose.test.mjs` rises from 30,000 to 30,200 bytes
   to hold the sentence; the install composes to 30,149 bytes.
+- `hr-benchmarking` says how to show a comparison of three or more variants. A short table picks the
+  chart from the question: dot plot of every run, grouped bars, sorted bars, per-resource bars or a line
+  chart. The skill also names the axis, zero-baseline and no-clear-change labelling to apply. A pull
+  request's headline chart still comes from `hr-writing-pr`.
 - Host-bound text left `hr-benchmarking`. The admission, pressure, observer and fenced-core procedures and
   the nice-value experiment record described one machine's setup, so they now live with the host that uses
   them. `SKILL.md` keeps the portable method. It covers defining and confirming the comparison, isolation,
