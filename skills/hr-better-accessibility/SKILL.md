@@ -7,7 +7,7 @@ metadata:
   upstream_ref: 267330e1adfc66a718fb65fa6918c1f06d0a689e
   upstream_path: skills/better-accessibility/
   local_patches: "Use-when description; reduced-motion kill switch spares spinners; 320px reflow keeps the 2D-content exception; carousel pan-y, touch-callout and real-hardware check (from emilkowalski/skills mobile-native)"
-  house_rules_patches: "Portable provenance and review verdict"
+  house_rules_patches: "Portable provenance and review verdict; unique SVG title and desc ids"
   mobile_native_source: https://github.com/emilkowalski/skills/blob/e8a175de22ae1e49370fc144c1f3bb9aeedf988d/skills/mobile-native/SKILL.md
 ---
 

@@ -84,6 +84,7 @@ A missing `alt` is worse than an empty one, because screen readers fall back to 
 
 - Decorative SVG: `aria-hidden="true"` and `focusable="false"`, the latter for legacy Edge and IE tabbing. No title needed.
 - Meaningful inline SVG: `role="img"` plus `aria-label="…"`, or a `<title>` as the first child referenced by `aria-labelledby`.
+- Give each `<title>` and `<desc>` an `id` that is unique on the page, such as `chart-revenue-title`. Two inline SVGs that share a bare `id="title"` both resolve to the first one. Keep `<title>` to a short name and make `<desc>` one sentence about what the figure shows, not how it is drawn.
 - Simple cases: `<img src="icon.svg" alt="…">` is the most reliable delivery.
 
 ```tsx

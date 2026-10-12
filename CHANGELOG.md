@@ -4,6 +4,10 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- `hr-better-accessibility` now asks for an `id` on each inline SVG `<title>` and `<desc>` that is unique on
+  the page, and for a `<desc>` that says what the figure shows rather than how it is drawn. Before, the
+  skill covered `role="img"` and `aria-labelledby` but not what happens when two SVGs on one page both use
+  `id="title"`: both labels then resolve to the first one.
 - `hr-writing-pr`'s title and chart paragraphs are split at sentence boundaries so no guidance block passes 900
   characters, the length hosts that cap a block accept. The wording is unchanged.
 - A pull request, issue or discussion that reports a measured result now opens with the benefit, and a
