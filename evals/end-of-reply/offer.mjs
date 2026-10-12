@@ -45,6 +45,30 @@ export function parseOffer(reply) {
   return { questions, options, optionLines };
 }
 
+// The layout the coded-offers rule asks for, read from the raw reply. A reply with no acceptance line
+// is not an offer and has no layout problems. Markdown joins consecutive lines of a paragraph, so two
+// or more bare coded lines in one paragraph render as one run-on paragraph; a list item or a table
+// row opens with a marker, not the code, so it does not count. Nothing may follow the acceptance line.
+const BARE_OPTION = /^ {0,3}[*_]*`\d+[A-Z]`/;
+const ACCEPTANCE = /^[*_]*Recommended(?: combination)?:\s*reply\b/i;
+
+export function layoutProblems(reply) {
+  const lines = reply.split(/\r?\n/);
+  if (!lines.some((line) => ACCEPTANCE.test(line.trim()))) return [];
+  const problems = [];
+  for (const paragraph of reply.split(/\r?\n[ \t]*\r?\n/)) {
+    const bare = paragraph.split(/\r?\n/).filter((line) => BARE_OPTION.test(line));
+    if (bare.length > 1)
+      problems.push(
+        `${bare.length} options share one paragraph: ${bare.map((line) => line.trim().slice(0, 4)).join(" ")}`,
+      );
+  }
+  const last = lines.map((line) => line.trim()).findLast(Boolean);
+  if (!ACCEPTANCE.test(last))
+    problems.push(`the acceptance line is not last; the reply ends "${last.slice(0, 40)}"`);
+  return problems;
+}
+
 // `expected` lists the label each option must start with, in order. A label ending in a letter or
 // digit must end there, so "Defer" does not accept "Deferentially publish".
 const WORD = /[\p{L}\p{N}]/u;

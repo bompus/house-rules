@@ -193,8 +193,10 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   does not take "the session can be closed" inside an option as a claim that the work is done. An
   offer scenario fails only on the tool call named in `forbiddenCall`. A read-only check (`read`,
   `git status`, `ls`) or a write to the durable ledger or task list before an offer is not acting.
-  `parked-not-in-menu` and `spin-off-batch` read the offer with the shared parser (`minOptions`,
-  `forbiddenInOffer`). Each run reports whether the turn was right apart from the scenario's
+  An offer with a `Recommended: reply …` acceptance line fails when two or more bare coded option
+  lines share a paragraph. It also fails when anything follows that line. The result lists these in
+  `layout`. `parked-not-in-menu` and `spin-off-batch` read the offer with the shared parser
+  (`minOptions`, `forbiddenInOffer`). Each run reports whether the turn was right apart from the scenario's
   declared checks, and `--baseline` prints a `behavior only` line. The `parked-finding`,
   `parked-not-in-menu`, `spin-off-batch`, `stacked-offers` and `passed-over-options` scenarios cover
   the parked-work, stacked-offer and passed-over-option rules, with `forbiddenPattern` and

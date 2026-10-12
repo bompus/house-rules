@@ -34,15 +34,21 @@ action does not match. With it, any other call is allowed. Without it, any call
 fails except a read-only check (`read`, `git status`, `ls` and similar; `git fetch` counts although it updates remote-tracking refs) and keeping
 the ledger, a plan, notes or a handoff (`TOOL_CALL: edit the plan's ledger …`). `minOptions: 2` requires at least that many options, and
 `forbiddenInOffer: <pattern>` rejects a pattern in the offer's questions and
-options but not in the prose around the offer. A run's result lists `behavior` (the expectation met, including the offer
-shape the rules ask for: the recommendation marker, the reply line, at least one option
-and, with `--coded`, the coded form) and `declared` (the scenario's own labels,
+options but not in the prose around the offer. A run's result lists `behavior` (the expectation
+met, including the offer shape the rules ask for: the recommendation marker, the reply line, at
+least one option, with `--coded` the coded form, and the layout), `layout` (any layout problem
+found) and `declared` (the scenario's own labels,
 calls and patterns held). `pass` needs both, and `--baseline` prints a
 `behavior only` line, so a wrong label shows as a declared-check miss, not a
 changed turn. The call checks are heuristics over free-text descriptions, tuned on real
 replies: a command chained after a ledger write is found only when it starts
 with a known command word. These checks enforce declared replay facts, not semantics
 for arbitrary replies.
+
+A reply with a line starting `Recommended: reply` or `Recommended combination: reply` is checked
+for two layout problems. Two or more bare coded option lines (`1A`, `1B`) in one paragraph
+render as one run-on paragraph in Markdown; list items and table rows do not count. Anything
+after the acceptance line is the other problem. A reply without such a line has no layout check.
 
 `scripts/continuity-boundary.mjs` checks an explicit version-1 record with
 `disposition`, `goal`, `result`, `remaining` and boolean `phaseBoundary`.

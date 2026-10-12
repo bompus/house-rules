@@ -102,7 +102,7 @@ test("exact-source replay requires the action label on an offer option", () => {
 test("a required pattern is matched without regard to case", () => {
   const options = { coded: true, requiredPattern: "walk-?through" };
   assert.equal(grade(offer, "offer", options).pass, false);
-  assert.equal(grade(offer + "\nWalk-through of the open offers.", "offer", options).pass, true);
+  assert.equal(grade("Walk-through of the open offers.\n\n" + offer, "offer", options).pass, true);
 });
 
 test("a forbidden pattern fails a reply that matches it", () => {
