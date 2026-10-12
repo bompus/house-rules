@@ -19,6 +19,13 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   when toggled. The README row, the setup skill's offer of it and the configuration guide's example are
   gone, and the tests that used it as a stand-in modifier use `shared-host-load`. The fresh install
   enables no modifier and is unchanged at 30,109 bytes.
+- `rules/core.md` § Landing now carries the guard the landing procedure already had. It says to leave alone a
+  checkout another session or job uses, or whose use you cannot tell, where it said only to leave another
+  session's checkout alone. An agent that does not open the linked procedure no longer misses the running-job
+  and unknown-use cases. The fresh install's composed rules grow by 42 bytes, to 30,151 of the 30,200-byte
+  ceiling.
+- The release-batching entry below now lists the announcement among the publish steps the audit must come
+  before, as `AGENTS.md` and `docs/npm-release.md` already do.
 - Wording in `rules/core.md`, `rules/modifiers/coded-offers.md` and `rules/references/squash-landing.md`
   that came from one setup now reads correctly for any user. The extension-vetting paragraph no longer
   names a Claude Code version or its `claude plugin validate` command, and says only to run the host's
@@ -182,7 +189,7 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 - The release-batching audit now also covers package READMEs, graphics and visuals (banners, charts,
   screenshots, demo recordings and their alt text), registry and marketplace listing text and the release
   announcement, each checked for old versions and figures. It runs on every version bump of every public
-  repository, before the first publish step (tag, package publish, GitHub release), and the corrections
+  repository, before the first publish step (tag, package publish, GitHub release, announcement), and the corrections
   land first. This repository's release steps in `AGENTS.md` and `docs/npm-release.md` include it. Before,
   the audit named only the README, comparisons, metrics, documentation, drafts and release notes, and did
   not say it had to finish before publishing.
