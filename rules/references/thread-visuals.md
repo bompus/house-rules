@@ -32,9 +32,11 @@ accept `--attach '<file>#<alt text>'` in recent `gh` versions (check
 the form's upload field when it renders. When it does not, add the file through
 a text field's attach control and replace the default alt text `Image` that the
 upload inserts. Do not commit the image to the repository or use a
-third-party image host. Where no supported attach route exists (`gh discussion`
-has no `--attach` flag) or the upload is refused, such as for lack of write
-access to the repository, hand the user the exact text and the file instead of
-posting another way.
+third-party image host. Where the CLI has no attach route (`gh discussion` has
+no `--attach` flag) or refuses the upload, such as for lack of write access to
+the repository, use a browser signed in to the user's GitHub account: the page's
+upload field takes the file where `--attach` does not. Hand the user the exact
+text and the file only when the host has no such browser or the upload fails
+there, and do not post another way.
 
 Posting to an external project still needs the user's direction.

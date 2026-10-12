@@ -4,6 +4,11 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- The thread-visuals fallback now tries a browser signed in to the user's GitHub account before handing
+  over text and a file. Before, a refused `gh issue create --attach` (for example "attaching files requires
+  write access to the repository") sent the agent straight to a manual handover, even where the issue page's
+  upload field would have taken the file. The handover now applies only when the host has no such browser or
+  the upload fails there.
 - `hr-better-accessibility` now asks for an `id` on each inline SVG `<title>` and `<desc>` that is unique on
   the page, and for a `<desc>` that says what the figure shows rather than how it is drawn. Before, the
   skill covered `role="img"` and `aria-labelledby` but not what happens when two SVGs on one page both use
