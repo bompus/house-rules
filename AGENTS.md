@@ -5,23 +5,19 @@ in the README's Development section; run all three before landing.
 
 ## Landing
 
-Commits you write on `main` carry one identity as both author and committer:
-`bompus <bompus@users.noreply.github.com>`. Set it per commit with
-`git -c user.name=bompus -c user.email=bompus@users.noreply.github.com commit`.
-An outside contributor's commits keep their author. Rebase them onto `main`
-with that identity as committer (the same `-c` flags on `git rebase`), push
-the result to the pull request's branch (forks allow maintainer edits by
-default), then land it as below. Rebasing changes the commit IDs, so GitHub
-marks the pull request merged only when its updated head reaches `main`. When
-you cannot push to that branch, close the pull request with a comment naming
-the landing commit.
+The maintainer lands pull requests; contributors' commits keep their author
+(see CONTRIBUTING.md). When you land for the maintainer, open a pull request
+for the record, then fast-forward `main` to the branch head with
+`git push origin <branch>:main` and delete the branch. GitHub's merge buttons
+and any CLI or script merge are off limits, because they write the account's
+profile name into the public history.
 
-Land through a pull request for the record, then fast-forward `main` to the
-branch head: `git push origin <branch>:main`. GitHub marks the pull request
-merged when its head reaches `main`. Delete the branch afterwards. Never land
-with GitHub's squash, merge or rebase buttons, or with any GitHub CLI or
-wrapper-script merge: they write the account's profile name into the public
-history.
+Commits you write on `main` carry `bompus <bompus@users.noreply.github.com>`
+as author and committer, set per commit with
+`git -c user.name=bompus -c user.email=bompus@users.noreply.github.com commit`.
+To land an outside contributor's pull request, rebase it onto `main` with that
+committer identity and push the result to its branch. If you cannot push
+there, close the pull request with a comment naming the landing commit.
 
 ## Releases
 
@@ -40,11 +36,9 @@ Land every correction on `main` before the tag, the npm publish, the GitHub
 release or the announcement. Then prepare one release commit that moves all
 `Unreleased` entries into a dated version section. Choose the semantic version for the
 combined changes, including any breaking change. Keep `package.json` `version`
-equal to the changelog version. For the first npm publication, follow
-[docs/npm-release.md](docs/npm-release.md): publish the verified tarball by
-hand and configure the trusted publisher before creating the GitHub release.
-Once that commit and every
-included change are verified on `main`, tag the release commit `v<version>`
+equal to the changelog version. Follow [docs/npm-release.md](docs/npm-release.md)
+for the npm publication. Once that commit and every included change are
+verified on `main`, tag the release commit `v<version>`
 and publish notes containing that version's complete changelog entry:
 `gh release create v<version> --target <sha> --title v<version> --notes-file <entry>`.
 
