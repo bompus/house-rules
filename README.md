@@ -282,6 +282,7 @@ want and explains these limits before changing the configuration.
 | `hr-read-x-links`           | Read the full content of X posts.                                                                         |
 | `hr-research-shared-links`  | Research a shared link or repository in depth, compare it with your setup and rate each idea.             |
 | `hr-split-to-prs`           | Divide work into coherent PRs while preserving recovery points and verifying each slice.                  |
+| `hr-sqlite`                 | Check settings, locking, queries and copies in SQLite code against measured findings.                     |
 | `hr-stock-ui-audit`         | Find and triage template-default styling in frontend code.                                                |
 | `hr-tdd`                    | Implement requested test-first work through one red-green slice at a time; simplify during review.        |
 | `hr-test-audit`             | Decide which new tests are worth keeping and which old ones to prune.                                     |

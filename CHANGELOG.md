@@ -10,6 +10,12 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   workload's variation is not already known from equivalent earlier runs, so the comparison's noise
   floor is measured. Check each case in an agent or model comparison for a ceiling, report cases every arm
   already passes apart from the rest, and report any metric they do not saturate on its own.
+- New skill `hr-sqlite`: a checklist for code that opens, configures, queries or copies a SQLite
+  database, and for "database is locked", slow queries and WAL growth. Each item says whether it
+  was measured, comes from the SQLite documentation or is unconfirmed. References hold the
+  measured evidence and the engine and driver decisions with what would reopen them. A read-only
+  script (`scripts/inspect-sqlite.py`) reports a file's journal mode, statistics, FTS tables, WAL
+  size and mount options, and lists source files where `journal_mode` runs before `busy_timeout`.
 - Before the first publish step of any version bump (tag, package publish, GitHub release or
   announcement), the release procedure runs two audits and lands their corrections first. The
   changelog audit covers every repository, public or private. Each pending entry is checked against
