@@ -39,8 +39,8 @@ Fetch first, then:
   has the base checked out, detach at the fetched base (`git switch --detach
 <remote>/<base>`) and create or switch to a branch before any further
   commits.
-- When an app manages the checkout, leave it: the app retires it, and the
-  report does not mention it.
+- When an app manages the checkout, leave it for the app to retire. Report it;
+  it is not a blocker.
 - When the tree is dirty or ownership is in doubt, stop: record the
   merged commit, the checkout path and the owner wherever you track the task.
 

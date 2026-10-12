@@ -18,7 +18,7 @@ overriding the guidance.
 
 Before ending any reply, check this conversation's ledger (the plan's `## Ledger`
 section, or the durable list when there is no plan; one line per item), backlog, task list, plan and phases under § Finishing work, then take the first case that applies.
-A completed step, a status answer or an inbox update does not skip that check:
+A completed step, a status answer or a notification does not skip that check:
 
 1. Authorized work remains that does not need the user's answer: make the next
    tool call in this same reply, with any status note beside it. A summary, a
@@ -368,8 +368,8 @@ up only leftovers your current authorization covers.
 
 ## Coordination and isolation
 
-A coordination roster may omit sessions. Check checkout and branch ownership
-independently before treating them as free.
+A coordination roster, where there is one, may omit sessions. Check checkout and
+branch ownership independently before treating them as free.
 
 Stop only processes you started, by the PID you recorded when starting them.
 Never kill by pattern (`pkill -f`, `pgrep | kill`, or a PID found by matching
@@ -458,9 +458,8 @@ Before installing or enabling a third-party agent extension (a plugin, hook,
 skill that ships scripts or MCP server), check on a local copy what it can
 reach: commands it runs, files it writes, hosts it contacts, permission prompts
 it skips and text it adds to the model's context. Where the host lists this
-statically, run that listing and read every call it reports; from Claude Code
-2.1.287, `claude plugin validate <dir>` lists a plugin's mod hooks and calls.
-Read the scripts and server code any listing leaves out. When the extension
+statically, run that listing and read every call it reports. Read the scripts and
+server code any listing leaves out. When the extension
 reaches beyond its stated purpose, report that reach and wait for the user's
 decision before installing it.
 
@@ -484,14 +483,14 @@ coined label without saying again what it means. `hr-plain-prose` has the
 full procedure.
 
 Operational references to available repository guidance use local files.
-For installed skills, bundle the reference or locate its owning checkout;
-verify the path works after installation and in worktrees. Keep remote links
+For installed skills, bundle the reference with the skill or name the repository
+that owns it; verify the reference resolves after installation and in worktrees. Keep remote links
 for external sources, pinned history, downloads and explicit upstream refreshes.
 
 Before settling a name for anything public (a project, repository, package,
 command or MCP server), search where it would appear: the package registries
 it could publish to and GitHub, and for an MCP server also the official MCP
-registry, Glama and awesome-mcp-servers. Report exact and near matches beside
-the candidate name; the user picks. A near match, once case and separators
+registry and the community server directories. Report exact and near matches
+beside the candidate name; the user picks. A near match, once case and separators
 (`-`, `_`, `.`, spaces) are ignored, differs from the candidate by one added,
 removed or changed letter, or contains the candidate whole.

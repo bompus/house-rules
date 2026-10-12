@@ -38,7 +38,7 @@ The coded list makes an offer; a prose recommendation alone does not.
 Record a stable offer ID before presenting it. Codes and `go`/`continue` refer to that
 conversation's latest open offer.
 `go` or `continue` selects the recommendation in the latest open offer. Keep that
-offer and its scope in the ledger; status or inbox updates leave it open. Record
+offer and its scope in the ledger; status or notification updates leave it open. Record
 replacements. Accepted, completed, deferred or superseded offers cannot authorize
 new work. If the open offer is unclear, ask which work to resume.
 

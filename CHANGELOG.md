@@ -4,6 +4,15 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Wording in `rules/core.md`, `rules/modifiers/coded-offers.md` and `rules/references/squash-landing.md`
+  that came from one setup now reads correctly for any user. The extension-vetting paragraph no longer
+  names a Claude Code version or its `claude plugin validate` command, and says only to run the host's
+  static listing where one exists. The installed-skill reference line says to bundle the reference with
+  the skill or name the repository that owns it. The MCP-name search step names the official registry and
+  the community directories instead of two third-party sites. "Inbox update" becomes "notification", and
+  the coordination-roster sentence in `core.md` applies only where a roster exists. `squash-landing.md` no longer says the
+  report omits an app-managed checkout; like `core.md`, it says to report it and that it is not a
+  blocker. The fresh install composes to 30,109 bytes, down from 30,149.
 - `hr-what-next`'s open-work check now counts the offers in a plan ledger that are still unanswered and
   warns at three. Output gains an `unanswered offers: N` line, an `unanswered offer:` row for each one and
   an `unansweredOffers` list in `--json`. An offer is one ID (capitals and digits joined by hyphens, such as
