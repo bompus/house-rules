@@ -113,7 +113,7 @@ or `bun compose.mjs setup` when Node.js is unavailable. Review the numbered
 choices and use `save` to change only the configuration. Then run the
 installer again.
 The [configuration CLI guide](docs/configuration.md) covers status, previews,
-question preferences and safe writes. The
+question preferences, optional panel preferences and safe writes. The
 `hr-house-rules-setup` skill preserves selections, offers relevant additions and connects
 hosts, and asks before it touches a host file.
 
@@ -162,13 +162,6 @@ and reconcile existing notice files before replacing them. A full
 skill, keep its entire directory, including any `NOTICE.md` and `LICENSE`.
 Personal layers must also carry notices required by their own sources.
 
-The `hr-navigation-retro` skill finds navigation failures in selected tool-call
-transcripts, then proposes fixes verified against current source. Any agent with
-file and shell access can run it. Supported inputs include Claude Code, Codex,
-OpenCode exports, Cursor CLI streams and ACP v1 recordings from other agents.
-See its [input limits](skills/hr-navigation-retro/references/inputs.md).
-It is explicit-only, requires Python 3.11+ and keeps reports local.
-
 ## Upgrading skill names
 
 All shipped skill names use `hr-`. Before updating an older installation,
@@ -192,9 +185,6 @@ repository's AGENTS.md or equivalent). Tell me:
 2. Which ones duplicate or conflict with what I already have.
 3. Whether to adopt it whole (compose.mjs plus my own layer) or copy single
    sections into my existing rules. Taking individual ideas is fine.
-If I run several agent sessions on one machine at once, also look at
-Swarmail (https://github.com/bompus/swarmail); house-rules has an opt-in
-modifier for it.
 Read only: don't install, compose or edit anything until I choose. When I
 adopt a section or idea, record its source in distributed notices, such as
 "Adapted from house-rules (https://github.com/bompus/house-rules)". Keep required
@@ -298,6 +288,13 @@ want and explains these limits before changing the configuration.
 | `hr-writing-for-agents`     | Write skills, rules and other documents agents read.                                                      |
 | `hr-writing-pr`             | Write a pull request title and body from the final diff.                                                  |
 
+The `hr-navigation-retro` skill finds navigation failures in selected tool-call
+transcripts, then proposes fixes verified against current source. Any agent with
+file and shell access can run it. Supported inputs include Claude Code, Codex,
+OpenCode exports, Cursor CLI streams and ACP v1 recordings from other agents.
+See its [input limits](skills/hr-navigation-retro/references/inputs.md).
+It is explicit-only, requires Python 3.11+ and keeps reports local.
+
 ## Checking the rules against your models
 
 `evals/end-of-reply/` runs short scenarios through any model CLI. It grades
@@ -312,10 +309,6 @@ not a percentage. No other agent was measured. The eval's README has the
 breakdown and limits.
 
 ## Development
-
-Optional [panel preferences](docs/configuration.md#optional-panel-preferences)
-can be previewed and saved through configuration commands. They store portable
-aliases and policy; provider discovery and model execution remain separate.
 
 ```bash
 node --test test/*.test.mjs   # composer and eval grader (or: bun test test/)
