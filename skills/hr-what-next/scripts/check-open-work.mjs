@@ -48,8 +48,10 @@ const NARRATIVE =
 const PROSE_MARKER =
   /(?:^|[.;!?]\s+|\*\*)\s*(?:follow-?ups?|deferred|todo|(?:still )?open for later)\**\s*:/i;
 // An offer line that records an answer, and words that say what happened to the other options.
+// "user reply" and "user go" are not answer words: "awaiting user reply" and "user reply pending" say the offer is
+// still open, so only a line that says it was selected, chosen, picked or answered counts as an answer.
 const ANSWERED_OFFER =
-  /\boffer\b.*\b(?:selected|chose|picked|answered)\b|\b(?:selected|chose|picked|answered)\b.*\boffer\b|\boffer\b.*\buser (?:reply|go)\b/i;
+  /\boffer\b.*\b(?:selected|chose|chosen|picked|answered)\b|\b(?:selected|chose|chosen|picked|answered)\b.*\boffer\b/i;
 // "deferred" and "dropped" count only next to an option code ("1B deferred"), since a line can defer
 // something else ("rollout deferred until the release").
 const DISPOSITION =
@@ -59,7 +61,7 @@ const OFFER_ID = /\b[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+\b/g;
 // shape afterwards because the word "offer" is matched in any case.
 const OFFER_SUBJECT = /\boffer\b[^\w]{0,3}([\w-]+)/gi;
 const OFFER_ID_ONLY = /^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+$/;
-const REPLACEMENT_OF = /\b(?:by|into|with|under|behind|after)\s+(?:the\s+)?$/i;
+const REPLACEMENT_OF = /\b(?:by|into|with)\s+(?:the\s+)?$/i;
 // The offers rule stops presenting new offers at this many open and unanswered ones.
 const OFFER_LIMIT = 3;
 // A deferred item that waits on another thread (an upstream issue or pull request, a maintainer, another

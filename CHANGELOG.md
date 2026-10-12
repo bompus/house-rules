@@ -4,6 +4,10 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- The open-work check's unanswered-offer count no longer drops a pending offer. "Offer DEMO-1 sent; awaiting
+  user reply" stays unanswered because "user reply" and "user go" no longer count as an answer, "chosen"
+  counts as an answer as the unanswered-offer entry below documents, and only "by", "into" and "with" mark a replacement
+  offer, so "queued behind offer DEMO-3" no longer hides DEMO-3.
 - **Breaking for configs that list it:** the `swarmail` modifier is removed. It only told an agent where
   to find one coordination product's own instructions, so it was not general guidance. A
   `house-rules.json` that still lists `swarmail` under `modifiers` now fails: `compose.mjs`, the

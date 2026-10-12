@@ -577,6 +577,46 @@ test("an offer answered, superseded or dropped on another ledger line is not cou
   ]);
 });
 
+test("an offer that is only awaiting the user's reply stays unanswered", () => {
+  const { plan } = setup({
+    ledger: [
+      "- [ ] Offer DEMO-1 sent; awaiting user reply",
+      "- [ ] Offer DEMO-2 sent; waiting for the user reply",
+      "- [ ] Offer DEMO-3 sent; pending user reply",
+      "- [ ] Offer DEMO-4 sent; user reply pending",
+      "- [ ] Offer DEMO-5 sent; user reply is pending",
+    ],
+  });
+  const { report } = check(plan);
+  expect(report.unansweredOffers).toHaveLength(5);
+});
+
+test("an offer the user chose is answered", () => {
+  const { plan } = setup({
+    ledger: [offerLine("ABC-12"), "- [x] Offer ABC-12 chosen 1A ... evidence: PR 1"],
+  });
+  const { report } = check(plan);
+  expect(report.unansweredOffers).toEqual([]);
+});
+
+test("only by, into and with mark a replacement offer; behind, after and under do not", () => {
+  const { plan } = setup({
+    ledger: [
+      "- [ ] Offer DEMO-4 is queued behind offer DEMO-3",
+      "- [ ] Offer DEMO-5 is presented after offer DEMO-6",
+      "- [ ] Offer DEMO-7 is presented under offer DEMO-8",
+      "- [-] Offer DEMO-1 superseded by offer DEMO-2 ... by: superseded",
+      offerLine("DEMO-2"),
+      "- [-] Offer DEMO-9 folded into offer DEMO-10 ... by: superseded",
+      offerLine("DEMO-10"),
+      "- [-] Offer DEMO-11 merged with offer DEMO-12 ... by: superseded",
+      offerLine("DEMO-12"),
+    ],
+  });
+  const { report } = check(plan);
+  expect(report.unansweredOffers).toHaveLength(9);
+});
+
 test("an offer named on several open lines is one offer", () => {
   const { plan } = setup({
     ledger: [
