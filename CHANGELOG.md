@@ -31,9 +31,9 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 - `shared-host-load` is trimmed to what holds on any shared machine. It follows the host's declared
   budgets, checks load before resource-intensive work, gets operator direction before parallel
   whole-repository work when there is no budget, constrains memory-hungry work, and checks pressure
-  evidence before a larger retry. Its name and position are unchanged, so existing configurations still resolve. The modifier
-  goes from 2,716 to 971 bytes, its description changed, and the exclusive-slot, reservation and
-  light-work-allowance text is gone.
+  evidence before a larger retry. Its name and position are unchanged, so existing configurations still
+  resolve. The modifier goes from 2,716 to 974 bytes, its description changed, and the exclusive-slot,
+  reservation and light-work-allowance text is gone.
 - `hr-forgotten-work-audit` no longer describes the audit it was based on. It says only that thirty days
   is a default, not a measured interval, and that a shorter one needs evidence that it finds more.
 - The fresh-install composed rules are 25,571 bytes before and after, and its composed skills are
