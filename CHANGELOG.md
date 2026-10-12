@@ -4,6 +4,8 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- `hr-writing-pr`'s title and chart paragraphs are split at sentence boundaries so no guidance block passes 900
+  characters, the length hosts that cap a block accept. The wording is unchanged.
 - A pull request, issue or discussion that reports a measured result now opens with the benefit, and a
   qualified result outside the reporting band also gets a headline chart. `hr-writing-pr` asks for a
   first sentence with the figure and workload (or, for a bug, who hit it and what now works) and a title
