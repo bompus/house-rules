@@ -4,6 +4,11 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- `hr-usage-report` no longer undercounts Claude Code responses. A response is written once per
+  streamed block, and the report kept the first line, which has a few output tokens and no advisor
+  call. It now keeps the line with the most output tokens and the advisor calls from whichever line
+  has them. On eight days of one machine's transcripts that adds 2.3M output tokens (6.5%) and 6
+  of 23 advisor calls.
 - `hr-usage-report` counts Claude Code sessions run with a separate `CLAUDE_CONFIG_DIR`. It reads
   `projects` under `~/.claude` and every other `~/.claude_*` or `~/.claude-*` directory, a linked
   directory once; `--claude-projects <dir,dir>` replaces the list.

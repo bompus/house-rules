@@ -135,6 +135,44 @@ describe("usage-by-model", () => {
     expect(claudeRequests(claudeProjectRoots(home), 0)).toHaveLength(2);
   });
 
+  test("a response streamed over several lines counts its final output and advisor calls", () => {
+    const dir = mkdtempSync(join(tmpdir(), "usage-stream-"));
+    mkdirSync(join(dir, "p", "s1", "subagents"), { recursive: true });
+    const line = (output: number, iterations?: object[]) =>
+      JSON.stringify({
+        timestamp: "2026-10-09T12:00:00Z",
+        requestId: "r1",
+        isSidechain: true,
+        sessionId: "s1",
+        message: {
+          id: "m1",
+          model: "claude-opus-5-5",
+          usage: { input_tokens: 10, output_tokens: output, iterations },
+        },
+      });
+    writeFileSync(
+      join(dir, "p", "s1", "subagents", "agent-a.jsonl"),
+      [
+        line(4),
+        line(300),
+        line(4630, [
+          { type: "message", model: "claude-opus-5-5", input_tokens: 10, output_tokens: 4630 },
+          {
+            type: "advisor_message",
+            model: "claude-fable-5-1",
+            input_tokens: 90_000,
+            output_tokens: 700,
+          },
+        ]),
+      ].join("\n"),
+    );
+    const reqs = claudeRequests(dir, 0);
+    expect(reqs.map((r) => `${r.model}/${r.role}/${r.output}`)).toEqual([
+      "claude-opus-5-5/subagent/4630",
+      "claude-fable-5-1/advisor/700",
+    ]);
+  });
+
   test("Codex cached input is not counted again as fresh input; model comes from the turn context", () => {
     const dir = mkdtempSync(join(tmpdir(), "usage-codex-"));
     const lines = [

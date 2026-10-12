@@ -131,10 +131,24 @@ export function claudeProjectRoots(home: string): string[] {
   return [...roots.values()];
 }
 
-/** Claude Code transcripts: one row per API response, streamed duplicates removed, advisor calls split out. */
+type ClaudeMessage = NonNullable<ClaudeEntry["message"]>;
+
+/**
+ * Claude Code transcripts: one row per API response, advisor calls split out. A response is
+ * written once per streamed block: the first line carries the usage at the start of the stream
+ * (a few output tokens, no advisor iterations) and later lines carry the final figures, so the
+ * line with the most output tokens is kept, and advisor iterations from whichever line has them.
+ */
 export function claudeRequests(roots: string | string[], since: number): Request[] {
-  const out: Request[] = [];
-  const seen = new Set<string>();
+  type Seen = {
+    model: string;
+    role: string;
+    session: string;
+    t: number;
+    usage: ClaudeUsage;
+    iterations: NonNullable<ClaudeUsage["iterations"]>;
+  };
+  const responses = new Map<string, Seen>();
   const files = (Array.isArray(roots) ? roots : [roots]).flatMap((root) =>
     Array.from(jsonlFiles(root, since)),
   );
@@ -142,42 +156,58 @@ export function claudeRequests(roots: string | string[], since: number): Request
     const fileRole = file.includes("/subagents/") ? "subagent" : "main";
     for (const raw of lines(file)) {
       const e = raw as ClaudeEntry;
-      const m = e.message;
+      const m: ClaudeMessage | undefined = e.message;
       const t = Date.parse(e.timestamp ?? "");
       // `<synthetic>` marks Claude Code's locally generated replies; they carry no usage.
       if (!m?.id || !m.usage || !m.model || m.model === "<synthetic>" || !(t >= since)) {
         continue;
       }
       const key = `${m.id}|${e.requestId ?? ""}`;
-      if (seen.has(key)) {
+      const seen = responses.get(key);
+      const iterations = m.usage.iterations ?? [];
+      if (!seen) {
+        responses.set(key, {
+          model: m.model,
+          role: e.isSidechain ? "subagent" : fileRole,
+          session: e.sessionId ?? file,
+          t,
+          usage: m.usage,
+          iterations,
+        });
         continue;
       }
-      seen.add(key);
-      const role = e.isSidechain ? "subagent" : fileRole;
-      const session = e.sessionId ?? file;
+      if ((m.usage.output_tokens ?? 0) > (seen.usage.output_tokens ?? 0)) {
+        seen.usage = m.usage;
+      }
+      if (iterations.length > 0) {
+        seen.iterations = iterations;
+      }
+    }
+  }
+  const out: Request[] = [];
+  for (const r of responses.values()) {
+    out.push({
+      provider: "claude",
+      priceProvider: "anthropic",
+      model: r.model,
+      role: r.role,
+      session: r.session,
+      t: r.t,
+      ...claudeTokens(r.usage),
+    });
+    for (const it of r.iterations) {
+      if (it.type !== "advisor_message" || !it.model) {
+        continue;
+      }
       out.push({
         provider: "claude",
         priceProvider: "anthropic",
-        model: m.model,
-        role,
-        session,
-        t,
-        ...claudeTokens(m.usage),
+        model: it.model,
+        role: "advisor",
+        session: r.session,
+        t: r.t,
+        ...claudeTokens(it),
       });
-      for (const it of m.usage.iterations ?? []) {
-        if (it.type !== "advisor_message" || !it.model) {
-          continue;
-        }
-        out.push({
-          provider: "claude",
-          priceProvider: "anthropic",
-          model: it.model,
-          role: "advisor",
-          session,
-          t,
-          ...claudeTokens(it),
-        });
-      }
     }
   }
   return out;
