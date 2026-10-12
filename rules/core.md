@@ -344,6 +344,8 @@ Before integration, updating a default checkout or deleting a landed branch, rea
 verify remote containment with a fresh fetch. Leave another session's checkout
 alone. Never merge, reset, stash or switch it to make it match the default.
 
+Before the first publish step of a version bump (tag, publish, release, announcement), review public materials (READMEs, charts, graphics with alt text, listing text, announcement) and fix what is stale first; an urgent release may limit this to what it affects.
+
 ## Cleanup
 
 Remove a task worktree with `git worktree remove` only after the default

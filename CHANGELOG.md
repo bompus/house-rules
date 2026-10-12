@@ -10,6 +10,12 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   says to finish bookkeeping first, to repeat the whole answer if a tool call must follow it, and never to
   end on a short closing line after a tool call. Before, it said only that text between tool calls can be
   collapsed or lost.
+- The core rules now tell every install to review its public materials before the first publish step of a
+  version bump (tag, package publish, release, announcement). The materials are READMEs, charts, graphics
+  with alt text, listing text and the announcement, and stale content is fixed first. An urgent release may
+  limit the review to what it affects. Before, this applied only to repositories that enabled the
+  `release-batching` modifier, which still carries the full procedure. The fresh install's composed rules
+  grow by 264 bytes, to 29,994 of the 30,000-byte ceiling.
 - Announcement-readiness fixes. The README, the end-of-reply eval README and the overview image carried
   figures from an early three-scenario run. The two READMEs now cite the 2026-10-11 Claude Code replay (18
   scenarios, two runs each). The rules scored 22 and 27 of 36 for Opus 5.5 and Sonnet 5.5, against 18 and 16
