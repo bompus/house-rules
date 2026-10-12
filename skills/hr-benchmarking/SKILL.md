@@ -54,6 +54,11 @@ Identify the limiting resource from CPU versus wall time, resource counters or
 a separate profile. Check that throughput is possible given the machine and
 input. When the generator limits the result, report that limit.
 
+Before changing a component to remove a suspected cost, attribute time to that
+component in the real workload with a profile or a counter. Then time the change
+inside the workload that uses it. A standalone gain can vanish there. A setting
+that ran 7.6 times faster in isolation changed a 33 s indexing run by 0.1 s.
+
 ## Measure without changing the experiment
 
 Keep measured files, toolchains and services unchanged, and keep other work on
@@ -112,6 +117,9 @@ when the scope changes. Repetition counts depend on the
 decision and observed variation; there is no universal minimum.
 
 For a performance claim, add alternating runs to assess run-to-run variation.
+When the claimed gap is small, include an A/A arm, which runs the same variant
+twice in the same alternation. Its spread is that comparison's own noise floor, and it
+can supply the preset variation statistic.
 Before the first run used in that claim, set a repetition count or stopping
 rule and a reproducible variation criterion (statistic and threshold).
 
@@ -208,7 +216,9 @@ In a pull request, the headline chart and when it may be skipped come from
 `hr-writing-pr`; this table applies to any other chart.
 
 For agent, model, rule or skill comparisons, distinguish development cases
-from held-out cases and report runs per case. Include a one-line instruction
+from held-out cases and report runs per case. Check each case for a ceiling: a
+case every arm already passes cannot show an improvement, so report it apart
+from the cases that could. Include a one-line instruction
 control when claiming an improvement from a rule or skill. Keep helper,
 setup and retry costs visible. Before collecting results, define a per-case
 contribution threshold. If a case exceeds it, report results both with and
