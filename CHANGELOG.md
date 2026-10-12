@@ -11,7 +11,9 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   figures. The `plan-files` and `upstream-contributions` modifiers now declare the skills they name, so
   composing warns when one is missing. `hr-what-next` and `hr-handoff` no longer name T3 Code tools.
   `upstream-contributions` uses neutral examples. The README's evaluation prompt no longer promotes
-  Swarmail. `docs/npm-release.md` describes the current release procedure and stays out of the npm package.
+  Swarmail, and `hr-house-rules-setup` no longer links the product when the user wants its modifier.
+  `hr-read-reddit` states in its description that Reddit's RSS support ends November 13, 2026.
+  `docs/npm-release.md` describes the current release procedure and stays out of the npm package.
 - The thread-visuals fallback now tries a browser signed in to the user's GitHub account before handing
   over text and a file. Before, a refused `gh issue create --attach` (for example "attaching files requires
   write access to the repository") sent the agent straight to a manual handover, even where the issue page's
