@@ -3,7 +3,11 @@
 Use an image, chart or diagram only to show a spatial interface state, compare
 before and after, show a trend across multiple measurements, or explain a flow
 with branches. Otherwise use text, a table or a short code block. Most comments
-are text.
+are text. The exception is a measured result outside the reporting band. An
+issue, discussion or pull request that reports one opens with a headline chart
+of it, so a reader sees the benefit before reading the body.
+`hr-writing-pr`'s `scripts/benefit-chart.py` draws it. A comment that only adds data to an
+existing thread stays text and a table.
 
 Keep the exact numbers, steps or states in text beside the visual, and give the
 image alt text, so a reader who cannot see it loses nothing. Label a mockup as an

@@ -42,9 +42,9 @@ Resolve mismatches between the description and the implementation before calling
 
 ## Title and body
 
-Write a title naming the resulting behavior or fixed failure. Use the repository's title convention when it has one. When the PR title becomes the squash commit line, keep a measured speedup out of it, because the figure goes stale there. A repository whose convention asks for the figure keeps it. Put the qualified result, with the workload it holds for, in the body's opening sentence. Check the title's type and scope against the diff's dominant change. A `docs:` title on a diff that adds an executable installer misfiles the squash commit. When no PR template exists, the title convention is the only template; default to Conventional Commits `type(scope):` unless the repository's recent history uses another style. Flag a mixed diff as a possible split into separate PRs (the `hr-split-to-prs` skill, where installed) instead of stretching the title to cover it.
+Write a title naming the resulting behavior or fixed failure, in the words of the person who feels it ("fork threads open faster"), not the mechanism ("skip hidden ancestor payloads"). Use the repository's title convention when it has one. When the PR title becomes the squash commit line, keep a measured speedup out of it, because the figure goes stale there. A repository whose convention asks for the figure keeps it. Put the qualified result, with the workload it holds for, in the body's opening sentence. Check the title's type and scope against the diff's dominant change. A `docs:` title on a diff that adds an executable installer misfiles the squash commit. When no PR template exists, the title convention is the only template; default to Conventional Commits `type(scope):` unless the repository's recent history uses another style. Flag a mixed diff as a possible split into separate PRs (the `hr-split-to-prs` skill, where installed) instead of stretching the title to cover it.
 
-Lead the body with the concrete problem and resulting behavior. A small change may need only a paragraph and a validation sentence. Expand only where the reviewer needs more context:
+Open the body with one sentence that states the benefit, before any problem detail. For a measured change it carries the qualified figure and its workload ("Clean Android builds finish 32% faster, 67.7 s to 46.2 s on a warm Gradle cache"). For a bug fix it says who hits the bug and what they see ("Every Cursor title generation leaks a SQLite file handle"). The problem and resulting behavior follow. A small change may need only a paragraph and a validation sentence. Expand only where the reviewer needs more context:
 
 - **Bug fix:** trigger, previous behavior, corrected behavior, and regression proof.
 - **Feature:** observable capability, a small usage example, and supported limits.
@@ -89,14 +89,15 @@ outcomes visible; collapse long commands or supporting detail when useful.
 Required scope or approval sections stay, with only the justification and links
 the reviewer needs.
 
-For qualified measured performance changes outside the declared no-clear-change
-band, prefer a compact chart alongside the exact result table when it makes
-comparisons easier to scan. Skip charts
-that add no information, such as a single small change. Preview a proposed
-visual with the user before publishing a new visual style. Use labeled units,
-zero-based bar axes, readable contrast and meaningful precision. Show the
-workload and material limits beside it; a synthetic benchmark is not a
-production or UI speedup. Keep the table or equivalent text accessible, and
+A qualified measured change outside the declared no-clear-change band gets a
+headline chart directly under the opening sentence, beside the exact result
+table. Render it with `scripts/benefit-chart.py` in this skill's directory. It reads
+a JSON spec and writes a dark PNG with labeled units, zero-based bars and a
+benefit badge per row. Use the alt text it prints. Skip the chart only when it adds
+nothing, such as a single small change or rows that are all no clear change.
+Show the workload and material limits beside it; a synthetic benchmark is not a
+production or UI speedup. Preview a chart in a different style with the user
+before publishing it. Keep the table or equivalent text accessible, and
 attach PR-only graphics without committing them to the product repository.
 
 Scale structure to the change. Omit empty optional sections, placeholder text, guessed risk scores or review times, and coverage percentages that were not measured. Complete a required checklist with this PR's specifics rather than omitting it, and mark non-applicable items N/A with a reason. Preserve required template sections and mark unavailable evidence honestly.

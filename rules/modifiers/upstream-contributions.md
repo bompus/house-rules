@@ -29,9 +29,15 @@ issues invite, such as performance fixes or a reported defect.
    workload it holds for, such as "typing one letter takes 1.1 s at 1,300
    threads, 0.17 s with paging". Use a figure only when it clears the
    `hr-benchmarking` bar (outside the reporting band, variation criterion met,
-   repetitions stated) and keep the caveats in the body. A pull request keeps
+   repetitions stated) and keep the caveats in the body. Title a defect by what
+   the person sees and how often, not by the code involved. Open the body with
+   the same headline and a chart of it (`hr-writing-pr`). A pull request keeps
    the project's title convention; its opening body sentence carries the figure
    (`hr-writing-pr`).
+6. When a later measurement or review changes the headline, edit the title and
+   opening lines of your own submission to match, and say in a comment what
+   changed. A submission that buries its benefit under background gets rewritten,
+   not left.
 
 A finding outside the session's purpose stays parked under § Session purpose
 until the user opens it.

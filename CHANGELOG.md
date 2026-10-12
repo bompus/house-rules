@@ -4,6 +4,14 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- A pull request, issue or discussion that reports a measured result now opens with the benefit and a
+  headline chart. `hr-writing-pr` asks for a first sentence with the figure and workload (or, for a bug,
+  who hits it and what they see). It asks for a title in the words of the person who feels the change.
+  It also asks for a chart drawn by the new `scripts/benefit-chart.py`, which writes a dark PNG with
+  zero-based bars and a benefit badge per row, and prints alt text for the upload. The upstream-contributions rule titles a defect by what the person sees
+  and asks for the title and opening lines to be updated when a later measurement moves the headline.
+  Before, the chart was optional and the opening sentence led with the problem, so results sat in the
+  verification section.
 - The end-of-reply eval's `parked-not-in-menu` and `spin-off-batch` scenarios read the offer with the
   shared parser (`minOptions`, `forbiddenInOffer`), and each run reports whether the turn was right
   apart from the scenario's declared checks. `--baseline` prints a `behavior only` line. Before,

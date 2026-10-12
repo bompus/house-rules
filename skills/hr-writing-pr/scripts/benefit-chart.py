@@ -1,0 +1,147 @@
+#!/usr/bin/env python3
+"""Render a before/after benefit chart as a PNG for a pull request, issue or discussion.
+
+Usage: benefit-chart.py <spec.json> <out.png>
+
+The spec holds a headline, a workload line and one row per measured metric:
+
+    {
+      "headline": "Sidebar search: typing one letter takes 319 ms, was 1,136 ms",
+      "workload": "1,300 threads, 1,057 matches, dev build; median of 3 runs",
+      "arms": ["Before", "After"],
+      "band": 0.03,
+      "note": "Lower is better.",
+      "rows": [
+        {"label": "Type one letter", "before": 1136, "after": 319, "unit": "ms"},
+        {"label": "Renders", "before": 36950, "after": 7693, "unit": "",
+         "words": ["fewer", "more"]}
+      ]
+    }
+
+Row fields: label, before, after, unit (text after the value), lower_is_better
+(default true), words (the two words after the percentage, for a good and a bad
+change; default "lower"/"higher", or "higher"/"lower" when lower_is_better is false), and
+note (extra text under the label). A change inside band (default 0.03) is
+labeled "no clear change". Bars start at zero and share a scale per row.
+
+Prints the alt text for the image on stdout. Requires matplotlib.
+"""
+import json
+import sys
+import textwrap
+
+try:
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from matplotlib.patches import FancyBboxPatch
+except ImportError:
+    sys.exit("benefit-chart.py needs matplotlib (pip install matplotlib).")
+
+BACKGROUND = "#0d1117"
+TEXT = "#e6edf3"
+MUTED = "#9da7b3"
+BEFORE = "#6e7681"
+GOOD = "#3fb950"
+BAD = "#f85149"
+NEUTRAL = "#8b949e"
+
+
+def fmt(value):
+    magnitude = abs(value)
+    if float(value).is_integer():
+        return f"{value:,.0f}"
+    if magnitude >= 100:
+        return f"{value:,.0f}"
+    if magnitude >= 10:
+        return f"{value:,.1f}"
+    if magnitude >= 1:
+        return f"{value:,.2f}"
+    return f"{value:,.3f}"
+
+
+def judge(row, band):
+    before, after = float(row["before"]), float(row["after"])
+    lower_is_better = row.get("lower_is_better", True)
+    if before == 0:
+        return NEUTRAL, "no baseline to compare", "no baseline to compare"
+    change = (after - before) / before
+    if abs(change) < band:
+        return NEUTRAL, "no clear change", "no clear change"
+    improved = change < 0 if lower_is_better else change > 0
+    default_words = ("lower", "higher") if lower_is_better else ("higher", "lower")
+    words = row.get("words") or default_words
+    word = words[0] if improved else words[1]
+    percent = abs(change) * 100
+    percent_text = f"{percent:,.0f}%" if percent >= 10 else f"{percent:,.1f}%"
+    ratio = max(before, after) / min(before, after) if min(before, after) > 0 else None
+    times = f" ({ratio:,.1f}×)" if ratio and ratio >= 1.5 else ""
+    text = f"{percent_text} {word}{times}"
+    return (GOOD if improved else BAD), text, text
+
+
+def render(spec, out_path):
+    rows = spec["rows"]
+    band = float(spec.get("band", 0.03))
+    arms = spec.get("arms", ["Before", "After"])
+    count = len(rows)
+    headline_lines = textwrap.wrap(spec["headline"], 54)
+    head = 0.75 + 0.45 * len(headline_lines)
+    height = head + 0.6 + 1.25 * count + (0.5 if spec.get("note") else 0.2)
+    fig = plt.figure(figsize=(10, height), dpi=160, facecolor=BACKGROUND)
+    ax = fig.add_axes([0, 0, 1, 1])
+    ax.set_xlim(0, 10)
+    ax.set_ylim(0, height)
+    ax.axis("off")
+    ax.set_facecolor(BACKGROUND)
+
+    top = height - 0.3
+    ax.text(0.4, top, "\n".join(headline_lines), color=TEXT, fontsize=19, fontweight="bold",
+            va="top", linespacing=1.25)
+    ax.text(0.4, top - 0.4 * len(headline_lines) - 0.2, spec.get("workload", ""), color=MUTED,
+            fontsize=10.5, va="top")
+
+    arm_right, bar_left, bar_span = 1.35, 1.5, 5.6
+    y = height - head - 0.45
+    alts = []
+    for row in rows:
+        before, after = float(row["before"]), float(row["after"])
+        unit = row.get("unit", "")
+        suffix = f" {unit}" if unit else ""
+        color, badge, alt_badge = judge(row, band)
+        top_value = max(before, after) or 1.0
+        ax.text(0.4, y, row["label"], color=TEXT, fontsize=12.5, fontweight="bold", va="center")
+        ax.text(9.6, y, badge, color=color, fontsize=15, fontweight="bold", va="center", ha="right")
+        if row.get("note"):
+            ax.text(0.4, y - 0.24, row["note"], color=MUTED, fontsize=9, va="center")
+        bars = ((arms[0], before, BEFORE), (arms[1], after, color))
+        for index, (arm, value, bar_color) in enumerate(bars):
+            bar_y = y - 0.5 - index * 0.32
+            width = max(bar_span * value / top_value, 0.03)
+            ax.add_patch(FancyBboxPatch((bar_left, bar_y - 0.11), width, 0.22,
+                                        boxstyle="round,pad=0,rounding_size=0.04",
+                                        linewidth=0, facecolor=bar_color))
+            ax.text(arm_right, bar_y, arm, color=MUTED, fontsize=9.5, va="center", ha="right")
+            ax.text(bar_left + width + 0.12, bar_y, f"{fmt(value)}{suffix}", color=TEXT,
+                    fontsize=10.5, va="center")
+        alts.append(f"{row['label']}: {fmt(before)}{suffix} to {fmt(after)}{suffix}, {alt_badge}")
+        y -= 1.25
+
+    if spec.get("note"):
+        ax.text(0.4, 0.3, spec["note"], color=MUTED, fontsize=9.5, va="center")
+    fig.savefig(out_path, facecolor=BACKGROUND)
+    plt.close(fig)
+    return f"{spec['headline']}. " + "; ".join(alts) + "."
+
+
+def main():
+    if len(sys.argv) != 3:
+        sys.exit(__doc__)
+    with open(sys.argv[1]) as handle:
+        spec = json.load(handle)
+    print(render(spec, sys.argv[2]))
+
+
+if __name__ == "__main__":
+    main()
