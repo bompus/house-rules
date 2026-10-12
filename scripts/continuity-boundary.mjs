@@ -7,7 +7,7 @@ export function replyFacts(reply, coded = false) {
     asks: /\b(shall I|should I|can I|may I|could I|want me to|would you like|let me know)\b/i.test(
       reply,
     ),
-    done: /nothing (else )?(remains|is left|left)(?![\s\S]*\b(?:remains|is left|left)\b)|\bnothing (?:else )?(?:needs|requires|is waiting on|waits on) (?:you|your)\b(?![^.!?\n]*\b(?:except|besides|beyond|other than|apart from)\b)|(?<!(?:\bnot|\bnever|n't)\b[^.!?\n]{0,40}\b(?:say|claim|assert|state)\w*\b[^.!?\n]{0,40})(?<!["'“‘])(?:this session is complete|session can be closed)/i.test(
+    done: /nothing (else )?(remains|is left|left)(?! for (?:a )?later| (?:over|locally|unpushed|uncommitted|unmerged)\b)(?![\s\S]*\b(?:remains|is left|left)\b)|\bnothing (?:else )?(?:needs|requires|is waiting on|waits on) (?:you|your)\b(?![^.!?\n]*\b(?:except|besides|beyond|other than|apart from)\b)|(?<!(?:\bnot|\bnever|n't)\b[^.!?\n]{0,40}\b(?:say|claim|assert|state)\w*\b[^.!?\n]{0,40})(?<!["'“‘])(?:this session is complete|session can be closed)/i.test(
       reply,
     ),
     offer: coded

@@ -14,6 +14,15 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   opening lines to be updated when a later measurement moves the headline. Before, the chart was
   optional, and the skill told authors both to lead the body with the problem and to put the result in the
   opening sentence.
+- The end-of-reply eval no longer fails correct replies found by running it in coded mode on Opus 5.5
+  and Sonnet 5.5. It ignores a prose bullet list between an offer's options and its reply line, reads a
+  coded `Question N` line that has explanation before its options or does not end in a question mark,
+  and does not take "the session can be closed" or "nothing is left for a later offer" inside an option
+  as a claim that the work is done. A read-only check (`read`, `git status`, `ls`) or a write to the
+  durable ledger or task list before an offer is not acting; the rules now ask the agent to check state
+  before asking. `parked-not-in-menu` forbids the parked leap-day fix, not any mention of a leap day,
+  and the `spin-off-batch` transcript includes the end-of-task checkout result, so a reply need not run
+  that check first.
 - The end-of-reply eval's `parked-not-in-menu` and `spin-off-batch` scenarios read the offer with the
   shared parser (`minOptions`, `forbiddenInOffer`), and each run reports whether the turn was right
   apart from the scenario's declared checks. `--baseline` prints a `behavior only` line. Before,

@@ -1,9 +1,12 @@
 // Reads the questions and options an offer presents, whatever their rendering: coded (`1A`),
 // numbered or bulleted, with or without bold, a "(Recommended)" marker or a trailing explanation.
-// A question is a line ending in "?" that a list item follows. Its options are the list items up to
-// the line that says how to reply, so prose and status bullets around the offer do not count.
+// A question is a line ending in "?" (or a coded "Question N" label) that a list item follows
+// before any line that says how to reply. Its options are the list items up to that line or the
+// first unindented line of prose after them, so prose and status bullets around the offer do not
+// count.
 const ITEM = /^(?:`\d+[A-Z]`:?|\d+[.)]|[-*•])\s+/;
-const QUESTION = /\?[*_]*$/;
+const CODED = /^[*_]*Question\s+\d+\b/i;
+const QUESTION = new RegExp(`\\?[*_]*$|${CODED.source}`, "i");
 const ACCEPT = /^[*_]*(?:Recommended(?: combination)?:|To accept\b|Reply\b)/i;
 
 const label = (text) =>
@@ -15,19 +18,30 @@ const label = (text) =>
     .trim();
 
 export function parseOffer(reply) {
-  const lines = reply.split("\n").map((raw) => raw.trim());
+  const raws = reply.split("\n");
+  const lines = raws.map((raw) => raw.trim());
   const questions = [];
   const options = [];
+  const optionLines = new Set();
   let open = false;
+  let chosen = 0;
   lines.forEach((line, i) => {
-    const next = lines.slice(i + 1).find(Boolean) ?? "";
-    if (QUESTION.test(line) && (ITEM.test(line) || ITEM.test(next))) {
+    // A coded "Question N" may have explanation before its options; any other question may not.
+    const ahead = CODED.test(line)
+      ? (lines.slice(i + 1).find((l) => ITEM.test(l) || ACCEPT.test(l)) ?? "")
+      : (lines.slice(i + 1).find(Boolean) ?? "");
+    if (QUESTION.test(line) && (ITEM.test(line) || ITEM.test(ahead))) {
       questions.push(label(line.replace(ITEM, "")));
       open = true;
-    } else if (open && ITEM.test(line)) options.push(label(line.replace(ITEM, "")));
-    else if (open && ACCEPT.test(line)) open = false;
+      chosen = 0;
+    } else if (open && ITEM.test(line)) {
+      options.push(label(line.replace(ITEM, "")));
+      optionLines.add(i);
+      chosen++;
+    } else if (open && (ACCEPT.test(line) || (chosen && line && raws[i] === raws[i].trimStart())))
+      open = false;
   });
-  return { questions, options };
+  return { questions, options, optionLines };
 }
 
 // `expected` lists the label each option must start with, in order. A label ending in a letter or

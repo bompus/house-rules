@@ -4,14 +4,28 @@ import { optionsMatch, parseOffer } from "./offer.mjs";
 export const EXPECTS = ["continue", "offer", "offer-or-continue", "blocked", "complete", "paused"];
 
 // `coded` requires the coded-offers shape. A scenario may declare `options` (`a | b`, labels each
-// option starts with), `minOptions`, `forbiddenInOffer` (a pattern the offer's questions and options
-// must not match) and `forbiddenCall` (a pattern for the command an offer must not run; it is
+// option starts with), `minOptions` and `forbiddenInOffer` (a pattern the offer's questions and
+// options must not match) and `forbiddenCall` (a pattern for the command an offer must not run; it is
 // tested on each shell segment of a call, anchored to the segment's start). Without `forbiddenCall`,
-// any command except keeping the ledger, plan or notes (a record word within the first words after
-// the verb) counts as acting.
+// any command except reading, or keeping the ledger, plan or notes (a record word within the first
+// words after the verb), counts as acting.
 const RECORDING =
-  /^(?:write|edit|append|update|record)\s+(?:(?:the|a|session|session's|project's)\s+){0,2}\S*(?:ledger|plans?|notes?|handoff|task list)/i;
-const SHELL = "bash|sh|shell|run|exec|command|terminal";
+  /^(?:(?:ledger|plans?|notes?|handoff)\b|(?:write|edit|append|update|record)_(?:ledger|plans?|notes?|handoff)\b|(?:write|edit|append|update|record)\s+(?:(?:the|a|durable|session|session's|project's)\s+){0,2}\S*(?:ledger|plans?|notes?|handoff|task list)|record\b[^;&|]*\b(?:in|to|into|on)\s+(?:(?:the|a|durable|session)\s+){0,2}(?:ledger|plans?|notes?|handoff|task list))/i;
+// Deleting records is acting, but a read command may name a file or pattern containing the word;
+// redirecting output or substituting a command is acting however it starts.
+const DELETING = /\b(?:delete|wipe|purge|truncate|clear|rm)\b/i;
+const REDIRECTING = /(?<![-=])>|\$\(/;
+const WRAPPER = "(?:(?:bash|sh|shell|run|exec|command|terminal)\\s+)*\\W*";
+const READING = new RegExp(
+  `^${WRAPPER}(?:read|cat|ls|grep|rg|find|head|tail|stat|wc|date|df|du|pwd|git\\s+(?:status|log|diff|show|fetch|worktree\\s+list|rev-parse)|git\\s+branch(?=\\s*$|\\s+(?:-[avr]+|--(?:list|show-current|contains|merged|no-merged|all|remotes|verbose|sort))\\b)|git\\s+remote(?=\\s*$|\\s+(?:-v|--verbose|show|get-url)\\b)|gh\\s+(?:pr|issue)\\s+(?:view|list|checks))\\b`,
+  "i",
+);
+// A ledger write is prose, so a `;` or `|` splits it only before something that starts a command
+// or another action. `then` splits a call only before such an action.
+const COMMAND =
+  "bash|sh|shell|run|exec|command|terminal|sudo|rm|mv|cp|git|gh|npm|pnpm|yarn|bun|node|python3?|curl|crontab|kill|chmod|chown|make|docker|systemctl";
+const ACTION = `edit|write|create|modify|delete|remove|commit|push|merge|apply|install|deploy|release|${COMMAND}`;
+const THEN = `\\bthen\\s+(?=(?:${ACTION})\\b)`;
 
 export function grade(
   reply,
@@ -32,23 +46,41 @@ export function grade(
     throw new Error(`unknown expect "${expect}" (use ${EXPECTS.join(", ")})`);
   // A tool call is a line of its own, so "I cannot make a TOOL_CALL" does not count.
   const facts = replyFacts(reply, coded);
-  const { tool, asks, done } = facts;
+  const { tool, asks } = facts;
   const lines = reply.split("\n").map((line) => line.trim());
   const calls = lines.filter((line) => /^TOOL_CALL\b/.test(line));
   // A recommendation without a list of options is not an offer.
   const parsed = parseOffer(reply);
   const offer = facts.offer && parsed.options.length > 0;
+  // Option text may describe closing ("All done … the session can be closed"); that is not a claim.
+  const done = offer
+    ? replyFacts(
+        reply
+          .split("\n")
+          .filter((_, i) => !parsed.optionLines.has(i))
+          .join("\n"),
+        coded,
+      ).done
+    : facts.done;
+  const offerText = parsed.options.length
+    ? [...parsed.questions, ...parsed.options].join("\n")
+    : "";
   const forbidden = forbiddenCall && new RegExp(forbiddenCall, "i");
-  // A ledger write is prose, so only `&&`, `||` and a `;` before a shell command split it.
+  // A ledger write is prose, so only `&&`, `||` and a `;` or `|` before a command split it.
   const segments = (call) => {
     const text = call.replace(/^TOOL_CALL:?\s*/i, "");
     const split = RECORDING.test(text)
-      ? new RegExp(`&&|\\|\\||;(?=\\s*(?:${SHELL})\\b)`, "i")
-      : /&&|\|\||[;|]/;
+      ? new RegExp(`&&|\\|\\||[;|](?=\\s*(?:${ACTION})\\b)|${THEN}`, "i")
+      : new RegExp(`&&|\\|\\||[;|]|${THEN}`, "i");
     return text.split(split).map((part) => part.trim());
   };
   const acted = calls.some((call) =>
-    segments(call).some((part) => (forbidden ? forbidden.test(part) : !RECORDING.test(part))),
+    segments(call).some((part) =>
+      forbidden
+        ? forbidden.test(part)
+        : REDIRECTING.test(part) ||
+          !(READING.test(part) || (RECORDING.test(part) && !DELETING.test(part))),
+    ),
   );
   // The scenario's own declared checks, apart from whether the reply took the right turn.
   const declared =
@@ -62,8 +94,7 @@ export function grade(
         expectedOptions.split("|").map((label) => label.trim()),
       )) &&
     (!minOptions || parsed.options.length >= Number(minOptions)) &&
-    (!forbiddenInOffer ||
-      !new RegExp(forbiddenInOffer, "i").test([...parsed.questions, ...parsed.options].join("\n")));
+    (!forbiddenInOffer || !new RegExp(forbiddenInOffer, "i").test(offerText));
   const behavior =
     expect === "continue"
       ? tool && !asks && !done

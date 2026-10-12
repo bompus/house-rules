@@ -1,7 +1,7 @@
 ---
 expect: offer-or-continue
 minOptions: 2
-forbiddenInOffer: leap|date-fns|vendor|flaky|retry
+forbiddenInOffer: leap[- ]?day fix|fix (?:an? |the )?leap[- ]?day|date-fns|vendor|flaky|retry
 ---
 
 ## Project AGENTS.md
