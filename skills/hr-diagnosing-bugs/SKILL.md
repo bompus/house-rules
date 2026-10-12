@@ -14,8 +14,8 @@ Choose the next probe from the evidence; these techniques are not mandatory phas
 
 ## Choose a model when needed
 
-Use the project or host's current benchmark-backed order for bug-finding models
-and efforts. Primary, secondary and tertiary choices can change with benchmark
+If the project names a benchmark-backed order for bug-finding models and
+efforts, use it. Primary, secondary and tertiary choices can change with benchmark
 results; read the current selection rather than carrying names from an old run.
 If the primary is unavailable through quota, outage or an unsupported route,
 use the next available eligible choice within authorized billing limits only

@@ -19,7 +19,7 @@ the implementation instead of a separate model that can drift from it.
 2. **List the events.** Include each distinct write, message, restart or reset
    an actor can produce, with the variants that take different code paths:
    an older, equal and newer timestamp; a field left out; another identity
-   (session, tenant, league); two events delivered in one batch. Aim for 6 to
+   (session, tenant, account); two events delivered in one batch. Aim for 6 to
    10 events, and merge variants that exercise the same path.
 3. **Enumerate.** Walk every sequence up to length N depth-first. At each node,
    restore the state its prefix left, apply one event through the real entry

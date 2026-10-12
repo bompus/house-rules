@@ -40,8 +40,8 @@ user's confirmation unless they already directed them.
 
 ## Offers
 
-Use text for questions. Unless § Question cards is enabled, do not call
-multiple-choice question tools, even when your host exposes them.
+Use text for questions, not multiple-choice question tools, even when your host
+exposes them, unless a Question cards section follows.
 
 Write the offer as normal text that stands alone, with these parts in order:
 

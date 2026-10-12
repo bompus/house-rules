@@ -55,8 +55,9 @@ Name the exact revision, failed or unfinished gates and unresolved decisions.
 Clean CI alone is not evidence that every review finding was handled.
 
 When the repository or user selects these GitHub helper policies, use
-[the review gate and one-thread resolver](references/review-helpers.md).
-The gate does not replace other required checks or the caller's judgment.
+[the CodeRabbit review gate and one-thread resolver](references/review-helpers.md).
+The gate reads CodeRabbit's review only, not other review bots, and does not
+replace other required checks or the caller's judgment.
 
 Immediately before landing, re-read the head, base, checks, review bodies and
 unresolved threads. If the head or base changed, discard readiness and repeat

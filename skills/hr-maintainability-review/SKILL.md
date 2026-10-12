@@ -1,6 +1,6 @@
 ---
 name: hr-maintainability-review
-description: "Review a diff or an entire codebase for maintainability and structure, preserving behavior. Use when explicitly requested for a strict, deep, harsh or thermo-nuclear maintainability review, or a whole-repository over-engineering or bloat audit. Report-only; correctness, UI quality, test coverage and measured performance need separate assessments."
+description: "Review a diff or an entire codebase for maintainability and structure, preserving behavior. Use when explicitly requested for a strict, deep or harsh maintainability review, or a whole-repository over-engineering or bloat audit. Report-only; correctness, UI quality, test coverage and measured performance need separate assessments."
 disable-model-invocation: true
 ---
 

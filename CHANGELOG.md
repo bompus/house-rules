@@ -4,6 +4,13 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Wording fixes found in a read-through before the first announcement. The `hr-ordering-tests` example
+  names an "account" identity instead of a "league", and the `hr-maintainability-review` description no
+  longer uses "thermo-nuclear" as a trigger word. The core rules say "unless a Question cards section
+  follows" instead of pointing at a modifier a fresh install does not have, and `hr-diagnosing-bugs` says
+  to use a benchmark-backed model order only if the project names one. The `hr-pr-followup` catalog row
+  and its pointer to the review helpers now say the review gate covers CodeRabbit only, so nobody expects
+  it to read other review bots.
 - The `hr-research-shared-links` skill now says to search a repository's open issues and security
   disclosures for the shared claim and each idea it may recommend, check every hit against the current code,
   and read the latest release notes. It records the terms searched, so the pass has an end on a large
