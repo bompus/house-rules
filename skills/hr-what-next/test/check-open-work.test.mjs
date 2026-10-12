@@ -513,6 +513,98 @@ test("an answered offer line that does not say what happened to the other option
   ]);
 });
 
+const offerLine = (id, rest = "(presented 2026-10-12): Q1 pick one; 1A recommended") =>
+  `- [ ] Offer ${id} ${rest}`;
+const offerWarning = (report) => report.warnings.filter((warning) => /unanswered/.test(warning));
+
+test("a plan with no offers counts none and prints the count line", () => {
+  const { plan } = setup({
+    ledger: ["- [ ] a: unanswered decision", "- [x] b ... evidence: PR 1"],
+  });
+  const { report } = check(plan);
+  expect(report.unansweredOffers).toEqual([]);
+  expect(offerWarning(report)).toEqual([]);
+  const text = spawnSync("node", [script, plan], { encoding: "utf8" }).stdout;
+  expect(text).toContain("unanswered offers: 0\n");
+});
+
+test("two unanswered offers are counted and do not warn", () => {
+  const { plan } = setup({ ledger: [offerLine("DEMO-1"), offerLine("DEMO-2")] });
+  const { code, report } = check(plan);
+  expect(code).toBe(2);
+  expect(report.unansweredOffers).toEqual([
+    expect.stringMatching(/^L6 \[ \] Offer DEMO-1/),
+    expect.stringMatching(/^L7 \[ \] Offer DEMO-2/),
+  ]);
+  expect(offerWarning(report)).toEqual([]);
+  const text = spawnSync("node", [script, plan], { encoding: "utf8" }).stdout;
+  expect(text).toContain("unanswered offers: 2\n");
+});
+
+test("three or more unanswered offers warn to start a walk-through and leave the exit code alone", () => {
+  for (const count of [3, 4]) {
+    const ids = Array.from({ length: count }, (_, i) => `DEMO-${i + 1}`);
+    const { plan } = setup({ ledger: ids.map((id) => offerLine(id)) });
+    const { code, report } = check(plan);
+    expect(code).toBe(2);
+    expect(report.unansweredOffers).toHaveLength(count);
+    expect(offerWarning(report)).toEqual([
+      expect.stringMatching(new RegExp(`^${count} offers are open and unanswered.*walk-through`)),
+    ]);
+    const text = spawnSync("node", [script, plan], { encoding: "utf8" }).stdout;
+    expect(text).toContain(`unanswered offers: ${count}\n`);
+    expect(text).toMatch(/warning: \d offers are open and unanswered/);
+  }
+});
+
+test("an offer answered, superseded or dropped on another ledger line is not counted", () => {
+  const { plan } = setup({
+    ledger: [
+      offerLine("DEMO-1"),
+      "- [x] Offer DEMO-1 answered `go` = 1A; 1B not selected ... evidence: user message",
+      offerLine("DEMO-2"),
+      "- [-] Offer DEMO-2 superseded by offer DEMO-3 ... by: superseded",
+      offerLine("DEMO-3"),
+      offerLine("DEMO-4"),
+      "- [-] Offer DEMO-4 withdrawn before any answer ... by: user, no longer needed",
+      offerLine("DEMO-5"),
+    ],
+  });
+  const { report } = check(plan);
+  expect(report.unansweredOffers).toEqual([
+    expect.stringMatching(/Offer DEMO-3 /),
+    expect.stringMatching(/Offer DEMO-5 /),
+  ]);
+});
+
+test("an offer named on several open lines is one offer", () => {
+  const { plan } = setup({
+    ledger: [
+      offerLine("DEMO-1"),
+      "- [ ] Offer DEMO-1 question 2 still unanswered ... recheck: 2026-10-20",
+      offerLine("DEMO-2"),
+    ],
+  });
+  const { report } = check(plan);
+  expect(report.unansweredOffers).toHaveLength(2);
+});
+
+test("deferred items and prose that only mention an offer are not unanswered offers", () => {
+  const { plan } = setup({
+    ledger: [
+      "- [~] Offer DEMO-1 held for later ... trigger: next release",
+      "- [ ] Draft an offer for the CI-2 failure",
+      "- [ ] Offers DEMO-2 and DEMO-3 are queued in the walk-through",
+      "- [ ] Check why DEMO-4 was not offered to the user",
+      "- [ ] Question 12 (queued): the worker's own offer id DEMO-7 is not used",
+      "- [x] Offer DEMO-5 presented ... evidence: reply text",
+      "- [-] Offer DEMO-6 ... by: user, not selected",
+    ],
+  });
+  const { report } = check(plan);
+  expect(report.unansweredOffers).toEqual([]);
+});
+
 test("items tied to another thread need a re-check date, and dates within a week are listed", () => {
   const { plan } = setup({
     ledger: [

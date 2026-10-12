@@ -4,6 +4,16 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- `hr-what-next`'s open-work check now counts the offers in a plan ledger that are still unanswered and
+  warns at three. Output gains an `unanswered offers: N` line, an `unanswered offer:` row for each one and
+  an `unansweredOffers` list in `--json`. An offer is one ID (capitals and digits joined by hyphens, such as
+  `ABC-12`) written right after the word "offer" on an open `- [ ]` ledger line. It stops counting when any
+  line naming it is dropped, says it was selected, chosen, picked or answered, or says what happened to the
+  other options. An ID after "by", "into" or "with" ("superseded by offer ABC-13") is a replacement and is
+  not closed by that line. Deferred and done lines are never counted, and an offer written across several
+  lines counts once. The warning names the offers rule and says to queue the new decision in a walk-through.
+  It is a warning, so the exit code is unchanged. Plans that number offers without an ID are not counted.
+  The skill's description of the script says so.
 - The `coded-offers` modifier now carries the same owning-repository sentence as `rules/core.md` § Offers.
   The modifier replaces the whole core section, so anyone who enabled it never received the sentence.
   It asks that an option creating a rule, skill, document or script names the owning repository, whether

@@ -31,6 +31,10 @@ completed state before the completion message; a report alone does not do so.
    unless a named commit sits outside a `--checkout`'s default branch,
    and "re-check due" lists `recheck:` dates that are past or within a week.
    Look at each before reporting it as done or still waiting.
+   It also prints `unanswered offers: N`, the number of offer IDs ("Offer
+   ABC-12") on open ledger lines that no line records as answered, dropped or
+   superseded, and warns at three. Plans that number offers without an ID are
+   not counted.
    When the plan's header has a `Project: <name>` line, it also warns when that
    project's last `hr-forgotten-work-audit` record is missing or over 30 days
    old; offer the audit then.

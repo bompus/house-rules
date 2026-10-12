@@ -14,6 +14,14 @@
 // --repo. The check needs `gh`; without it, offline, or with --offline it is skipped and "skipped" says so.
 // "re-check due" lists items whose `recheck: YYYY-MM-DD` date is past or within 7 days. Both groups are
 // subsets of `open` and do not change the exit code.
+// "unanswered offers" counts the open (`- [ ]`) ledger items that name an offer, one per offer ID, and warns at
+// three or more, the point where the offers rule says to present no further offer. A line names an offer when
+// an ID (capitals and digits joined by hyphens) follows the word "offer" directly ("Offer ABC-12 ...", "Pilot offer ABC-12").
+// The offer is answered when any ledger line naming it is marked dropped, says it was selected, chosen,
+// picked or answered, or says what happened to the other options (the DISPOSITION words). An ID after
+// "by", "into" or "with" ("superseded by offer ABC-13") is the replacement, not the line's subject.
+// Deferred and done items are never counted. The count is a text match like the groups above; it warns
+// and does not change the exit code.
 // A plan with a `Project: <name>` line is checked against <notes>/audits/<name>/last-audit.json, the record
 // hr-forgotten-work-audit writes: a missing, unreadable or older-than-30-days record is a warning. A plan
 // without that line gets no audit warning.
@@ -47,6 +55,13 @@ const ANSWERED_OFFER =
 const DISPOSITION =
   /not selected|unselected|unpicked|declined|superseded|passed over|only option|all selected|no other options?|\b\d+[a-z]\b[^.;]{0,30}\b(?:deferred|dropped)\b|\b(?:deferred|dropped)\b[^.;]{0,15}\b\d+[a-z]\b/i;
 const OFFER_ID = /\b[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+\b/g;
+// An ID right after the word "offer": the offer the line is about. The ID is checked against OFFER_ID's
+// shape afterwards because the word "offer" is matched in any case.
+const OFFER_SUBJECT = /\boffer\b[^\w]{0,3}([\w-]+)/gi;
+const OFFER_ID_ONLY = /^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+$/;
+const REPLACEMENT_OF = /\b(?:by|into|with|under|behind|after)\s+(?:the\s+)?$/i;
+// The offers rule stops presenting new offers at this many open and unanswered ones.
+const OFFER_LIMIT = 3;
 // A deferred item that waits on another thread (an upstream issue or pull request, a maintainer, another
 // session), or an open question sent to one, needs a `recheck:` date: "trigger: reply" never fires itself.
 const EXTERNAL =
@@ -461,6 +476,30 @@ function offerWarnings(items, warnings) {
   capped(warnings, missing, "answered offer(s) without the other options' outcome");
 }
 
+// The offer IDs a line is about, leaving out one it only names as a replacement ("superseded by offer X").
+function offersNamed(text) {
+  const ids = [];
+  for (const match of text.matchAll(OFFER_SUBJECT)) {
+    if (OFFER_ID_ONLY.test(match[1]) && !REPLACEMENT_OF.test(text.slice(0, match.index)))
+      ids.push(match[1]);
+  }
+  return ids;
+}
+
+// One entry per offer ID that has an open line and no line recording an answer, a drop or a supersession.
+function unansweredOffers(items) {
+  const closed = new Set();
+  for (const item of items)
+    if (item.mark === "-" || ANSWERED_OFFER.test(item.text) || DISPOSITION.test(item.text))
+      for (const id of offersNamed(item.text)) closed.add(id);
+  const unanswered = new Map();
+  for (const item of items)
+    if (item.mark === " ")
+      for (const id of offersNamed(item.text))
+        if (!closed.has(id) && !unanswered.has(id)) unanswered.set(id, row(item));
+  return [...unanswered.values()];
+}
+
 async function run(options) {
   const planPath = resolve(options.plan);
   if (!existsSync(planPath) || !statSync(planPath).isFile())
@@ -472,6 +511,7 @@ async function run(options) {
     owner: plan.owner ?? null,
     open: [],
     awaitingUser: [],
+    unansweredOffers: [],
     stale: [],
     recheckDue: [],
     skipped: [],
@@ -526,6 +566,11 @@ async function run(options) {
   if (plan.narrative.length > 5)
     report.warnings.push(`${plan.narrative.length - 5} more narrative marker line(s)`);
   offerWarnings(plan.items, report.warnings);
+  report.unansweredOffers = unansweredOffers(plan.items);
+  if (report.unansweredOffers.length >= OFFER_LIMIT)
+    report.warnings.push(
+      `${report.unansweredOffers.length} offers are open and unanswered; the offers rule says to present no further offer at ${OFFER_LIMIT} or more. Queue the new decision in a walk-through (hr-what-next, Walk-through) instead`,
+    );
   const audit = plan.project && auditWarning(plan.project, roots, options.today);
   if (audit) report.warnings.push(audit);
   report.recheckDue = rechecks(open, options.today, report.warnings);
@@ -568,10 +613,12 @@ async function main() {
     console.log(
       `plan: ${report.plan}\nstatus: ${report.status ?? "?"} | owner: ${report.owner ?? "?"}`,
     );
+    if (code !== 1) console.log(`unanswered offers: ${report.unansweredOffers.length}`);
     for (const [label, rows] of [
       ["error", report.errors],
       ["open", report.open],
       ["awaiting your yes/no", report.awaitingUser],
+      ["unanswered offer", report.unansweredOffers],
       ["possibly finished", report.stale],
       ["re-check due", report.recheckDue],
       ["skipped", report.skipped],
