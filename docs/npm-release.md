@@ -11,10 +11,10 @@ identical.
 
 ## Before any publish step
 
-Audit the README, comparisons, graphics and their alt text, documentation, npm
-listing text, release notes and announcement against the release candidate, as
-`rules/references/release-batching.md` describes. Land corrections on `main`
-first. Only then tag, publish to npm or create the GitHub release.
+Run the full public-materials audit in `rules/references/release-batching.md`
+against the release candidate, covering every material it lists. Land
+corrections on `main` first. Only then tag, publish to npm, create the GitHub
+release or announce it.
 
 ## First publication
 
