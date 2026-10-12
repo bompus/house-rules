@@ -11,9 +11,10 @@ WAL database that no process has open.
 
 Connection settings such as busy_timeout, synchronous, foreign_keys and
 cache_size are not stored in the file, so no database inspection can show what
-an application sets. `--source` lists, for each file that mentions
-journal_mode, whether busy_timeout appears and whether it comes first. Treat
-those lines as places to read, not verdicts.
+an application sets. `--source` is a text scan: for each file that mentions
+journal_mode it reports whether busy_timeout appears and whether its first
+mention comes earlier. It does not establish run order. Treat those lines as
+places to read, not verdicts.
 """
 import argparse
 import json

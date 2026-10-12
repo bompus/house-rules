@@ -15,7 +15,8 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   was measured, comes from the SQLite documentation or is unconfirmed. References hold the
   measured evidence and the engine and driver decisions with what would reopen them. A read-only
   script (`scripts/inspect-sqlite.py`) reports a file's journal mode, statistics, FTS tables, WAL
-  size and mount options, and lists source files where `journal_mode` runs before `busy_timeout`.
+  size and mount options. With `--source` it scans source text for files that mention `journal_mode`
+  with no earlier `busy_timeout`; it does not establish run order.
 - Before the first publish step of any version bump (tag, package publish, GitHub release or
   announcement), the release procedure runs two audits and lands their corrections first. The
   changelog audit covers every repository, public or private. Each pending entry is checked against

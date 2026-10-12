@@ -6,8 +6,8 @@ description: Checklist of settings, failure patterns and measured effects for SQ
 # SQLite
 
 Run `scripts/inspect-sqlite.py <database>` first when you have a database file
-(`--source <directory>` also lists where code mentions `journal_mode` without an
-earlier `busy_timeout`). It opens the file read-only and reports what the file
+(`--source <directory>` also scans source text for files that mention
+`journal_mode` with no earlier `busy_timeout`; it does not establish run order). It opens the file read-only and reports what the file
 records, the WAL size and the mount options. It cannot show connection
 settings, because SQLite does not store them in the file; read the code that
 opens the connection for those.
@@ -81,10 +81,12 @@ different engine, driver or pool, read
 10. **Keep planner statistics.** Run `PRAGMA optimize` just before closing a
     short-lived connection. For a long-lived one, run `PRAGMA optimize=0x10002`
     when it opens and `PRAGMA optimize` periodically. Run it after
-    `CREATE INDEX` (D). Missing statistics made one query scan: 10.3 to 12.5 ms
-    became 0.0075 ms. The first run on a 15 GB file took 72 to 80 s and blocked
-    writers; repeats took 0.5 to 1.2 s. Run it first at a time you choose
-    (M).
+    `CREATE INDEX` (D). The `0x10000` bit and the automatic analysis limit
+    arrived in SQLite 3.46.0. On older releases set `PRAGMA analysis_limit`
+    yourself and run `ANALYZE` (D). Missing statistics made one query scan: 10.3
+    to 12.5 ms became 0.0075 ms. The first run on a 15 GB file took 72 to 80 s
+    and blocked writers; repeats took 0.5 to 1.2 s. Run it first at a time you
+    choose (M).
 11. **Check the plan before rewriting a query.** `EXPLAIN QUERY PLAN`, then
     statistics. A slow query that looked like bad SQL was missing statistics
     (M).
@@ -131,7 +133,8 @@ different engine, driver or pool, read
     (M).
 21. **Match durability settings before comparing stores.** A ratio between two
     stores whose `synchronous` settings differ, or are unrecorded, compares the
-    settings.
+    settings. One comparison reported 84 to 563 times against stores whose
+    setting was not recorded (M).
 22. **Record the SQLite version and compile options**
     (`PRAGMA compile_options`). Two builds of the same version can differ: the
     documentation recommends `SQLITE_DEFAULT_MEMSTATUS=0`, and one runtime's
