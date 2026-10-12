@@ -30,6 +30,10 @@ Name what each applicable option produces and how far it goes. Cover the change,
 the steps it includes (such as the pull request, review, landing and cleanup) and
 what it leaves for a later offer. Selection authorizes that scope; questions authorize
 nothing. Implementation after analysis needs selection.
+
+An option that creates a rule, skill, document or script also names the owning
+repository, whether any project could use it unchanged, and what you searched.
+
 The coded list makes an offer; a prose recommendation alone does not.
 Record a stable offer ID before presenting it. Codes and `go`/`continue` refer to that
 conversation's latest open offer.

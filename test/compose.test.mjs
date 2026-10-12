@@ -23,7 +23,14 @@ test("a replacement keeps the section's position and drops the old text", () => 
   assert.equal(out.includes(original.split("\n").slice(2).join("\n")), false);
 });
 
-test("every version of the Offers section tells the agent to queue a new decision behind stacked offers", () => {
+// A modifier that replaces Offers swaps out core's whole section, so a sentence core gains there
+// only reaches that modifier's users if the modifier carries it too.
+const OFFERS_SENTENCES_EVERY_VERSION_CARRIES = [
+  /three or more offers are open and unanswered, do not present another one/,
+  /creates a rule, skill, document or script also names the owning repository, whether any project could use it unchanged, and what you searched/,
+];
+
+test("every version of the Offers section carries the sentences core's Offers section requires", () => {
   const dir = join(root, "rules/modifiers");
   const versions = [{ source: "core", text: core }];
   for (const file of readdirSync(dir).filter((f) => f.endsWith(".md"))) {
@@ -32,11 +39,8 @@ test("every version of the Offers section tells the agent to queue a new decisio
   }
   assert.ok(versions.length > 1, "expected a modifier that replaces Offers");
   for (const { source, text } of versions)
-    assert.match(
-      text.replace(/\s+/g, " "),
-      /three or more offers are open and unanswered, do not present another one/,
-      source,
-    );
+    for (const sentence of OFFERS_SENTENCES_EVERY_VERSION_CARRIES)
+      assert.match(text.replace(/\s+/g, " "), sentence, source);
 });
 
 test("several fragments after one section keep their configured order", () => {

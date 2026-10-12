@@ -4,6 +4,12 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- The `coded-offers` modifier now carries the same owning-repository sentence as `rules/core.md` § Offers.
+  The modifier replaces the whole core section, so anyone who enabled it never received the sentence.
+  It asks that an option creating a rule, skill, document or script names the owning repository, whether
+  any project could use it unchanged, and what was searched. The test that every version of the Offers
+  section carries the stacked-offers rule now also checks this sentence. The modifier grows from 3,786 to
+  3,946 bytes; the fresh install, which enables no modifier, is unchanged at 30,149 bytes.
 - `rules/core.md` § Offers now asks that an option creating a rule, skill, document or script names the
   owning repository, whether any project could use it unchanged, and what was searched. The user sees
   where new guidance will live before choosing, so a wrong home is caught at the offer instead of after
