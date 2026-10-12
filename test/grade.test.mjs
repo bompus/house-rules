@@ -191,6 +191,35 @@ test("a coded offer's options must not share a paragraph and nothing may follow 
     assert.equal(late.pass, false, after);
     assert.equal(late.layout.length, 1, after);
   }
+  // A GFM table may omit its outer pipes, so its rows open with the code.
+  assert.deepEqual(
+    layoutProblems(
+      offer("Code | Option\n--- | ---\n`1A` | Fix and land the bug.\n`1B` | Defer this repair."),
+    ),
+    [],
+  );
+  // Text after the acceptance line fails when a second acceptance line ends the reply, and when it
+  // sits on the acceptance line itself.
+  assert.equal(
+    layoutProblems(`${offer("`1A` Fix it.")}\n\nParked: the flaky test.\n\n${accept}`).length,
+    1,
+  );
+  assert.equal(
+    layoutProblems(offer("`1A` Fix it.").replace("or `go`", "or `go`. Parked: the flaky test."))
+      .length,
+    1,
+  );
+  // The reply codes may be one span or several.
+  for (const line of [
+    "Recommended combination: reply `1A, 2A` or `go`",
+    "**Recommended combination: reply `1A`, `2A` or `go`**",
+    "Recommended: reply `1A` or `go`.",
+  ])
+    assert.deepEqual(
+      layoutProblems(`**Question 1: Fix?**\n\n- \`1A\` Fix it.\n\n${line}`),
+      [],
+      line,
+    );
   // A reply with no acceptance line is not an offer, so it has no layout problems.
   assert.deepEqual(layoutProblems("`1A` Fix it.\n`1B` Defer it.\n\nNothing else to add."), []);
   assert.deepEqual(layoutProblems("Tests pass.\n\nNothing remains."), []);

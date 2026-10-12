@@ -48,24 +48,38 @@ export function parseOffer(reply) {
 // The layout the coded-offers rule asks for, read from the raw reply. A reply with no acceptance line
 // is not an offer and has no layout problems. Markdown joins consecutive lines of a paragraph, so two
 // or more bare coded lines in one paragraph render as one run-on paragraph; a list item or a table
-// row opens with a marker, not the code, so it does not count. Nothing may follow the acceptance line.
+// row opens with a marker, not the code, so it does not count. Nothing may follow the acceptance
+// line, on its own line or after its reply codes.
 const BARE_OPTION = /^ {0,3}[*_]*`\d+[A-Z]`/;
 const ACCEPTANCE = /^[*_]*Recommended(?: combination)?:\s*reply\b/i;
+// "Recommended: reply `1A` or `go`", "… `1A, 2A` or `go`" and "… `1A`, `2A` or `go`": code spans
+// joined by commas, "or" and "and", and no other words.
+const ACCEPTANCE_ONLY =
+  /^[*_]*Recommended(?: combination)?:\s*reply\s+(?:`[^`]+`[\s,.;]*|(?:or|and)\s+)+[*_]*$/i;
+// A GFM table has a delimiter row, so its rows may omit the outer pipes and still open with a code.
+const TABLE_DELIMITER = /^\s*\|?\s*:?-+:?\s*(?:\|\s*:?-+:?\s*)*\|?\s*$/;
 
 export function layoutProblems(reply) {
   const lines = reply.split(/\r?\n/);
-  if (!lines.some((line) => ACCEPTANCE.test(line.trim()))) return [];
+  const accepted = lines.findIndex((line) => ACCEPTANCE.test(line.trim()));
+  if (accepted < 0) return [];
   const problems = [];
   for (const paragraph of reply.split(/\r?\n[ \t]*\r?\n/)) {
-    const bare = paragraph.split(/\r?\n/).filter((line) => BARE_OPTION.test(line));
+    const rows = paragraph.split(/\r?\n/);
+    if (rows.some((row) => row.includes("|") && TABLE_DELIMITER.test(row))) continue;
+    const bare = rows.filter((row) => BARE_OPTION.test(row));
     if (bare.length > 1)
       problems.push(
-        `${bare.length} options share one paragraph: ${bare.map((line) => line.trim().slice(0, 4)).join(" ")}`,
+        `${bare.length} options share one paragraph: ${bare.map((row) => row.trim().slice(0, 4)).join(" ")}`,
       );
   }
-  const last = lines.map((line) => line.trim()).findLast(Boolean);
-  if (!ACCEPTANCE.test(last))
-    problems.push(`the acceptance line is not last; the reply ends "${last.slice(0, 40)}"`);
+  if (!ACCEPTANCE_ONLY.test(lines[accepted].trim()))
+    problems.push(
+      `the acceptance line has text besides its reply codes: "${lines[accepted].trim().slice(0, 60)}"`,
+    );
+  const after = lines.slice(accepted + 1).find((line) => line.trim());
+  if (after !== undefined)
+    problems.push(`text follows the acceptance line: "${after.trim().slice(0, 40)}"`);
   return problems;
 }
 
