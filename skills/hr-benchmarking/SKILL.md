@@ -117,9 +117,10 @@ when the scope changes. Repetition counts depend on the
 decision and observed variation; there is no universal minimum.
 
 For a performance claim, add alternating runs to assess run-to-run variation.
-Treat variation as already known only when earlier runs used the same
-workload, host, run conditions and variation statistic, and met the repetition
-count or stopping rule declared for this claim. Otherwise include an A/A arm,
+Treat variation as already known only when earlier repeated runs of the
+same variant, build and input used the same workload, host, run conditions and
+variation statistic, and met the repetition count or stopping rule declared for
+this claim. Otherwise include an A/A arm,
 which runs the same variant twice in the same alternation. Its spread is that
 comparison's own noise floor, and it can supply the preset variation statistic.
 Before the first run used in that claim, set a repetition count or stopping
