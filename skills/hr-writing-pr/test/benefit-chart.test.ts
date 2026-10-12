@@ -66,6 +66,20 @@ describe.skipIf(!hasMatplotlib)("benefit-chart.py", () => {
     expect(alt).toContain("Read: 119 ms to 0.083 ms, 99.9% lower (1,434.9×)");
   });
 
+  test("carries the chart notes into the alt text and the table", () => {
+    const { alt } = chart(
+      {
+        headline: "Renders per switch: 2, was 9",
+        note: "Lower is better.",
+        rows: [{ label: "Renders", before: 9, after: 2, unit: "", note: "Dev build only." }],
+      },
+      ["--table"],
+    );
+    expect(alt).toContain("Renders per switch: 2, was 9. Lower is better.");
+    expect(alt).toContain("Renders: 9 to 2, 78% lower (4.5×) (Dev build only.)");
+    expect(alt).toContain("Renders: Dev build only.");
+  });
+
   test("rejects negative values instead of drawing them", () => {
     const { result } = chart({
       headline: "Delta",

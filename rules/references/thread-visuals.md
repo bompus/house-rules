@@ -6,7 +6,8 @@ with branches. Otherwise use text, a table or a short code block. Most comments
 are text. The exception is a qualified measured result. It lies outside the reporting band
 and meets its declared variation criterion. An
 issue, discussion or pull request that reports one opens with a headline chart
-of it, so a reader sees the benefit before reading the body.
+of it, so a reader sees the benefit before reading the body. A result with
+one row that moved by less than 10% stays text and a table.
 `hr-writing-pr`'s `scripts/benefit-chart.py` draws it. A comment that only adds data to an
 existing thread stays text and a table.
 

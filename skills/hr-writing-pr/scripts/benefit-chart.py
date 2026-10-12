@@ -133,14 +133,18 @@ def render(spec, out_path):
             ax.text(arm_right, bar_y, arm, color=MUTED, fontsize=9.5, va="center", ha="right")
             ax.text(bar_left + width + 0.12, bar_y, f"{fmt(value)}{suffix}", color=TEXT,
                     fontsize=10.5, va="center")
-        alts.append(f"{row['label']}: {fmt(before)}{suffix} to {fmt(after)}{suffix}, {alt_badge}")
+        row_alt = f"{row['label']}: {fmt(before)}{suffix} to {fmt(after)}{suffix}, {alt_badge}"
+        if row.get("note"):
+            row_alt += f" ({row['note']})"
+        alts.append(row_alt)
         y -= 1.25
 
     if spec.get("note"):
         ax.text(0.4, 0.3, spec["note"], color=MUTED, fontsize=9.5, va="center")
     fig.savefig(out_path, facecolor=BACKGROUND)
     plt.close(fig)
-    return f"{spec['headline']}. " + "; ".join(alts) + "."
+    lead = spec["headline"] + (f". {spec['note']}" if spec.get("note") else "")
+    return f"{lead}. " + "; ".join(alts) + "."
 
 
 def table(spec):
@@ -152,6 +156,10 @@ def table(spec):
         change = judge(row, band)[2]
         lines.append(f"| {row['label']} | {fmt(float(row['before']))}{suffix} | "
                      f"{fmt(float(row['after']))}{suffix} | {change} |")
+    notes = [spec["note"]] if spec.get("note") else []
+    notes += [f"{row['label']}: {row['note']}" for row in spec["rows"] if row.get("note")]
+    if notes:
+        lines += ["", *notes]
     return "\n".join(lines)
 
 
