@@ -5,7 +5,7 @@
 // before any line that says how to reply. Its options are the list items up to that line or the
 // first unindented line of prose after them, so prose and status bullets around the offer do not
 // count.
-const ITEM = /^(?:(?:[-*•]|\d+[.)])\s+)?[*_]*`\d+[A-Z]`:?[*_]*\s+|^(?:\d+[.)]|[-*•])\s+/;
+const ITEM = /^(?:(?:[-*•]|\d+[.)])\s+)?[*_]*`\d+[A-Z]`:?[*_]*:?\s+|^(?:\d+[.)]|[-*•])\s+/;
 const CODED = /^[*_]*Question\s+\d+\b/i;
 const QUESTION = new RegExp(`\\?[*_]*$|${CODED.source}`, "i");
 const ACCEPT = /^[*_]*(?:Recommended(?: combination)?:|To accept\b|Reply\b)/i;

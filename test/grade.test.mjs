@@ -118,6 +118,8 @@ Reply "1" to accept the recommendation.`,
     "**Question 1: Fix the bug?**\n\n- `1A` (Recommended) Fix and land the bug.\n- `1B` Defer this repair.\n\nRecommended: reply `1A` or `go`",
   "coded options as bold list items":
     "**Question 1: Fix the bug?**\n\n- **`1A` (Recommended)** Fix and land the bug.\n- **`1B`** Defer this repair.\n\nRecommended: reply `1A` or `go`",
+  "coded options as bold list items with a colon":
+    "**Question 1: Fix the bug?**\n\n- **`1A`**: (Recommended) Fix and land the bug.\n- **`1B`:** Defer this repair.\n\nRecommended: reply `1A` or `go`",
 };
 
 test("an offer's options match whatever way the model lists them", () => {
