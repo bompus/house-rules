@@ -91,6 +91,7 @@ describe.skipIf(!hasMatplotlib)("benefit-chart.py", () => {
     );
     expect(alt).toContain("| read \\| write | 9 ms | 5 ms |");
     expect(alt).toContain("Workload: 3 runs, dev build");
+    expect(alt.split("\n")[0]).toContain("Workload: 3 runs, dev build");
   });
 
   test("rejects negative values instead of drawing them", () => {

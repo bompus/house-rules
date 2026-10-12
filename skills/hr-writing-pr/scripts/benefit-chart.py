@@ -144,6 +144,8 @@ def render(spec, out_path):
     fig.savefig(out_path, facecolor=BACKGROUND)
     plt.close(fig)
     lead = spec["headline"] + (f". {spec['note']}" if spec.get("note") else "")
+    if spec.get("workload"):
+        lead += f". Workload: {spec['workload']}"
     return f"{lead}. " + "; ".join(alts) + "."
 
 
