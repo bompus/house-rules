@@ -316,8 +316,12 @@ aliases and policy; provider discovery and model execution remain separate.
 ```bash
 node --test test/*.test.mjs   # composer and eval grader (or: bun test test/)
 bun test skills/    # skill scripts
-npx oxlint . && npx oxfmt --check .
+npx --yes oxlint@1.85.0 . && npx --yes oxfmt@0.70.0 --check .
 ```
+
+These versions match the pins in `.github/workflows/check.yml`; an unpinned `npx`
+fetches the latest release, whose formatting can differ from CI's. Change both
+together.
 
 Oxfmt checks authored Markdown, HTML, JSON, JSONC, YAML, TOML and CSS as well
 as JavaScript and TypeScript. Test fixtures stay excluded because scanner
