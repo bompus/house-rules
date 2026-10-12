@@ -117,8 +117,9 @@ when the scope changes. Repetition counts depend on the
 decision and observed variation; there is no universal minimum.
 
 For a performance claim, add alternating runs to assess run-to-run variation.
-When the claimed gap is small, include an A/A arm, which runs the same variant
-twice in the same alternation. Its spread is that comparison's own noise floor, and it
+When this workload's run-to-run variation on this host is not already known
+from earlier runs, include an A/A arm, which runs the same variant twice in
+the same alternation. Its spread is that comparison's own noise floor, and it
 can supply the preset variation statistic.
 Before the first run used in that claim, set a repetition count or stopping
 rule and a reproducible variation criterion (statistic and threshold).
@@ -217,8 +218,9 @@ In a pull request, the headline chart and when it may be skipped come from
 
 For agent, model, rule or skill comparisons, distinguish development cases
 from held-out cases and report runs per case. Check each case for a ceiling: a
-case every arm already passes cannot show an improvement, so report it apart
-from the cases that could. Include a one-line instruction
+case every arm already passes cannot show a pass-rate improvement. Report it
+apart from the cases that could, and report any metric the case does not
+saturate (time, cost, graded quality) on its own. Include a one-line instruction
 control when claiming an improvement from a rule or skill. Keep helper,
 setup and retry costs visible. Before collecting results, define a per-case
 contribution threshold. If a case exceeds it, report results both with and
