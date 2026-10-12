@@ -1,6 +1,7 @@
 ---
 description: A measured optimization, fix or defect found in a third-party project is offered for submission to that project through its own contribution route.
 after: Repository work
+requires: hr-benchmarking, hr-writing-pr
 ---
 
 ## Upstream contributions

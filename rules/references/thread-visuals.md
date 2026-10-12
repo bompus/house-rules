@@ -8,7 +8,8 @@ and meets its declared variation criterion. An
 issue, discussion or pull request that reports one opens with a headline chart
 of it, so a reader sees the benefit before reading the body. A result with
 one row that moved by less than 10% stays text and a table.
-`hr-writing-pr`'s `scripts/benefit-chart.py` draws it. A comment that only adds data to an
+Draw it with the `hr-writing-pr` skill's `scripts/benefit-chart.py` when that skill
+is installed, or with any charting tool. A comment that only adds data to an
 existing thread stays text and a table.
 
 Keep the exact numbers, steps or states in text beside the visual, and give the

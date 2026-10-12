@@ -1,6 +1,7 @@
 ---
 description: Multi-step work keeps a visible task list mirrored to a plan file with a ledger of every item's outcome.
 after: Durable notes
+requires: hr-handoff, hr-what-next
 ---
 
 ## Task tracking
