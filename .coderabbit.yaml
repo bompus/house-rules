@@ -1,7 +1,4 @@
 # yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
-# Additions to the CodeRabbit organization settings. With inheritance on, every
-# key this file leaves out keeps its organization value instead of resetting
-# to CodeRabbit's default.
 inheritance: true
 
 reviews:
