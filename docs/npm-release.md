@@ -9,6 +9,13 @@ procedures, and any `--skills-out` directory.
 Keep the `package.json` version, changelog version and `v<version>` tag
 identical.
 
+## Before any publish step
+
+Audit the README, comparisons, graphics and their alt text, documentation, npm
+listing text, release notes and announcement against the release candidate, as
+`rules/references/release-batching.md` describes. Land corrections on `main`
+first. Only then tag, publish to npm or create the GitHub release.
+
 ## First publication
 
 This one-time setup applies to 0.11.0, the first published version. The first publication requires an npm account that owns the `bompus` scope.

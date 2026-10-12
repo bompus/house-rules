@@ -9,6 +9,13 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   write access to the repository") sent the agent straight to a manual handover, even where the issue page's
   upload field would have taken the file. The handover now applies only when the host has no such browser or
   the upload fails there.
+- The release-batching audit now also covers package READMEs, graphics and visuals (banners, charts,
+  screenshots, demo recordings and their alt text), registry and marketplace listing text and the release
+  announcement, each checked for old versions and figures. It runs on every version bump of every public
+  repository, before the first publish step (tag, package publish, GitHub release), and the corrections
+  land first. This repository's release steps in `AGENTS.md` and `docs/npm-release.md` include it. Before,
+  the audit named only the README, comparisons, metrics, documentation, drafts and release notes, and did
+  not say it had to finish before publishing.
 - `hr-better-accessibility` now asks for an `id` on each inline SVG `<title>` and `<desc>` that is unique on
   the page, and for a `<desc>` that says what the figure shows rather than how it is drawn. Before, the
   skill covered `role="img"` and `aria-labelledby` but not what happens when two SVGs on one page both use

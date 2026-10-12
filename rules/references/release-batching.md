@@ -15,16 +15,27 @@ or readiness condition in the task plan. Backlog items do not authorize
 implementation or landing. Do not hold a ready batch for unrelated, unapproved
 or indefinite work.
 
-Before any release or public announcement, audit the README, comparisons,
-performance metrics, relevant documentation, announcement plans and drafts,
-and release notes against the intended revision or artifact and current
-verified state. Record which materials were checked and the evidence for
+Before any release or public announcement, audit every public-facing
+material against the intended revision or artifact and current verified state:
+the README and package READMEs, comparisons, performance metrics, graphics and
+visuals (banners, charts, diagrams, screenshots and demo recordings, with their
+alt text), relevant documentation, registry and marketplace listing text,
+announcement plans and drafts, release notes and the release announcement.
+Check each for old version numbers, figures and behavior. Regenerate or replace
+a visual that shows them; where that is not possible, remove it or label the
+version it shows. Record which materials were checked and the evidence for
 claims in the task plan. Correct, add, remove or update content to resolve
 outdated instructions, omissions, contradictions and unsupported claims.
 Distinguish released, deployed and planned behavior; give performance claims
 measurement conditions and evidence, and label unverified results. Preserve
 historical results with their tested versions instead of presenting them as
 current measurements.
+
+Run the audit on every version bump, before the first publish step: the tag,
+the registry or package publish, the GitHub release or any announcement. Land
+each correction first. Landing the corrections is part of the audit; one made
+after publishing means the audit did not finish. This applies to every public
+repository, including ones created later.
 
 Recheck affected claims when the candidate or supporting evidence changes.
 Before publishing, resolve unsupported or contradictory claims by correcting,

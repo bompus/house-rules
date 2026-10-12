@@ -34,7 +34,11 @@ task plan rather than the changelog.
 Before a release or public announcement, follow the full release procedure in
 [`rules/references/release-batching.md`](rules/references/release-batching.md).
 
-When the batch is ready, prepare one release commit that moves all `Unreleased`
+When the batch is ready, first run the public-materials audit in that
+reference against the release candidate: the README, comparisons, graphics and
+their alt text, docs, the npm listing text, release notes and the announcement.
+Land every correction on `main` before the tag, the npm publish or the GitHub
+release. Then prepare one release commit that moves all `Unreleased`
 entries into a dated version section. Choose the semantic version for the
 combined changes, including any breaking change. Keep `package.json` `version`
 equal to the changelog version. For the first npm publication, follow
