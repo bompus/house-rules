@@ -4,6 +4,17 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- **Breaking for configs that list it:** the `swarmail` modifier is removed. It only told an agent where
+  to find one coordination product's own instructions, so it was not general guidance. A
+  `house-rules.json` that still lists `swarmail` under `modifiers` now fails: `compose.mjs`, the
+  installer, `config status`, `config catalog`, `config preview`, `config set` for any other change and
+  `setup --json` stop with `unknown modifier "swarmail"` and write nothing, and the existing `rules.md`
+  and `composed-skills` stay as they were. To repair the config, run `config set` with
+  `--disable-modifier swarmail`, review the preview, then repeat it with `--apply --expect <revision>`.
+  The interactive `house-rules setup` screen lists `swarmail` as an unavailable modifier and removes it
+  when toggled. The README row, the setup skill's offer of it and the configuration guide's example are
+  gone, and the tests that used it as a stand-in modifier use `shared-host-load`. The fresh install
+  enables no modifier and is unchanged at 30,109 bytes.
 - Wording in `rules/core.md`, `rules/modifiers/coded-offers.md` and `rules/references/squash-landing.md`
   that came from one setup now reads correctly for any user. The extension-vetting paragraph no longer
   names a Claude Code version or its `claude plugin validate` command, and says only to run the host's

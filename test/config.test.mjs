@@ -206,7 +206,7 @@ test("selection preview, apply and repeated apply preserve custom configuration 
   writeFileSync(join(dir, "rules.md"), "keep generated rules");
   const args = [
     "--enable-modifier",
-    "swarmail",
+    "shared-host-load",
     "--disable-skill",
     "hr-read-reddit",
     "--questions",
@@ -224,7 +224,7 @@ test("selection preview, apply and repeated apply preserve custom configuration 
   const stored = JSON.parse(readFileSync(path, "utf8"));
   assert.deepEqual(stored, {
     ...original,
-    modifiers: ["swarmail", "coded-offers"],
+    modifiers: ["shared-host-load", "coded-offers"],
     skills: { ...original.skills, exclude: ["unavailable-helper", "hr-read-reddit"] },
   });
   const before = statSync(path).mtimeMs;
@@ -255,11 +255,11 @@ test("invalid requests and invalid composition never write config", (t) => {
     ["--enable-modifier", "no-such-modifier"],
     ["--disable-modifier", "no-such-modifier"],
     ["--disable-skill", "no-such-skill"],
-    ["--enable-modifier", "swarmail", "--disable-modifier", "swarmail"],
+    ["--enable-modifier", "shared-host-load", "--disable-modifier", "shared-host-load"],
     ["--questions", "plain", "--enable-modifier", "coded-offers"],
     ["--enable-modifier", "question-cards"],
     ["--questions", "unknown"],
-    ["--questions", "", "--enable-modifier", "swarmail"],
+    ["--questions", "", "--enable-modifier", "shared-host-load"],
     ["--typo"],
   ]) {
     assert.throws(() =>
@@ -277,7 +277,7 @@ test("invalid requests and invalid composition never write config", (t) => {
   }
   assert.throws(() => cli(["status", "--config", path, "--expect", ""]), /selection flags/);
   assert.throws(
-    () => cli(["set", "--config", path, "--enable-modifier", "swarmail", "--apply"]),
+    () => cli(["set", "--config", path, "--enable-modifier", "shared-host-load", "--apply"]),
     /requires --expect/,
   );
   mkdirSync(join(dir, "rules"));
@@ -292,7 +292,7 @@ test("invalid requests and invalid composition never write config", (t) => {
         "--config",
         path,
         "--enable-modifier",
-        "swarmail",
+        "shared-host-load",
         "--apply",
         "--expect",
         readConfiguration(path).revision,
@@ -306,7 +306,11 @@ test("stored invalid modifier selections can be repaired through preview and app
   for (const [modifiers, args, expected] of [
     [["question-cards"], ["--questions", "cards"], ["coded-offers", "question-cards"]],
     [["question-cards"], ["--disable-modifier", "question-cards"], []],
-    [["removed-modifier", "swarmail"], ["--disable-modifier", "removed-modifier"], ["swarmail"]],
+    [
+      ["removed-modifier", "shared-host-load"],
+      ["--disable-modifier", "removed-modifier"],
+      ["shared-host-load"],
+    ],
   ]) {
     const original = { modifiers, custom: { keep: true }, skills: { exclude: ["hr-handoff"] } };
     const { path } = fixture(t, original);
@@ -336,8 +340,8 @@ test("stored invalid modifier selections can be repaired through preview and app
 test("selection repairs refuse malformed stored config before any write", (t) => {
   for (const [config, error] of [
     [null, /configuration must be a JSON object/],
-    [{ modifiers: "swarmail" }, /modifiers must be an array/],
-    [{ modifiers: ["swarmail", "swarmail"] }, /modifiers contains duplicates/],
+    [{ modifiers: "shared-host-load" }, /modifiers must be an array/],
+    [{ modifiers: ["shared-host-load", "shared-host-load"] }, /modifiers contains duplicates/],
     [{ skills: [] }, /skills must be an object/],
   ]) {
     const { path } = fixture(t, config);
@@ -365,7 +369,9 @@ test("missing config is read without creating it and explicit apply can initiali
 });
 
 test("question presets keep unrelated selections and resolve to composed offer rules", (t) => {
-  const { path } = fixture(t, { modifiers: ["swarmail", "coded-offers", "question-cards"] });
+  const { path } = fixture(t, {
+    modifiers: ["shared-host-load", "coded-offers", "question-cards"],
+  });
   for (const [questions, enabled] of [
     ["plain", []],
     ["coded", ["coded-offers"]],
@@ -377,7 +383,7 @@ test("question presets keep unrelated selections and resolve to composed offer r
         .filter((m) => m.enabled)
         .map((m) => m.name)
         .sort(),
-      ["swarmail", ...enabled].sort(),
+      ["shared-host-load", ...enabled].sort(),
     );
     assert.equal(out.hostLoading, "unverified");
     assert.equal(
@@ -417,7 +423,7 @@ test("status shows effective personal origins including excluded overrides witho
 test("lock contention and stale preview cannot overwrite another writer", (t) => {
   const { path } = fixture(t);
   const snapshot = readConfiguration(path);
-  const next = changeSelection(snapshot.config, { "enable-modifier": ["swarmail"] }, path);
+  const next = changeSelection(snapshot.config, { "enable-modifier": ["shared-host-load"] }, path);
   writeFileSync(`${path}.lock`, "another owner");
   assert.throws(() => writeConfiguration(snapshot, next, snapshot.revision), /locked/);
   assert.equal(readFileSync(`${path}.lock`, "utf8"), "another owner");
@@ -478,7 +484,7 @@ test("cleanup errors release the lock and allow a later write", (t) => {
     for (failure of ["temporary", "lock close"]) {
       fs.writeFileSync(path, "{}");
       const snapshot = readConfiguration(path);
-      const next = changeSelection(snapshot.config, { "enable-modifier": ["swarmail"] }, path);
+      const next = changeSelection(snapshot.config, { "enable-modifier": ["shared-host-load"] }, path);
       fail = true;
       if (failure === "temporary") {
         assert.throws(() => writeConfiguration(snapshot, next, snapshot.revision), /temporary cleanup fault/);
@@ -489,7 +495,7 @@ test("cleanup errors release the lock and allow a later write", (t) => {
       assert.equal(fs.existsSync(path + ".lock"), false);
       fail = false;
       assert.equal(writeConfiguration(snapshot, next, snapshot.revision).changed, true);
-      assert.deepEqual(JSON.parse(fs.readFileSync(path, "utf8")).modifiers, ["swarmail"]);
+      assert.deepEqual(JSON.parse(fs.readFileSync(path, "utf8")).modifiers, ["shared-host-load"]);
     }
   `;
   execFileSync(process.execPath, ["--input-type=module", "--eval", source], { stdio: "pipe" });
@@ -513,7 +519,7 @@ test(
           const snapshot = readConfiguration(path);
           const options =
             actor === "A"
-              ? { "enable-modifier": ["swarmail"] }
+              ? { "enable-modifier": ["shared-host-load"] }
               : { "disable-skill": ["hr-read-reddit"] };
           previews[actor] = { snapshot, next: changeSelection(snapshot.config, options, path) };
         } else if (operation === "external") {
@@ -562,7 +568,7 @@ test("human output is grouped; JSON and NO_COLOR output contain no terminal esca
   assert.match(human, /Host loading unverified/);
   assert.equal(human.includes("\u001b"), false);
   assert.equal(cli(["catalog", "--config", path, "--json"]).includes("\u001b"), false);
-  const preview = cli(["preview", "--config", path, "--enable-modifier", "swarmail"]);
+  const preview = cli(["preview", "--config", path, "--enable-modifier", "shared-host-load"]);
   assert.match(
     preview.replace(/\s+/g, " "),
     /To save, run config set with the same selection flags/,
@@ -644,7 +650,7 @@ test(
     symlinkSync(physical, join(aliasRoot, "config"));
     writeFileSync(join(physical, "house-rules.json"), '{"layers":[".."]}');
     const path = join(aliasRoot, "config", "house-rules.json");
-    const preview = report(path, ["--enable-modifier", "swarmail"]);
+    const preview = report(path, ["--enable-modifier", "shared-host-load"]);
     assert.match(preview.composedRules, /## Alias parent/);
     assert.doesNotMatch(preview.composedRules, /## Physical parent/);
     cli([
@@ -652,7 +658,7 @@ test(
       "--config",
       path,
       "--enable-modifier",
-      "swarmail",
+      "shared-host-load",
       "--apply",
       "--expect",
       preview.revision,

@@ -148,7 +148,7 @@ test(
       const before = existsSync(path) ? statSync(path).mtimeMs : null;
       const session = terminal(t, path);
       await session.wait();
-      if (mode === "cancel") await session.command("toggle swarmail");
+      if (mode === "cancel") await session.command("toggle shared-host-load");
       await session.command("next");
       await session.command("next");
       const result = await session.finish(mode === "cancel" ? "cancel" : "save");
@@ -226,7 +226,7 @@ test(
     const { path } = fixture(t, { custom: "old" });
     const session = terminal(t, path);
     await session.wait();
-    await session.command("toggle swarmail");
+    await session.command("toggle shared-host-load");
     await session.command("next");
     await session.command("next");
     writeFileSync(
@@ -242,7 +242,7 @@ test(
     assert.deepEqual(JSON.parse(readFileSync(path, "utf8")), {
       custom: "new",
       skills: { exclude: ["unavailable-helper"] },
-      modifiers: ["swarmail"],
+      modifiers: ["shared-host-load"],
     });
   },
 );
@@ -261,7 +261,7 @@ test(
       const { path } = fixture(t, { custom: "old" });
       const session = terminal(t, path);
       await session.wait();
-      await session.command("toggle swarmail");
+      await session.command("toggle shared-host-load");
       await session.command("next");
       await session.command("next");
       let ended = false,
@@ -297,7 +297,7 @@ test("Ctrl-C and terminal end of input discard a changed draft", interactive, as
     const before = readFileSync(path, "utf8");
     const session = terminal(t, path);
     await session.wait();
-    await session.command("toggle swarmail");
+    await session.command("toggle shared-host-load");
     assert.equal((await session.finish(key)).code, code);
     assert.equal(readFileSync(path, "utf8"), before);
   }
@@ -310,7 +310,7 @@ test(
     const { path } = fixture(t, { custom: "keep" });
     const session = terminal(t, path);
     await session.wait();
-    await session.command("toggle swarmail");
+    await session.command("toggle shared-host-load");
     await session.command("next");
     await session.command("next");
     const lock = `${path}.lock`;
@@ -327,7 +327,7 @@ test(
     assert.equal((await session.finish("save")).code, 0);
     assert.deepEqual(JSON.parse(readFileSync(path, "utf8")), {
       custom: "repaired",
-      modifiers: ["swarmail"],
+      modifiers: ["shared-host-load"],
     });
   },
 );
@@ -341,7 +341,7 @@ test(
   async (t) => {
     for (const replacement of [
       "{broken",
-      JSON.stringify({ custom: "after", modifiers: ["swarmail"] }),
+      JSON.stringify({ custom: "after", modifiers: ["shared-host-load"] }),
     ]) {
       const { path, dir } = fixture(t, { custom: "keep" });
       const preload = join(dir, "post-commit.mjs");
@@ -354,7 +354,7 @@ syncBuiltinESMExports();`,
       );
       const session = terminal(t, path, ["--import", preload]);
       await session.wait();
-      await session.command("toggle swarmail");
+      await session.command("toggle shared-host-load");
       await session.command("next");
       await session.command("next");
       await session.command("save");
@@ -383,7 +383,7 @@ test(
     const { path } = fixture(t, original);
     const session = terminal(t, path);
     await session.wait();
-    assert.doesNotMatch(session.output, /\[off\] swarmail/);
+    assert.doesNotMatch(session.output, /\[off\] shared-host-load/);
     await session.command("next");
     assert.match(session.output, /\[on\] hr-code-review/);
     assert.doesNotMatch(session.output, /\[off\] hr-handoff/);

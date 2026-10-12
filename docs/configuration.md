@@ -86,7 +86,7 @@ validation proves what a running agent has loaded.
 
 ```bash
 node compose.mjs config set --config <config-path> \
-  --enable-modifier swarmail --disable-skill hr-read-reddit --questions coded
+  --enable-modifier shared-host-load --disable-skill hr-read-reddit --questions coded
 ```
 
 `set` previews by default. It shows the selection changes, composition summary,

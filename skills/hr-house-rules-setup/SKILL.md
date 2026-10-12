@@ -49,8 +49,6 @@ For an agent running without a terminal, use the preview/apply workflow below.
    Personal skills override shipped ones. Keep independent names, layers,
    unrelated settings and exclusions.
 
-   If the user wants the Swarmail modifier, offer it. When its MCP tools are
-   absent, say so and ask before installing anything.
    If they want different question presentation, offer plain text, coded text,
    or coded text with cards using `--questions plain|coded|cards`. Cards still
    require a complete text offer. Explain that host, provider and model behavior
