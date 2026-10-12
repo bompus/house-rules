@@ -26,10 +26,11 @@ the hidden gems". Do that work the first time.
    docs or data. The shared page is a claim; the source is the evidence.
 3. For a repository, read past the README: agent guidance files, skills, docs,
    tests and the code behind any headline feature. These hold the transferable
-   ideas. Also read its open issues, security disclosures and latest releases,
-   and check each reported problem against the current code. The README says
-   what the maintainer wants to be true; the tracker shows what users and
-   reviewers found, and a fix may already have landed.
+   ideas. Search its open issues and security disclosures for the shared claim
+   and for each idea you may recommend, check every hit against the current
+   code, and read the latest release notes. Record the terms you searched. The
+   README says what the maintainer wants to be true; the tracker shows what
+   users and reviewers found, and a fix may already have landed.
 4. Say what you did not read: videos, images, earlier posts in a thread,
    private or login-gated pages, source behind a README claim. Do not rate what
    you did not see.

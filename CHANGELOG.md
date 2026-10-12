@@ -4,10 +4,11 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
-- The `hr-research-shared-links` skill now says to read a repository's open issues, security disclosures and
-  latest releases, and to check each reported problem against the current code. Before, it listed only the
-  README, agent guidance, skills, docs, tests and headline-feature code, so a link review could miss a
-  security report that the tracker already held.
+- The `hr-research-shared-links` skill now says to search a repository's open issues and security
+  disclosures for the shared claim and each idea it may recommend, check every hit against the current code,
+  and read the latest release notes. It records the terms searched, so the pass has an end on a large
+  tracker. Before, the skill listed only the README, agent guidance, skills, docs, tests and
+  headline-feature code, so a link review could miss a security report that the tracker already held.
 - The squash-landing reference now says how to treat a review bot's start: let an enabled automatic review
   begin instead of commenting to request one, check the integration's status when none starts rather than
   tagging the bot again, and do not take a config file in the repository as proof the bot is enabled. An
