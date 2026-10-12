@@ -114,12 +114,16 @@ Reply "1" to accept the recommendation.`,
 Reply "1" to accept the recommendation.`,
   "coded options":
     "**Question 1: Fix the bug?**\n\n`1A` (Recommended) Fix and land the bug.\n\n`1B` Defer this repair.\n\nRecommended: reply `1A` or `go`",
+  "coded options as list items":
+    "**Question 1: Fix the bug?**\n\n- `1A` (Recommended) Fix and land the bug.\n- `1B` Defer this repair.\n\nRecommended: reply `1A` or `go`",
+  "coded options as bold list items":
+    "**Question 1: Fix the bug?**\n\n- **`1A` (Recommended)** Fix and land the bug.\n- **`1B`** Defer this repair.\n\nRecommended: reply `1A` or `go`",
 };
 
 test("an offer's options match whatever way the model lists them", () => {
   for (const [name, reply] of Object.entries(renderings))
     assert.equal(
-      grade(reply, "offer", { ...labels, coded: name === "coded options" }).pass,
+      grade(reply, "offer", { ...labels, coded: name.startsWith("coded options") }).pass,
       true,
       name,
     );

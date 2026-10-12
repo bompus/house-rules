@@ -72,9 +72,11 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   it includes (such as pull request, review, landing and cleanup) and what it leaves for a later
   offer. An option that creates a rule, skill, document or script also names the owning repository,
   whether any project could use it unchanged, and what was searched. With `coded-offers`, the
-  acceptance line keeps its exact form with nothing after it, and `go` covers phase 1 only. An offer
-  visual (a rendered page beside the complete text offer) is made only when the user asks and the
-  host can render one. When three or more offers are open and unanswered, a new decision is queued
+  acceptance line keeps its exact form with nothing after it, and `go` covers phase 1 only. Each
+  option is a list item of a line or two, so consecutive options cannot run together into one
+  paragraph. The acceptance line follows the list as a plain paragraph. An offer visual (a
+  rendered page beside the complete text offer) is made only when the user asks and the host can
+  render one. When three or more offers are open and unanswered, a new decision is queued
   in a `hr-what-next` walk-through instead of presented as another offer.
 - `hr-benchmarking` keeps the portable method. It covers defining and confirming the comparison,
   isolation and normal scheduling with the effective priority recorded. It also covers screening,
@@ -185,8 +187,8 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   request opens with its parent, describes only its own layer and names other layers by number. The
   evidence line names the head commit the checks ran against.
 - The end-of-reply eval (`evals/end-of-reply/`) reads an offer's options in any rendering (coded,
-  numbered or bulleted, with a numbered question above them) and checks a scenario's declared
-  `options` by label. It ignores a prose bullet list between an offer's options and its reply line.
+  numbered or bulleted, bare or as list items, with a numbered question above them). It checks a
+  scenario's declared `options` by label. It ignores a prose bullet list between an offer's options and its reply line.
   It reads a coded `Question N` line that has explanation before its options or no question mark. It
   does not take "the session can be closed" inside an option as a claim that the work is done. An
   offer scenario fails only on the tool call named in `forbiddenCall`. A read-only check (`read`,
