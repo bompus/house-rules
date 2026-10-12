@@ -303,7 +303,8 @@ It is explicit-only, requires Python 3.11+ and keeps reports local.
 `evals/end-of-reply/` runs short scenarios through any model CLI. It grades
 whether the agent keeps working or ends with an offer at the right time,
 including when it reads only the first 80 lines. A 2026-10-11 replay covered
-its 18 scenarios, two runs each, on Claude Code 2.1.296 only. The rules scored
+its 18 scenarios, two runs each, on Claude Code 2.1.296 only, at revision
+`efd4d7b`; `rules/core.md` has changed since. The rules scored
 22 of 36 replies with Opus 5.5 and 27 of 36 with Sonnet 5.5. A one-sentence
 instruction scored 18 and 16, and no rules scored 17 and 16. The gains cluster
 in follow-ups, parked findings, stacked offers and spin-offs, where the
