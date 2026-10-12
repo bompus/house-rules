@@ -4,6 +4,29 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- New opt-in modifier `periodic-updates`. A job expected to run longer than about 10 minutes posts a
+  status update on its own schedule, without the user asking. That covers a build, test suite, benchmark,
+  CI run or long search. The interval is 5 minutes unless the user names another; the 5 minutes is a default, not a
+  measured value. Each update gives completed/total or a percent, the ETA with its basis or "unmeasured",
+  and a one-line summary of findings so far. A milestone, failure, stall or forecast change goes in full.
+  Where the host has a background watcher or timer, the agent arms it to post the updates. Otherwise it
+  posts at natural checkpoints. Updates stop when the job ends, and the final report replaces them.
+  The modifier fits beside `quiet-watchers`: that one keeps a tick that changes nothing to one line, this
+  one says when ticks happen, and both give milestones, failures, stalls and forecast changes a full
+  report. Before, § Reporting asked for frequent progress updates but set no trigger or interval.
+  In a small trial (Sonnet 5.5 in print mode without tools, 4 runs per scenario and arm, replies graded by
+  patterns fixed before the runs), an agent that had just started a 40- to 48-minute job armed a timer at
+  about 5 minutes in 8 of 8 runs with the modifier and 0 of 8 without it. Without it, 7 of 8 timers were
+  set for 24 to 48 minutes and one for 8 minutes. At a checkpoint on a host with no timer, 4 of 4 replies
+  with the modifier gave a done-of-total count, an ETA or "unmeasured", and findings, against 0 of 4
+  without it. Those four replies did post progress, but none gave a count out of the total. Four cases
+  showed no difference, 4 of 4 with and without the modifier: a short job armed no timer, a user-named
+  2-minute interval was kept, a finished job's timer was cancelled, and a failure was reported in full.
+  Routine ticks stayed long with the modifier alone (0 of 4 within 45 words, median about 62 words) and
+  became short only with `quiet-watchers` also on (4 of 4, 29 to 36 words), so that modifier supplies the
+  brevity. One rewording meant to shorten routine ticks gave 1 of 4 and was dropped. The trial used one
+  model and scenarios written by the rule's author, so its counts show a direction, not a rate. The fresh
+  install is unchanged because modifiers start off.
 - New opt-in modifier `quiet-watchers`. It says that a watcher event or timer that changes nothing gets at
   most one line, that a milestone, failure, stall, forecast change or the run's completion gets a full report, and that
   a watcher is armed to emit only those. Before, § Reporting asked for frequent useful progress updates and
