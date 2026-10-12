@@ -151,7 +151,7 @@ def inspect(path, quick_check=False):
 def notes(result):
     out = []
     if result["journalMode"] != "wal":
-        out.append("journal_mode is %s, not wal; concurrent readers and one writer will block each other" % result["journalMode"])
+        out.append("journal_mode is %s, not wal; in a rollback journal a writer's commit waits for readers and blocks new ones while it commits" % result["journalMode"])
     stats = result["statistics"]
     if not stats["sqliteStat1"]:
         out.append("no sqlite_stat1: the planner has no statistics; run PRAGMA optimize at a time you choose (the first run on a large file can take over a minute and hold the write lock)")

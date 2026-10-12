@@ -5,13 +5,14 @@ description: Checklist of settings, failure patterns and measured effects for SQ
 
 # SQLite
 
-Run `scripts/inspect-sqlite.py <database>` first when you have a database file
-(`--source <directory>` also scans source text for each `journal_mode` mention
-with no earlier `busy_timeout` in the same file; it does not establish run
-order or which connection each belongs to). It opens the file read-only and reports what the file
-records, the WAL size and the mount options. It cannot show connection
+Run `python3 <this skill's directory>/scripts/inspect-sqlite.py <database>` first
+when you have a database file. It opens the file read-only and reports what the
+file records, the WAL size and the mount options. It cannot show connection
 settings, because SQLite does not store them in the file; read the code that
-opens the connection for those.
+opens the connection for those. With `--source <directory>` it also scans source
+text for each `journal_mode` mention that has no earlier `busy_timeout` in the
+same file. That scan does not establish run order or which connection a mention
+belongs to.
 
 Each item carries an evidence tier:
 
