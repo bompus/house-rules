@@ -60,6 +60,9 @@ such as the pull request, review, landing and cleanup. Also say what it leaves
 for a later offer. Choosing it authorizes that scope, and asking about it
 authorizes nothing.
 
+An option that creates a rule, skill, document or script also names the owning
+repository, whether any project could use it unchanged, and what you searched.
+
 Recommend the option that finishes the work properly and holds up over time,
 not the one that is quickest to finish. When that work comes in dependent steps
 (land a change, then adopt it), show each step as its own option labeled

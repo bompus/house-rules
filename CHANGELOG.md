@@ -4,6 +4,11 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- `rules/core.md` § Offers now asks that an option creating a rule, skill, document or script names the
+  owning repository, whether any project could use it unchanged, and what was searched. The user sees
+  where new guidance will live before choosing, so a wrong home is caught at the offer instead of after
+  the edit. The fresh-install size ceiling in `test/compose.test.mjs` rises from 30,000 to 30,200 bytes
+  to hold the sentence; the install composes to 30,149 bytes.
 - Host-bound text left `hr-benchmarking`. The admission, pressure, observer and fenced-core procedures and
   the nice-value experiment record described one machine's setup, so they now live with the host that uses
   them. `SKILL.md` keeps the portable method. It covers defining and confirming the comparison, isolation,
