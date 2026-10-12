@@ -9,6 +9,12 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   and read the latest release notes. It records the terms searched, so the pass has an end on a large
   tracker. Before, the skill listed only the README, agent guidance, skills, docs, tests and
   headline-feature code, so a link review could miss a security report that the tracker already held.
+- `hr-code-review` now covers what happens after a panel answers. A new adjudication reference explains how to
+  read the replies, which claims count as corroborated, how to compare competing implementations, how to
+  break a tie, and the receipt header every panel report opens with. A bundled script,
+  `scripts/check-receipts.mjs`, checks the `path:line` citations in the panel's logs against the repository.
+  A citation that names an identifier must show it on the cited lines, and a file named by basename must
+  resolve to exactly one file.
 - The squash-landing reference now says how to treat a review bot's start: let an enabled automatic review
   begin instead of commenting to request one, check the integration's status when none starts rather than
   tagging the bot again, and do not take a config file in the repository as proof the bot is enabled. An
