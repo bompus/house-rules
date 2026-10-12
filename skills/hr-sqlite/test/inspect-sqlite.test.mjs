@@ -138,3 +138,21 @@ test("fails with a message for a missing file", (t) => {
   assert.equal(run.status, 2);
   assert.match(run.stderr, /not a file/);
 });
+
+test("a source path that cannot be read is reported and fails the run", (t) => {
+  const dir = fixture(t);
+  const database = createDatabase(dir);
+  const src = join(dir, "src");
+  mkdirSync(src);
+  writeFileSync(join(src, "ok.py"), 'c.execute("PRAGMA journal_mode=WAL")\n');
+  const absent = join(dir, "absent.py");
+  const run = python([script, database, "--source", src, absent, "--json"]);
+  assert.equal(run.status, 2);
+  assert.match(run.stderr, /could not scan .*absent\.py/);
+  const result = JSON.parse(run.stdout);
+  assert.equal(result.source.length, 1);
+  assert.deepEqual(
+    result.sourceErrors.map((e) => basename(e.file)),
+    ["absent.py"],
+  );
+});

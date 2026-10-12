@@ -14,7 +14,8 @@ cache_size are not stored in the file, so no database inspection can show what
 an application sets. `--source` is a text scan: for each mention of
 journal_mode it reports whether a busy_timeout mention comes earlier in the
 same file. It does not establish run order or which connection each belongs
-to. Treat those lines as places to read, not verdicts.
+to. Treat those lines as places to read, not verdicts. A source path that cannot
+be read is listed as not scanned and the exit status is 2.
 """
 import argparse
 import json
@@ -52,12 +53,21 @@ def mount_for(path):
 
 
 def scan_source(paths):
-    """For each file that mentions journal_mode, note where busy_timeout appears."""
+    """For each file that mentions journal_mode, note where busy_timeout appears.
+
+    Returns (findings, errors). A path that cannot be read is an error, so a
+    failed scan never looks like a scan that found nothing.
+    """
     findings = []
+    errors = []
     files = []
+
+    def walk_error(error):
+        errors.append({"file": str(error.filename), "error": error.strerror or str(error)})
+
     for entry in paths:
         if os.path.isdir(entry):
-            for root, dirs, names in os.walk(entry):
+            for root, dirs, names in os.walk(entry, onerror=walk_error):
                 dirs[:] = [d for d in dirs if d not in {".git", "node_modules", ".venv", "target", "dist"}]
                 files.extend(
                     os.path.join(root, n) for n in names if os.path.splitext(n)[1] in SOURCE_SUFFIXES
@@ -68,7 +78,8 @@ def scan_source(paths):
         try:
             with open(file, encoding="utf-8", errors="replace") as handle:
                 lines = handle.read().splitlines()
-        except OSError:
+        except OSError as error:
+            errors.append({"file": file, "error": error.strerror or str(error)})
             continue
         journals = [i + 1 for i, l in enumerate(lines) if re.search(r"journal_mode", l, re.I)]
         timeouts = [i + 1 for i, l in enumerate(lines) if re.search(r"busy_timeout|busyTimeout|set_busy_timeout", l, re.I)]
@@ -81,7 +92,7 @@ def scan_source(paths):
             else:
                 status = "journal_mode at line %d; no busy_timeout in this file" % journal
             findings.append({"file": file, "line": journal, "status": status, "ok": bool(earlier)})
-    return findings
+    return findings, errors
 
 
 def inspect(path, quick_check=False):
@@ -173,7 +184,7 @@ def notes(result):
     return out
 
 
-def render(result, source):
+def render(result, source, source_errors=()):
     lines = ["database: %s" % result["path"]]
     lines.append("size: %d bytes; %s pages of %s bytes; %s free" % (
         result["fileBytes"], result["pageCount"], result["pageSize"], result["freelistCount"]))
@@ -195,6 +206,8 @@ def render(result, source):
         lines.append("source scan (journal_mode mentions): %d" % len(source))
         for item in source:
             lines.append("  %s: %s%s" % (item["file"], item["status"], "" if item["ok"] else "  <- read this"))
+        for item in source_errors:
+            lines.append("  not scanned: %s (%s)" % (item["file"], item["error"]))
     return "\n".join(lines)
 
 
@@ -213,16 +226,19 @@ def main(argv=None):
     except (sqlite3.Error, OSError) as error:
         print("error: %s" % error, file=sys.stderr)
         return 2
-    source = scan_source(args.source) if args.source else None
+    source, source_errors = scan_source(args.source) if args.source else (None, [])
     if args.json:
         payload = dict(result)
         payload["notes"] = notes(result)
         if source is not None:
             payload["source"] = source
+            payload["sourceErrors"] = source_errors
         print(json.dumps(payload, indent=2, sort_keys=True))
     else:
-        print(render(result, source))
-    return 0
+        print(render(result, source, source_errors))
+    for item in source_errors:
+        print("error: could not scan %s: %s" % (item["file"], item["error"]), file=sys.stderr)
+    return 2 if source_errors else 0
 
 
 if __name__ == "__main__":

@@ -32,9 +32,12 @@ different engine, driver or pool, read
    statement, on every connection, including short-lived probe, lock and status
    databases. The default is 0, so any competing lock fails at once. Set it
    long enough to cover the longest holder you expect. A deliberate fail-fast
-   probe sets 0 and says why in a comment. (M: a mail server's first start and a
-   wake-lock probe failed this way. A test with a holder of 300 ms failed the
-   old order in 5 ms and passed once the timeout came first.)
+   probe sets 0 and says why in a comment. A connection has one busy handler,
+   and `PRAGMA busy_timeout` replaces any handler the driver or your code
+   installed (D), so where you register a custom handler, configure that and do
+   not also set the pragma. (M: a mail server's first start and a wake-lock
+   probe failed this way. A test with a holder of 300 ms failed the old order in
+   5 ms and passed once the timeout came first.)
 2. **Convert to WAL once.** Switching a brand-new file to `journal_mode=WAL`
    takes an exclusive lock, and several processes doing it together failed.
    Create and convert the file in one place, or retry the conversion on
@@ -69,8 +72,10 @@ different engine, driver or pool, read
 8. **Start write transactions with `BEGIN IMMEDIATE`** and retry the whole
    transaction on `SQLITE_BUSY`. A deferred transaction that reads and then
    writes cannot wait: SQLite returns busy without calling the handler when
-   waiting could deadlock (D). Using `BEGIN IMMEDIATE` for reads serializes them
-   behind writers (read from one server's source, not measured). Keep write
+   waiting could deadlock (D). `BEGIN IMMEDIATE` takes the write lock at once:
+   it waits behind an existing writer and blocks every other writer until it
+   ends, even if its body only reads. Using it for reads therefore serializes
+   them with writers (read from one server's source, not measured). Keep write
    transactions short and free of I/O.
 9. **Expect a checkpoint to wait.** A long-running reader stops a checkpoint
    from finishing, so the WAL grows (D). A `TRUNCATE` checkpoint also waits for
