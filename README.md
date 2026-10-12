@@ -16,7 +16,7 @@ Fresh installs select eight skills for setup, review, diagnosis, explanation,
 planning, tests, writing and remaining work. Modifiers start off. Add guidance
 when a task needs it, and let each repository supply its own safeguards.
 
-<p align="center"><img src="docs/assets/overview.png" alt="The four layers composed into one rules file: core, opt-in modifiers, your layer and each repository's AGENTS.md. The eval figures in this illustration come from an early internal run and are not a current result." width="100%"></p>
+<p align="center"><img src="docs/assets/overview.png" alt="The four layers composed into one rules file: core, opt-in modifiers, your layer and each repository's AGENTS.md, beside what a fresh install selects: core rules on, modifiers off, eight skills." width="100%"></p>
 
 If you are an AI agent reading this for your user, the prompt under
 [Evaluate it with your agent](#evaluate-it-with-your-agent) is the evaluation
@@ -300,12 +300,16 @@ want and explains these limits before changing the configuration.
 
 ## Checking the rules against your models
 
-`evals/end-of-reply/` runs short scenarios through any model CLI and grades
+`evals/end-of-reply/` runs short scenarios through any model CLI. It grades
 whether the agent keeps working or ends with an offer at the right time,
-including when it reads only the first 80 lines. In a 2026-10-04 run of the
-three original scenarios against v0.5.7 on seven models, the rules passed 62 of
-63 replies, against 26 for a one-sentence instruction and 21 with no rules; its
-README has the breakdown and limits.
+including when it reads only the first 80 lines. A 2026-10-11 replay covered
+its 18 scenarios, two runs each, on Claude Code 2.1.296 only. The rules scored
+22 of 36 replies with Opus 5.5 and 27 of 36 with Sonnet 5.5. A one-sentence
+instruction scored 18 and 16, and no rules scored 17 and 16. The gains cluster
+in follow-ups, parked findings, stacked offers and spin-offs, where the
+controls scored 0. Two runs per scenario is a small sample, so read the counts,
+not a percentage. No other agent was measured. The eval's README has the
+breakdown and limits.
 
 ## Development
 

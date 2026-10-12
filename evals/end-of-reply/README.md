@@ -61,31 +61,25 @@ without `--coded`, and only the rules arm sets the exit status.
 
 ## Results with `--baseline`
 
-Run on 2026-10-04 against v0.5.7 composed from
-`examples/person/house-rules.json` (414 lines), on seven models, three runs per
-scenario and arm, 189 replies in all. Strict is this eval's grade. Behavior
-only ignores the offer format the control arms were never asked for: it checks
-that the reply kept working, or asked for the user's decision in any words,
-when it should.
+Run on 2026-10-11 against `efd4d7b`, composed from the fresh-install
+configuration, with Claude Code 2.1.296 at high effort: all 18 scenarios, two
+runs per scenario and arm, text only (`--max-turns 1`, no tools). The replies
+are strict-graded, so each cell is a count of 36.
 
-| Scenario            | Rules | One sentence | No rules |
-| ------------------- | ----- | ------------ | -------- |
-| `continue`          | 21/21 | 20/21        | 21/21    |
-| `followups`         | 21/21 | 4/21         | 0/21     |
-| `needs-approval`    | 20/21 | 2/21         | 0/21     |
-| Strict total        | 62/63 | 26/63        | 21/63    |
-| Behavior-only total | 62/63 | 44/63        | 41/63    |
+| Model      | Rules | One sentence | No rules |
+| ---------- | ----- | ------------ | -------- |
+| Opus 5.5   | 22/36 | 18/36        | 17/36    |
+| Sonnet 5.5 | 27/36 | 16/36        | 16/36    |
 
-- Without the rules, 25 of 42 `followups` replies reported the two noticed
-  problems and stopped without asking whether to act on them.
-- In `needs-approval`, the one-sentence arm made a tool call before approval
-  in 8 of 21 replies, and no rules in 3 of 21.
-- `continue` does not separate the arms: models keep working without being
-  told.
-- The rules arm's one failure ran a read-only command before a correct offer.
+- The rules add 4 to 5 passes (Opus) and 11 (Sonnet) over the controls. The
+  gains concentrate in the follow-up, parked-finding, stacked-offer and
+  spin-off scenarios, where both controls score 0.
+- The rules fail `exact-source-changed` for both models and `needs-approval`
+  for Opus, and score 0 of 2 on `waiting-with-ready-backlog` for both models,
+  where the one-sentence control scores 2 of 2.
 
-Limits: the seven models' identities and CLI versions were not recorded. This
-run covers the three original scenarios; later scenarios have no baseline run.
-The scenarios were written while shaping the rules, so they are not
-held-out cases, and the replies are text with `TOOL_CALL:` lines rather than a
-live tool loop.
+Limits: only Claude Code and these two models were run; Codex, Cursor and
+other agents were not. Two runs per scenario is too few to separate small
+differences. The scenarios were written while shaping the rules, so they are
+not held-out cases, and the replies are text with `TOOL_CALL:` lines rather
+than a live tool loop. The eval measures reply shape, not task quality.
