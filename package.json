@@ -23,6 +23,7 @@
     "!skills/*/test/",
     "!**/__pycache__/",
     "docs/",
+    "!docs/npm-release.md",
     "examples/",
     "LICENSE",
     "THIRD_PARTY_NOTICES.md",

@@ -1,4 +1,4 @@
-# npm release setup
+# npm release procedure
 
 The package name is `@bompus/house-rules`; the executable is `house-rules`.
 It has no runtime dependencies or install hooks. Installing the package does
@@ -16,35 +16,26 @@ against the release candidate, covering every material it lists. Land
 corrections on `main` first. Only then tag, publish to npm, create the GitHub
 release or announce it.
 
-## First publication
+## Publishing a release
 
-This one-time setup applies to 0.11.0, the first published version. The first publication requires an npm account that owns the `bompus` scope.
-An earlier publication of another package does not establish current login or
-scope access. Authenticate using npm's web login and complete its 2FA approval.
-Do not put credentials into the repository or workflow.
+Before publishing, run `npm run check:package -- --out <directory>` on the
+release commit and confirm it passes. Publishing a stable GitHub release then
+triggers `.github/workflows/npm-publish.yml`. It verifies that the tagged commit
+belongs to `main`, checks the package version and dated changelog entry, and
+checks the packed CLI and skill resources before publishing the same tarball. Prereleases are excluded.
 
-On the selected release commit, run `npm run check:package -- --out <directory>`.
-Publish that verified `house-rules.tgz` with `npm publish <tarball> --access public`.
-Then configure its trusted publisher on npm for GitHub user `bompus`, repository
-`house-rules`, workflow filename `npm-publish.yml`. Enable direct `npm publish`.
-The default staged-publication permission alone does not permit this workflow.
+If the version is already on npm, the workflow compares the published tarball's
+integrity with the verified one and skips publishing when they match. Different
+bytes at the same version fail the workflow, so fix the problem and release a
+new version instead of republishing.
 
-The first GitHub release workflow checks the published tarball integrity and
-skips an identical existing version. Different bytes at the same version fail
-the workflow. Subsequent versions publish automatically after trusted publisher
-setup. Do not create another release solely to test authentication.
-
-## Subsequent releases
-
-Publishing a stable GitHub release triggers `.github/workflows/npm-publish.yml`.
-It verifies that the tagged commit belongs to `main`, checks the package version
-and dated changelog entry, and checks the packed CLI and skill resources before
-publishing the same tarball. Prereleases are excluded.
-
-The workflow uses a GitHub-hosted runner and npm's OIDC trusted publishing.
-It stores no npm token. npm requires Node 22.14 or newer and npm 11.5.1 or newer;
-the workflow uses Node 26. npm automatically supplies provenance for this public
-repository and package. See the [official trusted publishing documentation](https://docs.npmjs.com/trusted-publishers/).
+The workflow uses a GitHub-hosted runner and npm's OIDC trusted publishing,
+which the package's npm settings must name: GitHub user `bompus`, repository
+`house-rules`, workflow filename `npm-publish.yml`, with direct `npm publish`
+enabled. The workflow stores no npm token, and none belongs in the repository.
+npm requires Node 22.14 or newer and npm 11.5.1 or newer; the workflow uses
+Node 26. npm automatically supplies provenance for this public repository and
+package. See the [official trusted publishing documentation](https://docs.npmjs.com/trusted-publishers/).
 
 CI runs `npm run check:package -- --bun`. It installs the actual local tarball
 into isolated scratch with lifecycle scripts disabled, exercises the CLI under
