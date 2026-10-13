@@ -88,3 +88,24 @@ or changed head exits 2. Re-read the PR before deciding whether to retry.
 
 The helper shares GraphQL command/envelope validation with `check-pr-review.ts`.
 It does not clear that gate's review-body findings or change the landing workflow.
+
+## Landing helpers
+
+Three scripts in `scripts/` implement the landing steps § Landing describes. They never
+reset, switch or delete a checkout.
+
+- `merge-pr.sh <pr> [--merge] [--remote <name>] [--idle-primary <path>]` squash-merges
+  (or merge-commits) an open pull request and deletes its remote head without
+  `gh pr merge --delete-branch`, which removes other sessions' linked worktrees. It
+  refuses while review feedback is open (`check-pr-review.ts`), while another open pull
+  request targets the head, and for a repository listed in `HR_PUSH_LANDED`
+  (space-separated `owner/repo`; those land by fast-forward push, which it prints). The
+  merge passes `--match-head-commit`. It lists worktrees still on the merged branch so
+  their owners clean up.
+- `verify-landed.sh --commit <sha> [--ff [--idle-primary <path>]]` fetches, checks that
+  the default branch contains the commit, and checks the local default; `--ff`
+  fast-forwards a clean default checkout. `--preflight --ff` checks eligibility before
+  landing. After a blocked check, rerun this script, not `merge-pr.sh`.
+- `check-landing.py [--path <checkout>] [--base <ref>]` reports whether a checkout's
+  work is in the base branch by content, so squash-merged branches count as landed, and
+  lists live processes whose working directory is inside the checkout (Linux only).

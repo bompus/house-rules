@@ -18,6 +18,12 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   read-only review sub-agent. It carries the read-only method and the result contract (`PASS` or
   `BLOCK: N`, findings ordered by severity, verification limits reported separately), so a host can
   define a reviewer without copying the method.
+- `hr-pr-followup` ships three landing helpers under `scripts/`: `merge-pr.sh` squash-merges a pull
+  request and deletes only its remote head (the `gh pr merge --delete-branch` flag also removes other
+  sessions' linked worktrees), `verify-landed.sh` checks that the default branch contains the commit and
+  fast-forwards a clean default checkout, and `check-landing.py` reports by content whether a checkout's work
+  landed and lists processes still using it. A repository that lands by fast-forward push is named in
+  `HR_PUSH_LANDED`. The helper tests run on Linux and macOS; on Windows they are skipped.
 - Composing rules inline (without `--out`) no longer drops four core rules. Landing and Reporting
   are replaced by their reference text in that mode, and the references lacked the leave-alone-a-checkout-
   another-session-uses rule, the version-bump audit paragraph, the five-items-per-list line and the
