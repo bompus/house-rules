@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { mkdtempSync, readFileSync, writeFileSync, mkdirSync, symlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, sep } from "node:path";
 import { check, render, type ReportData } from "../scripts/render-report.ts";
 import {
   claudeProjectRoots,
@@ -118,11 +118,9 @@ describe("usage-by-model", () => {
     symlinkSync(join(home, ".claude", "projects"), join(home, ".claude_linked"));
     mkdirSync(join(home, ".claude_empty"));
     writeFileSync(join(home, ".claude.json"), "{}");
-    expect(claudeProjectRoots(home).map((root) => root.slice(home.length))).toEqual([
-      "/.claude/projects",
-      "/.claude-other/projects",
-      "/.claude_hub/projects",
-    ]);
+    expect(claudeProjectRoots(home).map((root) => root.slice(home.length))).toEqual(
+      [".claude", ".claude-other", ".claude_hub"].map((name) => sep + join(name, "projects")),
+    );
     const entry = (id: string) =>
       JSON.stringify({
         timestamp: "2026-10-09T12:00:00Z",
