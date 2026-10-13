@@ -63,6 +63,18 @@ issue form or only a Markdown template. Verify the published body and labels.
 With no signed-in browser, prepare the report and ask for access or user
 submission; do not fall back to `gh issue create` and drop the form's labels.
 
+Every issue offers the pull request, whatever the repository's triage timing.
+Waiting for a maintainer's verdict decides when you open the pull request, not
+whether the issue says one is available. State in the issue's fix or workaround
+field (or its closing lines, when the form has none) what exists and offer the
+pull request: "None applied. I can open a pull request for this once triage
+confirms the direction. <branch exists / not written yet>; <the approach or
+options I would measure>." When a branch or pull request already exists, link it
+instead. Before showing a draft to the user, run
+`node scripts/check-pr-offer.mjs <draft.md>` from this skill; it fails when that
+text neither says "pull request" nor links one. Read the offer back from the
+form's fields before submitting.
+
 When an issue needs major or material changes, replace it with a new issue
 in any repository. Compare the proposed revision with the published report.
 A revision is major or material if it changes the reported problem, scope,

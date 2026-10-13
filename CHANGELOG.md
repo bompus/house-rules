@@ -11,6 +11,9 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   `evals/end-of-reply/screen/`. `hr-agent-guidance-audit` gains `references/prune-workflow.md`, the
   measured way to shrink always-loaded guidance: size it, migrate, condense, screen each rule, check
   vendor guides, recommend opt-ins, land and adopt.
+- `hr-diagnosing-bugs` requires every issue to offer the pull request (or link the one that exists) in
+  its fix or workaround field, and ships `scripts/check-pr-offer.mjs`, which fails a draft whose field or
+  closing lines neither say "pull request" nor link one. Run it before showing a draft.
 - The `hr-pr-followup` landing-helper test no longer writes `__pycache__` next to the shipped scripts, so a
   repository that vendors the skill does not end up with stray bytecode after running its tests.
 - `quiet-watchers` is merged into `periodic-updates`: a watcher event that changes nothing gets at most one
