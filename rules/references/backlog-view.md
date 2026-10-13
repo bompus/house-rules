@@ -14,7 +14,8 @@ bottom-up, so the items that can move sit last, next to the offer:
    with its status and owner, and yes, no and defer chips on the right. The
    chips show the answer format; they are not controls. Mark the group being
    asked "group N of M, this reply" in the header, tinted, with an accent rail
-   beside its rows. Put the highest-ranked question last.
+   beside its rows. Put that group last, with its highest-ranked question last
+   within it.
 3. **Actionable now**, with its count. Keep the group when it is empty: write
    "Nothing." and the reason.
 

@@ -16,8 +16,8 @@ the groups bottom-up, so the items that can move sit last, next to the offer:
    start these items or offer them.
 2. **Needs your decision** (count). One bullet per question, a bold Q label
    carrying the offer's question number, then the item, its status and its
-   owner. Mark the group being asked "▶ group N of M, this reply". Put the
-   highest-ranked question last.
+   owner. Mark the group being asked "▶ group N of M, this reply" and put it
+   last, with its highest-ranked question last within it.
 3. **Actionable now** (count). Keep the group when it is empty: write "Nothing."
    and the reason.
 

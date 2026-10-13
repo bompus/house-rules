@@ -101,7 +101,8 @@ offers are open and unanswered, run it in groups:
 
 1. Rank and save the report as above. Where the user's rules have a backlog
    view (§ Backlog view), show it for the whole ranked backlog with the
-   current group marked and last. The decisions stay in the text offer. When
+   current group marked and placed last among the decisions. The decisions
+   stay in the text offer. When
    stacked offers start the walk-through, mark each superseded in the ledger,
    keep its option text, and queue its questions as groups.
 2. Put items in one group when one answer can cover them: the same owner, the
@@ -120,8 +121,9 @@ offers are open and unanswered, run it in groups:
    handoff that brings its own offer while the queue is open joins the queue
    with one line; it does not become another standalone offer.
 5. Stop when no decision remains that the user can make now. Record each
-   leftover with the condition that would reopen it, and show the backlog view,
-   when there is one, with what closed and what still waits.
+   leftover with the condition that would reopen it. Say what closed in the
+   text, and show the backlog view, when there is one, with what still waits;
+   the view lists open items only.
 
 For a full audit, save a mapping from reviewed source records to items or
 reviewed records kept only as context. When the report rebuilds a ledger or
