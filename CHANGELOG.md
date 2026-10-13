@@ -10,7 +10,7 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   `prepare.mjs` builds the throwaway plugin directory the runner needs. One case was run end to end
   (the skill fired and the reply passed); no results ship with the cases.
 - `hr-benchmarking` lists verified Bun-versus-Node traps in its JavaScript reference: `bun x` runs
-  the tool's Node shebang, Bun's `PATH` shims make a spawned `node` start Bun, `require.resolve`
+  the tool's Node shebang, `node` in package scripts resolves to Bun under `bun --bun run`, `require.resolve`
   falls back to Bun's global install cache, busy workers wait on shared GC marking, and Node 26.11
   renamed its SQLite classes. Each bullet says how to confirm the runtime.
 - Composing rules inline (without `--out`) no longer drops four core rules. Landing and Reporting

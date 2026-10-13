@@ -24,9 +24,11 @@ Verified on Bun 1.4.x:
 
 - `bun x vitest` is not Bun. `bun x` honors the tool's `#!/usr/bin/env node`
   shebang and runs the whole suite under Node. Use `bun --bun x vitest run`.
-- Bun puts shim directories at the front of `PATH` for the children it spawns, so
-  `spawn('node', …)` from a Bun process still starts Bun. Filter `PATH` entries
-  matching `/bun/i` before looking up real Node.
+- `node` can resolve to Bun. On Bun 1.4.3, a package script that calls `node` printed Bun's
+  version under `bun --bun run` and Node's under plain `bun run`; a `Bun.spawnSync(['node', …])`
+  reached real Node in both modes. The shim depends on Bun's `run.bun` setting, which defaults
+  on only when `node` is absent from `PATH`. Check `process.versions.bun` in the spawned process,
+  and filter `PATH` entries matching `/bun/i` when you need real Node.
 - With no `node_modules` up the tree, `require.resolve` falls back to Bun's global
   install cache ([oven-sh/bun#42893](https://github.com/oven-sh/bun/issues/42893)).
   Pass `--no-install` for a hermetic "not installed" result.
