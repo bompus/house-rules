@@ -8,7 +8,8 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   `hr-code-review`, `hr-diagnosing-bugs`, `hr-explain-code`, `hr-extract-shared-steps`, `hr-plain-prose`
   and `hr-test-audit` fire on realistic requests, and that the replies meet each skill's contract.
   `prepare.mjs` builds the throwaway plugin directory the runner needs. One case was run end to end
-  (the skill fired and the reply passed); no results ship with the cases.
+  (the skill fired and the reply passed); no results ship with the cases. The `hr-explain-code` case is
+  a near miss (that skill is user-invoked), so it is named `explain-code-near-miss`.
 - `hr-benchmarking` lists verified Bun-versus-Node traps in its JavaScript reference: `bun x` runs
   the tool's Node shebang, `node` in package scripts resolves to Bun under `bun --bun run`, `require.resolve`
   falls back to Bun's global install cache, busy workers wait on shared GC marking, and Node 26.11
@@ -17,8 +18,6 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   read-only review sub-agent. It carries the read-only method and the result contract (`PASS` or
   `BLOCK: N`, findings ordered by severity, verification limits reported separately), so a host can
   define a reviewer without copying the method.
-  (the skill fired and the reply passed); no results ship with the cases. The `hr-explain-code` case is
-  a near miss (that skill is user-invoked), so it is named `explain-code-near-miss`.
 - Composing rules inline (without `--out`) no longer drops four core rules. Landing and Reporting
   are replaced by their reference text in that mode, and the references lacked the leave-alone-a-checkout-
   another-session-uses rule, the version-bump audit paragraph, the five-items-per-list line and the
