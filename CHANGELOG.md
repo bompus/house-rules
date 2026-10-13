@@ -6,7 +6,7 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 - `hr-what-next` no longer requires a backlog visual. Two optional rules choose the view: `backlog-visual`
   adds a dark panel of every open item grouped by what it waits on (a table for waiting items, one row per
-  decision with the offer's Q number and yes/no/defer chips, the current group marked), with the same groups
+  decision with the offer's Q number and answer chips, the current group marked), with the same groups
   as a Markdown outline where the host cannot render; `backlog-outline` adds the outline alone. With neither
   enabled, a backlog report is the ranked table. The two cannot be enabled together, and `hr-house-rules-setup`
   asks which to use. A setup that relied on the visual enables `backlog-visual`.

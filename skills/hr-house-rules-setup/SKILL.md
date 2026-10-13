@@ -68,7 +68,9 @@ For an agent running without a terminal, use the preview/apply workflow below.
    grouped by what each item waits on; `backlog-visual`), **Outline** (the same
    groups as a Markdown outline that nothing renders; `backlog-outline`) or
    **None** (the ranked table alone; neither modifier). Recommend nothing. Enable
-   one at most: the two cannot be combined.
+   one at most: the two cannot be combined. `config set` keeps modifiers it is
+   not told to change, so pass `--enable-modifier` for the chosen one and
+   `--disable-modifier` for the other, or for both when the answer is None.
    Done when the user selects relevant changes or keeps the current setup.
 
 3. Use `node compose.mjs config set --config <path>` with the selected
