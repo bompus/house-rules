@@ -94,6 +94,23 @@ test("frontmatter typos fail instead of composing somewhere else", () => {
   );
 });
 
+test("each backlog view modifier composes alone, and the two cannot be combined", (t) => {
+  const dir = scratch(t);
+  const select = (modifiers) => ({ modifiers, skills: { include: ["hr-what-next"] } });
+  for (const name of ["backlog-visual", "backlog-outline"]) {
+    const { rules } = composeConfiguration(select([name]), dir);
+    assert.equal(headings(rules).filter((h) => h === "Backlog view").length, 1, name);
+  }
+  assert.throws(
+    () => composeConfiguration(select(["backlog-visual", "backlog-outline"]), dir),
+    /duplicate section "Backlog view"/,
+  );
+  assert.equal(
+    headings(composeConfiguration(select([]), dir).rules).includes("Backlog view"),
+    false,
+  );
+});
+
 test("ambiguous fragments fail instead of composing contradictions", () => {
   assert.throws(
     () => compose(core, [frag({}, "## Landing\n\nagain")]),
@@ -170,7 +187,13 @@ test("every shipped modifier composes, alone and all together", () => {
     parseFragment(readFileSync(join(root, "rules/modifiers", `${m.name}.md`), "utf8"), m.name),
   );
   for (const f of all) compose(core, [f]);
-  const out = compose(core, all);
+  // Modifiers that offer alternative versions of one section cannot be combined; keep the first of each.
+  const exclusive = [["backlog-outline", "backlog-visual"]];
+  const dropped = new Set(exclusive.flatMap((names) => names.slice(1)));
+  const out = compose(
+    core,
+    all.filter((f) => !dropped.has(f.source)),
+  );
   assert.equal(headings(out)[0], "End of every reply");
   assert.ok(
     modifierList().every((m) => m.description),

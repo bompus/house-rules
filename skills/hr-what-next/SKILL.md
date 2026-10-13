@@ -77,16 +77,11 @@ completed state before the completion message; a report alone does not do so.
    For a full audit, put the full individual table in a durable report
    and link it beside the immediate decisions. Answer whether items are
    accounted for separately from whether selected work is complete.
-   Whenever any item remains, add one visual beside the table, not only when
-   the user asks to see the backlog. Group the rows by what each waits on and
-   order the groups bottom-up, so the items that can move sit last, next to the
-   offer: waiting on others first (one compact row each with its trigger and
-   owner), then needs your decision, then actionable now. Number a decision row
-   with its offer question number, keep the actionable-now group even when it
-   is empty ("Nothing"), and put the highest-ranked item last within a group.
-   Render it with the host's own preview or rendering tool when one exists; give
-   a text outline in the same order only where the host has none. The offer itself follows the offer rules, which make an offer visual
-   only when the user asks for one.
+   Where the user's rules have a backlog view (§ Backlog view, an optional
+   rule), show it beside the table whenever any item remains, in the format that
+   rule gives. Without one, the table alone is the report. The offer itself
+   follows the offer rules, which make an offer visual only when the user asks
+   for one.
 6. Continue work that can advance under existing authorization. Ask only for
    unresolved choices using the governing offer format. Invoking this skill is
    asking for the backlog (§ Session purpose), so present every needs-your-decision
@@ -104,12 +99,11 @@ completed state before the completion message; a report alone does not do so.
 When the user asks to go through the backlog item by item, or three or more
 offers are open and unanswered, run it in groups:
 
-1. Rank and save the report as above. Show one visual of the whole ranked
-   backlog, grouped and ordered as in step 5, with the current group marked
-   and last; use a text outline only where the host has no render tool. The
-   decisions stay in the text offer. When stacked offers start the walk-through,
-   mark each superseded in the ledger, keep its option text, and queue its
-   questions as groups.
+1. Rank and save the report as above. Where the user's rules have a backlog
+   view (§ Backlog view), show it for the whole ranked backlog with the
+   current group marked and last. The decisions stay in the text offer. When
+   stacked offers start the walk-through, mark each superseded in the ledger,
+   keep its option text, and queue its questions as groups.
 2. Put items in one group when one answer can cover them: the same owner, the
    same action or one dependency. Ask one group per reply, one numbered
    question per item with one combined acceptance line. Ask first the group
@@ -120,13 +114,14 @@ offers are open and unanswered, run it in groups:
    run failed, whether a setting already exists) and show the finding beside
    the question. Ask the user only the decision.
 4. Record each answer in the ledger before acting, then close that group's
-   offer. Show the visual again with the next group marked before asking it.
+   offer. Show the backlog view again, when there is one, with the next group
+   marked before asking it.
    `go` selects the recommendation in the latest open group only. A result or
    handoff that brings its own offer while the queue is open joins the queue
    with one line; it does not become another standalone offer.
 5. Stop when no decision remains that the user can make now. Record each
-   leftover with the condition that would reopen it, and show the visual with
-   what closed and what still waits.
+   leftover with the condition that would reopen it, and show the backlog view,
+   when there is one, with what closed and what still waits.
 
 For a full audit, save a mapping from reviewed source records to items or
 reviewed records kept only as context. When the report rebuilds a ledger or

@@ -63,6 +63,12 @@ For an agent running without a terminal, use the preview/apply workflow below.
    personal rules still steer how questions are asked, resolve that conflict
    before changing those rules or composing. Call modifiers "optional rules"
    and the user's layer "your own rules" when talking to them.
+   Ask separately how they want a backlog or remaining-work report shown, unless
+   the config already records a choice they confirm: **Panel** (a dark panel
+   grouped by what each item waits on; `backlog-visual`), **Outline** (the same
+   groups as a Markdown outline that nothing renders; `backlog-outline`) or
+   **None** (the ranked table alone; neither modifier). Recommend nothing. Enable
+   one at most: the two cannot be combined.
    Done when the user selects relevant changes or keeps the current setup.
 
 3. Use `node compose.mjs config set --config <path>` with the selected

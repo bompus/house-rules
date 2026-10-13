@@ -865,6 +865,15 @@ test("fresh sample composes exactly the selected routine skills and no modifiers
   assert.equal(existsSync(join(dir, "out", "hr-handoff")), false);
 });
 
+test("the two backlog views each select alone and name the conflict when combined", (t) => {
+  for (const name of ["backlog-visual", "backlog-outline"])
+    assert.match(report(fixture(t, { modifiers: [name] }).path).composedRules, /## Backlog view/);
+  assert.throws(
+    () => report(fixture(t, { modifiers: ["backlog-visual", "backlog-outline"] }).path),
+    /backlog-visual and backlog-outline cannot be combined/,
+  );
+});
+
 test("the model default choice names no question format and keeps the rest of Offers", (t) => {
   const { path } = fixture(t, { modifiers: ["model-default-questions"] });
   const out = report(path);

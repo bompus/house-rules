@@ -44,6 +44,7 @@ function stringList(value, key) {
 
 export const QUESTION_PRESETS = ["default", "plain", "coded", "cards"];
 export const QUESTION_MODIFIERS = ["model-default-questions", "coded-offers", "question-cards"];
+const BACKLOG_VIEWS = ["backlog-visual", "backlog-outline"];
 
 function validateStructure(config) {
   if (!object(config)) throw new Error("configuration must be a JSON object");
@@ -60,6 +61,10 @@ function validateSelection(config) {
   for (const name of config.modifiers ?? []) {
     if (!known.has(name)) throw new Error(`unknown modifier "${name}" (see config catalog)`);
   }
+  if (BACKLOG_VIEWS.every((name) => config.modifiers?.includes(name)))
+    throw new Error(
+      `${BACKLOG_VIEWS.join(" and ")} cannot be combined; enable one, or neither for the table alone`,
+    );
   if (config.modifiers?.includes("question-cards") && !config.modifiers.includes("coded-offers"))
     throw new Error(
       "question-cards requires coded-offers; use --questions cards or disable question-cards",
