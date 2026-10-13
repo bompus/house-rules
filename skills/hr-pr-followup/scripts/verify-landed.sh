@@ -153,7 +153,7 @@ if git show-ref --verify --quiet "refs/heads/$DEFAULT"; then
     elif [ -n "$(git status --porcelain)" ]; then
       echo "local $DEFAULT: $BEHIND behind but working tree dirty — report, do not touch"
     elif [ "$FF" = 1 ] && [ "$FAIL" = 0 ]; then
-      git merge --quiet --ff-only "$REMOTE/$DEFAULT"
+      git merge --quiet --ff-only "$UPSTREAM"
       echo "local $DEFAULT: fast-forwarded $BEHIND commit(s) to $UPSTREAM (checked out here)"
     else
       echo "local $DEFAULT: $BEHIND behind, clean, checked out here — safe to fast-forward"

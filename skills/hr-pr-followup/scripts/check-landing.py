@@ -147,7 +147,7 @@ def landing_state(path, base):
             report["reason"] = "no merge base with base ref"
             return report
         mb = r.stdout.strip()
-        r = git(path, "diff", "--name-only", "-z", mb, "HEAD")
+        r = git(path, "diff", "--name-only", "--no-renames", "-z", mb, "HEAD")
         if r.returncode != 0:
             report["reason"] = "git diff failed"
             return report
@@ -162,7 +162,7 @@ def landing_state(path, base):
             if not report["content_landed"]:
                 # Base may have advanced on the same files after the merge
                 # base: then a diff is expected even for landed content.
-                r = git(path, "diff", "--name-only", "-z", mb, base,
+                r = git(path, "diff", "--name-only", "--no-renames", "-z", mb, base,
                          "--", *files)
                 if r.returncode == 0 and any(
                         f for f in r.stdout.split("\0") if f):
