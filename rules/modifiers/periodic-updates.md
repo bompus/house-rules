@@ -1,5 +1,5 @@
 ---
-description: A job expected to run longer than about 10 minutes posts a short status update every 5 minutes by default, with progress, an ETA with its basis or "unmeasured", and findings so far, until the job ends.
+description: A job expected to run longer than about 10 minutes posts a short status update every 5 minutes by default, with progress, an ETA with its basis or "unmeasured", and findings so far, until the job ends; a watcher event that changes nothing gets at most one line.
 after: Reporting
 ---
 
@@ -18,6 +18,8 @@ one-line summary of findings so far. A milestone, failure, stall or change in
 the forecast goes in full instead.
 
 Where the host can run a background watcher or timer, arm it to post the
-updates. Otherwise post at the first natural checkpoint after each interval has
+updates and to report in full only a milestone, failure, stall, forecast change
+or the run's completion. A watcher event that changes nothing gets at most one
+line. Otherwise post at the first natural checkpoint after each interval has
 passed, when a step finishes or a tool call returns. Stop the updates when the
 job ends; the final report replaces them.
