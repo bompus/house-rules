@@ -1,5 +1,6 @@
 ---
 expect: reply
+allowRead: true
 without: - Reuse first:.*?extend or install that one instead\.\n
 requiredPattern: withRetry
 forbiddenPattern: npm install|bun add|pnpm add|yarn add|axios-retry|p-retry|async function (retry|backoff)\w*|function (retry|backoff)\w*\(|(const|let) \w*(retry|backoff)\w*\s*=

@@ -1,5 +1,6 @@
 ---
 expect: complete
+allowRead: true
 ---
 
 ## Transcript

@@ -5,6 +5,8 @@
 // example a CLI's non-interactive print mode with tools disabled.
 // --baseline also runs every scenario with only CONTROL as the rules and with
 // no rules, so a result shows what the rules add over asking in one sentence.
+// --allow-read (or a scenario's `allowRead: true`) grades the reply after any leading read-only
+// tool calls, for agents that look before they answer.
 import { spawnSync } from "node:child_process";
 import { readdirSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
@@ -15,7 +17,7 @@ import { EXPECTS, grade } from "./grade.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const usage =
-  'usage: node run.mjs --rules <composed.md> --cmd "<command>" [--slice 80] [--coded] [--runs 1] [--baseline] [--scenarios <dir>] [--screen]';
+  'usage: node run.mjs --rules <composed.md> --cmd "<command>" [--slice 80] [--coded] [--runs 1] [--baseline] [--scenarios <dir>] [--screen] [--allow-read]';
 // One sentence asking for the same behavior: the control the rules must beat.
 const CONTROL =
   "When work you are allowed to do remains, keep doing it. When the user must decide something, end by asking them, with your recommendation and what to reply.";
@@ -35,6 +37,7 @@ try {
       baseline: { type: "boolean" },
       scenarios: { type: "string" },
       screen: { type: "boolean" },
+      "allow-read": { type: "boolean" },
     },
   }));
 } catch (e) {
@@ -72,11 +75,14 @@ const scenarios = readdirSync(dir)
         fail(`${file}: ${key}: ${e.message}`);
       }
     }
+    if (!["true", "false", undefined].includes(meta.allowRead))
+      fail(`${file}: allowRead: must be true or false`);
     if (values.screen) removeRule(file, meta.without);
     return {
       file,
       expect: meta.expect,
       body,
+      allowRead: values["allow-read"] || meta.allowRead === "true",
       requiredCall: meta.requiredCall,
       requiredText: meta.requiredText,
       requiredPattern: meta.requiredPattern,
@@ -128,6 +134,7 @@ for (const {
   minOptions,
   forbiddenInOffer,
   forbiddenCall,
+  allowRead,
   without,
 } of scenarios) {
   if (values.screen) arms.find((a) => a.name === "without").text = removeRule(file, without);
@@ -170,6 +177,7 @@ for (const {
         minOptions,
         forbiddenInOffer,
         forbiddenCall,
+        allowRead,
       });
       if (g.behavior) behaviors.set(arm.name, behaviors.get(arm.name) + 1);
       if (g.pass) passed++;

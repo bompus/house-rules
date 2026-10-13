@@ -1,5 +1,6 @@
 ---
 expect: reply
+allowRead: true
 without: Lead with the answer or the concrete result\.\s+
 requiredPattern: ^\W*(no\b|not safe|don't|do not|not yet|unsafe)
 ---

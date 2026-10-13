@@ -35,6 +35,38 @@ const COMMAND =
 const ACTION = `edit|write|create|modify|delete|remove|commit|push|merge|apply|install|deploy|release|${COMMAND}`;
 const THEN = `\\bthen\\s+(?=(?:${ACTION})\\b)`;
 
+// A call that only looks: a read command, or a tool word (`read_file`, `functions.exec`,
+// `skill`, `grep`) that names a lookup, however the agent's harness spells it.
+const LOOKUP = new RegExp(
+  `^${WRAPPER}(?:(?:functions|collaboration)\\.\\w+\\s+)?(?:read(?:_\\w+)?|view|open|skill|search|grep|list|look\\s+up|inspect|check|cat|ls|rg|find|head|tail|stat|wc|date|pwd|git\\s+(?:status|log|diff|show|fetch|worktree\\s+list|rev-parse)|gh\\s+(?:pr|issue)\\s+(?:view|list|checks))\\b`,
+  "i",
+);
+
+// A call that starts with a lookup but also says it writes or sends is not dropped as a read.
+const ALSO_ACTS =
+  /\b(?:send|write|edit|create|record|update|append|save|commit|push|delete|remove|install|notify|relay|merge)\b/i;
+
+// With `allowRead`, a reply may open with read-only tool calls (the agent looks before it
+// answers). The reply is then the text after the last call in that leading run; a reply made
+// only of reads, or whose first call acts, is graded whole.
+export function afterLeadingReads(reply) {
+  const lines = reply.split("\n");
+  let last = -1;
+  for (const [i, line] of lines.entries()) {
+    const text = line.trim();
+    if (!/^TOOL_CALL\b/.test(text)) continue;
+    const parts = text.replace(/^TOOL_CALL:?\s*/i, "").split(/&&|\|\||[;|]/);
+    if (ALSO_ACTS.test(text) || parts.some((p) => REDIRECTING.test(p) || !LOOKUP.test(p.trim())))
+      break;
+    last = i;
+  }
+  const rest = lines
+    .slice(last + 1)
+    .join("\n")
+    .trim();
+  return last >= 0 && rest ? rest : reply;
+}
+
 export function grade(
   reply,
   expect,
@@ -48,10 +80,12 @@ export function grade(
     minOptions = "",
     forbiddenInOffer = "",
     forbiddenCall = "",
+    allowRead = false,
   } = {},
 ) {
   if (!EXPECTS.includes(expect))
     throw new Error(`unknown expect "${expect}" (use ${EXPECTS.join(", ")})`);
+  if (allowRead) reply = afterLeadingReads(reply);
   // A tool call is a line of its own, so "I cannot make a TOOL_CALL" does not count.
   const facts = replyFacts(reply, coded);
   const { tool, asks } = facts;

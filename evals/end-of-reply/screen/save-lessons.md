@@ -1,5 +1,6 @@
 ---
 expect: reply
+allowRead: true
 without: \s*At task or session closeout,\s+save reusable lessons.*?no lesson entry is needed\.
 requiredPattern: TOOL_CALL[^\n]*(write|edit|create|append|save|record|add)[^\n]*(lesson|notes/)
 ---

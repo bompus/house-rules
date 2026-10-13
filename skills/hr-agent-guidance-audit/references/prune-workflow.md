@@ -27,11 +27,28 @@ request does not need.
    - Write a scenario for the rule: `expect: reply`, a transcript where the rule
      decides the outcome, and `requiredPattern` or `forbiddenPattern` for the
      right and wrong reply. Add `without:` as a regular expression matching the
-     rule's exact text once.
-   - Use `--runs 4` or more, on every model you use, at the effort you use.
+     rule's exact text once. Add `allowRead: true` unless the scenario is about
+     the first call itself: a model that reads a file before answering is
+     otherwise graded on the read.
+   - Test the models you use, at the effort you use: Claude Opus 5.5 and
+     Sonnet 5.5, GPT-6.1 Sol, SWE-2, Muse Spark 1.3 Contributor, and Grok 4.7
+     last, because it is the slowest. One wrapper per agent is in
+     `evals/end-of-reply/models/`; its README section has the commands.
+   - Check for rule leaks first. Every one of these agents loads your own rules
+     by default, so probe each wrapper (the README gives the question) and
+     confirm the only instruction file is the scratch `AGENTS.md`. A leak makes
+     the "without" arm obey the rule anyway.
+   - Use `--runs 4` or more. Four runs separate a rule only when the arms differ
+     by 4 and 0; a smaller gap needs 9 runs per arm before you act on it.
    - Read the output: "rule helps" keeps the rule; "no difference" on all
      models makes it a removal candidate; "fails with the rule" means fix the
-     scenario first, because it tests nothing.
+     scenario first, because it tests nothing. A scenario that fails in both
+     arms on most models (the pattern is too narrow, or the transcript lacks
+     what the rule needs) discriminates nothing; rewrite it and confirm that
+     it passes with the rule and fails without it before using its result.
+   - A harness that grades only the first reply penalizes models that read
+     before answering, whatever the rules say. Use `allowRead`, and compare a
+     model's failures with its replies before blaming the rule.
    - A removal candidate is a recommendation, not a deletion. Confirm with
      more runs, and offer the user the choice; moving the rule to an opt-in
      modifier is the middle option.

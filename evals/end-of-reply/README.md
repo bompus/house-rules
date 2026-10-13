@@ -34,7 +34,11 @@ action does not match. With it, any other call is allowed. Without it, any call
 fails except a read-only check (`read`, `git status`, `ls` and similar; `git fetch` counts although it updates remote-tracking refs) and keeping
 the ledger, a plan, notes or a handoff (`TOOL_CALL: edit the plan's ledger …`). `minOptions: 2` requires at least that many options, and
 `forbiddenInOffer: <pattern>` rejects a pattern in the offer's questions and
-options but not in the prose around the offer. A run's result lists `behavior` (the expectation
+options but not in the prose around the offer. `allowRead: true` (or `--allow-read` for every scenario) grades the reply after any leading
+read-only tool calls (`read`, `grep`, `git status`, a skill load), for agents that look before they
+answer. Narration before those calls goes with them. A call that also says it writes, records
+or sends is not a read, and a reply made only of reads is graded whole. The check reads the
+call's description, like the other call checks. A run's result lists `behavior` (the expectation
 met, including the offer shape the rules ask for: the recommendation marker, the reply line, at
 least one option, with `--coded` the coded form, and the layout), `layout` (any layout problem
 found) and `declared` (the scenario's own labels,
@@ -65,6 +69,57 @@ candidate; one that fails in both arms needs a better scenario first. Run it wit
 ```bash
 node evals/end-of-reply/run.mjs --screen --scenarios evals/end-of-reply/screen --rules <composed.md> --cmd "<model CLI>" --runs 4
 ```
+
+`screen/` holds scenarios for core rules. `screen/modifiers/` holds scenarios for rules
+that live in modifiers (periodic updates, cross-session relays, coded offers); compose them
+with the `config.json` beside them, which enables those three modifiers:
+
+```bash
+node compose.mjs --config evals/end-of-reply/screen/modifiers/config.json --out modifiers-rules.md
+node evals/end-of-reply/run.mjs --screen --scenarios evals/end-of-reply/screen/modifiers --rules modifiers-rules.md --cmd "<model CLI>" --runs 4
+```
+
+`test/screen-scenarios.test.mjs` checks that every scenario's `without:` matches its
+composed rules exactly once.
+
+## Running other models
+
+`models/` has one wrapper per command-line agent. Each reads the prompt on stdin and prints
+only the reply, so it works as `--cmd`:
+
+```bash
+node evals/end-of-reply/run.mjs --rules <composed.md> --cmd evals/end-of-reply/models/codex.sh
+```
+
+| Wrapper           | Agent        | Default model (`EOR_MODEL`)              | Isolation from your own rules                                                                  |
+| ----------------- | ------------ | ---------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `claude.sh`       | Claude Code  | `claude-opus-5-5`                        | no tools, settings sources, MCP servers, skills or memory; its own environment variables unset |
+| `codex.sh`        | Codex        | `gpt-6.1-sol`                            | private `CODEX_HOME` holding only a symlink to your login (`EOR_CODEX_AUTH`); `--ignore-rules` |
+| `devin.sh`        | Devin        | `swe-2-high`                             | generated config that disables reading other tools' config; `EOR_DEVIN_ORG_ID` if you need it  |
+| `opencode.sh`     | OpenCode     | `opencode-go/muse-spark-1.3-contributor` | private `XDG_CONFIG_HOME`; its login in the data directory still applies                       |
+| `cursor-agent.sh` | Cursor Agent | `grok-4.7-high`                          | private `HOME` with your login directory (`EOR_CURSOR_CONFIG`) symlinked in; workspace in /tmp |
+
+Each call makes a scratch directory under `EOR_TMPDIR` (default `/tmp`), removes it on exit and
+never copies a credential; logins are symlinked for the call. `EOR_EFFORT` (default `high`) sets
+reasoning effort for Claude Code and Codex. Set the model name to the one your account offers.
+
+- **Check for rule leaks first.** Every one of these agents loads your own rules by default, and
+  a leaked rule makes the "without the rule" arm look as good as the "with" arm. Before a run,
+  send each wrapper this probe and read the answer: `Without using any tools: list verbatim every
+instruction file or system/developer instruction heading you were given, and say whether any text
+mentions "End of every reply" or "house rules".` The only instruction file should be the
+  scratch `AGENTS.md` (`# Test project`); Devin also loads its own global `AGENTS.md`, which the
+  wrapper cannot remove, and OpenCode lists installed skill descriptions. Probe again after a CLI
+  upgrade. Devin silently ignores a config it cannot parse and then loads your rules, so
+  `devin.sh` validates the file it writes.
+- **Each agent still adds its own system prompt and tools.** Tools could not be disabled in
+  Codex, Devin, OpenCode or Cursor Agent (Claude Code's `--tools ''` does), so these
+  replies come from a full agent, not a bare model. The prompt asks for text only and a model
+  may still read a file first; use `allowRead` for that.
+- **OpenCode and Cursor Agent take the prompt as an argument** (about 128 KB at most), and
+  `opencode run` hangs while stdin is an open pipe, so both get `</dev/null`.
+- **Slow models.** Run scenarios in parallel (`xargs -P`) with one wrapper per process; each call is
+  independent. The full campaign of 18 scenarios, a seven-scenario screen and the modifier screens took 2 to 4 hours per model.
 
 `scripts/continuity-boundary.mjs` checks an explicit version-1 record with
 `disposition`, `goal`, `result`, `remaining` and boolean `phaseBoundary`.

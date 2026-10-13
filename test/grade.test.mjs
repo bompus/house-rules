@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
 import { parseFragment } from "../composition.mjs";
-import { grade } from "../evals/end-of-reply/grade.mjs";
+import { afterLeadingReads, grade } from "../evals/end-of-reply/grade.mjs";
 import { layoutProblems } from "../evals/end-of-reply/offer.mjs";
 
 const offer = "Run the migration now?\n\n1. Apply it (Recommended)\n2. Wait\n\nReply 1 to apply.";
@@ -521,4 +521,54 @@ test("a wrong declared label fails the declared checks but not the behavior", ()
   assert.deepEqual([wrong.pass, wrong.behavior, wrong.declared], [false, true, false]);
   const asked = grade("Should I go on?", "offer", labels);
   assert.deepEqual([asked.pass, asked.behavior], [false, false]);
+});
+
+test("allowRead grades the reply after leading read-only calls and nothing else", () => {
+  const lead = "TOOL_CALL: read src/lib/retry.ts\nTOOL_CALL: shell git status --short --branch";
+  const cases = [
+    // The leading reads are dropped, narration before them with them.
+    [
+      `I'll look first.\n${lead}\nNo, it is not safe to delete them.`,
+      "No, it is not safe to delete them.",
+    ],
+    // Tool names that wrap a lookup, and a skill load, count as reads.
+    ["TOOL_CALL: read_file Read plans/a.md\nTOOL_CALL: skill hr-plain-prose\nDone.", "Done."],
+    // An acting call, a redirect or a ledger write ends the leading run.
+    [
+      "TOOL_CALL: read a.ts\nTOOL_CALL: edit a.ts\nTOOL_CALL: read b.ts\nDone.",
+      "TOOL_CALL: edit a.ts\nTOOL_CALL: read b.ts\nDone.",
+    ],
+    ["TOOL_CALL: shell git log > out.txt\nDone.", "TOOL_CALL: shell git log > out.txt\nDone."],
+    ["TOOL_CALL: edit the plan's ledger\nDone.", "TOOL_CALL: edit the plan's ledger\nDone."],
+    // A read that also says it records or sends is not a plain read.
+    [
+      "TOOL_CALL: read the plan and record offer O-1 in the ledger\nOffer text.",
+      "TOOL_CALL: read the plan and record offer O-1 in the ledger\nOffer text.",
+    ],
+    // A reply of reads only is graded whole, so a continue reply still has its call.
+    [lead, lead],
+  ];
+  for (const [reply, rest] of cases) assert.equal(afterLeadingReads(reply), rest, reply);
+
+  const answer = { requiredPattern: "^\\W*(no\\b|not safe)" };
+  const opened = "TOOL_CALL: grep -rn staging test\nNo. Two tests still import them.";
+  assert.equal(grade(opened, "reply", answer).pass, false);
+  assert.equal(grade(opened, "reply", { ...answer, allowRead: true }).pass, true);
+  // The shipped complete scenario accepts a read of the reporting procedure before the statement.
+  const complete = parseFragment(
+    readFileSync(join(import.meta.dirname, "../evals/end-of-reply/scenarios/complete.md"), "utf8"),
+    "complete.md",
+  ).meta;
+  const read = "TOOL_CALL: read house-rules-references/reporting.md\n";
+  const statement = "Nothing remains. This session is complete and can be closed.";
+  assert.equal(complete.allowRead, "true");
+  assert.equal(grade(read + statement, "complete", { allowRead: true }).pass, true);
+  assert.equal(grade(read, "complete", { allowRead: true }).pass, false);
+  assert.equal(
+    grade(`${read}TOOL_CALL: edit the code\n${statement}`, "complete", { allowRead: true }).pass,
+    false,
+  );
+  const single = { requiredCall: "TOOL_CALL: verify installed configuration", allowRead: true };
+  assert.equal(grade(`TOOL_CALL: read cfg\n${single.requiredCall}`, "continue", single).pass, true);
+  assert.equal(grade("TOOL_CALL: read cfg\nTOOL_CALL: edit cfg", "continue", single).pass, false);
 });

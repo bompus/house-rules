@@ -4,6 +4,14 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- The end-of-reply eval can screen other agents and the modifier rules. `evals/end-of-reply/models/` has one
+  wrapper each for Claude Code, Codex, Devin, OpenCode and Cursor Agent, isolated from your own rules, with
+  the README's leak probe. A scenario's `allowRead: true` (or `run.mjs --allow-read`) grades the reply
+  after leading read-only tool calls, which models that look before answering need; the `complete`,
+  `save-lessons`, `reuse-first` and `lead-with-answer` scenarios use it. `evals/end-of-reply/screen/modifiers/`
+  adds eight scenarios for the periodic-update, cross-session-relay and coded-offer rules, and
+  `relay-send` and `offer-id` are rewritten so they pass with their rule and fail without it. The
+  `hr-agent-guidance-audit` prune workflow names the models to test and the lessons from running them.
 - `hr-what-next` no longer requires a backlog visual. Two optional rules choose the view: `backlog-visual`
   adds a dark panel of every open item grouped by what it waits on (a table for waiting items, one row per
   decision with the offer's Q number and answer chips, the current group marked), with the same groups
