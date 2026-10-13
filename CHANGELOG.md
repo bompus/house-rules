@@ -4,6 +4,13 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- New optional rule `model-default-questions` and preset `--questions default`: house-rules gives
+  no instruction about how to ask questions, so the model and host ask their usual way. Without it,
+  core rules still say text only. Setup now asks the question at install in plain words (Model
+  default, Text only, Clickable choices when available), with a separate yes/no for short reply
+  codes under Text only, and the interactive screen calls modifiers "optional rules". The
+  modifier keeps the rest of Offers (recommendation, scope of each option, phases, the three-open-offer
+  limit) and cannot combine with `coded-offers` or `question-cards`.
 - `hr-usage-report` no longer undercounts Claude Code responses. A response is written once per
   streamed block, and the report kept the first line, which has a few output tokens and no advisor
   call. It now keeps the line with the most output tokens and the advisor calls from whichever line

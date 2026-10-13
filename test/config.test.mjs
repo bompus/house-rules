@@ -258,6 +258,7 @@ test("invalid requests and invalid composition never write config", (t) => {
     ["--enable-modifier", "shared-host-load", "--disable-modifier", "shared-host-load"],
     ["--questions", "plain", "--enable-modifier", "coded-offers"],
     ["--enable-modifier", "question-cards"],
+    ["--questions", "default", "--enable-modifier", "model-default-questions"],
     ["--questions", "unknown"],
     ["--questions", "", "--enable-modifier", "shared-host-load"],
     ["--typo"],
@@ -373,6 +374,7 @@ test("question presets keep unrelated selections and resolve to composed offer r
     modifiers: ["shared-host-load", "coded-offers", "question-cards"],
   });
   for (const [questions, enabled] of [
+    ["default", ["model-default-questions"]],
     ["plain", []],
     ["coded", ["coded-offers"]],
     ["cards", ["coded-offers", "question-cards"]],
@@ -861,4 +863,27 @@ test("fresh sample composes exactly the selected routine skills and no modifiers
   );
   for (const name of expected) assert.equal(existsSync(join(dir, "out", name, "SKILL.md")), true);
   assert.equal(existsSync(join(dir, "out", "hr-handoff")), false);
+});
+
+test("the model default choice names no question format and keeps the rest of Offers", (t) => {
+  const { path } = fixture(t, { modifiers: ["model-default-questions"] });
+  const out = report(path);
+  assert.equal(out.questions, "default");
+  const section = (text) => text.split("## Offers")[1].split(/\n## /)[0];
+  const offers = section(out.composedRules);
+  assert.doesNotMatch(
+    offers,
+    /text for questions|question tool|question card|option list|reply code/i,
+  );
+  // Everything after the format steps is shared with core, so the two cannot drift apart.
+  const coreOffers = section(readFileSync(join(root, "rules/core.md"), "utf8"));
+  const shared = (text) => {
+    const flat = text.replace(/\s+/g, " ");
+    return flat.slice(flat.indexOf("When an option produces"));
+  };
+  assert.equal(shared(offers).trim(), shared(coreOffers).trim());
+  assert.throws(
+    () => report(fixture(t, { modifiers: ["model-default-questions", "coded-offers"] }).path),
+    /cannot combine/,
+  );
 });

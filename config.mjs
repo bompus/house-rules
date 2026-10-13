@@ -42,6 +42,9 @@ function stringList(value, key) {
   if (new Set(value).size !== value.length) throw new Error(`${key} contains duplicates`);
 }
 
+export const QUESTION_PRESETS = ["default", "plain", "coded", "cards"];
+export const QUESTION_MODIFIERS = ["model-default-questions", "coded-offers", "question-cards"];
+
 function validateStructure(config) {
   if (!object(config)) throw new Error("configuration must be a JSON object");
   for (const key of ["modifiers", "layers"]) stringList(config[key], key);
@@ -60,6 +63,13 @@ function validateSelection(config) {
   if (config.modifiers?.includes("question-cards") && !config.modifiers.includes("coded-offers"))
     throw new Error(
       "question-cards requires coded-offers; use --questions cards or disable question-cards",
+    );
+  if (
+    config.modifiers?.includes("model-default-questions") &&
+    config.modifiers.some((name) => ["coded-offers", "question-cards"].includes(name))
+  )
+    throw new Error(
+      "model-default-questions cannot combine with coded-offers or question-cards; use --questions",
     );
 }
 
@@ -128,11 +138,13 @@ export function selectionReport(config, path) {
     unavailable,
     layers: (config.layers ?? ["."]).map((layer) => resolve(dirname(path), layer)),
     fragments: result.fragments.map((f) => ({ source: f.source, ...f.meta })),
-    questions: selected.has("question-cards")
-      ? "cards"
-      : selected.has("coded-offers")
-        ? "coded"
-        : "plain",
+    questions: selected.has("model-default-questions")
+      ? "default"
+      : selected.has("question-cards")
+        ? "cards"
+        : selected.has("coded-offers")
+          ? "coded"
+          : "plain",
     warnings: result.warnings,
     composedRules: result.rules,
     hostLoading: "unverified",
@@ -166,7 +178,7 @@ export function changeSelection(config, options, path) {
       if (
         kind === "modifier" &&
         options.questions !== undefined &&
-        ["coded-offers", "question-cards"].includes(name)
+        QUESTION_MODIFIERS.includes(name)
       )
         throw new Error("use --questions or explicit question modifiers, not both");
     }
@@ -183,12 +195,15 @@ export function changeSelection(config, options, path) {
     }
   }
   if (options.questions !== undefined) {
-    if (!["plain", "coded", "cards"].includes(options.questions))
-      throw new Error("--questions must be plain, coded or cards");
-    if (options.questions === "plain") modifiers.delete("coded-offers");
+    if (!QUESTION_PRESETS.includes(options.questions))
+      throw new Error("--questions must be default, plain, coded or cards");
+    if (options.questions === "plain" || options.questions === "default")
+      modifiers.delete("coded-offers");
     else modifiers.add("coded-offers");
     if (options.questions === "cards") modifiers.add("question-cards");
     else modifiers.delete("question-cards");
+    if (options.questions === "default") modifiers.add("model-default-questions");
+    else modifiers.delete("model-default-questions");
   }
   if (JSON.stringify([...modifiers]) !== JSON.stringify(next.modifiers ?? []))
     next.modifiers = [...modifiers];

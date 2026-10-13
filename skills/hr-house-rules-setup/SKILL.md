@@ -49,12 +49,20 @@ For an agent running without a terminal, use the preview/apply workflow below.
    Personal skills override shipped ones. Keep independent names, layers,
    unrelated settings and exclusions.
 
-   If they want different question presentation, offer plain text, coded text,
-   or coded text with cards using `--questions plain|coded|cards`. Cards still
-   require a complete text offer. Explain that host, provider and model behavior
-   varies; card availability and presentation are unverified until checked.
-   Both text-only choices prohibit card tools. If personal rules still request
-   cards, resolve that conflict before changing those rules or composing.
+   Ask how they want questions asked, in these words, unless the config
+   already records a choice they confirm: **Model default** (your model and host
+   ask their usual way; house-rules gives no instruction), **Text only** (plain
+   text options; no question tools are called), or **Clickable choices when
+   available** (complete text options plus a question card). Recommend nothing;
+   it is their preference. Map the answers to `--questions default`, `plain`
+   (or `coded`) and `cards`. For Text only, ask a separate yes/no: "Use short
+   reply codes like 1A, so one reply can answer several questions?" Yes is
+   `coded`, no is `plain`. Explain that host, provider and model behavior varies;
+   card availability and presentation are unverified until checked. Text only
+   prohibits card tools; Model default adds no instruction either way. If
+   personal rules still steer how questions are asked, resolve that conflict
+   before changing those rules or composing. Call modifiers "optional rules"
+   and the user's layer "your own rules" when talking to them.
    Done when the user selects relevant changes or keeps the current setup.
 
 3. Use `node compose.mjs config set --config <path>` with the selected

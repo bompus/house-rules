@@ -6,6 +6,8 @@ import { parseArgs, stripVTControlCharacters } from "node:util";
 import { configurationPath, modifierList } from "./composition.mjs";
 import {
   changeSelection,
+  QUESTION_MODIFIERS,
+  QUESTION_PRESETS,
   configCommand,
   readConfiguration,
   selectionChanges,
@@ -19,7 +21,7 @@ const HELP = `Choose guidance with numbered prompts:
   house-rules setup [--config PATH] --json
 
 toggle N [N ...] or toggle NAME changes the listed choices.
-questions plain|coded|cards chooses the question format.
+questions default|plain|coded|cards chooses how questions are asked.
 search TEXT, clear search, show selected, show all, help N
 next, back, save (on Review), refresh (after a stale revision), cancel
 
@@ -100,6 +102,10 @@ export async function setupCommand(argv) {
       !projection.modifiers.includes("coded-offers")
     )
       projection.modifiers.push("coded-offers");
+    if (projection.modifiers.includes("model-default-questions"))
+      projection.modifiers = projection.modifiers.filter(
+        (name) => !["coded-offers", "question-cards"].includes(name),
+      );
     return selectionReport(projection, snapshot.path);
   };
   let baseline = catalog(); // Malformed layers, composition or legacy names still stop setup.
@@ -108,7 +114,7 @@ export async function setupCommand(argv) {
     const report = current.report ?? baseline;
     const unavailable = (snapshot.config.modifiers ?? []).filter((name) => !known.has(name));
     const modifiers = [
-      ...report.modifiers.filter((m) => !["coded-offers", "question-cards"].includes(m.name)),
+      ...report.modifiers.filter((m) => !QUESTION_MODIFIERS.includes(m.name)),
       ...unavailable.map((name) => ({
         name,
         enabled: true,
@@ -147,7 +153,7 @@ export async function setupCommand(argv) {
     console.log(command);
   };
   const show = () => {
-    print(`Choose guidance / ${["Modifiers", "Skills", "Review"][stage]}`);
+    print(`Choose guidance / ${["Optional rules", "Skills", "Review"][stage]}`);
     print(`Config: ${snapshot.path}`);
     const current = draft();
     if (current.error) print(`Selection needs repair: ${current.error.message}`);
@@ -181,14 +187,16 @@ export async function setupCommand(argv) {
       print("save / back / cancel");
       return;
     }
-    print("Core rules: always on. Modifiers are opt-in; skill selection follows your config.");
+    print("Core rules: always on. Optional rules are opt-in; skill selection follows your config.");
     if (stage === 1) {
       const skills = rows().filter((row) => row.kind === "skill");
       print(
         `${skills.filter((row) => row.enabled).length} of ${skills.length} available skills selected.`,
       );
     }
-    print(`Question format: ${questions ?? baseline.questions}. Use questions plain|coded|cards.`);
+    print(
+      `Question format: ${questions ?? baseline.questions}. Use questions default|plain|coded|cards.`,
+    );
     const visible = rows().filter(
       (row) =>
         row.kind === (stage === 0 ? "modifier" : "skill") &&
@@ -268,8 +276,8 @@ export async function setupCommand(argv) {
           selectedOnly = false;
         } else if (command.startsWith("questions ")) {
           const preset = command.slice(10);
-          if (!["plain", "coded", "cards"].includes(preset))
-            throw new Error("Choose questions plain|coded|cards.");
+          if (!QUESTION_PRESETS.includes(preset))
+            throw new Error("Choose questions default|plain|coded|cards.");
           questions = preset;
         } else if (command.startsWith("toggle ") || command.startsWith("help ")) {
           const help = command.startsWith("help ");

@@ -28,10 +28,10 @@ don't install or copy anything on your own.
 1. **Core** (`rules/core.md`): the base every setup gets. Its first section is
    the end-of-reply check, so an agent that reads only the top of the file
    still knows when to keep working and when to stop and ask.
-2. **Modifiers** (`rules/modifiers/`): opt-in preferences, such as coded
+2. **Optional rules**, called modifiers in the files (`rules/modifiers/`): opt-in preferences, such as coded
    option lists or squash-only landing. Each one replaces a core section or
    adds a section after one.
-3. **Your layer** (by default `~/.config/house-rules/`): `house-rules.json`
+3. **Your own rules**, called your layer in the files (by default `~/.config/house-rules/`): `house-rules.json`
    names the modifiers you enable, `rules/` holds your own sections, and
    `skills/` holds your own skills. A skill there replaces the house-rules
    skill of the same name. The config's other keys are optional: `layers`
@@ -227,6 +227,7 @@ in name order, after the modifiers.
 | `effort-estimates`                                                                                                                                       | Options that differ in cost, or work that waits on CI, a build or a deploy, carry a wall-clock estimate based on comparable finished work. Estimates from workers, docs or other models are converted the same way or dropped. |
 | `land-when-done`                                                                                                                                         | Authorized repository work is not finished until it is in the remote default branch.                                                                                                                                           |
 | `low-quota-handoff`                                                                                                                                      | When the current model's usage allowance runs low, write a handoff before work stops.                                                                                                                                          |
+| `model-default-questions`                                                                                                                                | Leave how questions are asked to your host and model, with no text-only or question-card instruction.                                                                                                                          |
 | `multi-agent`                                                                                                                                            | Work is split across delegated workers and several agent hosts; worker reports, review standards and cleanup checks account for all of them.                                                                                   |
 | `no-attribution`                                                                                                                                         | Commits, pull requests and comments carry no agent or tool credit lines unless the target repository asks for a disclosure.                                                                                                    |
 | `periodic-updates`                                                                                                                                       | A job expected to run longer than about 10 minutes posts a short status update every 5 minutes by default, with progress, an ETA with its basis or "unmeasured", and findings so far, until the job ends.                      |
@@ -240,12 +241,20 @@ in name order, after the modifiers.
 | `squash-landing`                                                                                                                                         | Pull requests land by squash merge after review-bot findings are handled, and the session's checkout moves off the landed branch.                                                                                              |
 | `upstream-contributions`                                                                                                                                 | A measured optimization, fix or defect found in a third-party project is offered for submission to that project through its own contribution route.                                                                            |
 
-Questions use text by default, with plain options or `coded-offers`. Text-only
-setups do not call question-card tools merely because a host exposes them.
-Enable `question-cards` only when you want cards too. Cards can be unavailable,
-skipped or shown unexpectedly across hosts, providers and models; the text
-offer remains usable on its own. `hr-house-rules-setup` asks which format you
-want and explains these limits before changing the configuration.
+Questions use text only by default. Setup asks how you want questions asked:
+
+- **Model default**: house-rules gives no instruction, so your model and host ask
+  their usual way (`model-default-questions`).
+- **Text only**: plain text options, with or without short reply codes such as
+  `1A` (`coded-offers`). No question tools are called, even when the host
+  exposes them.
+- **Clickable choices when available**: complete text options plus a
+  question card (`question-cards`). Cards can be unavailable, skipped or shown
+  unexpectedly across hosts, providers and models; the text offer remains usable
+  on its own.
+
+`hr-house-rules-setup` asks which you want and explains these limits before
+changing the configuration.
 
 ## Skills
 

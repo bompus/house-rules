@@ -74,7 +74,7 @@ export function renderHelp() {
     "  Selection",
     "    --enable-modifier <name>    --disable-modifier <name>",
     "    --enable-skill <name>       --disable-skill <name>",
-    "    --questions plain|coded|cards",
+    "    --questions default|plain|coded|cards",
     "    --panel-file <json>        Replace portable panel preferences (preview/set)",
     "    --expect-panel <revision>  Require reviewed panel input when applying",
     "",

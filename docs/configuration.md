@@ -102,11 +102,17 @@ not add a shipped name. Disabling adds an exclusion, retaining the include list,
 unrelated exclusions and custom settings. Configs without an include list keep
 their existing selection behavior.
 
-| Question preset     | Enabled offer modifiers             |
-| ------------------- | ----------------------------------- |
-| `--questions plain` | Neither offer modifier              |
-| `--questions coded` | `coded-offers`                      |
-| `--questions cards` | `coded-offers` and `question-cards` |
+| Question preset       | What you get                      | Enabled offer modifiers             |
+| --------------------- | --------------------------------- | ----------------------------------- |
+| `--questions default` | Model default                     | `model-default-questions`           |
+| `--questions plain`   | Text only                         | Neither offer modifier              |
+| `--questions coded`   | Text only, with short reply codes | `coded-offers`                      |
+| `--questions cards`   | Clickable choices when available  | `coded-offers` and `question-cards` |
+
+`default` adds no instruction about how to ask: the model and host ask
+questions their usual way, which on some hosts means clickable choices and on
+others plain text. Core rules, without a preset, keep text only. `default`
+cannot combine with `coded-offers` or `question-cards`.
 
 Question presets preserve other modifiers. Choose a preset or explicit offer
 modifier toggles, rather than combining both in one command. Cards still depend
