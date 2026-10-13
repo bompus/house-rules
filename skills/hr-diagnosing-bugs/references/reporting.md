@@ -72,7 +72,7 @@ confirms the direction. <branch exists / not written yet>; <the approach or
 options I would measure>." When a branch or pull request already exists, link it
 instead. Before showing a draft to the user, run
 `node scripts/check-pr-offer.mjs <draft.md>` from this skill; it fails when that
-text neither says "pull request" nor links one. Read the offer back from the
+text does not offer a pull request or link a pull request or branch. Read the offer back from the
 form's fields before submitting.
 
 When an issue needs major or material changes, replace it with a new issue

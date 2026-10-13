@@ -15,6 +15,18 @@ test("a link to an existing pull request passes", () => {
   expect(offersPullRequest(form("Fixed in https://github.com/acme/app/pull/12."))).toBe(true);
 });
 
+test("a link to an existing branch passes", () => {
+  expect(offersPullRequest(form("Branch: https://github.com/acme/app/tree/fix-bug"))).toBe(true);
+});
+
+test("a sentence that denies the offer does not count", () => {
+  expect(offersPullRequest(form("None applied. I cannot open a pull request."))).toBe(false);
+  expect(offersPullRequest(form("No pull request is planned."))).toBe(false);
+  expect(
+    offersPullRequest(form("I cannot repro it. I can open a pull request once triage agrees.")),
+  ).toBe(true);
+});
+
 test("a field that only says nothing was applied fails", () => {
   expect(offersPullRequest(form("None applied."))).toBe(false);
 });

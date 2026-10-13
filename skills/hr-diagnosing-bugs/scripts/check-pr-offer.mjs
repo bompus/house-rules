@@ -8,7 +8,9 @@ import { readFileSync } from "node:fs";
 const TAIL_LINES = 8;
 const FIELD = /^(?:#{1,6}\s*|\*\*)?fix applied or workaround\b/i;
 const HEADING = /^#{1,6}\s/;
-const OFFER = /pull request|github\.com\/[^\s/]+\/[^\s/]+\/pull\/\d+/i;
+const OFFER = /pull request|github\.com\/[^\s/]+\/[^\s/]+\/(?:pull\/\d+|tree\/\S+)/i;
+// A sentence that denies the offer ("I cannot open a pull request") does not count.
+const DENIAL = /\b(?:cannot|can't|can not|won't|will not|unable|never|no|not)\b[^.]*pull request/i;
 
 // The field's text: from its heading or label to the next heading, or null when the draft has none.
 export function offerText(draft) {
@@ -24,7 +26,13 @@ export function offerText(draft) {
     .join("\n");
 }
 
-export const offersPullRequest = (draft) => OFFER.test(offerText(draft));
+export const offersPullRequest = (draft) =>
+  OFFER.test(
+    offerText(draft)
+      .split(/(?<=[.!?])\s+|\n/)
+      .filter((sentence) => !DENIAL.test(sentence))
+      .join("\n"),
+  );
 
 if (import.meta.main ?? import.meta.url === `file://${process.argv[1]}`) {
   const draft = readFileSync(process.argv[2] ?? 0, "utf8");
