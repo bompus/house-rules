@@ -71,13 +71,24 @@ bash "$(dirname "${BASH_SOURCE[0]}")/verify-landed.sh" --preflight \
   --default "$BASE" --remote "$REMOTE" "${SYNC_ARGS[@]}"
 
 gh pr merge "$PR" "$STRATEGY" --match-head-commit "$OID"
-SHA="$(gh pr view "$PR" --json mergeCommit --jq .mergeCommit.oid)"
+SHA="$(gh pr view "$PR" --json mergeCommit --jq '.mergeCommit.oid // empty')"
+if ! [[ "$SHA" =~ ^([0-9a-f]{40}|[0-9a-f]{64})$ ]]; then
+  echo "PR $PR has no merge commit yet (a merge queue may still hold it); leaving its head branch alone" >&2
+  exit 1
+fi
 echo "merged: PR $PR as $SHA"
 
 # A fork's head lives in another repository; a repository may also delete merged heads itself.
-if [ "$FORK" != true ] && git ls-remote --heads "$REMOTE" "$HEAD" | grep -q .; then
-  git push --quiet "$REMOTE" --delete "$HEAD"
-  echo "deleted: $REMOTE/$HEAD"
+# Delete only a branch that still sits at the pull request's head commit, so a same-named branch on
+# an unrelated remote survives.
+if [ "$FORK" != true ]; then
+  REMOTE_HEAD="$(git ls-remote --heads "$REMOTE" "refs/heads/$HEAD" | awk '{print $1}')"
+  if [ "$REMOTE_HEAD" = "$OID" ]; then
+    git push --quiet --force-with-lease="refs/heads/$HEAD:$OID" "$REMOTE" --delete "$HEAD"
+    echo "deleted: $REMOTE/$HEAD"
+  elif [ -n "$REMOTE_HEAD" ]; then
+    echo "kept: $REMOTE/$HEAD is at $REMOTE_HEAD, not the pull request head $OID" >&2
+  fi
 fi
 
 bash "$(dirname "${BASH_SOURCE[0]}")/verify-landed.sh" --commit "$SHA" --branch "$HEAD" \

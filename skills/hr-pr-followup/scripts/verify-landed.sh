@@ -135,7 +135,7 @@ if git show-ref --verify --quiet "refs/heads/$DEFAULT"; then
     BEHIND="$(git rev-list --count "$LOCAL..$UPSTREAM")"
     if [ -z "${HOLDER:-}" ]; then
       if [ "$FF" = 1 ] && [ "$FAIL" = 0 ]; then
-        git fetch --quiet "$REMOTE" "$DEFAULT:$DEFAULT"
+        git update-ref -m "verify-landed: fast-forward $DEFAULT" "refs/heads/$DEFAULT" "$UPSTREAM" "$LOCAL"
         echo "local $DEFAULT: fast-forwarded $BEHIND commit(s) to $UPSTREAM (not checked out anywhere)"
       else
         echo "local $DEFAULT: $BEHIND behind, not checked out anywhere — safe: git fetch $REMOTE $DEFAULT:$DEFAULT"

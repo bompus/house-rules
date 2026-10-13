@@ -39,6 +39,7 @@ function fixture({
   repo = "owner/app",
   staleDefault = false,
   fromTask = false,
+  queued = false,
 } = {}) {
   const root = mkdtempSync(join(tmpdir(), "merge-pr-"));
   roots.push(root);
@@ -68,7 +69,7 @@ function fixture({
     `#!/usr/bin/env bash
 echo "$*" >> "${log}"
 case "$*" in
-  *mergeCommit*) echo "${squash}";;
+  *mergeCommit*) echo "${queued ? "" : squash}";;
   "pr view"*) printf 'feature\\t${oid}\\tmain\\tOPEN\\tfalse\\n';;
   "pr list"*) printf '%s' "${dependents}";;
   "repo view"*) echo "${repo}";;
@@ -103,6 +104,24 @@ test("merges without --delete-branch, deletes only the remote head and names the
   expect(sh(remote, "git", "branch", "--list", "feature")).toBe("");
   expect(existsSync(wt)).toBe(true);
   expect(r.out).toContain(`still on feature: ${wt}`);
+});
+
+test("a merge still queued has no merge commit and keeps the remote head", () => {
+  const { remote, run } = fixture({ queued: true });
+  const r = run();
+  expect(r.code).toBe(1);
+  expect(r.err).toContain("no merge commit yet");
+  expect(sh(remote, "git", "branch", "--list", "feature")).not.toBe("");
+});
+
+test("a same-named branch at another commit is not deleted", () => {
+  const { remote, wt, run } = fixture();
+  sh(wt, "git", "commit", "--allow-empty", "-m", "unrelated work");
+  sh(wt, "git", "push", "origin", "feature");
+  const r = run();
+  // The final verification reports the surviving remote branch, so the run exits 1.
+  expect(r.err).toContain("kept: origin/feature is at");
+  expect(sh(remote, "git", "branch", "--list", "feature")).not.toBe("");
 });
 
 test("--merge lands with a merge commit instead of a squash", () => {
