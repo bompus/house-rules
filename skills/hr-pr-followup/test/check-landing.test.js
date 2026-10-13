@@ -5,10 +5,13 @@ import { join } from "node:path";
 const test = process.platform === "linux" ? base : base.skip;
 
 test("check-landing.py passes its own unit tests", () => {
-  const run = Bun.spawnSync(["python3", "-I", join(import.meta.dir, "check-landing.test.py")], {
-    stderr: "pipe",
-    stdout: "pipe",
-  });
+  const run = Bun.spawnSync(
+    ["python3", "-I", "-B", join(import.meta.dir, "check-landing.test.py")],
+    {
+      stderr: "pipe",
+      stdout: "pipe",
+    },
+  );
   expect(run.stderr.toString()).toMatch(/OK\s*$/);
   expect(run.exitCode).toBe(0);
 });

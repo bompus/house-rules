@@ -4,6 +4,8 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- The `hr-pr-followup` landing-helper test no longer writes `__pycache__` next to the shipped scripts, so a
+  repository that vendors the skill does not end up with stray bytecode after running its tests.
 - New `evals/skill-fires/`: ten `claude plugin eval` cases that check whether `hr-audit-choices`,
   `hr-code-review`, `hr-diagnosing-bugs`, `hr-explain-code`, `hr-extract-shared-steps`, `hr-plain-prose`
   and `hr-test-audit` fire on realistic requests, and that the replies meet each skill's contract.
