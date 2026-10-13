@@ -58,10 +58,10 @@ if [ -n "$IDLE_PRIMARY" ]; then
 fi
 
 if [ -z "$DEFAULT" ]; then
-  # Local origin/HEAD is absent when the first clone predates the first push.
-  DEFAULT="$(git symbolic-ref "refs/remotes/$REMOTE/HEAD" 2>/dev/null | sed "s#^refs/remotes/$REMOTE/##" || true)"
+  # The remote's own answer wins; the cached origin/HEAD goes stale when the default branch changes.
+  DEFAULT="$(git ls-remote --symref "$REMOTE" HEAD 2>/dev/null | sed -n 's#^ref: refs/heads/\([^[:space:]]*\).*#\1#p' || true)"
   if [ -z "$DEFAULT" ]; then
-    DEFAULT="$(git ls-remote --symref "$REMOTE" HEAD 2>/dev/null | sed -n 's#^ref: refs/heads/\([^[:space:]]*\).*#\1#p' || true)"
+    DEFAULT="$(git symbolic-ref "refs/remotes/$REMOTE/HEAD" 2>/dev/null | sed "s#^refs/remotes/$REMOTE/##" || true)"
   fi
   [ -n "$DEFAULT" ] || { echo "cannot resolve remote default branch; pass --default" >&2; exit 2; }
 fi
