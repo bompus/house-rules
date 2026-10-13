@@ -123,6 +123,6 @@ export function grade(
               : (offer || tool) && !done;
   // The offer's layout is part of the shape the rules ask for, so a bad layout fails the behavior.
   const layout = layoutProblems(reply);
-  const right = behavior && layout.length === 0;
+  const right = behavior && (expect === "reply" || layout.length === 0);
   return { pass: right && declared, behavior: right, declared, tool, asks, done, offer, layout };
 }

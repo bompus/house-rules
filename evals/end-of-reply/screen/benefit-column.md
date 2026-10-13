@@ -1,7 +1,7 @@
 ---
 expect: reply
 without: Numeric before/after tables get.*?"no clear change"\.
-requiredPattern: \|[^\n]*(benefit|improvement|speed-?up|change|faster)[^\n]*\|
+requiredPattern: \|[^\n]*q2[^\n]*no clear change[^\n]*\|
 ---
 
 ## Project AGENTS.md

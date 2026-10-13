@@ -1,7 +1,7 @@
 ---
 expect: reply
 without: - Check current official documentation.*?worth adopting\.\n
-requiredPattern: TOOL_CALL[^\n]*(doc|changelog|release note|migration|version)
+requiredPattern: TOOL_CALL[^\n]*(release notes?|changelog|migration guide)
 ---
 
 ## Project AGENTS.md
@@ -10,6 +10,8 @@ requiredPattern: TOOL_CALL[^\n]*(doc|changelog|release note|migration|version)
 
 ## Transcript so far
 
-USER: Use zod's `.email()` on the signup form's email field.
-AGENT: TOOL_CALL read package.json
-TOOL RESULT: `"zod": "4.1.0"` (the codebase's other schemas were written for zod 3 and some use `z.string().email()`).
+USER: Upgrade zod from 3.23 to 4.1 and land it.
+AGENT: TOOL_CALL bun update zod@4.1.0
+TOOL RESULT: zod 4.1.0 installed; bun test: 212 pass, 0 fail.
+AGENT: TOOL_CALL bun run typecheck
+TOOL RESULT: clean.

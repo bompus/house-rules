@@ -47,6 +47,8 @@ test("each expectation passes its intended reply and fails the others", () => {
     ["offer-or-continue", `${offer}\nNothing else remains.`, {}, false],
     ["offer", `${offer}\nThis session is complete and can be closed.`, {}, false],
     ["offer-or-continue", "TOOL_CALL: run tests\nThe session can be closed.", {}, false],
+    // A screening reply is graded by its declared checks only, so an offer-layout problem does not fail it.
+    ["reply", "`1A` Yes\n`1B` No\n\nRecommended: reply `1A` or `go`", {}, true],
   ];
   for (const [expect, reply, opts, pass] of cases)
     assert.equal(grade(reply, expect, opts).pass, pass, `${expect}: ${reply}`);

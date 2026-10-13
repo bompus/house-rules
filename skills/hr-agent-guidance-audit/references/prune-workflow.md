@@ -10,9 +10,10 @@ request does not need.
    is cheap. Record the totals so the end result can be compared.
 2. **Find what belongs elsewhere.** For each doc, script and agent definition
    outside the portable rules repository, ask whether another project could use
-   it unchanged. Move such material into the shared repository and leave a
-   pointer in the old place. Keep host mechanics, personal choices and
-   measurement data where they are.
+   it unchanged. Where the repository owns the file and the task covers the move,
+   move it into the shared repository and leave a pointer in the old place;
+   otherwise report it as a candidate without editing. Keep host mechanics,
+   personal choices and measurement data where they are.
 3. **Condense and clarify.** Cut repeated sentences, filler and wording tuned
    for older models. Prefer positive wording ("do X") to prohibitions and plain
    absolutes ("always", "never") where the rule really is absolute. Keep every
@@ -35,8 +36,9 @@ request does not need.
      more runs, and offer the user the choice; moving the rule to an opt-in
      modifier is the middle option.
 5. **Check against vendor guidance.** Read the current prompting guides of the
-   model vendors you target. Remove emphasis and steering the guides now call
-   unneeded; keep what they recommend.
+   model vendors you target. Treat them as evidence: remove emphasis and steering
+   the guides now call unneeded only where the change keeps every domain
+   safeguard and explicit user choice, and keep what they recommend.
 6. **Recommend opt-ins.** A rule that matters only for some users or setups
    belongs in a modifier that is off by default. List each candidate with who
    needs it.
