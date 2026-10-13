@@ -7,15 +7,15 @@
 // no rules, so a result shows what the rules add over asking in one sentence.
 import { spawnSync } from "node:child_process";
 import { readdirSync, readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { parseFragment } from "../../compose.mjs";
 import { EXPECTS, grade } from "./grade.mjs";
 
-const dir = join(dirname(fileURLToPath(import.meta.url)), "scenarios");
+const here = dirname(fileURLToPath(import.meta.url));
 const usage =
-  'usage: node run.mjs --rules <composed.md> --cmd "<command>" [--slice 80] [--coded] [--runs 1] [--baseline]';
+  'usage: node run.mjs --rules <composed.md> --cmd "<command>" [--slice 80] [--coded] [--runs 1] [--baseline] [--scenarios <dir>] [--screen]';
 // One sentence asking for the same behavior: the control the rules must beat.
 const CONTROL =
   "When work you are allowed to do remains, keep doing it. When the user must decide something, end by asking them, with your recommendation and what to reply.";
@@ -33,6 +33,8 @@ try {
       runs: { type: "string", default: "1" },
       coded: { type: "boolean" },
       baseline: { type: "boolean" },
+      scenarios: { type: "string" },
+      screen: { type: "boolean" },
     },
   }));
 } catch (e) {
@@ -44,6 +46,7 @@ const count = (name, min) => {
   return n;
 };
 if (!values.rules || !values.cmd) fail("--rules and --cmd are required");
+const dir = values.scenarios ? resolve(values.scenarios) : join(here, "scenarios");
 const slice = count("slice", 0);
 const runs = count("runs", 1);
 let rules = readFileSync(values.rules, "utf8");
@@ -69,6 +72,7 @@ const scenarios = readdirSync(dir)
         fail(`${file}: ${key}: ${e.message}`);
       }
     }
+    if (values.screen) removeRule(file, meta.without);
     return {
       file,
       expect: meta.expect,
@@ -81,6 +85,7 @@ const scenarios = readdirSync(dir)
       minOptions: meta.minOptions,
       forbiddenInOffer: meta.forbiddenInOffer,
       forbiddenCall: meta.forbiddenCall,
+      without: meta.without,
     };
   });
 
@@ -91,6 +96,7 @@ if (values.baseline)
     { name: "one-line", text: CONTROL, coded: false, sliced: 0 },
     { name: "no-rules", text: "(none)", coded: false, sliced: 0 },
   );
+if (values.screen) arms.push({ name: "without", text: "", coded: values.coded, sliced: slice });
 const passes = new Map(arms.map((a) => [a.name, new Map()]));
 const behaviors = new Map(arms.map((a) => [a.name, 0]));
 const indent = (text) =>
@@ -99,6 +105,15 @@ const indent = (text) =>
     .split("\n")
     .map((l) => `    ${l}`)
     .join("\n");
+
+// A screening arm is the rules with the one rule a scenario names taken out.
+function removeRule(file, pattern) {
+  if (!pattern) fail(`${file}: --screen needs a without: pattern naming the rule to remove`);
+  const found = [...rules.matchAll(new RegExp(pattern, "gis"))];
+  if (found.length !== 1)
+    fail(`${file}: without: must match the rules exactly once, matched ${found.length}`);
+  return rules.replace(found[0][0], "");
+}
 
 let failed = 0;
 for (const {
@@ -113,7 +128,9 @@ for (const {
   minOptions,
   forbiddenInOffer,
   forbiddenCall,
+  without,
 } of scenarios) {
+  if (values.screen) arms.find((a) => a.name === "without").text = removeRule(file, without);
   for (const arm of arms) {
     const label = values.baseline ? `[${arm.name}] ${file}` : file;
     const prompt = [
@@ -161,6 +178,22 @@ for (const {
       if (!g.pass && arm.name === "rules") console.log(indent(r.stdout ?? ""));
     }
     passes.get(arm.name).set(file, passed);
+  }
+}
+if (values.screen) {
+  console.log("screen (passes of " + runs + " runs per arm):");
+  for (const { file } of scenarios) {
+    const full = passes.get("rules").get(file);
+    const minus = passes.get("without").get(file);
+    const verdict =
+      full === minus
+        ? full === runs
+          ? "no difference: candidate for removal"
+          : "no difference, and the scenario fails with the rule: fix the scenario"
+        : full > minus
+          ? "rule helps"
+          : "rule hurts";
+    console.log(`  ${file}: with ${full}, without ${minus} -> ${verdict}`);
   }
 }
 if (values.baseline) {

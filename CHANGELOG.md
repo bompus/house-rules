@@ -4,6 +4,13 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- `evals/end-of-reply/run.mjs --screen` runs each scenario with the rules and again with the one rule its
+  `without:` pattern names removed, and prints whether that rule helps, makes no difference or fails the
+  scenario in both arms. A new `expect: reply` grades a reply by the scenario's declared patterns alone, and
+  `--scenarios <dir>` points the runner at another scenario directory. Seven screening scenarios ship in
+  `evals/end-of-reply/screen/`. `hr-agent-guidance-audit` gains `references/prune-workflow.md`, the
+  measured way to shrink always-loaded guidance: size it, migrate, condense, screen each rule, check
+  vendor guides, recommend opt-ins, land and adopt.
 - The `hr-pr-followup` landing-helper test no longer writes `__pycache__` next to the shipped scripts, so a
   repository that vendors the skill does not end up with stray bytecode after running its tests.
 - `quiet-watchers` is merged into `periodic-updates`: a watcher event that changes nothing gets at most one

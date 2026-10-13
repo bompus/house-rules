@@ -57,7 +57,10 @@ Verify effects before changing:
 When reviewing research records, staged lessons or guidance overrides, read
 [the record-maintenance method](references/records-and-lessons.md). When
 deciding what to retire or merge, or triaging a usage report, read
-[the verdict method](references/retirement-verdicts.md). For selected
+[the verdict method](references/retirement-verdicts.md). To shrink always-loaded
+guidance by measurement (size it, migrate, condense, test each rule with and
+without it, recommend opt-ins), follow
+[the pruning workflow](references/prune-workflow.md). For selected
 loading or behavior verification, locate the `hr-agent-guidance-refresh` bundle
 and read its `references/verification.md`; keep unavailable evidence unverified.
 

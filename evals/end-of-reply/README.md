@@ -50,6 +50,22 @@ for two layout problems. Two or more bare coded option lines (`1A`, `1B`) in one
 render as one run-on paragraph in Markdown; list items and table rows do not count. Anything
 after the acceptance line is the other problem. A reply without such a line has no layout check.
 
+## Screening for unnecessary rules
+
+`--screen` runs every scenario twice, once with your rules and once with the one
+rule the scenario's `without:` pattern names taken out, and prints a verdict per
+scenario. Use it with `--scenarios evals/end-of-reply/screen`, whose scenarios
+use `expect: reply` (only the declared patterns grade the reply). `without:` is a
+regular expression, matched case-insensitively with `.` spanning lines, and must match
+the rules exactly once. A rule with the same pass count in both arms is a removal
+candidate; one that fails in both arms needs a better scenario first. Run it with
+`--runs 4` or more on every model you use, then follow the pruning workflow in the
+`hr-agent-guidance-audit` skill.
+
+```bash
+node evals/end-of-reply/run.mjs --screen --scenarios evals/end-of-reply/screen --rules <composed.md> --cmd "<model CLI>" --runs 4
+```
+
 `scripts/continuity-boundary.mjs` checks an explicit version-1 record with
 `disposition`, `goal`, `result`, `remaining` and boolean `phaseBoundary`.
 Dispositions are `continue`, `offer`, `blocked`, `complete` and `paused`.

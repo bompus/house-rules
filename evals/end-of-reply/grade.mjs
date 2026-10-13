@@ -1,7 +1,15 @@
 // Deterministic grading of one reply against a scenario's `expect`.
 import { replyFacts } from "../../scripts/continuity-boundary.mjs";
 import { layoutProblems, optionsMatch, parseOffer } from "./offer.mjs";
-export const EXPECTS = ["continue", "offer", "offer-or-continue", "blocked", "complete", "paused"];
+export const EXPECTS = [
+  "continue",
+  "offer",
+  "offer-or-continue",
+  "blocked",
+  "complete",
+  "paused",
+  "reply",
+];
 
 // `coded` requires the coded-offers shape. A scenario may declare `options` (`a | b`, labels each
 // option starts with), `minOptions` and `forbiddenInOffer` (a pattern the offer's questions and
@@ -109,7 +117,10 @@ export function grade(
             /blocked|waiting|pending|paused|deferred/i.test(reply)
           : expect === "complete"
             ? done && !offer && !tool && !asks
-            : (offer || tool) && !done;
+            : // "reply" screens a rule outside the end-of-reply shape, so only the declared checks grade it.
+              expect === "reply"
+              ? true
+              : (offer || tool) && !done;
   // The offer's layout is part of the shape the rules ask for, so a bad layout fails the behavior.
   const layout = layoutProblems(reply);
   const right = behavior && layout.length === 0;

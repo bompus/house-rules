@@ -1,0 +1,47 @@
+# Pruning workflow for rules, skills and docs
+
+Use this when the goal is a smaller, clearer set of always-loaded guidance, not
+only a read-through. Each step produces a list you can act on; skip a step the
+request does not need.
+
+1. **Size it.** List every file the agent loads (composed rules, skill
+   descriptions, linked docs) with its byte count, largest first. The always-on
+   rules and the skill catalog are the costly part; a reference loaded on demand
+   is cheap. Record the totals so the end result can be compared.
+2. **Find what belongs elsewhere.** For each doc, script and agent definition
+   outside the portable rules repository, ask whether another project could use
+   it unchanged. Move such material into the shared repository and leave a
+   pointer in the old place. Keep host mechanics, personal choices and
+   measurement data where they are.
+3. **Condense and clarify.** Cut repeated sentences, filler and wording tuned
+   for older models. Prefer positive wording ("do X") to prohibitions and plain
+   absolutes ("always", "never") where the rule really is absolute. Keep every
+   requirement a test or another file names. Measure each edit as
+   before/after bytes; if the total barely moves, say so rather than cutting
+   reasons.
+4. **Screen for unnecessary rules.** A rule earns its place only if the
+   model does worse without it. In the house-rules checkout,
+   `evals/end-of-reply/run.mjs --screen` runs each scenario twice, with the rules
+   and with the one rule named in the scenario's `without:` pattern removed:
+   - Write a scenario for the rule: `expect: reply`, a transcript where the rule
+     decides the outcome, and `requiredPattern` or `forbiddenPattern` for the
+     right and wrong reply. Add `without:` as a regular expression matching the
+     rule's exact text once.
+   - Use `--runs 4` or more, on every model you use, at the effort you use.
+   - Read the output: "rule helps" keeps the rule; "no difference" on all
+     models makes it a removal candidate; "fails with the rule" means fix the
+     scenario first, because it tests nothing.
+   - A removal candidate is a recommendation, not a deletion. Confirm with
+     more runs, and offer the user the choice; moving the rule to an opt-in
+     modifier is the middle option.
+5. **Check against vendor guidance.** Read the current prompting guides of the
+   model vendors you target. Remove emphasis and steering the guides now call
+   unneeded; keep what they recommend.
+6. **Recommend opt-ins.** A rule that matters only for some users or setups
+   belongs in a modifier that is off by default. List each candidate with who
+   needs it.
+7. **Land and adopt.** Run the full test suite and the end-of-reply eval with
+   the final composed rules, before and after, on each model. Land through the
+   repository's path, then adopt the new revision wherever it is pinned and
+   install the result. Report the size totals from step 1, the screening table,
+   and what you left alone.
