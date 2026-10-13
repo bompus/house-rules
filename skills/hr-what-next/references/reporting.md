@@ -17,7 +17,7 @@ the ledger. When the user requests a full inventory, or needs more items to
 make a decision, show every relevant item. This presentation target does not
 limit investigation, required disclosures or the options required by § Offers.
 
-Use a visual when it makes a change or decision clearer, with a short text explanation beside it. For interface changes prefer real before/after captures with comparable content, viewport and state; label mockups as illustrations.
+Use a visual when it makes a change or decision clearer, with a short text explanation beside it. For interface changes prefer real before/after captures with comparable content, viewport and state; label mockups as illustrations. Give an interactive visual a text or static equivalent.
 
 Use a Markdown table to compare items on shared criteria: one item per row, short cells, units in headings. For proposed changes, show current behavior, proposed behavior and why it matters. Label unknown or unverified values instead of inventing gains, and put caveats beside the table. Numeric before/after tables get a benefit column (percent or times; absolute when a ratio cannot be computed); label changes inside the noise band "no clear change". Keep any enabled offer format.
 
@@ -44,7 +44,7 @@ Label expected gains and unknowns; do not invent measurements or scores.
 Keep priority separate from readiness, and preserve § Finishing work's
 requirements for continuing authorized work and making offers.
 
-Put the answer and anything the user must act on in the text after the reply's last tool call; some hosts hide earlier text behind a summary row. Finish bookkeeping first. If a tool call must follow the answer, repeat the whole answer after it, with any closing lines the rules ask for (such as the parked-item note). When the reply ends with a question card, that text goes right before the card.
+Put the answer and anything the user must act on in the text after the reply's last tool call; some hosts hide earlier text behind a summary row. Finish bookkeeping first. If a tool call must follow the answer, repeat the whole answer after it, with any closing lines the rules ask for (such as the parked-item note), unless that call is a question-card tool call. When the reply ends with a question-card tool call, that text goes right before the card.
 
 Verify work with completed checks and their output. Confirm each check's exit status or final
 result before claiming a pass, and do not hide failures by filtering output. Report changes,
