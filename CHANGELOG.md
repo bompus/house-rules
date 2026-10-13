@@ -13,6 +13,10 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   the tool's Node shebang, `node` in package scripts resolves to Bun under `bun --bun run`, `require.resolve`
   falls back to Bun's global install cache, busy workers wait on shared GC marking, and Node 26.11
   renamed its SQLite classes. Each bullet says how to confirm the runtime.
+- `hr-code-review` gains `references/reviewer-role.md`: a host-neutral brief for a standing reviewer or a
+  read-only review sub-agent. It carries the read-only method and the result contract (`PASS` or
+  `BLOCK: N`, findings ordered by severity, verification limits reported separately), so a host can
+  define a reviewer without copying the method.
 - Composing rules inline (without `--out`) no longer drops four core rules. Landing and Reporting
   are replaced by their reference text in that mode, and the references lacked the leave-alone-a-checkout-
   another-session-uses rule, the version-bump audit paragraph, the five-items-per-list line and the

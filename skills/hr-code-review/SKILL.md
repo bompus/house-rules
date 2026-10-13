@@ -82,7 +82,7 @@ results and verification limits.
 When delegating and both sources are available, the reviews may run in parallel.
 If a source arrives later or scope changes, update only the affected assessment.
 
-**Hosts.** Both sub-agents are read-only. Use the current host's native agent mechanism and follow the repository's model-selection rules. A sub-agent never runs the model that wrote the code; when the author is its vendor's strongest model, use another vendor's model where one is available, through the host or that vendor's command-line agent run read-only with the same brief. When no other model is available, use a fresh context and say in the report that the reviewer shares the author's model.
+**Hosts.** A standing reviewer or a read-only sub-agent given one review uses [the independent review role](references/reviewer-role.md) and its PASS/BLOCK result. Both sub-agents are read-only. Use the current host's native agent mechanism and follow the repository's model-selection rules. A sub-agent never runs the model that wrote the code; when the author is its vendor's strongest model, use another vendor's model where one is available, through the host or that vendor's command-line agent run read-only with the same brief. When no other model is available, use a fresh context and say in the report that the reviewer shares the author's model.
 
 **Correctness of input-to-output code** goes in the Spec brief, using the
 evidence method above. Split a large scope into groups of about three files,
