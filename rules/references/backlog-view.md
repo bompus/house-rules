@@ -148,6 +148,7 @@ from this skeleton, with the report's own items:
 
 Where the host has no render tool, give the same groups as a Markdown outline:
 numbered group headings with counts, one bullet per item with its trigger in
-bold first and its owner last, Q labels in bold, and "▶ group N of M, this
-reply" on the group being asked. The offer keeps its own format; the view adds
-no offer.
+bold first and its owner last, Q labels in bold with the item and its status,
+"Nothing." and the reason for an empty actionable group, and "▶ group N of M,
+this reply" on the group being asked. The offer keeps its own format; the view
+adds no offer.
