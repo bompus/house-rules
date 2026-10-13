@@ -70,7 +70,9 @@ field (or its closing lines, when the form has none) what exists and offer the
 pull request: "None applied. I can open a pull request for this once triage
 confirms the direction. <branch exists / not written yet>; <the approach or
 options I would measure>." When a branch or pull request already exists, link it
-instead. Before showing a draft to the user, run
+instead.
+
+Before showing a draft to the user, run
 `node scripts/check-pr-offer.mjs <draft.md>` from this skill; it fails when that
 text does not offer a pull request or link a pull request or branch. It is a
 text match: it skips a sentence that puts a negation before "pull request" but

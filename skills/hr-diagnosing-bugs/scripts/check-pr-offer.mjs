@@ -36,7 +36,9 @@ export const offersPullRequest = (draft) =>
 
 if (import.meta.main ?? import.meta.url === `file://${process.argv[1]}`) {
   const draft = readFileSync(process.argv[2] ?? 0, "utf8");
-  if (offersPullRequest(draft)) process.exit(0);
+  if (offersPullRequest(draft)) {
+    process.exit(0);
+  }
   console.error(
     'FAIL: the "Fix applied or workaround" text (or the draft\'s closing lines) neither says "pull request" nor links one.\n' +
       'Add the offer: "None applied. I can open a pull request for this once triage confirms the direction. <branch exists / not written yet>; <the approach I would measure>." or link the existing branch or pull request.',
