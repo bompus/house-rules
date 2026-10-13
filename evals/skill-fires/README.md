@@ -3,7 +3,9 @@
 Each directory is one `claude plugin eval` case: a `prompt.md` and `graders/*.md`.
 A case asks whether a shipped `hr-*` skill fires on a realistic request (a
 `tool_used: Skill` grader) and whether the reply meets the skill's contract (an
-`llm` grader), or whether a skill stays quiet on a near miss.
+`llm` grader), or whether a skill stays quiet on a near miss. `explain-code-near-miss` is such a negative
+case: `hr-explain-code` is invoked by the user, never by the model, so its tool
+grader requires zero calls.
 
 ```sh
 node evals/skill-fires/prepare.mjs "$SCRATCH/house-rules-skills"
