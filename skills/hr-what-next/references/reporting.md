@@ -11,6 +11,12 @@ including the host clock zone (`date +%Z`, or `Get-TimeZone` on Windows). Check
 it before reporting UTC or saying the zone is unknown; ask if neither
 establishes it.
 
+For routine replies, aim for at most five items per list or group. Rank the
+items by relevance to the current task and retain undisplayed candidates in
+the ledger. When the user requests a full inventory, or needs more items to
+make a decision, show every relevant item. This presentation target does not
+limit investigation, required disclosures or the options required by § Offers.
+
 Use a visual when it makes a change, behavior or decision clearer; keep a short
 text explanation beside it. For visible interface changes, prefer actual
 before/after captures with comparable content, viewport and state when available.
@@ -28,6 +34,12 @@ tradeoffs and evidence or uncertainty; label unknowns rather than inventing
 gains. Keep columns consistent and cells short. Label missing or unverified values and put units in headings. Put
 explanations and caveats beside the table. Split wide tables or use lists when
 long cells obscure the comparison. Preserve § Offers and any enabled offer format.
+
+For numeric before/after metrics, add a benefit column with percent change or a
+times improvement. Label worsening, unchanged and inconclusive results; use an
+absolute change when a relative benefit cannot be calculated. For benchmark
+differences, label changes within the reporting noise band as no clear change
+and explain the band beside the table.
 
 When asked for a backlog, research list or remaining work, check the current
 session and relevant task records within the requested scope. Reconcile

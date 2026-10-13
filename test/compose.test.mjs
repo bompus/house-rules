@@ -377,3 +377,29 @@ test("excluding a skill the core rules rely on warns instead of composing silent
     'rules/core.md expects the "hr-plain-prose" skill, which is not in the composed set',
   ]);
 });
+
+// With --out, core keeps a short section and links its reference; without it, the reference
+// replaces the whole section. A sentence that only the short section carries is lost there.
+test("each core section with a reference text carries every sentence of the short section", () => {
+  const paths = parseFragment(core, "core")
+    .meta.references.split(",")
+    .map((p) => p.trim());
+  const flat = (text) => text.replace(/\s+/g, " ").trim();
+  assert(paths.length > 0);
+  for (const path of paths) {
+    const reference = flat(readFileSync(join(root, "rules", path), "utf8"));
+    const heading = /^## (.+)$/m.exec(
+      reference.length ? readFileSync(join(root, "rules", path), "utf8") : "",
+    )[1];
+    const section = splitSections(core).sections.find((s) => s.heading === heading);
+    assert(section, `core has no section "${heading}"`);
+    // The paragraph holding the link only points at the reference; every other paragraph must be in it.
+    const paragraphs = section.text
+      .replace(/^## .+$/m, "")
+      .split(/\n\n+/)
+      .map(flat)
+      .filter(Boolean);
+    const missing = paragraphs.filter((p) => !p.includes("](") && !reference.includes(p));
+    assert.deepEqual(missing, [], `${path} lacks sentences core's short "${heading}" section has`);
+  }
+});

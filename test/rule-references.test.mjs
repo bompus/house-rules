@@ -210,7 +210,7 @@ test("core landing and selected squash references preserve inline callers and pe
     "squash-landing.md",
     "thread-visuals.md",
   ]);
-  assert.match(linked.rules, /Never bypass required checks/);
+  assert.match(linked.rules, /never bypass required\s+checks/);
   assert.match(linked.rules, /During integration, never switch, reset, force-move or remove/);
   assert.match(linked.references.get("landing.md"), /If the default branch is diverged/);
   assert.match(

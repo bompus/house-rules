@@ -18,6 +18,10 @@ repository requires (pull request or direct push), and never bypass required
 checks. Landing is done when a fresh fetch shows the default branch contains
 the change.
 
+Leave alone a checkout another
+session or job uses, or whose use you cannot tell. Never merge, reset, stash or
+switch it to make it match the default.
+
 After integration:
 
 - Fetch, then bring the local default branch current. When it is clean,
@@ -40,3 +44,5 @@ After integration:
 - When the change landed by squash, verify the pull request's recorded squash
   commit is in the fetched default branch and the intended changes landed; the
   original feature commits need not be ancestors.
+
+Before the first publish step of a version bump (tag, publish, release, announcement), review unreleased changelog entries and public materials (READMEs, charts, graphics with alt text, listing text, announcement) and fix what is stale first; an urgent release may limit only the materials to what it affects.

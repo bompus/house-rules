@@ -4,6 +4,12 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Composing rules inline (without `--out`) no longer drops four core rules. Landing and Reporting
+  are replaced by their reference text in that mode, and the references lacked the leave-alone-a-checkout-
+  another-session-uses rule, the version-bump audit paragraph, the five-items-per-list line and the
+  benefit-column paragraph. The references now carry them, and a test fails when a core section's
+  short text has a paragraph its reference lacks. Core no longer repeats "never bypass required
+  checks" in Landing.
 - New optional rule `model-default-questions` and preset `--questions default`: house-rules gives
   no instruction about how to ask questions, so the model and host ask their usual way. Without it,
   core rules still say text only. Setup now asks the question at install in plain words (Model

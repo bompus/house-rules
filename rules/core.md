@@ -343,8 +343,9 @@ checks. Landing is done when a fresh fetch shows the default branch contains
 the change.
 
 Before integration, updating a default checkout or deleting a landed branch, read
-[the landing procedure](references/landing.md). Never bypass required checks;
-verify remote containment with a fresh fetch. Leave alone a checkout another
+[the landing procedure](references/landing.md).
+
+Leave alone a checkout another
 session or job uses, or whose use you cannot tell. Never merge, reset, stash or
 switch it to make it match the default.
 
