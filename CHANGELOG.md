@@ -24,6 +24,13 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   fast-forwards a clean default checkout, and `check-landing.py` reports by content whether a checkout's work
   landed and lists processes still using it. A repository that lands by fast-forward push is named in
   `HR_PUSH_LANDED`. The helper tests run on Linux and macOS; on Windows they are skipped.
+- Core rules are about 19% shorter (composed with every optional rule off: 24,337 B, down from
+  30,123 B) with the same requirements, in more direct and positive wording. The walk-through rule
+  now reads "present no further offer. Load the `hr-what-next` skill and queue every new decision in
+  its walk-through, one line each." In the end-of-reply eval the old wording had Sonnet 5.5 load the
+  skill in 4 of 8 runs under the shorter text; this wording does so in 8 of 8. Over all 18 scenarios
+  at 3 runs each, pass counts stayed within noise: Opus 5.5 39 and 38 of 54, Sonnet 5.5 48 and 46 of 54
+  (before and after).
 - Composing rules inline (without `--out`) no longer drops four core rules. Landing and Reporting
   are replaced by their reference text in that mode, and the references lacked the leave-alone-a-checkout-
   another-session-uses rule, the version-bump audit paragraph, the five-items-per-list line and the

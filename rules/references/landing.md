@@ -7,16 +7,7 @@ then, a task finishes committed on its branch with landing offered. Choosing an
 offer option that includes landing, or replying with the accept line when the
 recommended option includes it, is that direction.
 
-At task completion, unlanded commits or uncommitted task changes get one landing
-option, never a bare done or a commit alone; only an explicit user deferral leaves
-them out, recorded with the branch, the commits and the reason. Write it as
-`Land PR #<n>` or `Commit and land <change>`. Landing is the whole sequence in
-this section and § Cleanup; do not list its steps in the option. Name only
-what departs from that sequence, such as a direct merge or a step held for the
-user. Choosing the option authorizes the whole landing, merge included. Land through the path the
-repository requires (pull request or direct push), and never bypass required
-checks. Landing is done when a fresh fetch shows the default branch contains
-the change.
+At task completion, unlanded or uncommitted task changes get one landing option, `Land PR #<n>` or `Commit and land <change>`, never a bare done; only an explicit user deferral (recorded with branch, commits and reason) leaves it out. The option covers this section and § Cleanup, merge included; name only departures from that. Land through the repository's required path without bypassing checks. Landing is done when a fresh fetch shows the change in the default branch.
 
 Leave alone a checkout another
 session or job uses, or whose use you cannot tell. Never merge, reset, stash or

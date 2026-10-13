@@ -17,29 +17,9 @@ the ledger. When the user requests a full inventory, or needs more items to
 make a decision, show every relevant item. This presentation target does not
 limit investigation, required disclosures or the options required by § Offers.
 
-Use a visual when it makes a change, behavior or decision clearer; keep a short
-text explanation beside it. For visible interface changes, prefer actual
-before/after captures with comparable content, viewport and state when available.
-Label mockups and simulated behavior as illustrations, not verification. Use
-interaction when exploring states or alternatives helps the reader, and provide
-an accessible text or static equivalent. Use the host's available tools within
-existing browser and task authorization.
+Use a visual when it makes a change or decision clearer, with a short text explanation beside it. For interface changes prefer real before/after captures; label mockups as illustrations.
 
-Use a Markdown table when comparing items on common criteria or reporting
-repeated records with useful shared fields. When asked about benefits,
-tradeoffs or how a proposal differs from current behavior, use a compact
-table for multiple items. Explain one item per row. For changes, show current
-and proposed behavior and why the difference matters. Include relevant
-tradeoffs and evidence or uncertainty; label unknowns rather than inventing
-gains. Keep columns consistent and cells short. Label missing or unverified values and put units in headings. Put
-explanations and caveats beside the table. Split wide tables or use lists when
-long cells obscure the comparison. Preserve § Offers and any enabled offer format.
-
-For numeric before/after metrics, add a benefit column with percent change or a
-times improvement. Label worsening, unchanged and inconclusive results; use an
-absolute change when a relative benefit cannot be calculated. For benchmark
-differences, label changes within the reporting noise band as no clear change
-and explain the band beside the table.
+Use a Markdown table to compare items on shared criteria: one item per row, short cells, units in headings. For proposed changes, show current behavior, proposed behavior and why it matters. Label unknown or unverified values instead of inventing gains, and put caveats beside the table. Numeric before/after tables get a benefit column (percent or times; absolute when a ratio cannot be computed); label changes inside the noise band "no clear change". Keep any enabled offer format.
 
 When asked for a backlog, research list or remaining work, check the current
 session and relevant task records within the requested scope. Reconcile
@@ -64,18 +44,7 @@ Label expected gains and unknowns; do not invent measurements or scores.
 Keep priority separate from readiness, and preserve § Finishing work's
 requirements for continuing authorized work and making offers.
 
-Put the answer, and anything the user must read or act on, in the reply's text
-after its last tool call. Some hosts fold every message of a finished turn except
-the last one behind a summary row (a "Worked for" row, for example), so text
-written between tool calls, or an answer followed by even one more tool call,
-can be hidden while a short closing line stays visible. Finish bookkeeping
-(ledger, plan and note updates, cleanup) before writing the answer. If a tool
-call is still needed after the answer, write the whole answer again in the final
-message. A line the rules ask for after the answer, such as the parked-item
-note, belongs in that same final message. Never end a reply with a short closing
-line after a tool call when the substance came before it. When the reply ends
-with a question card, that text goes after every other tool call, right before
-the card.
+Put the answer and anything the user must act on in the text after the reply's last tool call; some hosts hide earlier text behind a summary row. Finish bookkeeping first. If a tool call must follow the answer, repeat the whole answer after it, with any closing lines the rules ask for (such as the parked-item note). When the reply ends with a question card, that text goes right before the card.
 
 Verify work with completed checks and their output. Confirm each check's exit status or final
 result before claiming a pass, and do not hide failures by filtering output. Report changes,

@@ -27,6 +27,6 @@ not the one that is quickest to finish. When that work comes in dependent steps
 lands. Do not present a required step as an optional alternative, and mark an
 alternative that drops required work from the plan "(Not Recommended)".
 
-When three or more offers are open and unanswered, do not present another one.
-Queue the new decision in a walk-through (load the `hr-what-next` skill) and
-give it one line.
+When three or more offers are open and unanswered, present no further offer.
+Load the `hr-what-next` skill and queue every new decision in its walk-through,
+one line each.
