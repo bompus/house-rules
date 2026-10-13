@@ -4,6 +4,11 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- New `evals/skill-fires/`: ten `claude plugin eval` cases that check whether `hr-audit-choices`,
+  `hr-code-review`, `hr-diagnosing-bugs`, `hr-explain-code`, `hr-extract-shared-steps`, `hr-plain-prose`
+  and `hr-test-audit` fire on realistic requests, and that the replies meet each skill's contract.
+  `prepare.mjs` builds the throwaway plugin directory the runner needs. One case was run end to end
+  (the skill fired and the reply passed); no results ship with the cases.
 - Composing rules inline (without `--out`) no longer drops four core rules. Landing and Reporting
   are replaced by their reference text in that mode, and the references lacked the leave-alone-a-checkout-
   another-session-uses rule, the version-bump audit paragraph, the five-items-per-list line and the
