@@ -145,6 +145,16 @@ test("an after: section lands next to its target even when an earlier one was re
   assert.equal(h[h.indexOf("Offers") + 1], "Kept");
 });
 
+test("a quoted frontmatter value loses its surrounding quotes only", () => {
+  const { meta } = parseFragment(
+    '---\ndescription: "Do it. Then stop."\nother: \'a\'\nplain: it\'s "fine"\nlone: "\n---\nBody\n',
+    "quoted",
+  );
+  assert.equal(meta.description, "Do it. Then stop.");
+  assert.equal(meta.other, "a");
+  assert.equal(meta.plain, 'it\'s "fine"');
+  assert.equal(meta.lone, '"');
+});
 test("Windows line endings and headings inside code fences do not change the result", () => {
   const crlf = parseFragment("---\r\nafter: Landing\r\n---\r\n## Mine\r\n\r\nText.\r\n", "crlf");
   assert.equal(crlf.meta.after, "Landing");

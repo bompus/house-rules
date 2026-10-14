@@ -187,8 +187,9 @@ main() {
   say "  Other hosts: copy the contents of rules.md into the host's user-level"
   say "  rules file and put house-rules-references beside it. Point its"
   say "  skills directory at composed-skills."
-  say "To change modifiers, edit $(tilde "$cfg/house-rules.json") (list them with"
-  say "  $(tilde "$rt") $(tilde "$dir")/compose.mjs --list) and run this installer again."
+  say "To change modifiers or skills, run:"
+  say "  $(tilde "$rt") $(tilde "$dir")/compose.mjs setup"
+  say "  (or edit $(tilde "$cfg/house-rules.json")), then run this installer again."
 }
 
 # Runs only once the whole script has downloaded.

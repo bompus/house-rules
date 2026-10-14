@@ -4,6 +4,16 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Setup is easier to follow on a first run. The skill descriptions no longer start with a stray
+  quote (frontmatter values wrapped in one pair of matching quotes now lose them). A fresh layer
+  lists every optional rule on the first screen instead of "No matches", and the same holds for
+  skills when none are selected. Enabling a rule that expects a skill (for example
+  `cross-session-relay` and `hr-agent-guidance-refresh`) also selects that skill, so the warning no
+  longer repeats on every compose. After `save`, setup prints the one command that applies the
+  selection: running the installer again for a checkout (naming `HOUSE_RULES_DIR` or
+  `HOUSE_RULES_CONFIG_DIR` when they are not the defaults), or `house-rules --config` for the npm
+  package. The review screen's reproduce line and the installer's closing text now point at
+  `compose.mjs setup`.
 - **Breaking for configs that list it:** the `swarmail` modifier is removed. It only told an agent
   where to find one coordination product's own instructions, so it was not general guidance. A
   `house-rules.json` that still lists `swarmail` under `modifiers` now fails. `compose.mjs`, the

@@ -199,6 +199,46 @@ test(
 );
 
 test(
+  "a fresh layer lists the optional rules at once and skill descriptions carry no quote",
+  interactive,
+  async (t) => {
+    const { path } = fixture(t);
+    const session = terminal(t, path);
+    await session.wait();
+    assert.match(session.output, /shared-host-load/);
+    assert.match(session.output, /Nothing is selected yet, so every choice is listed/);
+    assert.doesNotMatch(session.output, /No matches for/);
+    await session.command("next");
+    assert.match(session.output, /hr-what-next/);
+    assert.doesNotMatch(session.output, /^ {3}["']/m);
+    await session.finish("cancel");
+  },
+);
+
+test(
+  "enabling a rule also selects the skill it expects, and save names the command that applies it",
+  interactive,
+  async (t) => {
+    const { dir, path } = fixture(t, { skills: { include: ["hr-what-next"] } });
+    const session = terminal(t, path);
+    await session.wait();
+    await session.command("toggle cross-session-relay");
+    assert.match(session.output, /Also selected the hr-agent-guidance-refresh skill/);
+    await session.command("next");
+    await session.command("next");
+    const result = await session.finish("save");
+    assert.equal(result.code, 0);
+    const saved = JSON.parse(readFileSync(path, "utf8"));
+    assert.deepEqual(saved.modifiers, ["cross-session-relay"]);
+    assert(saved.skills.include.includes("hr-agent-guidance-refresh"));
+    // The directories here are not the installer's defaults, so the command names them.
+    assert(result.output.includes(`HOUSE_RULES_CONFIG_DIR=${shellQuote(dir)}`), result.output);
+    assert(result.output.includes(`sh ${shellQuote(join(root, "install.sh"))}`), result.output);
+    assert.doesNotMatch(result.output, /^house-rules --config/m);
+  },
+);
+
+test(
   "stored unknown modifiers and a missing cards prerequisite can be repaired together",
   interactive,
   async (t) => {
@@ -372,7 +412,7 @@ syncBuiltinESMExports();`,
 );
 
 test(
-  "explicit selection stays bounded until search and include-only edits can be saved",
+  "explicit skill selection stays bounded until search and include-only edits can be saved",
   interactive,
   async (t) => {
     const original = {
@@ -383,7 +423,8 @@ test(
     const { path } = fixture(t, original);
     const session = terminal(t, path);
     await session.wait();
-    assert.doesNotMatch(session.output, /\[off\] shared-host-load/);
+    // No optional rule is selected, so the first screen lists them all rather than nothing.
+    assert.match(session.output, /\[off\] shared-host-load/);
     await session.command("next");
     assert.match(session.output, /\[on\] hr-code-review/);
     assert.doesNotMatch(session.output, /\[off\] hr-handoff/);
