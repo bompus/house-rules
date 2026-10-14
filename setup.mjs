@@ -41,7 +41,11 @@ const quote = (value) =>
 // How this copy runs and how to apply a saved selection: the npm package has a
 // `house-rules` command, a checkout from the installer is updated by running the installer again.
 const entry = fileURLToPath(new URL("./compose.mjs", import.meta.url));
-const packaged = entry.split(/[\\/]/).includes("node_modules");
+const parts = entry.split(/[\\/]/).map((part) => part.toLowerCase());
+const packaged = parts.some(
+  (part, index) =>
+    part === "node_modules" && parts[index + 1] === "@bompus" && parts[index + 2] === "house-rules",
+);
 const cliCommand = () =>
   packaged
     ? "house-rules"
