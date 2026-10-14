@@ -76,10 +76,10 @@ workload and host, not a benchmark.
   a stall.
 - **Separate loop time from child-process time.** Work done by an asynchronously
   spawned process uses CPU but does not hold the loop. Count such a spawn as loop
-  cost only for its spawning and parsing. `spawnSync` and `execSync` do block the
+  cost only for its spawning and parsing. `spawnSync`, `execSync` and `execFileSync` block the
   loop for the child's whole lifetime, so count that time as a stall.
 - **Prove that work left the loop with a test that cannot pass otherwise.** Hold
-  the main connection or thread busy (an open transaction blocked on a latch) and
+  the main connection or thread busy (blocked on a latch) and
   assert the moved work still completes. A speed measurement alone cannot show
   where the work ran. Moving one read off the loop took the longest stall from a
   median 165 ms to 2.5 ms over 12 runs per arm, with no clear change in wall time, measured with a 2 ms probe (M).
