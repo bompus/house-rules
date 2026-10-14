@@ -2,7 +2,7 @@
 expect: reply
 allowRead: true
 without: \s*When work ends, pauses or hands off.*?is not closure\.
-requiredPattern: ^(?=[\s\S]*\b67\.4\b)(?=[\s\S]*\b387\b)(?=[\s\S]*\b544\b)
+requiredPattern: ^(?=[\s\S]*\b67\.4\b)(?=[\s\S]*\b387\b)(?=[\s\S]*\b544\b)(?=[\s\S]*\b(ran|compar\w*|recorded|done)\b)(?=[\s\S]*\b(finding\w*|result|learn\w*|lesson|takeaway|conclu\w*|trade-?off)\b)(?=[\s\S]*\b(remain\w*|parked|open|left)\b)(?=[\s\S]*\bselect\w*)
 ---
 
 ## Project AGENTS.md
