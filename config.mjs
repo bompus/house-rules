@@ -61,7 +61,7 @@ function validateSelection(config) {
   for (const name of config.modifiers ?? []) {
     if (!known.has(name))
       throw new Error(
-        `unknown modifier "${name}" (see config catalog); remove a stored one with config set --disable-modifier <name>`,
+        `unknown modifier "${name}" (see config catalog); preview its removal with config set --disable-modifier <name>, then save it with config set --disable-modifier <name> --apply --expect <revision>`,
       );
   }
   if (BACKLOG_VIEWS.every((name) => config.modifiers?.includes(name)))

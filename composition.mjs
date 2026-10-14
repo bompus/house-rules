@@ -188,7 +188,7 @@ function loadRawFragments(config, configDir) {
     const path = join(BASE, "rules/modifiers", `${name}.md`);
     if (!existsSync(path))
       throw new Error(
-        `unknown modifier "${name}"; remove it from "modifiers" in your house-rules.json ("node compose.mjs --list" in the checkout, or "house-rules --list", shows the available names)`,
+        `unknown modifier "${name}"; remove it from "modifiers" in the configuration file ("node compose.mjs --list" in the checkout, or "house-rules --list", shows the available names)`,
       );
     return { ...parseFragment(readFileSync(path, "utf8"), `modifier ${name}`), path, root: BASE };
   });
