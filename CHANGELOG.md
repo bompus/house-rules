@@ -107,12 +107,11 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
     quickest one. Dependent steps are separate options labeled "(Recommended, phase 1)" and
     "(Recommended, phase 2)", and a required step is never an optional alternative. An option that
     produces a change names what it changes and the steps it includes; one that creates a rule,
-    skill, document or script also names the owning repository and what was searched. With three
-    or more offers open and unanswered, a new decision is queued in an `hr-what-next` walk-through
-    (the open questions asked a few at a time).
-    With `coded-offers`, each option is a list item of a line or two, nothing may follow the
-    acceptance line, and an offer visual is made only
-    when the user asks and the host can render one.
+    skill, document or script also names the owning repository and what was searched. With three or
+    more offers open and unanswered, a new decision is queued in an `hr-what-next` walk-through (the
+    open questions asked a few at a time). With `coded-offers`, each option is a list item of a line
+    or two, nothing may follow the acceptance line, and an offer visual is made only when the user
+    asks and the host can render one.
   - Finishing work and the ledger: before asking the user to do something, the agent checks the
     actual state and does what it can itself. A no is dropped, as are options the user passes over;
     only work the user wants done later is deferred. A session that has finished and landed its own
@@ -138,13 +137,13 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
     `gh` version supports it; otherwise use a browser signed in to the user's GitHub account. The
     bug-reporting reference says to submit a YAML issue form through that form in the browser.
   - Landing and review. The agent also leaves alone a checkout that another session or job uses, or
-    whose use it cannot tell (0.11.0 covered only another session's checkout), and, when it knows no
-    session or job uses it, updates a default branch checked out elsewhere with
-    `git merge --ff-only` to the fetched head. The
-    `squash-landing` modifier lets an enabled automatic review begin instead of requesting one, and
-    merges only after an existing review check reports completion. The `low-quota-handoff` modifier
-    says five-hour limits do not trigger a handoff and a usage reading must never cost model turns
-    or read credentials.
+    whose use it cannot tell (0.11.0 covered only another session's checkout). When it may update a
+    default branch checked out elsewhere (it knows no session or job uses that checkout, as in
+    0.11.0), it now runs `git merge --ff-only` with the fetched head instead of
+    `git pull --ff-only`, which another process's fetch can make fail. The `squash-landing` modifier
+    lets an enabled automatic review begin instead of requesting one, and merges only after an
+    existing review check reports completion. The `low-quota-handoff` modifier says five-hour limits
+    do not trigger a handoff and a usage reading must never cost model turns or read credentials.
   - `no-attribution` and `hr-writing-pr` give agent or model disclosure exactly as a repository's
     contribution guidelines ask, where they ask for it, and nothing else.
   - Composing rules inline (without `--out`) no longer drops three core rules. Sections that point
@@ -190,10 +189,10 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
     seat is one reviewer). `references/panel-setup.md` asks only
     open questions and saves portable preferences after confirmation, stored in the config's
     `panel` object (`config set --panel-file`).
-  - `scripts/panel-plan.mjs` resolves preferences and a bindings file (which maps each model alias
-    in your preferences to how that model is launched) into the seats a panel would run before any
-    model is called. Project and task layers can only tighten the user's policy, and
-    `meteredRoutes: included-only` rejects a pay-per-use route.
+  - `scripts/panel-plan.mjs` resolves preferences and a bindings file (which gives each model alias
+    in your preferences its launch settings, model family and whether it is pay-per-use) into the
+    seats a panel would run before any model is called. Project and task layers can only tighten the
+    user's policy, and `meteredRoutes: included-only` rejects a pay-per-use route.
   - `scripts/acp-panel-client.mjs` is an Agent Client Protocol (ACP) client over stdio for panel
     seats (`references/acp-client.md`). `references/panel-adjudication.md` says which claims count
     as corroborated, and `scripts/check-receipts.mjs` checks the `path:line` citations in a panel's
@@ -209,10 +208,10 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   the workload's variation is unknown, and check agent or model comparisons for a ceiling.
   Procedures for one machine (taking a benchmark lock and fencing CPU cores for a run) left the
   skill, and `references/priority-findings-20261006.md` is deleted. The JavaScript reference lists
-  verified Bun-versus-Node differences and now covers server code. It says to measure the longest
-  event-loop stall next to wall time, time the real function, count events and bytes when volume is
-  the cost, prove moved work with a test that holds the main connection busy, and treat another
-  researcher's numbers as leads.
+  verified findings on running under Bun versus Node and now covers server code. It says to measure
+  the longest event-loop stall next to wall time, time the real function, count events and bytes
+  when volume is the cost, prove moved work with a test that holds the main connection busy, and
+  treat another researcher's numbers as leads.
 - `hr-agent-guidance-refresh` is trimmed to what holds on any host: it rereads changed instructions,
   skills, subagent definitions, configuration and the tools it relies on, holds the update while an
   evaluation fixes its context, and treats a reread as no proof that injected context changed. Its
