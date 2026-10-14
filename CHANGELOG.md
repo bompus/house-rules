@@ -4,6 +4,10 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- The `hr-code-review` panel recommendations gain an entry for Muse Wonder Full 1.0 on the Bug Hunt
+  board: two runs each at xhigh (41.5 of 105) and max (42.0), no published price, and reachable only
+  through a Muse Code subscription plan. The existing Opus 5.5 and Sonnet 5.5 entries were checked
+  against the same board data again and their figures are unchanged.
 - `hr-benchmarking` now says to test the newest stable release of each candidate. If the installed
   or deployed version differs, the results say so; the agent asks which to test when the request
   does not settle it, and when told to use an older version it uses that and offers the newest as an

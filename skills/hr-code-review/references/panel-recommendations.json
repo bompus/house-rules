@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "reviewed": "2026-10-10",
+  "reviewed": "2026-10-14",
   "entries": [
     {
       "id": "opus-5-5-bug-hunt",
@@ -10,12 +10,27 @@
       "harness": "Claude Code",
       "route": "Anthropic first-party API",
       "efforts": [
-        { "effort": "medium", "fixed": 30.3, "listCostUsd": 15.68, "wallMinutes": 17.0 },
-        { "effort": "high", "fixed": 31.7, "listCostUsd": 22.25, "wallMinutes": 23.9 },
-        { "effort": "xhigh", "fixed": 36.0, "listCostUsd": 34.98, "wallMinutes": 42.5 }
+        {
+          "effort": "medium",
+          "fixed": 30.3,
+          "listCostUsd": 15.68,
+          "wallMinutes": 17.0
+        },
+        {
+          "effort": "high",
+          "fixed": 31.7,
+          "listCostUsd": 22.25,
+          "wallMinutes": 23.9
+        },
+        {
+          "effort": "xhigh",
+          "fixed": 36.0,
+          "listCostUsd": 34.98,
+          "wallMinutes": 42.5
+        }
       ],
       "sourceUrl": "https://bughunt.productcompass.pm/data/benchmark.json",
-      "checked": "2026-10-10",
+      "checked": "2026-10-14",
       "samples": "3 runs per effort, non-superseded rows; each run covers both repositories",
       "metric": "planted bugs fixed, mean of 3, out of 105",
       "timeDefinition": "wall clock summed over both repositories; the board says these runs shared the machine with other work",
@@ -32,17 +47,58 @@
       "harness": "Claude Code",
       "route": "Anthropic first-party API",
       "efforts": [
-        { "effort": "high", "fixed": 34.3, "listCostUsd": 19.85, "wallMinutes": 27.9 },
-        { "effort": "xhigh", "fixed": 36.0, "listCostUsd": 42.86, "wallMinutes": 72.7 }
+        {
+          "effort": "high",
+          "fixed": 34.3,
+          "listCostUsd": 19.85,
+          "wallMinutes": 27.9
+        },
+        {
+          "effort": "xhigh",
+          "fixed": 36.0,
+          "listCostUsd": 42.86,
+          "wallMinutes": 72.7
+        }
       ],
       "sourceUrl": "https://bughunt.productcompass.pm/data/benchmark.json",
-      "checked": "2026-10-10",
+      "checked": "2026-10-14",
       "samples": "3 runs per effort, non-superseded rows; each run covers both repositories",
       "metric": "planted bugs fixed, mean of 3, out of 105",
       "timeDefinition": "wall clock summed over both repositories; the board says the machine was idle for these runs, so the times do not compare with the Opus entry's",
       "costDefinition": "list-rate API price estimated from usage counts, summed over both repositories; the board notes its harness priced this model on another model's table, so the dollar figure is less certain than the usage counts",
       "limitations": "Same board limits as the Opus entry; its older Sonnet 5 rows are not comparable to these; the board also lists low, medium and max rungs that this entry leaves out",
       "rationale": "At high and xhigh it found 34.3 and 36.0 planted bugs against Opus's 31.7 and 36.0, at similar cost ($19.85 and $42.86 against $22.25 and $34.98); the times are not comparable. Suggest it only where the user allows that model and effort",
+      "status": "current"
+    },
+    {
+      "id": "muse-wonder-full-bug-hunt",
+      "profiles": ["balanced"],
+      "task": "Find planted bugs: 105 across two repositories, count fixed",
+      "model": "muse-wonder-full-1.0",
+      "harness": "Muse Code (Meta's agent CLI)",
+      "route": "Meta API through a Muse Code subscription plan; no per-use price",
+      "efforts": [
+        {
+          "effort": "xhigh",
+          "fixed": 41.5,
+          "listCostUsd": "unknown",
+          "wallMinutes": 90.5
+        },
+        {
+          "effort": "max",
+          "fixed": 42,
+          "listCostUsd": "unknown",
+          "wallMinutes": 145.3
+        }
+      ],
+      "sourceUrl": "https://bughunt.productcompass.pm/data/benchmark.json",
+      "checked": "2026-10-14",
+      "samples": "2 runs per effort (xhigh 44 and 39, max 44 and 40); each run covers both repositories",
+      "metric": "planted bugs fixed, mean of 2, out of 105",
+      "timeDefinition": "active wall clock summed over both repositories; the board says its machine was shared with other work, and the second run of each effort was resumed in segments across two Muse Code versions, so only its active time is counted",
+      "costDefinition": "unknown: Meta publishes no price for this model, so no dollar figure is recorded",
+      "limitations": "Two runs per effort, and the board measures a median 1.7-point run-to-run move on three-run configurations, so the 0.5-point gap between xhigh and max is not a difference; the board lists no high or lower rung; the board's own note says max led on one repository and xhigh on the other; reachable only through a Muse Code subscription plan, so it fits a user who already has one; its usage draws on that plan's rolling windows, which the board does not measure",
+      "rationale": "xhigh fixed 41.5 planted bugs against Opus 5.5 xhigh's 36.0 and Sonnet 5.5 xhigh's 36.0, in a time the board says is loosely comparable at best, and max added nothing clear for 55 more minutes. Suggest it as an additional seat from a different model family where the user has a Muse Code plan and allows the effort; start at xhigh, and use max only on request",
       "status": "current"
     }
   ]
