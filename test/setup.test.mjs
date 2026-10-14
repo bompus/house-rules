@@ -216,6 +216,23 @@ test(
 );
 
 test(
+  "a skill typed in the same toggle command as its rule keeps the typed choice",
+  interactive,
+  async (t) => {
+    const { path } = fixture(t, { skills: { include: ["hr-what-next"] } });
+    const session = terminal(t, path);
+    await session.wait();
+    await session.command("toggle cross-session-relay hr-agent-guidance-refresh");
+    assert.doesNotMatch(session.output, /Also selected the hr-agent-guidance-refresh/);
+    await session.command("next");
+    await session.command("next");
+    assert.equal((await session.finish("save")).code, 0);
+    const saved = JSON.parse(readFileSync(path, "utf8"));
+    assert(saved.skills.include.includes("hr-agent-guidance-refresh"));
+  },
+);
+
+test(
   "enabling a rule also selects the skill it expects, and save names the command that applies it",
   interactive,
   async (t) => {
@@ -237,6 +254,21 @@ test(
     assert.doesNotMatch(result.output, /^house-rules --config/m);
   },
 );
+
+test("a config file with another name is applied by the direct command", interactive, async (t) => {
+  const { dir } = fixture(t);
+  const path = join(dir, "mine.json");
+  writeFileSync(path, JSON.stringify({ skills: { include: ["hr-what-next"] } }));
+  const session = terminal(t, path);
+  await session.wait();
+  await session.command("toggle shared-host-load");
+  await session.command("next");
+  await session.command("next");
+  const result = await session.finish("save");
+  assert.equal(result.code, 0);
+  assert(result.output.includes(`${shellQuote(path)} --out `), result.output);
+  assert.doesNotMatch(result.output, /install\.sh/);
+});
 
 test(
   "stored unknown modifiers and a missing cards prerequisite can be repaired together",

@@ -200,6 +200,6 @@ param([switch]$PrintRuntime)
   Write-Host "  rules file and put house-rules-references beside it. Point its"
   Write-Host "  skills directory at composed-skills."
   Write-Host 'To change modifiers or skills, run:'
-  Write-Host "  & '$rt' '$dir\compose.mjs' setup"
+  Write-Host "  & '$rt' '$dir\compose.mjs' setup --config '$cfg\house-rules.json'"
   Write-Host "  (or edit $(Show-Path "$cfg\house-rules.json")), then run this installer again."
 }

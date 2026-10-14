@@ -12,8 +12,10 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   longer repeats on every compose. After `save`, setup prints the one command that applies the
   selection: running the installer again for a checkout (naming `HOUSE_RULES_DIR` or
   `HOUSE_RULES_CONFIG_DIR` when they are not the defaults), or `house-rules --config` for the npm
-  package. The review screen's reproduce line and the installer's closing text now point at
-  `compose.mjs setup`.
+  package; a config file with another name gets the direct `--config` command, since the installer
+  composes only `house-rules.json`. The review screen's reproduction command uses `config set`
+  with the same runtime, and the installer's closing text points at `compose.mjs setup --config`
+  with the real config path.
 - **Breaking for configs that list it:** the `swarmail` modifier is removed. It only told an agent
   where to find one coordination product's own instructions, so it was not general guidance. A
   `house-rules.json` that still lists `swarmail` under `modifiers` now fails. `compose.mjs`, the

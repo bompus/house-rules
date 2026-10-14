@@ -2,7 +2,7 @@
 import { createInterface } from "node:readline";
 import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs, stripVTControlCharacters } from "node:util";
 import { configurationPath, modifierList } from "./composition.mjs";
@@ -42,14 +42,18 @@ const quote = (value) =>
 // `house-rules` command, a checkout from the installer is updated by running the installer again.
 const entry = fileURLToPath(new URL("./compose.mjs", import.meta.url));
 const packaged = entry.split(/[\\/]/).includes("node_modules");
-const cliCommand = () => (packaged ? "house-rules" : `${quote(process.execPath)} ${quote(entry)}`);
+const cliCommand = () =>
+  packaged
+    ? "house-rules"
+    : `${process.platform === "win32" ? "& " : ""}${quote(process.execPath)} ${quote(entry)}`;
 
 function recomposeCommand(configPath) {
   const configDir = dirname(configPath);
   const checkout = dirname(entry);
   const windows = process.platform === "win32";
   const installer = join(checkout, windows ? "install.ps1" : "install.sh");
-  if (packaged || !existsSync(installer))
+  // The installer composes <config dir>/house-rules.json only.
+  if (packaged || !existsSync(installer) || basename(configPath) !== "house-rules.json")
     return `${cliCommand()} --config ${quote(configPath)} --out ${quote(join(configDir, "rules.md"))}`;
   // The installer reads these variables, so a copy or config outside the defaults must name them.
   const home = homedir();
@@ -351,8 +355,9 @@ export async function setupCommand(argv) {
               // A rule that expects a skill would otherwise warn on every compose.
               for (const need of enabled ? (row.requires ?? "").split(",") : []) {
                 const skill = available.find((r) => r.kind === "skill" && r.name === need.trim());
-                if (!skill || (intent.get(`skill:${skill.name}`)?.enabled ?? skill.enabled))
-                  continue;
+                // A skill listed in the same command keeps the toggle the user typed.
+                if (!skill || chosen.includes(skill)) continue;
+                if (intent.get(`skill:${skill.name}`)?.enabled ?? skill.enabled) continue;
                 intent.set(`skill:${skill.name}`, {
                   kind: "skill",
                   name: skill.name,
@@ -410,6 +415,10 @@ export async function setupCommand(argv) {
             "Output was not regenerated and hosts were not connected by setup. To apply the selections, run:",
           );
           printCommand(recomposeCommand(saved.path));
+          if (packaged || basename(saved.path) !== "house-rules.json")
+            print(
+              "This rebuilds the rules only; add --skills-out with a new or empty directory to rebuild the skills too.",
+            );
           return;
         } else
           throw new Error(

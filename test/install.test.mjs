@@ -178,5 +178,5 @@ it("prints the setup command with quotes when the checkout path has a space", (t
   cpSync(root, checkout, { recursive: true, filter: (src) => basename(src) !== ".git" });
   const r = run(home, [], [], { HOUSE_RULES_DIR: checkout, HOUSE_RULES_RUNTIME: process.execPath });
   assert.equal(r.status, 0, r.stderr);
-  assert(r.stdout.includes(` '${join(checkout, "compose.mjs")}' setup`), r.stdout);
+  assert(r.stdout.includes(` '${join(checkout, "compose.mjs")}' setup --config `), r.stdout);
 });

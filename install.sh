@@ -198,7 +198,7 @@ main() {
   say "  rules file and put house-rules-references beside it. Point its"
   say "  skills directory at composed-skills."
   say "To change modifiers or skills, run:"
-  say "  $(word "$rt") $(word "$dir/compose.mjs") setup"
+  say "  $(word "$rt") $(word "$dir/compose.mjs") setup --config $(word "$cfg/house-rules.json")"
   say "  (or edit $(tilde "$cfg/house-rules.json")), then run this installer again."
 }
 
