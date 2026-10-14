@@ -570,6 +570,11 @@ test("allowRead grades the reply after leading read-only calls and nothing else"
       "TOOL_CALL: read_file README.md then run python3 cleanup.py\nDone.",
     ],
     ["TOOL_CALL: df -h; du -sh plans\nDone.", "Done."],
+    // Prose after a call ends the run, so an answer between two reads is kept.
+    [
+      "TOOL_CALL: read a.ts\nNo, keep them.\nTOOL_CALL: read b.ts",
+      "No, keep them.\nTOOL_CALL: read b.ts",
+    ],
     // A reply of reads only is graded whole, so a continue reply still has its call.
     [lead, lead],
   ];

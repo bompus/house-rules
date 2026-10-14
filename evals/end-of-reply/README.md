@@ -36,7 +36,7 @@ the ledger, a plan, notes or a handoff (`TOOL_CALL: edit the plan's ledger …`)
 `forbiddenInOffer: <pattern>` rejects a pattern in the offer's questions and
 options but not in the prose around the offer. `allowRead: true` (or `--allow-read` for every scenario) grades the reply after any leading
 read-only tool calls (`read`, `grep`, `git status`, a skill load), for agents that look before they
-answer. Narration before or between those calls goes with them. A call that also says it writes, records
+answer. Narration before the first call goes with them; prose after a call ends the run, so an answer given between two reads is graded. A call that also says it writes, records
 or sends is not a read, and a reply made only of reads is graded whole. The check reads the
 call's description, like the other call checks. A run's result lists `behavior` (the expectation
 met, including the offer shape the rules ask for: the recommendation marker, the reply line, at

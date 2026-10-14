@@ -60,14 +60,18 @@ const ALSO_ACTS =
   /\b(?:send|write|edit|create|record|update|append|save|commit|push|delete|remove|install|notify|relay|merge|publish|post|comment|replace|fix|run|deploy|release|apply|reset|checkout|open|rm|mv|sed|pull request)\b/i;
 
 // With `allowRead`, a reply may open with read-only tool calls (the agent looks before it
-// answers). The reply is then the text after the last call in that leading run; a reply made
-// only of reads, or whose first call acts, is graded whole.
+// answers). The reply is then the text after the last call in that leading run, which ends at
+// the first call that acts or the first prose line after a call; text before the first call is
+// narration and goes with the reads. A reply made only of reads is graded whole.
 export function afterLeadingReads(reply) {
   const lines = reply.split("\n");
   let last = -1;
   for (const [i, line] of lines.entries()) {
     const text = line.trim();
-    if (!/^TOOL_CALL\b/.test(text)) continue;
+    if (!/^TOOL_CALL\b/.test(text)) {
+      if (text && last >= 0) break;
+      continue;
+    }
     const parts = text.replace(/^TOOL_CALL:?\s*/i, "").split(/&&|\|\||[;|]|\bthen\b/);
     if (actsAlso(text) || parts.some((p) => REDIRECTING.test(p) || !LOOKUP.test(p.trim()))) break;
     last = i;
