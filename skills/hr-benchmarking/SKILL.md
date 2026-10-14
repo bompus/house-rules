@@ -21,6 +21,11 @@ configurations or capacity modes. Keep untested, invalid and unsupported
 candidates visible with reasons. A subset comparison establishes results only
 for its tested scope, not a winner across the full inventory.
 
+Test the newest stable release of each candidate. When the version installed
+or deployed differs, say so in the results, and ask which to test if the
+request does not settle it. When told to use an older version, use it and
+offer the newest as an alternative.
+
 Before running, list the selected engines, workloads, metrics, controls and
 repetitions. Count the planned runs explicitly, including controls and stages;
 state which decision each retained dimension helps make. Choose combinations

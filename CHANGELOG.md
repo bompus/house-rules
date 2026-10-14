@@ -4,6 +4,11 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- `hr-benchmarking` now says to test the newest stable release of each candidate. If the installed
+  or deployed version differs, the results say so; the agent asks which to test when the request
+  does not settle it, and when told to use an older version it uses that and offers the newest as an
+  alternative.
+
 ## 0.12.0 - 2026-10-14
 
 - **Breaking for configs that list it:** the `swarmail` modifier is removed. It only told an agent
