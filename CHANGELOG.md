@@ -4,6 +4,12 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- The JavaScript measurement reference now covers server code: measure the longest event-loop
+  stall with a timer probe next to wall time, time the real function instead of a copy, count
+  events and bytes when volume is the cost, prove moved work with a test that holds the main
+  connection busy, measure retention with forced collection, time startup interleaved, and treat
+  another researcher's numbers as leads. `hr-sqlite` adds a checklist item for running reads on a
+  worker connection with a synchronous driver, with its measurement in the evidence file.
 - Installer and error messages are clearer. `install.sh` stops on an unknown option instead of
   running a full install, says what to check when the repository cannot be downloaded, and
   no longer names a partial skills directory that does not exist. A re-run whose composed skills

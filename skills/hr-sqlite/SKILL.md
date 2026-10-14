@@ -148,6 +148,20 @@ different engine, driver or pool, read
     documentation recommends `SQLITE_DEFAULT_MEMSTATUS=0`, and one runtime's
     build lacks it (D; see [the tool decisions](references/tool-decisions.md)).
 
+## Keep reads off the event loop
+
+23. **With a synchronous driver, run reads on a worker connection.** Node's
+    built-in `node:sqlite` runs each statement on the calling thread, so a slow
+    read holds the event loop for its whole duration, and a read on the writer
+    connection also queues behind any open write transaction. Route read-only
+    queries to a separate read-only connection in a worker thread. A text search
+    over 86,163 messages held the loop for a median 165 ms (range 97 to 308) on
+    the writer and 2.5 ms (2 to 4) on the worker, with wall time unchanged (165 and
+    157 ms, 12 runs per arm) (M). Prove the routing with a test that holds the
+    writer inside an open transaction and checks the read still completes. Record
+    the longest event-loop stall, not only the query time; see
+    [the JavaScript measurement reference](../hr-benchmarking/references/javascript.md).
+
 ## What to leave out of a record
 
 Do not repeat a claim from [the withdrawn list](references/evidence.md#claims-that-did-not-hold)
