@@ -4,6 +4,14 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Installer and error messages are clearer. `install.sh` stops on an unknown option instead of
+  running a full install, says what to check when the repository cannot be downloaded, and
+  no longer names a partial skills directory that does not exist. A re-run whose composed skills
+  match the installed ones now says so and keeps no extra `composed-skills.previous-<date>`
+  directory (the unused copy it just built is deleted). Paths in the status lines use `~` like the
+  closing text. An invalid or empty config now names the file in the error, and an unknown modifier
+  says to remove it from `modifiers` (`config set --disable-modifier <name>` for a stored one). The
+  compose summary reads "composed N lines of rules from N optional or personal rule file(s)".
 - Setup is easier to follow on a first run. The skill descriptions no longer start with a stray
   quote (frontmatter values wrapped in one pair of matching quotes now lose them). A fresh layer
   lists every optional rule on the first screen instead of "No matches", and the same holds for

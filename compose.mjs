@@ -51,7 +51,13 @@ function main(argv) {
     return;
   }
   const configPath = configurationPath(values.config);
-  const config = JSON.parse(readFileSync(configPath, "utf8").replace(/^\uFEFF/, ""));
+  let config;
+  try {
+    config = JSON.parse(readFileSync(configPath, "utf8").replace(/^\uFEFF/, ""));
+  } catch (error) {
+    if (!(error instanceof SyntaxError)) throw error;
+    throw new Error(`${configPath} is not valid JSON (${error.message}); fix it or move it aside`);
+  }
   const { out, "skills-out": skillsOut, "references-out": explicitReferences } = values;
   if (explicitReferences && !out) throw new Error("--references-out requires --out");
   const referencesOut = out
@@ -102,7 +108,7 @@ function main(argv) {
     for (const f of NOTICES) cpSync(join(BASE, f), join(skillsOut, f));
   }
   console.error(
-    `composed ${fragments.length} fragment(s), ${rules.split("\n").length} lines${skillsOut ? `, ${skills.size} skill(s)` : ""}`,
+    `composed ${rules.split("\n").length} lines of rules from ${fragments.length} optional or personal rule file(s)${skillsOut ? ` and ${skills.size} skill(s)` : ""}`,
   );
 }
 

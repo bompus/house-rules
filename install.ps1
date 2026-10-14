@@ -1,7 +1,8 @@
 # Installs or updates house-rules on Windows: picks a JavaScript runtime,
 # fetches the checkout, creates a starter config when there is none, and
-# composes the rules file and skills. It never edits agent host files and never
-# deletes anything.
+# composes the rules file and skills. It never edits agent host files and
+# deletes only the temporary skills copy it built when that copy matches the
+# installed one.
 #
 #   irm https://raw.githubusercontent.com/bompus/house-rules/main/install.ps1 | iex
 #
@@ -114,27 +115,24 @@ param([switch]$PrintRuntime)
     }
   }
 
-  function Sync-Checkout([string]$Dir) {
-    if (Test-Path -LiteralPath "$Dir\compose.mjs") {
-      if (Test-Path -LiteralPath "$Dir\.git") {
-        Assert-Git "update $Dir"
-        if ((Invoke-Native 'git' @('-C', $Dir, 'pull', '--ff-only', '--quiet')) -ne 0) {
-          Fail "could not fast-forward $Dir; update or move it by hand, then run this again"
+  # True when the two directories differ in any file name or content.
+  function Compare-Tree([string]$A, [string]$B) {
+    # .NET hashing: the Get-FileHash cmdlet is missing when the utility module is not loaded.
+    function Get-Digest([string]$Root) {
+      $sha = [System.Security.Cryptography.SHA256]::Create()
+      # FullName is absolute, so cut it at the absolute root even when the path given is relative.
+      $Root = (Resolve-Path -LiteralPath $Root).ProviderPath.TrimEnd('\')
+      Get-ChildItem -LiteralPath $Root -Recurse -File -Force | Sort-Object FullName | ForEach-Object {
+        $stream = [IO.File]::OpenRead($_.FullName)
+        try {
+          $hash = [BitConverter]::ToString($sha.ComputeHash($stream))
+        } finally {
+          $stream.Dispose()
         }
-        Write-Host "Updated $Dir"
-      } else {
-        Write-Host "Using $Dir as it is (not a git checkout)"
+        $_.FullName.Substring($Root.Length) + ' ' + $hash
       }
-    } elseif ((Test-Path -LiteralPath $Dir) -and (Get-ChildItem -LiteralPath $Dir -Force | Select-Object -First 1)) {
-      Fail "$Dir exists but holds no compose.mjs; set HOUSE_RULES_DIR to another path"
-    } else {
-      Assert-Git 'download house-rules'
-      $repo = if ($env:HOUSE_RULES_REPO) { $env:HOUSE_RULES_REPO } else { 'https://github.com/bompus/house-rules.git' }
-      if ((Invoke-Native 'git' @('clone', '--quiet', '--depth', '1', $repo, $Dir)) -ne 0) {
-        Fail "could not clone $repo into $Dir"
-      }
-      Write-Host "Downloaded house-rules to $Dir"
     }
+    [bool](Compare-Object -CaseSensitive @(Get-Digest $A) @(Get-Digest $B))
   }
 
   # Shows paths under the home directory as ~\... for the instructions.
@@ -146,12 +144,35 @@ param([switch]$PrintRuntime)
     $Path
   }
 
+  function Sync-Checkout([string]$Dir) {
+    if (Test-Path -LiteralPath "$Dir\compose.mjs") {
+      if (Test-Path -LiteralPath "$Dir\.git") {
+        Assert-Git "update $Dir"
+        if ((Invoke-Native 'git' @('-C', $Dir, 'pull', '--ff-only', '--quiet')) -ne 0) {
+          Fail "could not fast-forward $Dir; update or move it by hand, then run this again"
+        }
+        Write-Host "Updated $(Show-Path $Dir)"
+      } else {
+        Write-Host "Using $(Show-Path $Dir) as it is (not a git checkout)"
+      }
+    } elseif ((Test-Path -LiteralPath $Dir) -and (Get-ChildItem -LiteralPath $Dir -Force | Select-Object -First 1)) {
+      Fail "$Dir exists but holds no compose.mjs; set HOUSE_RULES_DIR to another path"
+    } else {
+      Assert-Git 'download house-rules'
+      $repo = if ($env:HOUSE_RULES_REPO) { $env:HOUSE_RULES_REPO } else { 'https://github.com/bompus/house-rules.git' }
+      if ((Invoke-Native 'git' @('clone', '--quiet', '--depth', '1', $repo, $Dir)) -ne 0) {
+        Fail "could not download house-rules; check the network and HOUSE_RULES_REPO, then run this again"
+      }
+      Write-Host "Downloaded house-rules to $(Show-Path $Dir)"
+    }
+  }
+
   $rt = Select-Runtime
   if ($PrintRuntime) {
     Write-Output $rt
     return
   }
-  Write-Host "Using $rt ($(Get-RuntimeVersion $rt))"
+  Write-Host "Using $(Show-Path $rt) ($(Get-RuntimeVersion $rt))"
 
   $dir = "$env:LOCALAPPDATA\house-rules"
   if ($env:XDG_DATA_HOME) { $dir = "$env:XDG_DATA_HOME\house-rules" }
@@ -164,7 +185,7 @@ param([switch]$PrintRuntime)
   New-Item -ItemType Directory -Force -Path $cfg | Out-Null
   if (-not (Test-Path -LiteralPath "$cfg\house-rules.json")) {
     Copy-Item -LiteralPath "$dir\examples\person\house-rules.json" -Destination "$cfg\house-rules.json"
-    Write-Host "Created $cfg\house-rules.json from the example"
+    Write-Host "Created $(Show-Path "$cfg\house-rules.json") from the example"
   }
 
   # --skills-out must be new or empty, so compose beside the old directory and
@@ -174,21 +195,29 @@ param([switch]$PrintRuntime)
   $next = "$skills.new-$([guid]::NewGuid().ToString('N').Substring(0, 8))"
   $code = Invoke-Native $rt @("$dir\compose.mjs", '--config', "$cfg\house-rules.json", '--out', "$cfg\rules.md", '--skills-out', $next)
   if ($code -ne 0) {
-    Fail "compose failed; see the error above ($next may hold a partial result)"
-  }
-  if (Test-Path -LiteralPath $skills) {
-    # Move-Item into an existing directory would nest it, so never reuse a name.
-    $stamp = "$skills.previous-$(Get-Date -Format 'yyyyMMddHHmmss')"
-    $old = $stamp
-    $n = 0
-    while (Test-Path -LiteralPath $old) {
-      $n++
-      $old = "$stamp-$n"
+    if (Test-Path -LiteralPath $next) {
+      Fail "compose failed; see the error above ($(Show-Path $next) holds a partial result; delete it)"
     }
-    Move-Item -LiteralPath $skills -Destination $old
-    Write-Host "Kept the previous skills in $old; remove it when you no longer need it"
+    Fail 'compose failed; see the error above'
   }
-  Move-Item -LiteralPath $next -Destination $skills
+  if ((Test-Path -LiteralPath $skills) -and -not (Compare-Tree $skills $next)) {
+    Remove-Item -LiteralPath $next -Recurse -Force
+    Write-Host 'The skills are unchanged'
+  } else {
+    if (Test-Path -LiteralPath $skills) {
+      # Move-Item into an existing directory would nest it, so never reuse a name.
+      $stamp = "$skills.previous-$(Get-Date -Format 'yyyyMMddHHmmss')"
+      $old = $stamp
+      $n = 0
+      while (Test-Path -LiteralPath $old) {
+        $n++
+        $old = "$stamp-$n"
+      }
+      Move-Item -LiteralPath $skills -Destination $old
+      Write-Host "Kept the previous skills in $(Show-Path $old); remove it when you no longer need it"
+    }
+    Move-Item -LiteralPath $next -Destination $skills
+  }
 
   $import = (Show-Path "$cfg\rules.md") -replace '\\', '/'
   Write-Host ''
