@@ -4,6 +4,8 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+## 0.12.0 - 2026-10-14
+
 - **Breaking for configs that list it:** the `swarmail` modifier is removed. It only told an agent
   where to find the instructions of one agent-mail product, so it was not general guidance. A
   `house-rules.json` that still lists `swarmail` under `modifiers` now fails. `compose.mjs`, the
