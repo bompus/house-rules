@@ -87,10 +87,11 @@ export function layoutProblems(reply) {
 }
 
 // The close-out question a finished session ends with (rules/core.md § Finishing work): one question
-// about closing, exactly the options `All done` (recommended) and `Pause`, then the line saying how to
-// reply. The options may be list items or plain lines. Returns the reply without that block, so the
-// rest can be graded as a plain completion, or null when the block is missing or has anything else in it.
-const CLOSING_QUESTION = /\b(?:clos\w*|finish\w*|wrap\w*|end)\b/i;
+// about closing the session, exactly the options `All done` (recommended) and `Pause`, then the line
+// saying to reply `All done`. The options may be list items or plain lines. Returns the reply without
+// that block, so the rest can be graded as a plain completion, or null when the block is missing, has
+// anything else in it (a second question, a tool call, another option) or leaves a question behind.
+const CLOSING_QUESTION = /\bsession\b|\b(?:finish|wrap(?: it)? up|close(?: it)?(?: out)?|end)\W*$/i;
 export function closeOutOffer(reply) {
   const lines = reply.split("\n");
   const unmarked = (line) => line.trim().replace(ITEM, "");
@@ -98,15 +99,14 @@ export function closeOutOffer(reply) {
   if (q < 0 || !CLOSING_QUESTION.test(unmarked(lines[q]))) return null;
   const accept = lines.findIndex((line, i) => i > q && ACCEPT.test(line.trim()));
   if (accept < 0) return null;
-  const options = lines.slice(q + 1, accept).filter((line) => line.trim());
-  if (
-    !optionsMatch(
-      options.map((line) => label(unmarked(line))),
-      ["All done", "Pause"],
-    )
-  )
+  const block = lines.slice(q, accept + 1);
+  if (block.some((line, i) => /^TOOL_CALL\b/i.test(unmarked(line)) || (i && line.includes("?"))))
     return null;
-  if (!/\(Recommended/i.test(options[0])) return null;
+  if (!/\ball done\b/i.test(lines[accept]) || /\bpause\b/i.test(lines[accept])) return null;
+  const options = lines.slice(q + 1, accept).filter((line) => line.trim());
+  const labels = options.map((line) => label(unmarked(line)));
+  if (!optionsMatch(labels, ["All done", "Pause"]) || !/\(Recommended/i.test(options[0]))
+    return null;
   const rest = [...lines.slice(0, q), ...lines.slice(accept + 1)].join("\n");
   // Any other question is about something besides closing.
   return rest.includes("?") ? null : rest;

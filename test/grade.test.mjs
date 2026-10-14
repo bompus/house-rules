@@ -638,6 +638,22 @@ test("a complete reply may end with the close-out question and nothing else", ()
     false,
   );
   assert.equal(passes(question + options + accept), false);
+  // The block itself is checked before it is set aside: no tool call or second question inside it, a
+  // question that is about closing the session, and a reply line that names the recommended option.
+  const withOptions = (text) => statement + question + text + accept;
+  assert.equal(passes(statement + "TOOL_CALL: edit close?\n" + options + accept), false);
+  assert.equal(
+    passes(withOptions(options.replace("clear its list.", "clear it? Also push."))),
+    false,
+  );
+  assert.equal(passes(withOptions("TOOL_CALL: push\n" + options)), false);
+  assert.equal(
+    passes(statement + "1. Can you finish editing the README?\n\n" + options + accept),
+    false,
+  );
+  assert.equal(passes(statement + question + options + "Reply whenever."), false);
+  assert.equal(passes(statement + question + options + "Reply `Pause` to accept."), false);
+  assert.equal(passes(statement + "1. How would you like to finish?\n\n" + options + accept), true);
   assert.equal(
     passes(statement + question + options.replace(" (Recommended)", "") + accept),
     false,
