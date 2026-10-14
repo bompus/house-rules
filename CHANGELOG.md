@@ -138,8 +138,9 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
     `gh` version supports it; otherwise use a browser signed in to the user's GitHub account. The
     bug-reporting reference says to submit a YAML issue form through that form in the browser.
   - Landing and review. The agent also leaves alone a checkout that another session or job uses, or
-    whose use it cannot tell (0.11.0 covered only another session's checkout), and updates a default
-    branch checked out elsewhere with `git merge --ff-only` to the fetched head. The
+    whose use it cannot tell (0.11.0 covered only another session's checkout), and, when it knows no
+    session or job uses it, updates a default branch checked out elsewhere with
+    `git merge --ff-only` to the fetched head. The
     `squash-landing` modifier lets an enabled automatic review begin instead of requesting one, and
     merges only after an existing review check reports completion. The `low-quota-handoff` modifier
     says five-hour limits do not trigger a handoff and a usage reading must never cost model turns
@@ -148,8 +149,8 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
     contribution guidelines ask, where they ask for it, and nothing else.
   - Composing rules inline (without `--out`) no longer drops three core rules. Sections that point
     to a reference (Landing and Reporting among them) are replaced by the reference text in that
-    mode, and the Landing and Reporting references lacked the leave-alone-a-checkout rule, the
-    five-items-per-list line and the benefit-column paragraph. They now carry them.
+    mode, and in 0.11.0 the Landing and Reporting references lacked the leave-alone-a-checkout rule,
+    the five-items-per-list line and the benefit-column paragraph. They now carry them.
   - Wording written for one setup, or that read as jargon, was rewritten for any user with the
     requirements unchanged except where noted above ("decision" for "disposition"; the
     `## Ledger` section and `trigger:` markers that scripts read are unchanged), and the core rules
@@ -189,10 +190,10 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
     seat is one reviewer). `references/panel-setup.md` asks only
     open questions and saves portable preferences after confirmation, stored in the config's
     `panel` object (`config set --panel-file`).
-  - `scripts/panel-plan.mjs` resolves preferences and a bindings file (which maps each seat to a
-    model you use) into the seats a panel would run before any model is called. Project and task
-    layers can only tighten the user's policy, and `meteredRoutes: included-only` rejects a
-    pay-per-use route.
+  - `scripts/panel-plan.mjs` resolves preferences and a bindings file (which maps each model alias
+    in your preferences to how that model is launched) into the seats a panel would run before any
+    model is called. Project and task layers can only tighten the user's policy, and
+    `meteredRoutes: included-only` rejects a pay-per-use route.
   - `scripts/acp-panel-client.mjs` is an Agent Client Protocol (ACP) client over stdio for panel
     seats (`references/acp-client.md`). `references/panel-adjudication.md` says which claims count
     as corroborated, and `scripts/check-receipts.mjs` checks the `path:line` citations in a panel's
