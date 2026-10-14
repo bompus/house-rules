@@ -39,8 +39,10 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
     replaces the list.
   - `hr-forgotten-work-audit` audits a project's past sessions, plans, handoffs and pull requests
     for work that was asked for, promised or deferred and then dropped from every live list. It
-    only reads: workers write their own result file, and the coordinator writes the consolidated
-    report and a last-audit record at `audits/<project>/last-audit.json` in the notes directory.
+    reads the history and writes only what is named here: workers write their own result file, the
+    coordinator writes the consolidated report and a last-audit record at
+    `audits/<project>/last-audit.json` in the notes directory, and the final step may add owed
+    items to a plan the session owns.
     It gives five verdicts (done, tracked, dropped, forgotten, unclear) and a coverage row per
     slice of history. The `hr-what-next` open-work check warns when a plan with a
     `Project: <name>` line has no such record, an unreadable one, or one older than 30 days (a
@@ -96,8 +98,8 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
     findings when the work produced measurements, comparisons or decisions and the host can
     render one.
   - Session purpose: the session states its purpose in one sentence. Anything else it finds is
-    parked (noted, not investigated) as one deferred line in the ledger, the list of open items in
-    the session's plan file. The agent mentions it once after the answer and keeps it out of offers
+    parked (noted, not investigated) as one deferred line in the ledger, the list of open items kept in
+    the session's plan or another durable list. The agent mentions it once after the answer and keeps it out of offers
     until the user asks for the backlog or the purpose is finished. The `plan-files` rule adds a `Purpose:` header line.
   - Offers recommend the option that finishes the work properly and holds up over time, not the
     quickest one. Dependent steps are separate options labeled "(Recommended, phase 1)" and
@@ -112,7 +114,8 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
     actual state and does what it can itself. A no is dropped, as are options the user passes over;
     only work the user wants done later is deferred. A session that has finished and landed its own
     work ends with a close-out question that recommends `All done`. Work filed upstream or handed
-    to another owner closes as moved, with the owner and link. The `plan-files` rule adds that
+    to another owner closes as moved, with the owner and link, unless the session still owes a step
+    or waits on its result. The `plan-files` rule adds that
     rebuilding a ledger from an earlier plan carries every open or deferred line over;
     `hr-handoff`'s reconciliation checker rejects an open line carried only as context, and an item
     that absorbs several open lines without saying why.

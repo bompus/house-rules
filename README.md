@@ -349,7 +349,7 @@ Set `HOUSE_RULES_TEST_TMP` to an existing directory to choose their scratch root
 otherwise they use the operating system temporary directory. Choose a disk-backed
 location when the system temporary directory is RAM-backed.
 
-CI runs these checks on every push and pull request, and also runs the tests and the tarball check on Windows. See
+CI runs these checks on every pull request and on pushes to `main`, and also runs the tests and the tarball check on Windows. See
 [CONTRIBUTING.md](CONTRIBUTING.md) before opening one.
 
 The local-reference gate runs in `test/guidance-links.test.mjs`. Audit another
