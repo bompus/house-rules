@@ -19,7 +19,7 @@ or `toggle NAME`, with several choices separated by spaces. `search TEXT`,
 Excluding a skill name excludes its personal override as well as the shipped
 copy. Exclusions without a current source remain in the configuration.
 
-Use `questions plain|coded|cards` for question preferences; these modifiers
+Use `questions default|plain|coded|cards` for question preferences; these modifiers
 are handled together rather than as individual toggles. `next` moves from
 modifiers to skills, then review. `back` keeps the draft. Only `save` on review
 writes configuration. Before a save attempt, `cancel`, end of input or Ctrl-C

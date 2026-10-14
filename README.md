@@ -16,7 +16,7 @@ Fresh installs select eight skills for setup, review, diagnosis, explanation,
 planning, tests, writing and remaining work. Modifiers start off. Add guidance
 when a task needs it, and let each repository supply its own safeguards.
 
-<p align="center"><img src="docs/assets/overview.png" alt="The four layers composed into one rules file: core, opt-in modifiers, your layer and each repository's AGENTS.md, beside what a fresh install selects: core rules on, modifiers off, eight skills." width="100%"></p>
+<p align="center"><img src="docs/assets/overview.png" alt="The four layers: core, opt-in modifiers and your own layer are composed into one rules file, and each repository's AGENTS.md adds to it. Beside them, what a fresh install selects: core rules on, modifiers off, eight skills." width="100%"></p>
 
 If you are an AI agent reading this for your user, the prompt under
 [Evaluate it with your agent](#evaluate-it-with-your-agent) is the evaluation
@@ -212,10 +212,11 @@ Use pnpm for JavaScript projects unless the repository uses another manager.
 
 The operations are `replaces:`, `after:`, `before:` and `removes:`; a
 `removes:` file has no body. A file without frontmatter is added at the end.
-Frontmatter may also hold `description:` and `requires:` (a comma-separated
+Frontmatter may also hold `description:`, `requires:` (a comma-separated
 list of skills the section relies on; the core rules and any modifier that relies
 on skills declare them, and composing warns when one is not in the composed
-set); any other key is an error. Files apply
+set) and `reference:` (a procedure file the section links to; see
+[reference output](docs/configuration.md#reference-output)); any other key is an error. Files apply
 in name order, after the modifiers.
 
 ## Modifiers
@@ -310,7 +311,7 @@ It is explicit-only, requires Python 3.11+ and keeps reports local.
 
 ## Checking the rules against your models
 
-`evals/end-of-reply/` runs short scenarios through any model CLI. It grades
+`evals/end-of-reply/` (in the GitHub repository, not the npm package) runs short scenarios through any model CLI. It grades
 whether the agent keeps working or ends with an offer at the right time,
 including when it reads only the first 80 lines. A 2026-10-11 replay covered
 its 18 scenarios, two runs each, on Claude Code 2.1.296 only, at revision
