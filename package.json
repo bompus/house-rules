@@ -27,7 +27,8 @@
     "examples/",
     "LICENSE",
     "THIRD_PARTY_NOTICES.md",
-    "CONTRIBUTING.md"
+    "CONTRIBUTING.md",
+    "CODE_OF_CONDUCT.md"
   ],
   "type": "module",
   "publishConfig": {

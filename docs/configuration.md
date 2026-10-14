@@ -219,8 +219,9 @@ another writer's lock automatically.
 ## Compose and connect
 
 Saving changes only configuration. Recompose with the existing composer or run
-the installer again. The installer retains previous composed skill directories;
-manual `--skills-out` still requires an empty or absent directory.
+the installer again. When the composed skills changed, the installer keeps the
+previous composed skills directory under a dated name; when they match, it keeps
+nothing extra. Manual `--skills-out` still requires an empty or absent directory.
 
 ```bash
 node compose.mjs --config <config-path> --out <rules-path> \

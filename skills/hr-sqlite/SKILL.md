@@ -111,8 +111,8 @@ different engine, driver or pool, read
 14. **Poll for change with `PRAGMA data_version`.** It differs between two reads
     on one connection when another connection committed (D). Rescan only then.
 15. **Look inside SQLite before swapping a driver.** 80 to 92% of an explore
-    call was inside SQLite. Three drivers ran within about 10 to 15% on an
-    indexing workload (M). A driver can still differ in one call; see
+    call was inside SQLite. Three drivers took 1,330 to 1,810 ms on an
+    indexing workload, with no clear difference (M). A driver can still differ in one call; see
     [the tool decisions](references/tool-decisions.md).
 
 ## Copy, back up and host settings

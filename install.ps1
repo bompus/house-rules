@@ -10,8 +10,9 @@
 # directory, otherwise the newest Node.js 22 or later.
 #
 # Environment:
-#   HOUSE_RULES_DIR         checkout (default %LOCALAPPDATA%\house-rules)
-#   HOUSE_RULES_CONFIG_DIR  personal layer (default %USERPROFILE%\.config\house-rules)
+#   HOUSE_RULES_DIR         checkout (default %XDG_DATA_HOME%\house-rules, else %LOCALAPPDATA%\house-rules)
+#   HOUSE_RULES_CONFIG_DIR  personal layer (default %XDG_CONFIG_HOME%\house-rules, else
+#                           %USERPROFILE%\.config\house-rules)
 #   HOUSE_RULES_REPO        clone URL (default https://github.com/bompus/house-rules.git)
 #   HOUSE_RULES_RUNTIME     path to the bun or node binary to use instead of searching
 #

@@ -1,7 +1,7 @@
 # house-rules repository guidance
 
 This file adds to your own rules for work on this repository. The checks are
-in the README's Development section; run all three before landing.
+in the README's Development section; run all of them before landing.
 
 ## Landing
 

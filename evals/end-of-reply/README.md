@@ -129,7 +129,7 @@ mentions "End of every reply" or "house rules".` The only instruction file shoul
   `< prompt-file` instead of the pipe the runner uses. That also keeps the prompt out of the process list.
 - **Slow models.** `--scenarios` takes a directory, so to run scenarios in parallel put each in its own
   directory and start one `run.mjs` per directory (`xargs -P`); every call is independent. The full
-  campaign of 18 scenarios, a seven-scenario screen and the modifier screens took 2 to 4 hours per model.
+  campaign of 18 scenarios, an eight-scenario screen and the modifier screens took 2 to 4 hours per model.
 
 `scripts/continuity-boundary.mjs` checks an explicit version-1 record with
 `disposition`, `goal`, `result`, `remaining` and boolean `phaseBoundary`.
@@ -149,7 +149,7 @@ without `--coded`, and only the rules arm sets the exit status.
 ## Results with `--baseline`
 
 A historical result, not a measurement of the current rules: `rules/core.md`
-was condensed after it (about 13% shorter by `394d382`) and the scenario set has grown since.
+was condensed after it (about 13% shorter by `394d382`) and the screen scenarios were added after it.
 Run on 2026-10-11 against `efd4d7b`, composed from the fresh-install
 configuration, with Claude Code 2.1.296 at high effort: all 18 scenarios, two
 runs per scenario and arm, text only (`--max-turns 1`, no tools). The replies

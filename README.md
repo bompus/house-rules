@@ -95,8 +95,9 @@ Updates preserve your existing config. An explicit `skills.include` list keeps
 later shipped additions off until selected. Browse the full catalog only when
 you want more choices.
 
-On a later run it keeps the previous skills directory under a dated name
-instead of deleting it. It never edits an agent host's files. The comment at
+On a later run, if the composed skills changed, it keeps the previous skills
+directory under a dated name instead of deleting it; if they match, it says so
+and keeps nothing extra. It never edits an agent host's files. The comment at
 the top of `install.sh` lists the environment variables that change its paths
 or runtime; `install.ps1` takes the same variables. Some skill scripts need Bun
 even when Node.js composes the rules.
@@ -327,8 +328,10 @@ breakdown and limits.
 ## Development
 
 ```bash
-node --test test/*.test.mjs   # composer and eval grader (or: bun test test/)
-bun test skills/    # skill scripts
+node --test test/*.test.mjs   # composer and eval grader
+bun test test/                # the same under Bun
+bun test skills/              # skill scripts
+npm run check:package -- --bun   # npm tarball: packs, installs, runs the CLI
 npx --yes oxlint@1.85.0 . && npx --yes oxfmt@0.70.0 --check .
 ```
 
@@ -346,7 +349,7 @@ Set `HOUSE_RULES_TEST_TMP` to an existing directory to choose their scratch root
 otherwise they use the operating system temporary directory. Choose a disk-backed
 location when the system temporary directory is RAM-backed.
 
-CI runs the same checks on every push and pull request. See
+CI runs these checks on every push and pull request, and also runs the tests and the tarball check on Windows. See
 [CONTRIBUTING.md](CONTRIBUTING.md) before opening one.
 
 The local-reference gate runs in `test/guidance-links.test.mjs`. Audit another
