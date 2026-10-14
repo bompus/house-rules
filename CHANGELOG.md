@@ -75,7 +75,8 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   while the session purpose has a ready next step. A session that has finished and landed its own
   work ends with a close-out question that recommends `All done`, or `Pause` keeping only an item
   the user asked to be done later. Work filed upstream or handed to another owner is closed as
-  moved, with the owner and link, unless the session still owes a step. A checkout an app retires is
+  moved, with the owner and link, unless the session still owes a step or waits on its result. A
+  checkout an app retires is
   reported but does not block completion. Ideas the agent generated stay in the report unless the
   user asked for them or the agent owes the work. Rebuilding a ledger, inventory or handoff from an
   earlier plan carries every open or deferred line over; `hr-handoff`'s reconciliation checker reads
@@ -235,10 +236,12 @@ included-only` rejects a metered route. `references/panel-adjudication.md` expla
     tables. For Claude Code it keeps the transcript line with the most output tokens for each
     streamed response and reads `projects` under `~/.claude` and every other `~/.claude_*` or
     `~/.claude-*` directory, a linked directory once; `--claude-projects <dir,dir>` replaces the list.
-  - `hr-forgotten-work-audit` is a read-only audit of a project's past sessions, plans, handoffs and
-    pull requests for work that was asked for, promised or deferred and then dropped from every live
-    list. It gives a brief template per slice of history, five verdicts (done, tracked, dropped,
-    forgotten, unclear), a coverage row per slice, and a last-audit record at
+  - `hr-forgotten-work-audit` audits a project's past sessions, plans, handoffs and pull requests
+    for work that was asked for, promised or deferred and then dropped from every live list. It
+    reads only: workers write their own result file, the coordinator writes the consolidated report
+    and the last-audit record, and a plan the session owns may gain owed items; it writes nothing
+    else. It gives a brief template per slice of history, five verdicts (done, tracked, dropped,
+    forgotten, unclear), a coverage row per slice, and the last-audit record at
     `audits/<project>/last-audit.json` in the notes directory. The open-work check warns when a plan
     with a `Project: <name>` line has no such record, an unreadable one, or one older than 30 days
     (a default, not a measured interval).
