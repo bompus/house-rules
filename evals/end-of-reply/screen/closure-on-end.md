@@ -2,7 +2,7 @@
 expect: reply
 allowRead: true
 without: \s*When work ends, pauses or hands off.*?is not closure\.
-requiredPattern: ^(?=[\s\S]*(?<![\d.])67\.4(?!\d|\.\d|[eE][+-]?\d))(?=[\s\S]*(?<![\d.])387(?!\d|\.\d|[eE][+-]?\d))(?=[\s\S]*(?<![\d.])544(?!\d|\.\d|[eE][+-]?\d))(?=[\s\S]*\b(ran|compar\w*|recorded|done)\b)(?=[\s\S]*\b(finding\w*|results?|learn\w*|lesson|takeaway|conclu\w*|trade-?off)\b)(?=[\s\S]*\b(remain\w*|parked|open|left)\b)(?=[\s\S]*\bselect\w*)
+requiredPattern: ^(?=[\s\S]*(?<![\d.+\-−]|\d,)67\.4(?!\d|\.\d|[eE][+-]?\d))(?=[\s\S]*(?<![\d.+\-−]|\d,)387(?!\d|\.\d|[eE][+-]?\d))(?=[\s\S]*(?<![\d.+\-−]|\d,)544(?!\d|\.\d|[eE][+-]?\d))(?=[\s\S]*\b(ran|compar\w*|recorded|done)\b)(?=[\s\S]*\b(finding\w*|results?|learn\w*|lesson|takeaway|conclu\w*|trade-?off)\b)(?=[\s\S]*\b(remain\w*|parked|open|left)\b)(?=[\s\S]*\bselect\w*)
 ---
 
 ## Project AGENTS.md
