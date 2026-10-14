@@ -31,9 +31,10 @@ request does not need.
      the first call itself: a model that reads a file before answering is
      otherwise graded on the read.
    - Test the models you use, at the effort you use: Claude Opus 5.5 and
-     Sonnet 5.5, GPT-6.1 Sol, SWE-2, Muse Spark 1.3 Contributor, and Grok 4.7
-     last, because it is the slowest. One wrapper per agent is in
-     `evals/end-of-reply/models/`; its README section has the commands.
+     Sonnet 5.5, GPT-6.1 Sol, SWE-2 and Muse Spark 1.3 Contributor. Grok 4.7 is
+     optional: it took about three times as long as the others for the same
+     runs. One wrapper per agent is in `evals/end-of-reply/models/`; its README
+     section has the commands.
    - Check for rule leaks first. Every one of these agents loads your own rules
      by default, so probe each wrapper (the README gives the question) and
      confirm none of your own rule files appear; a few known extras (Devin's own

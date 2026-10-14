@@ -99,6 +99,9 @@ node evals/end-of-reply/run.mjs --rules <composed.md> --cmd evals/end-of-reply/m
 | `opencode.sh`     | OpenCode     | `opencode-go/muse-spark-1.3-contributor` | private `XDG_CONFIG_HOME`; its login in the data directory still applies                       |
 | `cursor-agent.sh` | Cursor Agent | `grok-4.7-high`                          | private `HOME` with your login directory (`EOR_CURSOR_CONFIG`) symlinked in; workspace in /tmp |
 
+`cursor-agent.sh` (Grok 4.7) is optional and not in the default set: it took 115 minutes for 255 calls,
+about three times the others.
+
 Each call makes a scratch directory under `EOR_TMPDIR` (default `/tmp`; `cursor-agent.sh` always uses
 `/tmp`), removes it on exit and
 never copies a credential. Codex and Cursor Agent logins are symlinked in for the call; Claude Code,

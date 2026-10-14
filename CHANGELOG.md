@@ -12,6 +12,7 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   adds eight scenarios for the periodic-update, cross-session-relay and coded-offer rules, and
   `relay-send` and `offer-id` are written so they pass with their rule and fail without it. The
   `hr-agent-guidance-audit` prune workflow names the models to test and the lessons from running them.
+  Grok 4.7 is optional there: it took about three times as long as the other agents for the same runs.
 - `hr-what-next` no longer requires a backlog visual. Two optional rules choose the view: `backlog-visual`
   adds a dark panel of every open item grouped by what it waits on (a table for waiting items, one row per
   decision with the offer's Q number and answer chips, the current group marked), with the same groups
