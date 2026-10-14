@@ -43,9 +43,20 @@ const LOOKUP = new RegExp(
 );
 
 // A call that starts with a lookup but also says it writes, sends or runs something is not
-// dropped as a read.
+// dropped as a read. The leading wrapper (`shell run ...`) and file-path words (`save-lessons.md`)
+// are not actions.
+const WRAPPER_LEAD = new RegExp(`^${WRAPPER}`, "i");
+const actsAlso = (call) =>
+  ALSO_ACTS.test(
+    call
+      .replace(/^TOOL_CALL:?\s*/i, "")
+      .replace(WRAPPER_LEAD, "")
+      .split(/\s+/)
+      .filter((word) => !/[/\\]|\.\w{1,5}$/.test(word))
+      .join(" "),
+  );
 const ALSO_ACTS =
-  /\b(?:send|write|edit|create|record|update|append|save|commit|push|delete|remove|install|notify|relay|merge|publish|post|comment|replace|fix|deploy|release|apply|reset|checkout|open|rm|mv|sed|pull request)\b/i;
+  /\b(?:send|write|edit|create|record|update|append|save|commit|push|delete|remove|install|notify|relay|merge|publish|post|comment|replace|fix|run|deploy|release|apply|reset|checkout|open|rm|mv|sed|pull request)\b/i;
 
 // With `allowRead`, a reply may open with read-only tool calls (the agent looks before it
 // answers). The reply is then the text after the last call in that leading run; a reply made
@@ -57,8 +68,7 @@ export function afterLeadingReads(reply) {
     const text = line.trim();
     if (!/^TOOL_CALL\b/.test(text)) continue;
     const parts = text.replace(/^TOOL_CALL:?\s*/i, "").split(/&&|\|\||[;|]/);
-    if (ALSO_ACTS.test(text) || parts.some((p) => REDIRECTING.test(p) || !LOOKUP.test(p.trim())))
-      break;
+    if (actsAlso(text) || parts.some((p) => REDIRECTING.test(p) || !LOOKUP.test(p.trim()))) break;
     last = i;
   }
   const rest = lines

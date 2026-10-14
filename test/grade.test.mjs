@@ -560,6 +560,9 @@ test("allowRead grades the reply after leading read-only calls and nothing else"
       "TOOL_CALL: functions.grep foo src\nTOOL_CALL: shell run read-only checks of sizes\nDone.",
       "Done.",
     ],
+    // Path words are not actions; a trailing "and run tests" is.
+    ["TOOL_CALL: read evals/screen/save-lessons.md\nDone.", "Done."],
+    ["TOOL_CALL: read a.ts and run tests\nDone.", "TOOL_CALL: read a.ts and run tests\nDone."],
     // A reply of reads only is graded whole, so a continue reply still has its call.
     [lead, lead],
   ];

@@ -117,8 +117,9 @@ mentions "End of every reply" or "house rules".` The only instruction file shoul
   Codex, Devin, OpenCode or Cursor Agent (Claude Code's `--tools ''` does), so these
   replies come from a full agent, not a bare model. The prompt asks for text only and a model
   may still read a file first; use `allowRead` for that.
-- **OpenCode and Cursor Agent take the prompt as an argument** (about 128 KB at most), and
-  `opencode run` hangs while stdin is an open pipe, so both get `</dev/null`.
+- **OpenCode and Cursor Agent read the prompt from a file on stdin.** `opencode run` hangs while
+  stdin is an open pipe, so these two get
+  `< prompt-file` instead of the pipe the runner uses. That also keeps the prompt out of the process list.
 - **Slow models.** `--scenarios` takes a directory, so to run scenarios in parallel put each in its own
   directory and start one `run.mjs` per directory (`xargs -P`); every call is independent. The full
   campaign of 18 scenarios, a seven-scenario screen and the modifier screens took 2 to 4 hours per model.
