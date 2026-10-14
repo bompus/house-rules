@@ -1,7 +1,8 @@
 #!/bin/sh
 # Installs or updates house-rules: picks a JavaScript runtime, fetches the
 # checkout, creates a starter config when there is none, and composes the rules
-# file and skills. It never edits agent host files and never deletes anything.
+# file and skills. It never edits agent host files and deletes only the
+# temporary skills copy it built when that copy matches the installed one.
 #
 #   curl -fsSL https://raw.githubusercontent.com/bompus/house-rules/main/install.sh | sh
 #
@@ -14,7 +15,7 @@
 #   HOUSE_RULES_REPO        clone URL (default https://github.com/bompus/house-rules.git)
 #   HOUSE_RULES_RUNTIME     path to the bun or node binary to use instead of searching
 #
-# Option: --print-runtime prints the chosen runtime and exits.
+# Option: --print-runtime prints the chosen runtime and exits. Any other argument is an error.
 
 set -eu
 
@@ -113,26 +114,6 @@ pick_runtime() {
   printf '%s\n' "$rt"
 }
 
-fetch() {
-  dir=$1
-  if [ -f "$dir/compose.mjs" ]; then
-    if [ -d "$dir/.git" ]; then
-      command -v git >/dev/null 2>&1 || die "git is required to update $dir"
-      git -C "$dir" pull --ff-only --quiet ||
-        die "could not fast-forward $dir; update or move it by hand, then run this again"
-      say "Updated $dir"
-    else
-      say "Using $dir as it is (not a git checkout)"
-    fi
-  elif [ -e "$dir" ] && [ -n "$(find "$dir" -mindepth 1 -maxdepth 1 2>/dev/null | sed -n 1p)" ]; then
-    die "$dir exists but holds no compose.mjs; set HOUSE_RULES_DIR to another path"
-  else
-    command -v git >/dev/null 2>&1 || die "git is required to download house-rules"
-    git clone --quiet --depth 1 "${HOUSE_RULES_REPO:-https://github.com/bompus/house-rules.git}" "$dir"
-    say "Downloaded house-rules to $dir"
-  fi
-}
-
 # Shows paths under the home directory as ~/... for the instructions.
 tilde() {
   case $1 in
@@ -151,13 +132,39 @@ word() {
   esac
 }
 
+fetch() {
+  dir=$1
+  if [ -f "$dir/compose.mjs" ]; then
+    if [ -d "$dir/.git" ]; then
+      command -v git >/dev/null 2>&1 || die "git is required to update $dir"
+      git -C "$dir" pull --ff-only --quiet ||
+        die "could not fast-forward $dir; update or move it by hand, then run this again"
+      say "Updated $(tilde "$dir")"
+    else
+      say "Using $(tilde "$dir") as it is (not a git checkout)"
+    fi
+  elif [ -e "$dir" ] && [ -n "$(find "$dir" -mindepth 1 -maxdepth 1 2>/dev/null | sed -n 1p)" ]; then
+    die "$dir exists but holds no compose.mjs; set HOUSE_RULES_DIR to another path"
+  else
+    command -v git >/dev/null 2>&1 || die "git is required to download house-rules"
+    repo=${HOUSE_RULES_REPO:-https://github.com/bompus/house-rules.git}
+    git clone --quiet --depth 1 "$repo" "$dir" ||
+      die "could not download $repo; check the network and HOUSE_RULES_REPO, then run this again"
+    say "Downloaded house-rules to $(tilde "$dir")"
+  fi
+}
+
 main() {
+  case ${1:-} in
+    "" | --print-runtime) ;;
+    *) die "unknown option: $1 (the only option is --print-runtime)" ;;
+  esac
   rt=$(pick_runtime)
   if [ "${1:-}" = "--print-runtime" ]; then
     printf '%s\n' "$rt"
     return
   fi
-  say "Using $rt ($(version_of "$rt"))"
+  say "Using $(tilde "$rt") ($(version_of "$rt"))"
 
   dir=${HOUSE_RULES_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/house-rules}
   cfg=${HOUSE_RULES_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/house-rules}
@@ -166,28 +173,36 @@ main() {
   mkdir -p "$cfg"
   if [ ! -f "$cfg/house-rules.json" ]; then
     cp "$dir/examples/person/house-rules.json" "$cfg/house-rules.json"
-    say "Created $cfg/house-rules.json from the example"
+    say "Created $(tilde "$cfg/house-rules.json") from the example"
   fi
 
   # --skills-out must be new or empty, so compose beside the old directory and
   # keep the old one under another name instead of deleting it.
   skills=$cfg/composed-skills
   next=$skills.new-$$
-  "$rt" "$dir/compose.mjs" --config "$cfg/house-rules.json" --out "$cfg/rules.md" \
-    --skills-out "$next" || die "compose failed; see the error above ($next may hold a partial result)"
-  if [ -e "$skills" ]; then
-    # mv into an existing directory would nest it, so never reuse a name.
-    stamp=$skills.previous-$(date +%Y%m%d%H%M%S)
-    old=$stamp
-    n=0
-    while [ -e "$old" ]; do
-      n=$((n + 1))
-      old=$stamp-$n
-    done
-    mv "$skills" "$old"
-    say "Kept the previous skills in $old; remove it when you no longer need it"
+  if ! "$rt" "$dir/compose.mjs" --config "$cfg/house-rules.json" --out "$cfg/rules.md" \
+    --skills-out "$next"; then
+    if [ -e "$next" ]; then die "compose failed; see the error above ($(tilde "$next") holds a partial result; delete it)"; fi
+    die "compose failed; see the error above"
   fi
-  mv "$next" "$skills"
+  if [ -e "$skills" ] && diff -r "$skills" "$next" >/dev/null 2>&1; then
+    rm -rf "$next"
+    say "The skills are unchanged"
+  else
+    if [ -e "$skills" ]; then
+      # mv into an existing directory would nest it, so never reuse a name.
+      stamp=$skills.previous-$(date +%Y%m%d%H%M%S)
+      old=$stamp
+      n=0
+      while [ -e "$old" ]; do
+        n=$((n + 1))
+        old=$stamp-$n
+      done
+      mv "$skills" "$old"
+      say "Kept the previous skills in $(tilde "$old"); remove it when you no longer need it"
+    fi
+    mv "$next" "$skills"
+  fi
 
   say ""
   say "Composed $(tilde "$cfg/rules.md") and $(tilde "$skills")."

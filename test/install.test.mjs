@@ -20,7 +20,7 @@ const script = join(root, "install.sh");
 
 // A directory of the only system tools install.sh needs, so the real bun and
 // node on this machine stay out of the search.
-const TOOLS = ["sh", "sed", "awk", "find", "mkdir", "cp", "mv", "date"];
+const TOOLS = ["sh", "sed", "awk", "find", "mkdir", "cp", "mv", "rm", "diff", "date", "git"];
 function toolDir() {
   const dir = join(scratch({ after }, "house-rules-install-"), "tools");
   mkdirSync(dir);
@@ -160,7 +160,21 @@ it("installs from a checkout, then recomposes without deleting the old skills", 
   assert.equal(kept.length, 1);
   assert.ok(readdirSync(join(config, "composed-skills")).length > 0);
 
-  // Runs within the same second keep separate backups instead of nesting one.
+  // Skills that did not change leave no extra backup.
+  const unchanged = run(home, [], [], env);
+  assert.equal(unchanged.status, 0, unchanged.stderr);
+  assert.match(unchanged.stdout, /The skills are unchanged/);
+  assert.equal(readdirSync(config).filter((f) => f.includes(".previous-")).length, 1);
+  assert.equal(readdirSync(config).filter((f) => f.includes(".new-")).length, 0);
+
+  // Changes within the same second keep separate backups instead of nesting one.
+  writeFileSync(
+    join(config, "house-rules.json"),
+    JSON.stringify({
+      ...JSON.parse(existing),
+      skills: { exclude: ["hr-read-reddit", "hr-sqlite"] },
+    }),
+  );
   const third = run(home, [], [], env);
   assert.equal(third.status, 0, third.stderr);
   assert.equal(
@@ -179,4 +193,49 @@ it("prints the setup command with quotes when the checkout path has a space", (t
   const r = run(home, [], [], { HOUSE_RULES_DIR: checkout, HOUSE_RULES_RUNTIME: process.execPath });
   assert.equal(r.status, 0, r.stderr);
   assert(r.stdout.includes(` '${join(checkout, "compose.mjs")}' setup --config `), r.stdout);
+});
+
+it("rejects an unknown option before installing anything", (t) => {
+  const home = scratch(t, "house-rules-install-");
+  const checkout = join(home, "house-rules");
+  const r = run(home, [], ["--bogus"], {
+    HOUSE_RULES_DIR: checkout,
+    HOUSE_RULES_RUNTIME: process.execPath,
+  });
+  assert.notEqual(r.status, 0);
+  assert.match(r.stderr, /unknown option: --bogus/);
+  assert.equal(existsSync(checkout), false);
+  assert.equal(existsSync(join(home, ".config")), false);
+});
+
+it("says what to check when the repository cannot be downloaded", (t) => {
+  const home = scratch(t, "house-rules-install-");
+  const r = run(home, [], [], {
+    HOUSE_RULES_DIR: join(home, "house-rules"),
+    HOUSE_RULES_REPO: join(home, "no-such-repository"),
+    HOUSE_RULES_RUNTIME: process.execPath,
+  });
+  assert.notEqual(r.status, 0);
+  assert.match(r.stderr, /could not download .*no-such-repository; check the network/);
+});
+
+it("names paths with ~ and a failed compose points at the config", (t) => {
+  const home = scratch(t, "house-rules-install-");
+  const checkout = join(home, "house-rules");
+  cpSync(root, checkout, { recursive: true, filter: (src) => basename(src) !== ".git" });
+  const env = { HOUSE_RULES_DIR: checkout, HOUSE_RULES_RUNTIME: process.execPath };
+  const first = run(home, [], [], env);
+  assert.match(
+    first.stdout,
+    /^Created ~\/\.config\/house-rules\/house-rules\.json from the example$/m,
+  );
+  const config = join(home, ".config/house-rules/house-rules.json");
+  writeFileSync(config, "");
+  const broken = run(home, [], [], env);
+  assert.notEqual(broken.status, 0);
+  assert.match(broken.stderr, new RegExp(`${config.replaceAll(".", "\\.")} is not valid JSON`));
+  assert.doesNotMatch(broken.stderr, /\.new-/);
+  writeFileSync(config, JSON.stringify({ modifiers: ["swarmail"] }));
+  const unknown = run(home, [], [], env);
+  assert.match(unknown.stderr, /unknown modifier "swarmail"; remove it from "modifiers"/);
 });

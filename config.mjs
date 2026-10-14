@@ -59,7 +59,10 @@ function validateSelection(config) {
   validateStructure(config);
   const known = new Set(modifierList().map((m) => m.name));
   for (const name of config.modifiers ?? []) {
-    if (!known.has(name)) throw new Error(`unknown modifier "${name}" (see config catalog)`);
+    if (!known.has(name))
+      throw new Error(
+        `unknown modifier "${name}" (see config catalog); remove a stored one with config set --disable-modifier ${name}`,
+      );
   }
   if (BACKLOG_VIEWS.every((name) => config.modifiers?.includes(name)))
     throw new Error(
@@ -93,7 +96,7 @@ export function readConfiguration(path) {
   try {
     if (text !== null) config = JSON.parse(text.replace(/^\uFEFF/, ""));
   } catch {
-    throw new Error("invalid JSON in configuration");
+    throw new Error(`invalid JSON in ${path}`);
   }
   validateStructure(config);
   return { path, text, revision: revisionOf(text), config };
