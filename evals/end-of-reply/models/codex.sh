@@ -5,7 +5,9 @@
 # (default ~/.codex/auth.json).
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 mkdir "$eor_tmp/codex-home"
-ln -s "${EOR_CODEX_AUTH:-$HOME/.codex/auth.json}" "$eor_tmp/codex-home/auth.json"
+auth=${EOR_CODEX_AUTH:-$HOME/.codex/auth.json}
+case $auth in /*) ;; *) auth=$PWD/$auth ;; esac
+ln -s "$auth" "$eor_tmp/codex-home/auth.json"
 CODEX_HOME=$eor_tmp/codex-home nice -n 10 timeout 900 \
   codex exec -m "${EOR_MODEL:-gpt-6.1-sol}" -c model_reasoning_effort="${EOR_EFFORT:-high}" \
   -s read-only --skip-git-repo-check --ephemeral --ignore-rules -C "$eor_work" \

@@ -563,6 +563,13 @@ test("allowRead grades the reply after leading read-only calls and nothing else"
     // Path words are not actions; a trailing "and run tests" is.
     ["TOOL_CALL: read evals/screen/save-lessons.md\nDone.", "Done."],
     ["TOOL_CALL: read a.ts and run tests\nDone.", "TOOL_CALL: read a.ts and run tests\nDone."],
+    // Quoted search terms are not actions; "then" starts another segment; df and du are reads.
+    ['TOOL_CALL: grep -n "send" src\nDone.', "Done."],
+    [
+      "TOOL_CALL: read_file README.md then run python3 cleanup.py\nDone.",
+      "TOOL_CALL: read_file README.md then run python3 cleanup.py\nDone.",
+    ],
+    ["TOOL_CALL: df -h; du -sh plans\nDone.", "Done."],
     // A reply of reads only is graded whole, so a continue reply still has its call.
     [lead, lead],
   ];

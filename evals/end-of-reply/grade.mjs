@@ -38,7 +38,7 @@ const THEN = `\\bthen\\s+(?=(?:${ACTION})\\b)`;
 // A call that only looks: a read command, or a tool word (`read_file`, `functions.exec`,
 // `skill`, `grep`) that names a lookup, however the agent's harness spells it.
 const LOOKUP = new RegExp(
-  `^${WRAPPER}(?:(?:functions|collaboration)\\.(?:\\w+\\s+)?)?(?:read(?:_\\w+)?|view(?:_\\w+)?|list(?:_\\w+)?|glob|skill|search|grep(?:_\\w+)?|look\\s+up|inspect|cat|ls|rg|find|head|tail|stat|wc|date|pwd|git\\s+(?:status|log|diff|show|fetch|worktree\\s+list|rev-parse)|gh\\s+(?:pr|issue)\\s+(?:view|list|checks))\\b`,
+  `^${WRAPPER}(?:(?:functions|collaboration)\\.(?:\\w+\\s+)?)?(?:read(?:_\\w+)?|view(?:_\\w+)?|list(?:_\\w+)?|glob|skill|search|grep(?:_\\w+)?|look\\s+up|inspect|cat|ls|rg|find|head|tail|stat|wc|date|df|du|pwd|git\\s+branch(?=\\s*$|\\s+(?:-[avr]+|--(?:list|show-current|contains|merged|no-merged|all|remotes|verbose|sort))\\b)|git\\s+remote(?=\\s*$|\\s+(?:-v|--verbose|show|get-url)\\b)|git\\s+(?:status|log|diff|show|fetch|worktree\\s+list|rev-parse)|gh\\s+(?:pr|issue)\\s+(?:view|list|checks))\\b`,
   "i",
 );
 
@@ -51,6 +51,7 @@ const actsAlso = (call) =>
     call
       .replace(/^TOOL_CALL:?\s*/i, "")
       .replace(WRAPPER_LEAD, "")
+      .replace(/(["'`]).*?\1/g, "")
       .split(/\s+/)
       .filter((word) => !/[/\\]|\.\w{1,5}$/.test(word))
       .join(" "),
@@ -67,7 +68,7 @@ export function afterLeadingReads(reply) {
   for (const [i, line] of lines.entries()) {
     const text = line.trim();
     if (!/^TOOL_CALL\b/.test(text)) continue;
-    const parts = text.replace(/^TOOL_CALL:?\s*/i, "").split(/&&|\|\||[;|]/);
+    const parts = text.replace(/^TOOL_CALL:?\s*/i, "").split(/&&|\|\||[;|]|\bthen\b/);
     if (actsAlso(text) || parts.some((p) => REDIRECTING.test(p) || !LOOKUP.test(p.trim()))) break;
     last = i;
   }

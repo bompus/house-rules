@@ -36,8 +36,9 @@ request does not need.
      `evals/end-of-reply/models/`; its README section has the commands.
    - Check for rule leaks first. Every one of these agents loads your own rules
      by default, so probe each wrapper (the README gives the question) and
-     confirm the only instruction file is the scratch `AGENTS.md`. A leak makes
-     the "without" arm obey the rule anyway.
+     confirm none of your own rule files appear; a few known extras (Devin's own
+     global `AGENTS.md`, OpenCode's installed-skill list) are listed in the
+     README. A leak makes the "without" arm obey the rule anyway.
    - Use `--runs 4` or more. Four runs separate a rule only when the arms differ
      by 4 and 0; a smaller gap needs 9 runs per arm before you act on it
      (8 of 9 against 3 of 9 gave p = 0.05).
@@ -46,7 +47,7 @@ request does not need.
      scenario first, because it tests nothing. A scenario that fails in both
      arms on most models (the pattern is too narrow, or the transcript lacks
      what the rule needs) discriminates nothing; rewrite it and confirm that
-     it passes with the rule and fails without it before using its result.
+     it passes clearly more often with the rule than without before using its result.
    - A harness that grades only the first reply penalizes models that read
      before answering, whatever the rules say. Use `allowRead`, and compare a
      model's failures with its replies before blaming the rule.

@@ -101,7 +101,8 @@ node evals/end-of-reply/run.mjs --rules <composed.md> --cmd evals/end-of-reply/m
 
 Each call makes a scratch directory under `EOR_TMPDIR` (default `/tmp`; `cursor-agent.sh` always uses
 `/tmp`), removes it on exit and
-never copies a credential; logins are symlinked for the call. `EOR_EFFORT` (default `high`) sets
+never copies a credential. Codex and Cursor Agent logins are symlinked in for the call; Claude Code,
+OpenCode and Devin use their existing login stores in place. `EOR_EFFORT` (default `high`) sets
 reasoning effort for Claude Code and Codex. Set the model name to the one your account offers.
 
 - **Check for rule leaks first.** Every one of these agents loads your own rules by default, and

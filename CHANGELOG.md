@@ -5,7 +5,7 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 ## Unreleased
 
 - The end-of-reply eval can screen other agents and the modifier rules. `evals/end-of-reply/models/` has one
-  wrapper each for Claude Code, Codex, Devin, OpenCode and Cursor Agent, isolated from your own rules, with
+  wrapper each for Claude Code, Codex, Devin, OpenCode and Cursor Agent, isolated from your own rules as far as their agents allow (the README lists the exceptions), with
   the README's leak probe. A scenario's `allowRead: true` (or `run.mjs --allow-read`) grades the reply
   after leading read-only tool calls, which models that look before answering need; the `complete`,
   `save-lessons`, `reuse-first`, `lead-with-answer` and most modifier scenarios use it. `evals/end-of-reply/screen/modifiers/`

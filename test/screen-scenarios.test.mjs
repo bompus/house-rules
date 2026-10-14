@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { writeFileSync } from "node:fs";
+import { readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
 import { scratch } from "./fixture.mjs";
@@ -49,5 +49,9 @@ for (const [name, config, dir] of [
     );
     assert.notEqual(r.status, 2, r.stderr);
     assert.match(r.stdout, /^screen \(passes of 1 runs per arm\):$/m);
+    // Every scenario file must reach a verdict line, so an empty or mistyped directory cannot pass.
+    const files = readdirSync(dir).filter((f) => f.endsWith(".md"));
+    assert.ok(files.length > 0, dir);
+    assert.equal(r.stdout.match(/^ {2}\S+\.md: with \d+, without \d+ -> /gm)?.length, files.length);
   });
 }

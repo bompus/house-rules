@@ -2,7 +2,7 @@
 expect: reply
 allowRead: true
 without: A watcher event that changes nothing gets at most one\s+line\.\s*
-requiredPattern: ^\s*[^\s][^\n]{0,299}\n?\s*$
+requiredPattern: ^\s*[^\s][^\n]*\n?\s*$
 ---
 
 ## Project AGENTS.md

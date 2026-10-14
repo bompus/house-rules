@@ -4,6 +4,7 @@
 # must not be inside a directory whose agent rules, memory or hooks a CLI loads from its ancestors.
 set -euo pipefail
 eor_tmp=$(mktemp -d "${EOR_TMPDIR:-/tmp}/eor-XXXXXX")
+eor_tmp=$(cd "$eor_tmp" && pwd)
 trap 'rm -rf "$eor_tmp"' EXIT
 cat > "$eor_tmp/prompt.txt"
 eor_work=$eor_tmp/work

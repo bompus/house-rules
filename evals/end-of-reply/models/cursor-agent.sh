@@ -8,6 +8,7 @@
 EOR_TMPDIR=/tmp
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 real_config=${EOR_CURSOR_CONFIG:-$HOME/.config/cursor}
+case $real_config in /*) ;; *) real_config=$PWD/$real_config ;; esac
 mkdir -p "$eor_tmp/home/.config"
 ln -s "$real_config" "$eor_tmp/home/.config/cursor"
 cd "$eor_work"
