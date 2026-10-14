@@ -268,6 +268,7 @@ test("a config file with another name is applied by the direct command", interac
   assert.equal(result.code, 0);
   assert(result.output.includes(`${shellQuote(path)} --out `), result.output);
   assert.doesNotMatch(result.output, /install\.sh/);
+  assert.match(result.output, /rebuilds the rules only/);
 });
 
 test(

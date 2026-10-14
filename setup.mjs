@@ -47,13 +47,18 @@ const cliCommand = () =>
     ? "house-rules"
     : `${process.platform === "win32" ? "& " : ""}${quote(process.execPath)} ${quote(entry)}`;
 
+const installerPath = () =>
+  join(dirname(entry), process.platform === "win32" ? "install.ps1" : "install.sh");
+// The installer composes <config dir>/house-rules.json only.
+const usesInstaller = (configPath) =>
+  !packaged && existsSync(installerPath()) && basename(configPath) === "house-rules.json";
+
 function recomposeCommand(configPath) {
   const configDir = dirname(configPath);
   const checkout = dirname(entry);
   const windows = process.platform === "win32";
-  const installer = join(checkout, windows ? "install.ps1" : "install.sh");
-  // The installer composes <config dir>/house-rules.json only.
-  if (packaged || !existsSync(installer) || basename(configPath) !== "house-rules.json")
+  const installer = installerPath();
+  if (!usesInstaller(configPath))
     return `${cliCommand()} --config ${quote(configPath)} --out ${quote(join(configDir, "rules.md"))}`;
   // The installer reads these variables, so a copy or config outside the defaults must name them.
   const home = homedir();
@@ -415,7 +420,7 @@ export async function setupCommand(argv) {
             "Output was not regenerated and hosts were not connected by setup. To apply the selections, run:",
           );
           printCommand(recomposeCommand(saved.path));
-          if (packaged || basename(saved.path) !== "house-rules.json")
+          if (!usesInstaller(saved.path))
             print(
               "This rebuilds the rules only; add --skills-out with a new or empty directory to rebuild the skills too.",
             );
