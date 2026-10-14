@@ -4,331 +4,227 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
-- The JavaScript measurement reference now covers server code: measure the longest event-loop
-  stall with a timer probe next to wall time, time the real function instead of a copy, count
-  events and bytes when volume is the cost, prove moved work with a test that holds the main
-  connection busy, measure retention with forced collection, time startup interleaved, and treat
-  another researcher's numbers as leads. `hr-sqlite` adds a checklist item for running reads on a
-  worker connection with a synchronous driver, with its measurement in the evidence file.
-- Installer and error messages are clearer. `install.sh` stops on an unknown option instead of
-  running a full install, says what to check when the repository cannot be downloaded, and
-  no longer names a partial skills directory that does not exist. A re-run whose composed skills
-  match the installed ones now says so and keeps no extra `composed-skills.previous-<date>`
-  directory (the unused copy it just built is deleted). Paths in the status lines use `~` like the
-  closing text. An invalid or empty config now names the file in the error, and an unknown modifier
-  says to remove it from `modifiers` (`config set --disable-modifier <name>` for a stored one). The
-  compose summary reads "composed N lines of rules from N optional or personal rule file(s)".
-- Setup is easier to follow on a first run. The skill descriptions no longer start with a stray
-  quote (frontmatter values wrapped in one pair of matching quotes now lose them). A fresh layer
-  lists every optional rule on the first screen instead of "No matches", and the same holds for
-  skills when none are selected. Enabling a rule that expects a skill (for example
-  `cross-session-relay` and `hr-agent-guidance-refresh`) also selects that skill, so the warning no
-  longer repeats on every compose. After `save`, setup prints the one command that applies the
-  selection: running the installer again for a checkout (naming `HOUSE_RULES_DIR` or
-  `HOUSE_RULES_CONFIG_DIR` when they are not the defaults), or `house-rules --config` for the npm
-  package; a config file with another name gets the direct `--config` command, since the installer
-  composes only `house-rules.json`. The review screen's reproduction command uses `config set`
-  with the same runtime, and the installer's closing text points at `compose.mjs setup --config`
-  with the real config path.
-- Core rules now ask for closure before a close-out, pause or end of work: what was done, the
-  overall findings with their key numbers, what was learned and what remains, plus a visual of the
-  findings when the work produced measurements, comparisons or decisions and the host can render
-  one. A status line or a list of open ledger items is not closure.
 - **Breaking for configs that list it:** the `swarmail` modifier is removed. It only told an agent
-  where to find one coordination product's own instructions, so it was not general guidance. A
+  where to find the instructions of one agent-mail product, so it was not general guidance. A
   `house-rules.json` that still lists `swarmail` under `modifiers` now fails. `compose.mjs`, the
   installer, `config status`, `config catalog`, `config preview`, `config set` for any other change
   and `setup --json` stop with `unknown modifier "swarmail"` and write nothing. The existing
   `rules.md` and `composed-skills` stay as they were. To repair the config, run `config set` with
   `--disable-modifier swarmail`, review the preview, then repeat it with
   `--apply --expect <revision>`. The interactive `house-rules setup` screen lists `swarmail` as an
-  unavailable modifier and removes it when toggled. The README row, the setup skill's offer of it
-  and the configuration guide's example are gone.
-- **Breaking for configs that list it:** `quiet-watchers` is merged into `periodic-updates`, and a
-  configuration that still lists `quiet-watchers` now fails like any unknown modifier. Remove it
-  from the list. `periodic-updates` carries the same behavior (see below).
+  unavailable modifier and removes it when toggled.
 - **Breaking for configs that list it:** the `hr-change-impact` skill is removed; `hr-code-review`
-  covers its method (see below). A config that lists `hr-change-impact` in `skills.include` now
-  fails composition with "unknown shipped skill". Replace it with `hr-code-review`.
-- `hr-what-next` no longer requires a backlog visual. Two optional rules choose the view:
-  `backlog-visual` adds a dark panel of every open item grouped by what it waits on (a table for
-  waiting items, one row per decision with the offer's Q number and answer chips, the current group
-  marked), with the same groups as a Markdown outline where the host cannot render; `backlog-outline`
-  adds the outline alone. With neither enabled, a backlog report is the ranked table. The two cannot
-  be enabled together, and `hr-house-rules-setup` asks which to use. A setup that relied on the
-  visual enables `backlog-visual`. The skill sorts every open item by what it waits on (actionable
-  now, needs your decision, waiting on others with a trigger and owner) and does not recommend a
-  waiting item before its trigger fires. Invoking it asks for the backlog, so undecided items are
-  offered, or walked through in groups when three or more questions are open, and each answer is
-  recorded as yes, no (dropped) or defer with a trigger other than the user's selection.
-- New optional rule `model-default-questions` and preset `--questions default`: house-rules gives no
-  instruction about how to ask questions, so the model and host ask their usual way. Without it, core
-  rules still say text only. Setup asks the question at install in plain words (Model default, Text
-  only, Clickable choices when available), with a separate yes/no for short reply codes under Text
-  only, and the interactive screen calls modifiers "optional rules". The modifier keeps the rest of
-  Offers (recommendation, scope of each option, phases, the three-open-offer limit) and cannot be
-  combined with `coded-offers` or `question-cards`.
-- Core rules are about 7% shorter than in 0.11.0 (composed with every
-  optional rule off), in more direct and positive wording, with the same requirements. Text that only makes sense with parallel sessions or coded offers left them: the
-  cross-session relay paragraph and the notice after an authorized push that changes guidance or
-  tooling are in the opt-in `cross-session-relay` modifier, which declares
-  `hr-agent-guidance-refresh`, so anyone with `multi-agent` enabled who wants those two paragraphs
-  enables `cross-session-relay` as well. The sentence about offer IDs and `go`/`continue` is in
-  `coded-offers`. The core rules and `plan-files` and `upstream-contributions` declare the skills
-  they name, and composing warns when one is missing from the composed set. A test caps the fresh
-  install's composed rules, so growth in what every new session loads needs a reason stated in the
-  change that raises the cap. The fresh install enables no modifier.
-- Composing rules inline (without `--out`) no longer drops four core rules. Landing and Reporting
-  are replaced by their reference text in that mode, and the references lacked the leave-alone-a-
-  checkout-another-session-uses rule, the version-bump audit paragraph, the five-items-per-list line
-  and the benefit-column paragraph. The references now carry them, and a test fails when a core
-  section's short text has a paragraph its reference lacks.
-- Offers (`rules/core.md` § Offers, and the `coded-offers` modifier, which replaces that section)
-  recommend the option that finishes the work properly and holds up over time, not the quickest one.
-  Dependent steps are separate options labeled "(Recommended, phase 1)" and "(Recommended, phase
-  2)". A required step is never an optional alternative, and an alternative that drops required work
-  is marked "(Not Recommended)". An option that produces a change names what it changes, the steps
-  it includes (such as pull request, review, landing and cleanup) and what it leaves for a later
-  offer. An option that creates a rule, skill, document or script also names the owning repository,
-  whether any project could use it unchanged, and what was searched. With `coded-offers`, the
-  acceptance line keeps its exact form with nothing after it, and `go` covers phase 1 only. Each
-  option is a list item of a line or two, so consecutive options cannot run together. An offer
-  visual is made only when the user asks and the host can render one. When three or more offers are
-  open and unanswered, a new decision is queued in an `hr-what-next` walk-through instead of
-  presented as another offer.
-- Finishing work and the ledger (`rules/core.md` § Finishing work, `plan-files`, `coded-offers`).
-  Before asking the user to do something, the agent checks the actual state and does what it can do
-  itself, asks only for what the check shows it cannot do, and says what it checked. A no is decided
-  and dropped, and options the user passes over are dropped as "not selected". Only work the user
-  wants done later is deferred; a reply such as `go` that accepts a deferral the session recommended
-  is recorded with `trigger: user decides`. An offer never recommends deferring, pausing or closing
-  while the session purpose has a ready next step. A session that has finished and landed its own
-  work ends with a close-out question that recommends `All done`, or `Pause` keeping only an item
-  the user asked to be done later. Work filed upstream or handed to another owner is closed as
-  moved, with the owner and link, unless the session still owes a step or waits on its result. A
-  checkout an app retires is
-  reported but does not block completion. Ideas the agent generated stay in the report unless the
-  user asked for them or the agent owes the work. Rebuilding a ledger, inventory or handoff from an
-  earlier plan carries every open or deferred line over; `hr-handoff`'s reconciliation checker reads
-  a predecessor `plan.md` directly, one record per `## Ledger` item line, and rejects a
-  context-only reason such as "the rest, reopen only if asked".
-- The core rules have a Session purpose section. The session states its purpose in one sentence, and
-  work that serves or blocks it stays. Anything else found (here, in another repository or upstream)
-  is parked as one deferred ledger line instead of being investigated, mentioned once after the
-  answer, and kept out of offers until the user asks for the backlog or the purpose is finished. The
-  plan-files rule adds a `Purpose:` header line.
-- The reporting rule says the answer must come after the last tool call, because some hosts fold
-  every message of a finished turn except the last behind a summary row. Finish bookkeeping first,
-  repeat the whole answer if a tool call must follow it, and never end on a short closing line after
-  a tool call. The rule also names the host clock zone (`date +%Z`, or `Get-TimeZone` on Windows) as
-  part of the session environment. The always-on Writing rule says to write plainly in every reply,
-  status note and question, for a reader who has not seen your working notes: name a thing by what
-  it is or does, not by a label you coined, and explain a coined label again before reusing it.
-  `hr-plain-prose` has the full procedure.
-- The agent-work rule treats each review finding as a claim. Fix it when a reproduced failure or a
-  cited requirement confirms it, with the smallest change that clears it, and answer an unconfirmed
-  finding with the reason. A reviewer's proposed remedy counts as a suggestion.
-- Two opt-in modifiers cover messages during long jobs, and `quiet-watchers` is now part of the
-  first. With `periodic-updates`, a job expected to run longer than about 10 minutes (or one that
-  has run that long with no estimate) posts a one-line status update on its own schedule, every 5
-  minutes unless the user names another interval (a default, not a measured value). Each update
-  gives completed/total or a percent, the ETA with its basis or "unmeasured", and findings so far,
-  and is posted even when nothing changed. A milestone, failure, stall or forecast change goes in
-  full. Where the host has a background watcher or timer the agent arms it, to report in full only
-  a milestone, failure, stall, forecast change or the run's completion; a watcher event that
-  changes nothing gets at most one line. Both behaviors were tried only in small single-model
-  trials with scenarios written by the rules' author, which show a direction, not a rate.
-- The core rules have a Visuals in issues, discussions and comments section that points to
-  `references/thread-visuals.md`. Add an image, chart or diagram only where it shows a spatial
-  interface state, a before/after comparison, a trend across measurements or a branching flow. Keep
-  the exact facts in text beside it with alt text, and check the capture for private paths and
-  credentials. Attach it with `gh ... --attach` (`gh issue create`, `edit`, `comment` and
-  `gh pr comment`). Where `gh` has no attach route (`gh discussion`) or refuses the upload, try a
-  browser signed in to the user's GitHub account and its upload field, and hand the user the text and
-  the file only when the host has no such browser or the upload fails there. The bug-reporting
-  reference says to submit a YAML issue form through that form in the browser, and to use
-  `gh issue create` only for repositories with no issue form.
-- `hr-writing-pr` opens a pull request, issue or discussion that reports a measured result with the
-  benefit: the first sentence gives the figure and workload (or, for a bug, who hit it and what now
-  works), and the title uses the words of the person who feels the change. A qualified result outside
-  the reporting band also gets a headline chart from `scripts/benefit-chart.py`, which draws a dark
-  PNG and prints alt text; with `--table` it prints the same values as a Markdown table, because
-  every value in a visual must also appear as body text. A measured speedup stays out of a
-  squash-merged pull request title unless the repository's convention asks for it. A change too big
-  to read in file order gets a numbered reading order with the mechanical files last. A "Decisions
-  for you" list appears only when the reviewer has a call tests cannot make, a "Not covered" line
-  names adjacent work left out on purpose, a stacked pull request describes only its own layer and
-  names the others by number, and the evidence line names the head commit the checks ran against.
-- New opt-in `upstream-contributions` modifier. A measured optimization, fix or defect found in a
-  third-party project is offered for submission to that project once the evidence is complete, through
-  the channel its contribution guide names (comment, issue, discussion or pull request). The user
-  sees the exact text once before it is posted, unless they have waived that for a named kind of
-  submission and set of projects. A discussion or issue about a measured speedup names the headline
-  result and its workload in the title only when the figure clears the `hr-benchmarking` bar, and a
-  defect is titled by what the person sees. When a later measurement moves the headline, the title
-  and opening lines are updated.
-- The `no-attribution` modifier and `hr-writing-pr` make one exception. When a repository's
-  contribution guidelines or pull request template ask for agent or model disclosure, give exactly
-  what they ask for, where they ask for it. When models are asked for, the disclosure names each
-  model that did the work, with a model in a higher published tier of the same provider that
-  reviewed or advised named first. Unrequested credit lines stay out.
-- `rules/core.md` § Landing says to leave alone a checkout another session or job uses, or whose use
-  you cannot tell. The landing procedure updates a default branch checked out in another worktree
-  with `git merge --ff-only` to the fetched, verified remote head instead of `git pull --ff-only`,
-  because a concurrent fetch in a shared repository can rewrite `FETCH_HEAD` and make the pull fail.
-  The squash-landing reference says to let an enabled automatic review begin instead of commenting to
-  request one, and to check the integration's status rather than tag the bot again when none starts.
-  An existing check on the head must report completion before merging; for CodeRabbit that is a
-  successful status whose description starts with "Review completed". The `low-quota-handoff`
-  modifier says five-hour limits do not trigger a handoff and a usage reading must never cost model
-  turns or read credentials.
-- `hr-pr-followup` ships three landing helpers under `scripts/`: `merge-pr.sh` squash-merges a pull
-  request and deletes only its remote head (the `gh pr merge --delete-branch` flag also removes other
-  sessions' linked worktrees), `verify-landed.sh` checks that the default branch contains the commit and
-  fast-forwards a clean default checkout, and `check-landing.py` reports by content whether a
-  checkout's work landed and lists processes still using it. A repository that lands by fast-forward
-  push is named in `HR_PUSH_LANDED`. The `merge-pr` and `verify-landed` tests are skipped on Windows,
-  and the `check-landing` tests run on Linux only.
-- Before the first publish step of any version bump (tag, package publish, GitHub release or
-  announcement), the release procedure runs two audits and lands their corrections first. The
-  changelog audit covers every repository, public or private: each pending entry is checked against
-  the code that will ship and kept plain and brief, entries that iterate on one concern merge into
-  one, and entries a user must act on stay whole. The public-materials audit covers every public
-  repository: READMEs, graphics and visuals with their alt text, registry and marketplace listing
-  text, documentation, release notes and the announcement are checked for old versions and figures.
-  `rules/references/release-batching.md` holds both audits, and the `release-batching` modifier,
-  `AGENTS.md`, `docs/npm-release.md` and one line in `rules/core.md` point to it. An urgent release
-  may limit only the materials review.
-- Wording written for one setup, or that read as jargon, was rewritten for any user, with each rule's
-  meaning unchanged. The core rules, `coded-offers`, `plan-files` and several skills say "decision"
-  and "what was decided about each" where they said "disposition"; the `## Ledger` section and
-  `trigger:` markers that scripts read are unchanged. The core rules no longer name one host's
-  version, command or notification term, or point at a modifier a fresh install lacks, and
-  `hr-what-next` and `hr-handoff` name no host tools. The README and the end-of-reply eval README
-  cite one 2026-10-11 replay with its limits and the revision it ran at, and the overview image
-  carries no eval figures. `hr-read-reddit` states that Reddit's RSS support ends November 13, 2026.
-  Long guidance paragraphs are split at sentence boundaries, several skill descriptions are
-  shorter with their triggers kept, and `docs/npm-release.md` stays out of the npm package.
-- `hr-agent-guidance-refresh` and `shared-host-load` are trimmed to what holds on any host. The
-  skill rereads changed instructions, skills, subagent definitions, configuration and the tools it
-  relies on, holds the update while an evaluation fixes its context, and treats a reread as no proof
-  that injected context or tool discovery changed; its name, path and `references/verification.md`
-  are unchanged. The `shared-host-load` modifier follows the host's declared budgets and checks load
-  before resource-intensive work, gets operator direction before parallel workers or
-  whole-repository commands when there is no budget, and constrains memory-hungry work. Its name and
-  position are unchanged, so existing configurations still resolve, but its exclusive-slot and
-  reservation text is gone, and bounded reads and edits may still continue without a budget.
-- `hr-benchmarking` keeps the portable method: defining and confirming the comparison, isolation and
-  normal scheduling with the effective priority recorded, screening, repetition against a variation
-  criterion, saved evidence, memory measurement, and reporting with the 3% band. Three method points
-  are new: attribute time to a suspected component in the real workload before changing it, and
-  time the change inside that workload, because a standalone gain can vanish there; include an A/A
-  arm when the workload's variation is not already known; and check each case in an agent or model
-  comparison for a ceiling, reporting cases every arm already passes apart from the rest. For three
-  or more variants, a short table picks the chart from the question. The admission, pressure,
-  observer and fenced-core procedures, the benchmark lock and the nice-value experiment record
-  described one machine's setup and now live with the host that uses them;
-  `references/priority-findings-20261006.md` is deleted. Its JavaScript reference lists five
-  verified Bun-versus-Node traps (`bun x` runs the tool's Node shebang, `node` in package scripts
-  resolves to Bun under `bun --bun run`, `require.resolve` falls back to Bun's global install cache,
-  busy workers wait on shared GC marking, and Node 26.11 renamed its SQLite classes), each with how
-  to confirm the runtime.
-- `hr-code-review` covers what a change can break beyond its diff: an Impact section (method in
-  `references/impact.md`) when asked or when a diff touches stored shapes, outside readers, timing,
-  configuration or pinned dependency behavior. It gains `references/reviewer-role.md`, a host-neutral
-  brief for a standing reviewer or a read-only review sub-agent with the result contract (`PASS` or
-  `BLOCK: N`, findings ordered by severity, verification limits reported separately). It can also
-  set up, plan and adjudicate a review panel: `references/panel-setup.md` lists routes through the
-  host's read-only interface, asks only open questions, previews portable preferences and saves them
-  only after confirmation, with no model calls. A small dated catalog
-  (`references/panel-recommendations.json`) records model, effort, harness, route, source, checked
-  date, run count, metric, list cost, wall time and limits, and writes `unknown` for anything not
-  recorded. `scripts/panel-plan.mjs` resolves stored preferences and a user-owned bindings file into
-  the seats a panel would run, with skipped candidates and named blockers, before any model is
-  called; project and task layers can only tighten the user's policy, and `meteredRoutes:
-included-only` rejects a metered route. `references/panel-adjudication.md` explains how to read the
-  replies and which claims count as corroborated, and `scripts/check-receipts.mjs` checks the
-  `path:line` citations in a panel's logs against the repository.
-- `hr-handoff` covers what the host binds to the thread being handed off. A handoff that moves work
-  to another thread inventories scheduled tasks, linked pull requests and PR watches, and the
-  agent-mail registration. It moves each one or records why it stays, names the receiver's exact call
-  where only the receiving thread can bind an item, and reads every move back. The outgoing
-  registration stays until the user closes the old thread, and the receipt gets a row per bound item.
+  covers its method. A config that lists `hr-change-impact` in `skills.include` now fails
+  composition with "unknown shipped skill". Replace it with `hr-code-review`.
+- Upgrade note: text that only matters with several parallel sessions or coded offers left the
+  core rules. The cross-session relay paragraph and the notice after an authorized push that
+  changes guidance or tooling are now in the opt-in `cross-session-relay` modifier (it declares
+  `hr-agent-guidance-refresh`); if you enable `multi-agent` and want those two paragraphs, enable
+  `cross-session-relay` as well. The sentence about offer IDs and `go`/`continue` is in
+  `coded-offers`. The `shared-host-load` modifier keeps its name and position, so existing configs
+  still resolve, but its exclusive-slot and reservation text is gone.
 - New skills:
-  - `hr-sqlite` is a checklist for code that opens, configures, queries or copies a SQLite database,
-    and for "database is locked", slow queries and WAL growth. Each item says whether it was
-    measured, comes from the SQLite documentation or is unconfirmed. A read-only script
-    (`scripts/inspect-sqlite.py`) reports a file's journal mode, statistics, FTS tables, WAL size and
-    mount options, and with `--source` scans source text for each `journal_mode` mention with no
-    earlier `busy_timeout` in the same file; it does not establish run order.
+  - `hr-sqlite` is a checklist for code that opens, configures, queries or copies a SQLite
+    database, and for "database is locked", slow queries and WAL growth. Each item says whether it
+    was measured, comes from the SQLite documentation or is suspected or reported by one source. A
+    read-only script (`scripts/inspect-sqlite.py`) reports a file's journal mode, statistics, FTS
+    tables, WAL size and mount options, and with `--source` scans source text for each
+    `journal_mode` mention with no earlier `busy_timeout` in the same file; it does not establish
+    run order.
   - `hr-usage-report` measures where Claude Code, Codex and OpenCode usage went by provider, model
-    and role at list prices, and renders model comparisons as self-contained HTML charts and verdict
-    tables. For Claude Code it keeps the transcript line with the most output tokens for each
-    streamed response and reads `projects` under `~/.claude` and every other `~/.claude_*` or
-    `~/.claude-*` directory, a linked directory once; `--claude-projects <dir,dir>` replaces the list.
+    and role at list prices, and renders model comparisons as self-contained HTML charts and
+    verdict tables (it runs with Bun). For Claude Code it keeps the transcript line with the most
+    output tokens for each streamed response and reads `projects` under `~/.claude` and every other
+    `~/.claude_*` or `~/.claude-*` directory, a linked directory once; `--claude-projects <dir,dir>`
+    replaces the list.
   - `hr-forgotten-work-audit` audits a project's past sessions, plans, handoffs and pull requests
     for work that was asked for, promised or deferred and then dropped from every live list. It
-    reads only: workers write their own result file, the coordinator writes the consolidated report
-    and the last-audit record, and a plan the session owns may gain owed items; it writes nothing
-    else. It gives a brief template per slice of history, five verdicts (done, tracked, dropped,
-    forgotten, unclear), a coverage row per slice, and the last-audit record at
-    `audits/<project>/last-audit.json` in the notes directory. The open-work check warns when a plan
-    with a `Project: <name>` line has no such record, an unreadable one, or one older than 30 days
-    (a default, not a measured interval).
+    only reads: workers write their own result file, and the coordinator writes the consolidated
+    report and a last-audit record at `audits/<project>/last-audit.json` in the notes directory.
+    It gives five verdicts (done, tracked, dropped, forgotten, unclear) and a coverage row per
+    slice of history. The `hr-what-next` open-work check warns when a plan with a
+    `Project: <name>` line has no such record, an unreadable one, or one older than 30 days (a
+    default, not a measured interval).
   - `hr-research-shared-links`: when a session opens with a shared link, or the user asks what to
-    borrow from one, the agent follows it to its primary source and reads past the README, checks the
-    claims and searches the user's own rules and past decisions. It rates each idea adopt, consider
-    or skip with evidence on both sides, searches the repository's open issues and security
-    disclosures for the claim, checks each hit against the current code, and records the terms it
-    searched. Its description selects on link-and-ideas requests, not on requests to implement what
-    an article describes.
-- `hr-what-next`'s open-work check (`scripts/check-open-work.mjs`) reads the item lines of a plan's
-  `## Ledger` section and reports what is still open. It lists open and deferred items, the scratch
-  directories and checkouts the session owns that no open item names, items whose named pull requests
-  or issues are all merged or closed (skipped without `gh` or with `--offline`), `recheck:
-YYYY-MM-DD` dates that are past or within a week, waiting items with no date, follow-ups written
-  as prose outside the ledger, answered offers that do not say what happened to the other options,
-  and deferred items whose only trigger is the user's selection as "awaiting your yes/no"
-  (`awaitingUser` in `--json`). It warns when a plan has no `Purpose:` line. `--archive` moves a plan
-  to the archive only when its status is completed and nothing is open, and `--app-managed <path>`
-  reports a checkout an app retires as a warning, not a finding. Output gains `unanswered offers:
-N` (an `unansweredOffers` list in `--json`) and warns at three without changing the exit code. An
-  offer is one ID (capitals and digits joined by hyphens, such as `ABC-12`) written right after the
-  word "offer" on an open `- [ ]` line; it stops counting when any line naming it is dropped, says
-  it was selected, chosen, picked or answered, or says what happened to the other options.
-- `hr-diagnosing-bugs` requires every issue to offer the pull request (or link the one that exists)
-  in its fix or workaround field, and ships `scripts/check-pr-offer.mjs`, which fails a draft whose
-  field or closing lines neither say "pull request" nor link one. `hr-better-accessibility` asks for
-  an `id` on each inline SVG `<title>` and `<desc>` that is unique on the page, and for a `<desc>`
-  that says what the figure shows rather than how it is drawn.
+    borrow from one, the agent follows it to its primary source, checks the claims and searches
+    the user's own rules and past decisions. It rates each idea adopt, consider or skip with
+    evidence on both sides and records the terms it searched. It selects on link-and-ideas
+    requests, not on requests to implement what an article describes.
+- New optional rules:
+  - `backlog-visual` adds a dark panel of every open item, grouped by what it waits on, to a
+    backlog report, with the same groups as a Markdown outline where the host cannot render the
+    panel; `backlog-outline` adds the outline alone. With neither, a backlog report is the ranked
+    table. They cannot be enabled together, and `hr-house-rules-setup` asks which to use.
+  - `model-default-questions` (setup preset `--questions default`) gives no instruction about how
+    to ask questions, so the model and host ask their usual way. Without it, the core rules say
+    text only. Setup asks at install, in plain words (Model default, Text only, Clickable choices
+    when available), with a separate yes/no for short reply codes under Text only. It keeps the rest
+    of Offers and cannot be combined with `coded-offers` or `question-cards`.
+  - `periodic-updates`: a job expected to run longer than about 10 minutes (or one that has run
+    that long with no estimate) posts a one-line status update every 5 minutes unless the user
+    names another interval (a default, not a measured value). Each update gives completed/total or
+    a percent, the ETA with its basis or "unmeasured", and findings so far, and is posted even when
+    nothing changed. A milestone, failure, stall or forecast change goes in full. Where the host
+    has a background watcher or timer the agent arms it, and a watcher event that changes nothing
+    gets at most one line.
+  - `upstream-contributions`: a measured optimization, fix or defect found in a third-party project
+    is offered for submission to that project once the evidence is complete, through the channel
+    its contribution guide names (comment, issue, discussion or pull request). The user sees the
+    exact text once before it is posted, unless they waived that for a named kind of submission and
+    set of projects.
+  - `cross-session-relay` (see the upgrade note above).
+- `hr-what-next` sorts every open item by what it waits on (actionable now, needs your decision,
+  waiting on others with a trigger and owner) and does not recommend a waiting item before its
+  trigger fires. Invoking it asks for the backlog: undecided items are offered, or walked through in
+  groups when three or more questions are open, and each answer is recorded as yes, no (dropped) or
+  defer with a trigger. Its new open-work check (`scripts/check-open-work.mjs`) reads the
+  `## Ledger` section of a plan. It lists open and deferred items, scratch directories and
+  checkouts the session owns that no item names, items whose pull requests or issues are all
+  merged or closed, past or due `recheck: YYYY-MM-DD` dates, and waiting items with no date. It
+  also lists follow-ups written as prose outside the ledger, answered offers that omit what
+  happened to the other options, and `unanswered offers: N` (a warning at three). It warns when a
+  plan has no `Purpose:` line. `--archive` moves a plan to the archive only when it is completed
+  and nothing is open. `--app-managed <path>` reports a checkout an app retires as a warning, not
+  a finding.
+- Core rules:
+  - They are about 5% smaller by size when composed with every optional rule off (26,324 to 24,912
+    bytes against 0.11.0, measured with `--out`), in more direct wording with the same
+    requirements.
+  - Before a close-out, pause or end of work, the agent gives closure: what was done, the overall
+    findings with their key numbers, what was learned and what remains. It adds a visual of the
+    findings when the work produced measurements, comparisons or decisions and the host can
+    render one.
+  - Session purpose: the session states its purpose in one sentence. Anything else it finds is
+    parked as one deferred ledger line instead of being investigated. The agent mentions it once
+    after the answer and keeps it out of offers until the user asks for the backlog or the
+    purpose is finished. The `plan-files` rule adds a `Purpose:` header line.
+  - Offers recommend the option that finishes the work properly and holds up over time, not the
+    quickest one. Dependent steps are separate options labeled "(Recommended, phase 1)" and
+    "(Recommended, phase 2)", and a required step is never an optional alternative. An option that
+    produces a change names what it changes and the steps it includes; one that creates a rule,
+    skill, document or script also names the owning repository and what was searched. With three
+    or more offers open and unanswered, a new decision is queued in an `hr-what-next` walk-through.
+    With `coded-offers`, each option is a list item of a line or two, the acceptance line keeps its
+    exact form with nothing after it, `go` covers phase 1 only, and an offer visual is made only
+    when the user asks and the host can render one.
+  - Finishing work and the ledger: before asking the user to do something, the agent checks the
+    actual state and does what it can itself. A no is dropped, as are options the user passes over;
+    only work the user wants done later is deferred. A session that has finished and landed its own
+    work ends with a close-out question that recommends `All done`. Work filed upstream or handed
+    to another owner closes as moved, with the owner and link. Rebuilding a ledger from an earlier
+    plan carries every open or deferred line over; `hr-handoff`'s reconciliation checker rejects an
+    open line carried only as context, and an item that absorbs several open lines without saying
+    why.
+  - Reporting explains why the answer must come after the last tool call (some hosts hide earlier
+    text behind a summary row). It says to finish bookkeeping first and to repeat the whole answer
+    if a tool call must follow, and it names the host clock zone as part of the session
+    environment. The always-on Writing rule asks for plain language in every reply, naming a thing
+    by what it is, not by a label the agent coined (`hr-plain-prose` has the procedure).
+  - The `multi-agent` modifier treats each review finding as a claim. A reproduced failure or a
+    cited requirement confirms it and it gets fixed; otherwise the agent answers with the reason.
+    A reviewer's remedy is a suggestion.
+  - Issue, discussion and comment visuals (`references/thread-visuals.md`) are added only where
+    they show a spatial interface state, a before/after comparison, a trend across measurements or
+    a branching flow. The exact facts stay in text beside the visual, with alt text, and the
+    capture is checked for private paths and credentials. Attach with `gh ... --attach` where your
+    `gh` version supports it; otherwise use a browser signed in to the user's GitHub account. The
+    bug-reporting reference says to submit a YAML issue form through that form in the browser.
+  - Landing and review. The agent leaves alone a checkout another session or job uses, and
+    updates a default branch checked out elsewhere with `git merge --ff-only` to the fetched head.
+    It lets an enabled automatic review begin instead of requesting one, and merges only after an
+    existing review check reports completion. The `low-quota-handoff` modifier says five-hour limits do not trigger a handoff and
+    a usage reading must never cost model turns or read credentials.
+  - `no-attribution` and `hr-writing-pr` give agent or model disclosure exactly as a repository's
+    contribution guidelines ask, where they ask for it, and nothing else.
+  - Composing rules inline (without `--out`) no longer drops three core rules. Landing and
+    Reporting are replaced by their reference text in that mode, and the references lacked the
+    leave-alone-a-checkout rule, the five-items-per-list line and the benefit-column paragraph.
+    They now carry them.
+  - Wording written for one setup, or that read as jargon, was rewritten for any user with each
+    rule's meaning unchanged ("decision" for "disposition"; the `## Ledger` section and `trigger:`
+    markers that scripts read are unchanged), and the core rules no longer name one host's version
+    or command. `hr-read-reddit` states that Reddit's RSS support ends November 13, 2026.
+- Release procedure: before the first publish step of any version bump (tag, package publish,
+  GitHub release or announcement), two audits run and their corrections land first. The changelog
+  audit covers every repository: each pending entry is checked against the code that will ship,
+  iterations of one concern merge, and entries a user must act on stay whole. The public-materials
+  audit covers every public repository: READMEs, graphics with their alt text, listing text,
+  documentation, release notes and the announcement are checked for old versions and figures.
+  `rules/references/release-batching.md` holds both, and the `release-batching` modifier points to
+  it.
+- Setup and installer:
+  - `install.sh` stops on an unknown option instead of running a full install, says what to check
+    when the repository cannot be downloaded, and no longer names a partial skills directory that
+    does not exist. A re-run whose composed skills match the installed ones says "The skills are
+    unchanged" and keeps no extra `composed-skills.previous-<date>` directory. Status lines use `~`
+    like the closing text. `install.ps1` gets the same changes.
+  - An invalid or empty config names the file in the error, and an unknown modifier says to remove
+    it from `modifiers` (`config set --disable-modifier <name>` for a stored one). The compose
+    summary reads "composed N lines of rules from N optional or personal rule file(s)".
+  - Setup is easier on a first run. Skill descriptions no longer start with a stray quote, and a
+    fresh configuration lists every optional rule on the first screen instead of "No matches"
+    (likewise skills). In the interactive `setup`, enabling a rule that expects a skill (for
+    example `cross-session-relay` and `hr-agent-guidance-refresh`) also selects that skill, so the
+    warning no longer repeats. After `save`, setup prints the one command that applies the
+    selection: the installer again for a checkout (naming `HOUSE_RULES_DIR` or
+    `HOUSE_RULES_CONFIG_DIR` when not the defaults), or `house-rules --config` for the npm package.
+- `hr-code-review` covers what a change can break beyond its diff. It adds an Impact section
+  (`references/impact.md`) when asked or when a diff touches stored shapes, outside readers,
+  timing, configuration or pinned dependency behavior. `references/reviewer-role.md` is a
+  host-neutral brief for a standing reviewer or a read-only review sub-agent (`PASS` or
+  `BLOCK: N`, findings by severity, verification limits reported separately).
+  - It can also set up, plan and adjudicate a review panel. `references/panel-setup.md` asks only
+    open questions and saves portable preferences after confirmation, stored in the config's
+    `panel` object (`config set --panel-file`).
+  - `scripts/panel-plan.mjs` resolves preferences and a bindings file into the seats a panel would
+    run before any model is called. Project and task layers can only tighten the user's policy,
+    and `meteredRoutes: included-only` rejects a metered route.
+  - `scripts/acp-panel-client.mjs` is an ACP stdio client for panel seats
+    (`references/acp-client.md`). `references/panel-adjudication.md` says which claims count as
+    corroborated, and `scripts/check-receipts.mjs` checks the `path:line` citations in a panel's
+    logs.
+  - A small dated catalog (`references/panel-recommendations.json`) records what was measured and
+    writes `unknown` for anything not recorded.
+- `hr-handoff` covers what the host binds to the thread being handed off. Scheduled tasks, linked
+  pull requests and watches, and any agent-mail or messaging registration are each moved or
+  recorded as staying. The skill names the receiver's exact call where only the receiver can bind
+  an item, and reads each move back.
+- `hr-benchmarking` adds three method points: attribute time to a suspected component in the real
+  workload and time the change inside that workload, run an A/A arm when the workload's variation
+  is unknown, and check agent or model comparisons for a ceiling. Machine-specific procedures
+  (the benchmark lock, fenced-core and nice-value records) left the skill, and
+  `references/priority-findings-20261006.md` is deleted. The JavaScript reference lists five
+  verified Bun-versus-Node traps and now covers server code. It says to measure the longest
+  event-loop stall next to wall time, time the real function, count events and bytes when volume
+  is the cost, prove moved work with a test that holds the main connection busy, and treat another
+  researcher's numbers as leads. `hr-sqlite` adds a checklist item for running reads on a worker connection with a
+  synchronous driver.
+- `hr-agent-guidance-refresh` is trimmed to what holds on any host: it rereads changed instructions,
+  skills, subagent definitions, configuration and the tools it relies on, holds the update while an
+  evaluation fixes its context, and treats a reread as no proof that injected context changed. Its
+  name, path and `references/verification.md` are unchanged. `shared-host-load` follows the host's
+  declared budgets and checks load before resource-intensive work.
+- `hr-pr-followup` ships three landing helpers under `scripts/`. `merge-pr.sh` (needs Bun)
+  squash-merges a pull request and deletes only its remote head. `verify-landed.sh` checks that
+  the default branch contains the commit and fast-forwards a clean default checkout.
+  `check-landing.py` reports by content whether a checkout's work landed and lists processes still
+  using it. A repository that lands by fast-forward push is named in `HR_PUSH_LANDED`.
+- `hr-writing-pr` leads with the measured benefit. The first sentence gives the figure and
+  workload (for a bug, who hit it and what now works), and a qualified result gets a headline
+  chart from `scripts/benefit-chart.py`. The script needs matplotlib, draws a dark PNG and prints
+  alt text, and `--table` prints the same values as a Markdown table. A change too big to read in
+  file order gets a numbered reading order.
+- `hr-diagnosing-bugs` requires every issue to offer or link the pull request
+  (`scripts/check-pr-offer.mjs` fails a draft that does neither). `hr-better-accessibility` asks
+  for a unique `id` on each inline SVG `<title>` and `<desc>`, with a `<desc>` that says what the
+  figure shows.
 - Smaller skill changes: `hr-agent-guidance-audit` has a verdict method for deciding which skills,
-  docs and scripts to retire or merge (one verdict per candidate with quoted evidence, separate
-  verdicts for the shared source and a local install, usage counts as supporting evidence only) and
-  a `references/prune-workflow.md` for shrinking always-loaded guidance: size it, migrate, condense,
-  screen each rule, check vendor guides, recommend opt-ins, land and adopt.
-  `hr-maintainability-review` also handles whole-repository over-engineering audits.
-  `hr-design-exploration` has a single-component mode: three variants on one design axis, compared
-  in the real page. `hr-lean-plan` leaves out steps added only in case something goes wrong.
-- The end-of-reply eval (`evals/end-of-reply/`) can screen other agents and the optional rules. It
-  has one wrapper each for Claude Code, Codex, Devin, OpenCode and Cursor Agent, isolated from your
-  own rules as far as their agents allow (the README lists the exceptions), with a leak probe. A
-  scenario's `allowRead: true` (or `run.mjs --allow-read`) grades the reply after leading read-only
-  tool calls, which models that look before answering need. `run.mjs --screen` runs each scenario
-  with the rules and again with the one rule its `without:` pattern names removed, and prints
-  whether that rule helps, makes no difference or fails in both arms; `expect: reply` grades a reply
-  by the scenario's declared patterns alone, and `--scenarios <dir>` points the runner at another
-  directory. Screening scenarios ship in `screen/` and `screen/modifiers/`. The `complete` scenario
-  accepts the close-out question (`All done` or `Pause`) the rules ask for once work is finished
-  and landed, through a scenario field `closeOut: true`; any other question, a different option or
-  a claim that work remains still fails, and reads made through an `exec_command` tool count as
-  reads. The offer reader accepts an offer in any rendering (coded, numbered or bulleted, with a
-  numbered question above), checks a scenario's declared `options` by label, and fails a layout
-  where two or more bare coded option lines share a paragraph or anything follows the acceptance
-  line (reported in `layout`). Each run reports whether the turn was right apart from the
-  scenario's declared checks, and `--baseline` prints a `behavior only` line. New scenarios cover the
-  parked-work, stacked-offer and passed-over-option rules. Separately, `evals/skill-fires/` holds
-  `claude plugin eval` cases that check whether seven skills fire on realistic requests, with
-  `prepare.mjs` to build the throwaway plugin directory the runner needs; no results ship with them.
+  docs and scripts to retire or merge and `references/prune-workflow.md` for shrinking always-loaded
+  guidance. `hr-maintainability-review` also handles whole-repository over-engineering audits.
+  `hr-design-exploration` has a single-component mode (three variants on one design axis).
+  `hr-lean-plan` leaves out steps added only in case something goes wrong.
+- Repository only (not in the npm package): the end-of-reply eval and `evals/skill-fires/` were
+  extended to screen other agents and the optional rules; see their READMEs.
 
 ## 0.11.0 - 2026-10-09
 
