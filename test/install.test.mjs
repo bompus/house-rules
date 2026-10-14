@@ -206,6 +206,11 @@ it("rejects an unknown option before installing anything", (t) => {
   assert.match(r.stderr, /unknown option: --bogus/);
   assert.equal(existsSync(checkout), false);
   assert.equal(existsSync(join(home, ".config")), false);
+  const extra = run(home, [], ["--print-runtime", "--bogus"], {
+    HOUSE_RULES_RUNTIME: process.execPath,
+  });
+  assert.notEqual(extra.status, 0);
+  assert.match(extra.stderr, /unexpected argument: --bogus/);
 });
 
 it("says what to check when the repository cannot be downloaded", (t) => {
@@ -216,7 +221,7 @@ it("says what to check when the repository cannot be downloaded", (t) => {
     HOUSE_RULES_RUNTIME: process.execPath,
   });
   assert.notEqual(r.status, 0);
-  assert.match(r.stderr, /could not download .*no-such-repository; check the network/);
+  assert.match(r.stderr, /could not download house-rules; check the network and HOUSE_RULES_REPO/);
 });
 
 it("names paths with ~ and a failed compose points at the config", (t) => {
@@ -233,7 +238,10 @@ it("names paths with ~ and a failed compose points at the config", (t) => {
   writeFileSync(config, "");
   const broken = run(home, [], [], env);
   assert.notEqual(broken.status, 0);
-  assert.match(broken.stderr, new RegExp(`${config.replaceAll(".", "\\.")} is not valid JSON`));
+  assert.match(
+    broken.stderr,
+    new RegExp(`${config.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")} is not valid JSON`),
+  );
   assert.doesNotMatch(broken.stderr, /\.new-/);
   writeFileSync(config, JSON.stringify({ modifiers: ["swarmail"] }));
   const unknown = run(home, [], [], env);

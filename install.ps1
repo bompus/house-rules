@@ -120,7 +120,7 @@ param([switch]$PrintRuntime)
     # .NET hashing: the Get-FileHash cmdlet is missing when the utility module is not loaded.
     function Get-Digest([string]$Root) {
       $sha = [System.Security.Cryptography.SHA256]::Create()
-      Get-ChildItem -LiteralPath $Root -Recurse -File | Sort-Object FullName | ForEach-Object {
+      Get-ChildItem -LiteralPath $Root -Recurse -File -Force | Sort-Object FullName | ForEach-Object {
         $hash = [BitConverter]::ToString($sha.ComputeHash([IO.File]::ReadAllBytes($_.FullName)))
         $_.FullName.Substring($Root.Length) + ' ' + $hash
       }
@@ -154,7 +154,7 @@ param([switch]$PrintRuntime)
       Assert-Git 'download house-rules'
       $repo = if ($env:HOUSE_RULES_REPO) { $env:HOUSE_RULES_REPO } else { 'https://github.com/bompus/house-rules.git' }
       if ((Invoke-Native 'git' @('clone', '--quiet', '--depth', '1', $repo, $Dir)) -ne 0) {
-        Fail "could not download $repo; check the network and HOUSE_RULES_REPO, then run this again"
+        Fail "could not download house-rules; check the network and HOUSE_RULES_REPO, then run this again"
       }
       Write-Host "Downloaded house-rules to $(Show-Path $Dir)"
     }

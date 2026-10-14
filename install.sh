@@ -149,7 +149,7 @@ fetch() {
     command -v git >/dev/null 2>&1 || die "git is required to download house-rules"
     repo=${HOUSE_RULES_REPO:-https://github.com/bompus/house-rules.git}
     git clone --quiet --depth 1 "$repo" "$dir" ||
-      die "could not download $repo; check the network and HOUSE_RULES_REPO, then run this again"
+      die "could not download house-rules; check the network and HOUSE_RULES_REPO, then run this again"
     say "Downloaded house-rules to $(tilde "$dir")"
   fi
 }
@@ -159,6 +159,7 @@ main() {
     "" | --print-runtime) ;;
     *) die "unknown option: $1 (the only option is --print-runtime)" ;;
   esac
+  if [ "$#" -gt 1 ]; then die "unexpected argument: $2 (the only option is --print-runtime)"; fi
   rt=$(pick_runtime)
   if [ "${1:-}" = "--print-runtime" ]; then
     printf '%s\n' "$rt"
