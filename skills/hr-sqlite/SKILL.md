@@ -155,7 +155,9 @@ different engine, driver or pool, read
     read holds the event loop for its whole duration. Where the application
     shares one queued connection for reads and writes, a read also waits behind
     any open write transaction. Route read-only queries to a separate read-only
-    connection in a worker thread. A text search over 86,163 messages held the
+    connection in a worker thread. That connection sees only committed data, as a
+    snapshot, so move only reads that tolerate that; a read that must see the
+    caller's uncommitted changes stays on the writer. A text search over 86,163 messages held the
     loop for a median 165 ms (range 97 to 308) on the writer connection and 2.5 ms
     (2 to 4) on the worker, with no clear change in wall time (165 and 157 ms; 12
     runs per arm, 2 ms probe) (M). Prove the routing with a test that keeps the

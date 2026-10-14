@@ -45,7 +45,7 @@ Verified on Bun 1.4.x:
 
 ## Event-loop and server-code measurement
 
-A Node or Bun server has one thread that runs request handling, timers and
+Each event-loop thread of a Node or Bun server runs request handling, timers and
 synchronous database calls. A slow call matters when it holds that thread, so
 measure the hold, not only the duration. (M) marks a result measured on one
 workload and host, not a benchmark.
@@ -69,7 +69,8 @@ workload and host, not a benchmark.
   events and serialized bytes at several sizes. Counts are deterministic, so they
   need no repetitions; stall and wall time still do. One adapter emitted three
   events per streamed chunk, two of them carrying the whole reply so far: 15,003
-  events and 263.6 MB for 5,000 chunks of 10 characters (about 125 MB for each of
+  events (three per chunk plus one closing update of each) and 263.6 MB for 5,000
+  chunks of 10 characters (about 125 MB for each of
   the two full-text copies), growing about 3.3 to 3.6 times per doubling, with a
   longest stall under 6 ms (M). That is a volume problem, not
   a stall.
