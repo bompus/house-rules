@@ -110,8 +110,9 @@ one, so each guard stays written in the rules themselves. Stdout and configurati
 previews keep the procedures inline. See [reference output](docs/configuration.md#reference-output). To change modifiers or
 skills, change to the checkout directory and run `node compose.mjs setup`,
 or `bun compose.mjs setup` when Node.js is unavailable. Review the numbered
-choices and use `save` to change only the configuration. Then run the
-installer again.
+choices and use `save` to change only the configuration. Setup then prints the
+command that applies the selection: the installer for a checkout, or
+`house-rules --config` for the npm package.
 The [configuration CLI guide](docs/configuration.md) covers status, previews,
 question preferences, optional panel preferences and safe writes. The
 `hr-house-rules-setup` skill preserves selections, offers relevant additions and connects

@@ -199,6 +199,8 @@ param([switch]$PrintRuntime)
   Write-Host "  Other hosts: copy the contents of rules.md into the host's user-level"
   Write-Host "  rules file and put house-rules-references beside it. Point its"
   Write-Host "  skills directory at composed-skills."
-  Write-Host "To change modifiers, edit $(Show-Path "$cfg\house-rules.json") (list them with"
-  Write-Host "  & '$rt' '$dir\compose.mjs' --list) and run this installer again."
+  Write-Host 'To change modifiers or skills, run:'
+  $q = { param([string]$Path) "'" + $Path.Replace("'", "''") + "'" }
+  Write-Host "  & $(& $q $rt) $(& $q "$dir\compose.mjs") setup --config $(& $q "$cfg\house-rules.json")"
+  Write-Host "  (or edit $(Show-Path "$cfg\house-rules.json")), then run this installer again."
 }

@@ -1,7 +1,9 @@
 // Numbered selection flow. Only the existing revision-checked config writer saves.
 import { createInterface } from "node:readline";
-import { readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { existsSync, readFileSync } from "node:fs";
+import { homedir } from "node:os";
+import { basename, dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { parseArgs, stripVTControlCharacters } from "node:util";
 import { configurationPath, modifierList } from "./composition.mjs";
 import {
@@ -35,6 +37,46 @@ const quote = (value) =>
   process.platform === "win32"
     ? `'${value.replaceAll("'", "''")}'`
     : `'${value.replaceAll("'", "'\\''")}'`;
+
+// How this copy runs and how to apply a saved selection: the npm package has a
+// `house-rules` command, a checkout from the installer is updated by running the installer again.
+const entry = fileURLToPath(new URL("./compose.mjs", import.meta.url));
+const parts = entry.split(/[\\/]/).map((part) => part.toLowerCase());
+const packaged = parts.some(
+  (part, index) =>
+    part === "node_modules" && parts[index + 1] === "@bompus" && parts[index + 2] === "house-rules",
+);
+const cliCommand = () =>
+  packaged
+    ? "house-rules"
+    : `${process.platform === "win32" ? "& " : ""}${quote(process.execPath)} ${quote(entry)}`;
+
+const installerPath = () =>
+  join(dirname(entry), process.platform === "win32" ? "install.ps1" : "install.sh");
+// The installer composes <config dir>/house-rules.json only.
+const usesInstaller = (configPath) =>
+  !packaged && existsSync(installerPath()) && basename(configPath) === "house-rules.json";
+
+function recomposeCommand(configPath) {
+  const configDir = dirname(configPath);
+  const checkout = dirname(entry);
+  const windows = process.platform === "win32";
+  const installer = installerPath();
+  if (!usesInstaller(configPath))
+    return `${cliCommand()} --config ${quote(configPath)} --out ${quote(join(configDir, "rules.md"))}`;
+  // The installer reads these variables, so a copy or config outside the defaults must name them.
+  const home = homedir();
+  const data =
+    process.env.XDG_DATA_HOME ?? (windows ? process.env.LOCALAPPDATA : join(home, ".local/share"));
+  const config = process.env.XDG_CONFIG_HOME ?? join(home, ".config");
+  const env = [
+    ["HOUSE_RULES_DIR", checkout, join(data ?? "", "house-rules")],
+    ["HOUSE_RULES_CONFIG_DIR", configDir, join(config, "house-rules")],
+  ].filter(([, actual, normal]) => resolve(actual) !== resolve(normal));
+  return windows
+    ? `${env.map(([name, value]) => `$env:${name}=${quote(value)}; `).join("")}& ${quote(installer)}`
+    : `${env.map(([name, value]) => `${name}=${quote(value)} `).join("")}sh ${quote(installer)}`;
+}
 
 export async function setupCommand(argv) {
   let values;
@@ -178,7 +220,7 @@ export async function setupCommand(argv) {
         "Reproduce with the existing config command (POSIX shell on Unix, PowerShell on Windows):",
       );
       printCommand(
-        `house-rules config set --config ${quote(snapshot.path)} ${flags.join(" ")} --apply --expect ${quote(snapshot.revision)}`,
+        `${cliCommand()} config set --config ${quote(snapshot.path)} ${flags.join(" ")} --apply --expect ${quote(snapshot.revision)}`,
       );
       print("Review personal rule overrides. Setup does not interpret or edit their prose.");
       print(
@@ -197,10 +239,13 @@ export async function setupCommand(argv) {
     print(
       `Question format: ${questions ?? baseline.questions}. Use questions default|plain|coded|cards.`,
     );
+    const kind = stage === 0 ? "modifier" : "skill";
+    // With nothing selected yet, the selected-only view would be empty, so list every choice.
+    const nothingSelected = !rows().some((row) => row.kind === kind && row.enabled);
     const visible = rows().filter(
       (row) =>
-        row.kind === (stage === 0 ? "modifier" : "skill") &&
-        (!selectedOnly || row.enabled) &&
+        row.kind === kind &&
+        (!selectedOnly || nothingSelected || row.enabled) &&
         `${row.name} ${row.description}`.toLowerCase().includes(query.toLowerCase()),
     );
     for (const row of visible) {
@@ -211,7 +256,9 @@ export async function setupCommand(argv) {
     }
     if (!visible.length)
       print(`No matches for ${JSON.stringify(query)}. Use clear search or show all.`);
-    if (selectedOnly)
+    if (selectedOnly && nothingSelected)
+      print("Nothing is selected yet, so every choice is listed. Use toggle N to select.");
+    else if (selectedOnly)
       print("Showing current selections. Search for relevant additions or use show all.");
     if (baseline.unavailable.length)
       print(`Retained unavailable exclusions: ${baseline.unavailable.join(", ")}`);
@@ -314,6 +361,19 @@ export async function setupCommand(argv) {
             } else {
               const enabled = !(intent.get(`${row.kind}:${row.name}`)?.enabled ?? row.enabled);
               intent.set(`${row.kind}:${row.name}`, { kind: row.kind, name: row.name, enabled });
+              // A rule that expects a skill would otherwise warn on every compose.
+              for (const need of enabled ? (row.requires ?? "").split(",") : []) {
+                const skill = available.find((r) => r.kind === "skill" && r.name === need.trim());
+                // A skill listed in the same command keeps the toggle the user typed.
+                if (!skill || chosen.includes(skill)) continue;
+                if (intent.get(`skill:${skill.name}`)?.enabled ?? skill.enabled) continue;
+                intent.set(`skill:${skill.name}`, {
+                  kind: "skill",
+                  name: skill.name,
+                  enabled: true,
+                });
+                print(`Also selected the ${skill.name} skill, which ${row.name} expects.`);
+              }
             }
           }
         } else if (command === "refresh") {
@@ -361,11 +421,13 @@ export async function setupCommand(argv) {
           }
           print(`Selections saved: ${saved.path}`);
           print(
-            "Output was not regenerated and hosts were not connected by setup. Recompose with:",
+            "Output was not regenerated and hosts were not connected by setup. To apply the selections, run:",
           );
-          printCommand(
-            `house-rules --config ${quote(saved.path)} --out ${quote(join(dirname(saved.path), "rules.md"))}`,
-          );
+          printCommand(recomposeCommand(saved.path));
+          if (!usesInstaller(saved.path))
+            print(
+              "This rebuilds the rules only; add --skills-out with a new or empty directory to rebuild the skills too.",
+            );
           return;
         } else
           throw new Error(

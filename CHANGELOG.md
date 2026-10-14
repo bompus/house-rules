@@ -4,6 +4,18 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Setup is easier to follow on a first run. The skill descriptions no longer start with a stray
+  quote (frontmatter values wrapped in one pair of matching quotes now lose them). A fresh layer
+  lists every optional rule on the first screen instead of "No matches", and the same holds for
+  skills when none are selected. Enabling a rule that expects a skill (for example
+  `cross-session-relay` and `hr-agent-guidance-refresh`) also selects that skill, so the warning no
+  longer repeats on every compose. After `save`, setup prints the one command that applies the
+  selection: running the installer again for a checkout (naming `HOUSE_RULES_DIR` or
+  `HOUSE_RULES_CONFIG_DIR` when they are not the defaults), or `house-rules --config` for the npm
+  package; a config file with another name gets the direct `--config` command, since the installer
+  composes only `house-rules.json`. The review screen's reproduction command uses `config set`
+  with the same runtime, and the installer's closing text points at `compose.mjs setup --config`
+  with the real config path.
 - Core rules now ask for closure before a close-out, pause or end of work: what was done, the
   overall findings with their key numbers, what was learned and what remains, plus a visual of the
   findings when the work produced measurements, comparisons or decisions and the host can render

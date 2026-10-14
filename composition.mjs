@@ -14,6 +14,10 @@ const KEYS = [...OPS, "description", "requires", "reference"];
 // Windows line endings and a byte-order mark would otherwise hide frontmatter and headings.
 const normalize = (text) => text.replace(/^\uFEFF/, "").replace(/\r\n?/g, "\n");
 
+// A YAML value may be wrapped in one pair of matching quotes; the text inside is the value.
+const unquote = (value) =>
+  value.length > 1 && /^(["']).*\1$/.test(value) ? value.slice(1, -1) : value;
+
 // Minimal frontmatter: `key: value` lines between `---` fences.
 export function parseFragment(rawText, source) {
   const text = normalize(rawText);
@@ -22,7 +26,7 @@ export function parseFragment(rawText, source) {
   if (m) {
     for (const line of m[1].split("\n")) {
       const i = line.indexOf(":");
-      if (i > 0) meta[line.slice(0, i).trim()] = line.slice(i + 1).trim();
+      if (i > 0) meta[line.slice(0, i).trim()] = unquote(line.slice(i + 1).trim());
     }
   }
   return { meta, body: (m ? text.slice(m[0].length) : text).trim(), source };

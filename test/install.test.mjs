@@ -171,3 +171,12 @@ it("installs from a checkout, then recomposes without deleting the old skills", 
   assert.equal(backups.length, 2);
   for (const b of backups) assert.ok(!existsSync(join(config, b, "composed-skills")));
 });
+
+it("prints the setup command with quotes when the checkout path has a space", (t) => {
+  const home = scratch(t, "house-rules-install-");
+  const checkout = join(home, "my house-rules");
+  cpSync(root, checkout, { recursive: true, filter: (src) => basename(src) !== ".git" });
+  const r = run(home, [], [], { HOUSE_RULES_DIR: checkout, HOUSE_RULES_RUNTIME: process.execPath });
+  assert.equal(r.status, 0, r.stderr);
+  assert(r.stdout.includes(` '${join(checkout, "compose.mjs")}' setup --config `), r.stdout);
+});

@@ -141,6 +141,16 @@ tilde() {
   esac
 }
 
+# Prints $1 as one shell word for the instructions: ~/... when it is plain,
+# otherwise single-quoted so a path with spaces survives being pasted.
+word() {
+  t=$(tilde "$1")
+  case $t in
+    *[!A-Za-z0-9_./~@%+=:,-]*) printf "'%s'\n" "$(printf '%s' "$1" | sed "s/'/'\\\\''/g")" ;;
+    *) printf '%s\n' "$t" ;;
+  esac
+}
+
 main() {
   rt=$(pick_runtime)
   if [ "${1:-}" = "--print-runtime" ]; then
@@ -187,8 +197,9 @@ main() {
   say "  Other hosts: copy the contents of rules.md into the host's user-level"
   say "  rules file and put house-rules-references beside it. Point its"
   say "  skills directory at composed-skills."
-  say "To change modifiers, edit $(tilde "$cfg/house-rules.json") (list them with"
-  say "  $(tilde "$rt") $(tilde "$dir")/compose.mjs --list) and run this installer again."
+  say "To change modifiers or skills, run:"
+  say "  $(word "$rt") $(word "$dir/compose.mjs") setup --config $(word "$cfg/house-rules.json")"
+  say "  (or edit $(tilde "$cfg/house-rules.json")), then run this installer again."
 }
 
 # Runs only once the whole script has downloaded.
