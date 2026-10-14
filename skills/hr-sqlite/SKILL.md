@@ -158,8 +158,10 @@ different engine, driver or pool, read
     connection in a worker thread. A text search over 86,163 messages held the
     loop for a median 165 ms (range 97 to 308) on the writer connection and 2.5 ms
     (2 to 4) on the worker, with no clear change in wall time (165 and 157 ms; 12
-    runs per arm, 2 ms probe) (M). Prove the routing with a test that holds the
-    writer inside an open transaction and checks the read still completes. Record
+    runs per arm, 2 ms probe) (M). Prove the routing with a test that keeps the
+    main thread busy on a latch and checks the worker read still completes; an
+    open writer transaction alone proves nothing, because in WAL mode a second
+    main-thread connection can read past it. Record
     the longest event-loop stall, not only the query time; `hr-benchmarking`'s
     JavaScript reference covers the probe.
 

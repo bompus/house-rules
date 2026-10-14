@@ -68,13 +68,15 @@ workload and host, not a benchmark.
   messages, feed a fixed synthetic input through the real component and count the
   events and serialized bytes at several sizes. Counts are deterministic, so they
   need no repetitions; stall and wall time still do. One adapter emitted three
-  events per streamed chunk, each carrying the whole reply so far: 15,003 events
-  and 263.6 MB for 5,000 chunks of 10 characters, growing about 3.3 to 3.6 times
-  per doubling, with a longest stall under 6 ms (M). That is a volume problem, not
+  events per streamed chunk, two of them carrying the whole reply so far: 15,003
+  events and 263.6 MB for 5,000 chunks of 10 characters (about 125 MB for each of
+  the two full-text copies), growing about 3.3 to 3.6 times per doubling, with a
+  longest stall under 6 ms (M). That is a volume problem, not
   a stall.
-- **Separate loop time from child-process time.** Work done by a spawned process
-  uses CPU but does not hold the loop. Count a process spawn as loop cost only
-  for its spawning and parsing.
+- **Separate loop time from child-process time.** Work done by an asynchronously
+  spawned process uses CPU but does not hold the loop. Count such a spawn as loop
+  cost only for its spawning and parsing. `spawnSync` and `execSync` do block the
+  loop for the child's whole lifetime, so count that time as a stall.
 - **Prove that work left the loop with a test that cannot pass otherwise.** Hold
   the main connection or thread busy (an open transaction blocked on a latch) and
   assert the moved work still completes. A speed measurement alone cannot show
