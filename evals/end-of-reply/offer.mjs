@@ -91,7 +91,11 @@ export function layoutProblems(reply) {
 // saying to reply `All done`. The options may be list items or plain lines. Returns the reply without
 // that block, so the rest can be graded as a plain completion, or null when the block is missing, has
 // anything else in it (a second question, a tool call, another option) or leaves a question behind.
-const CLOSING_QUESTION = /\bsession\b|\b(?:finish|wrap(?: it)? up|close(?: it)?(?: out)?|end)\W*$/i;
+const CLOSING = String.raw`(?:clos\w*|finish\w*|wrap\w*|end\w*)`;
+const CLOSING_QUESTION = new RegExp(
+  String.raw`\b${CLOSING}\b[^?]*\bsession\b|\bsession\b[^?]*\b${CLOSING}\b|\b(?:finish|wrap(?: it)? up|close(?: it)?(?: out)?|end)\W*$`,
+  "i",
+);
 export function closeOutOffer(reply) {
   const lines = reply.split("\n");
   const unmarked = (line) => line.trim().replace(ITEM, "");

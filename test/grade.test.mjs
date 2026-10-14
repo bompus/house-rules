@@ -651,6 +651,14 @@ test("a complete reply may end with the close-out question and nothing else", ()
     passes(statement + "1. Can you finish editing the README?\n\n" + options + accept),
     false,
   );
+  assert.equal(
+    passes(statement + "1. Would you like to start a new session?\n\n" + options + accept),
+    false,
+  );
+  assert.equal(
+    passes(statement + "1. Should this session be closed?\n\n" + options + accept),
+    true,
+  );
   assert.equal(passes(statement + question + options + "Reply whenever."), false);
   assert.equal(passes(statement + question + options + "Reply `Pause` to accept."), false);
   assert.equal(passes(statement + "1. How would you like to finish?\n\n" + options + accept), true);
