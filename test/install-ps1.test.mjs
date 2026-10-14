@@ -210,15 +210,20 @@ for (const shell of shells) {
       assert.equal(kept.length, 1);
       assert.ok(readdirSync(join(config, "composed-skills")).length > 0);
 
-      // Runs within the same second keep separate backups instead of nesting one.
+      // A run that produces the same skills keeps the installed ones and adds no backup.
       const third = run(shell, home, [], [], env);
       assert.equal(third.status, 0, third.stderr);
+      assert.match(third.stdout, /The skills are unchanged/);
       assert.equal(
         readFileSync(join(config, "house-rules-references", "manifest.json"), "utf8"),
         referenceManifest,
       );
       const backups = readdirSync(config).filter((f) => f.startsWith("composed-skills.previous-"));
-      assert.equal(backups.length, 2);
+      assert.equal(backups.length, 1);
+      assert.deepEqual(
+        readdirSync(config).filter((f) => f.startsWith("composed-skills.new-")),
+        [],
+      );
       for (const b of backups) assert.ok(!existsSync(join(config, b, "composed-skills")));
     },
   );

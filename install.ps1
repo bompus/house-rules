@@ -117,9 +117,12 @@ param([switch]$PrintRuntime)
 
   # True when the two directories differ in any file name or content.
   function Compare-Tree([string]$A, [string]$B) {
+    # .NET hashing: the Get-FileHash cmdlet is missing when the utility module is not loaded.
     function Get-Digest([string]$Root) {
+      $sha = [System.Security.Cryptography.SHA256]::Create()
       Get-ChildItem -LiteralPath $Root -Recurse -File | Sort-Object FullName | ForEach-Object {
-        $_.FullName.Substring($Root.Length) + ' ' + (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash
+        $hash = [BitConverter]::ToString($sha.ComputeHash([IO.File]::ReadAllBytes($_.FullName)))
+        $_.FullName.Substring($Root.Length) + ' ' + $hash
       }
     }
     [bool](Compare-Object @(Get-Digest $A) @(Get-Digest $B))
