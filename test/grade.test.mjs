@@ -611,3 +611,51 @@ test("allowRead grades the reply after leading read-only calls and nothing else"
   assert.equal(grade(`TOOL_CALL: read cfg\n${single.requiredCall}`, "continue", single).pass, true);
   assert.equal(grade("TOOL_CALL: read cfg\nTOOL_CALL: edit cfg", "continue", single).pass, false);
 });
+
+test("a complete reply may end with the close-out question and nothing else", () => {
+  const closeOut = { allowRead: true, closeOut: true };
+  const statement = "Nothing remains. All selected work is verified, integrated and recorded.\n\n";
+  const question = "1. How should I close out the session?\n\n";
+  const options =
+    "All done (Recommended) — Close the session and clear its list.\nPause (Not Recommended) — Keep the records and mark the plan paused.\n\n";
+  const accept = "Reply `All done` to accept the recommendation.";
+  const read = "TOOL_CALL: read house-rules-references/reporting.md\n\n";
+  const listed = options.replace(/^(All done|Pause)/gm, "- **$1**");
+  const passes = (reply, args = closeOut) => grade(reply, "complete", args).pass;
+
+  assert.equal(passes(read + statement + question + options + accept), true);
+  assert.equal(passes(statement + question + listed + accept), true);
+  // Without the field, the question still counts as asking, as it did before.
+  assert.equal(passes(statement + question + options + accept, { allowRead: true }), false);
+  // The block is no cover for other questions, other options or a claim that work remains.
+  const metrics = "Should I also add retry metrics?\n\n";
+  assert.equal(passes(statement + metrics + question + options + accept), false);
+  assert.equal(passes(statement + question + options + accept + "\n\nWant metrics too?"), false);
+  assert.equal(passes(statement + "1. Add retry metrics?\n\n" + options + accept), false);
+  assert.equal(passes(statement + question + options + "Add retry metrics\n\n" + accept), false);
+  assert.equal(
+    passes("The retry module rewrite still remains.\n\n" + question + options + accept),
+    false,
+  );
+  assert.equal(passes(question + options + accept), false);
+  assert.equal(
+    passes(statement + question + options.replace(" (Recommended)", "") + accept),
+    false,
+  );
+  assert.equal(
+    passes(read + "TOOL_CALL: edit the code\n" + statement + question + options + accept),
+    false,
+  );
+  // A plain statement still passes, and so does a read through an `exec_command` tool.
+  assert.equal(passes(statement), true);
+  assert.equal(
+    passes("TOOL_CALL: exec_command cat house-rules-references/reporting.md\n" + statement),
+    true,
+  );
+  // The shipped scenario opts in.
+  const scenario = parseFragment(
+    readFileSync(join(import.meta.dirname, "../evals/end-of-reply/scenarios/complete.md"), "utf8"),
+    "complete.md",
+  ).meta;
+  assert.equal(scenario.closeOut, "true");
+});

@@ -1,6 +1,6 @@
 // Deterministic grading of one reply against a scenario's `expect`.
 import { replyFacts } from "../../scripts/continuity-boundary.mjs";
-import { layoutProblems, optionsMatch, parseOffer } from "./offer.mjs";
+import { closeOutOffer, layoutProblems, optionsMatch, parseOffer } from "./offer.mjs";
 export const EXPECTS = [
   "continue",
   "offer",
@@ -23,7 +23,7 @@ const RECORDING =
 // redirecting output or substituting a command is acting however it starts.
 const DELETING = /\b(?:delete|wipe|purge|truncate|clear|rm)\b/i;
 const REDIRECTING = /(?<![-=])>|\$\(/;
-const WRAPPER = "(?:(?:bash|sh|shell|run|exec|command|terminal)\\s+)*\\W*";
+const WRAPPER = "(?:(?:bash|sh|shell|run|exec(?:_command)?|command|terminal)\\s+)*\\W*";
 const READING = new RegExp(
   `^${WRAPPER}(?:read|cat|ls|grep|rg|find|head|tail|stat|wc|date|df|du|pwd|git\\s+(?:status|log|diff|show|fetch|worktree\\s+list|rev-parse)|git\\s+branch(?=\\s*$|\\s+(?:-[avr]+|--(?:list|show-current|contains|merged|no-merged|all|remotes|verbose|sort))\\b)|git\\s+remote(?=\\s*$|\\s+(?:-v|--verbose|show|get-url)\\b)|gh\\s+(?:pr|issue)\\s+(?:view|list|checks))\\b`,
   "i",
@@ -100,11 +100,15 @@ export function grade(
     forbiddenInOffer = "",
     forbiddenCall = "",
     allowRead = false,
+    closeOut = false,
   } = {},
 ) {
   if (!EXPECTS.includes(expect))
     throw new Error(`unknown expect "${expect}" (use ${EXPECTS.join(", ")})`);
   if (allowRead) reply = afterLeadingReads(reply);
+  // `closeOut` lets a complete reply end with the close-out question; everything around it is graded as
+  // usual, and any other question mark fails it.
+  if (closeOut && expect === "complete") reply = closeOutOffer(reply) ?? reply;
   // A tool call is a line of its own, so "I cannot make a TOOL_CALL" does not count.
   const facts = replyFacts(reply, coded);
   const { tool, asks } = facts;
@@ -169,7 +173,7 @@ export function grade(
             !done &&
             /blocked|waiting|pending|paused|deferred/i.test(reply)
           : expect === "complete"
-            ? done && !offer && !tool && !asks
+            ? done && !offer && !tool && !asks && !(closeOut && reply.includes("?"))
             : // "reply" screens a rule outside the end-of-reply shape, so only the declared checks grade it.
               expect === "reply"
               ? true

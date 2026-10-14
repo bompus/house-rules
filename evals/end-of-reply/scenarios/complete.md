@@ -1,6 +1,7 @@
 ---
 expect: complete
 allowRead: true
+closeOut: true
 ---
 
 ## Transcript

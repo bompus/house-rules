@@ -77,12 +77,15 @@ const scenarios = readdirSync(dir)
     }
     if (!["true", "false", undefined].includes(meta.allowRead))
       fail(`${file}: allowRead: must be true or false`);
+    if (!["true", "false", undefined].includes(meta.closeOut))
+      fail(`${file}: closeOut: must be true or false`);
     if (values.screen) removeRule(file, meta.without);
     return {
       file,
       expect: meta.expect,
       body,
       allowRead: values["allow-read"] || meta.allowRead === "true",
+      closeOut: meta.closeOut === "true",
       requiredCall: meta.requiredCall,
       requiredText: meta.requiredText,
       requiredPattern: meta.requiredPattern,
@@ -135,6 +138,7 @@ for (const {
   forbiddenInOffer,
   forbiddenCall,
   allowRead,
+  closeOut,
   without,
 } of scenarios) {
   if (values.screen) arms.find((a) => a.name === "without").text = removeRule(file, without);
@@ -178,6 +182,7 @@ for (const {
         forbiddenInOffer,
         forbiddenCall,
         allowRead,
+        closeOut,
       });
       if (g.behavior) behaviors.set(arm.name, behaviors.get(arm.name) + 1);
       if (g.pass) passed++;

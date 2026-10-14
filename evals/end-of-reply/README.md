@@ -18,7 +18,10 @@ a smoke test; use `--runs 3` before trusting a wording change.
 
 `blocked` and `paused` require a blocker or pause handback without a tool call,
 offer or completion claim. `complete` requires an explicit nothing-remains
-statement. A scenario may declare `requiredCall` or `requiredText` for its exact
+statement; with `closeOut: true` it also accepts the close-out question the rules require when a
+session's work is finished and landed: one question about closing, exactly the options `All done`
+(recommended) and `Pause`, and the reply line, with no other question and nothing else claimed to
+remain. A scenario may declare `requiredCall` or `requiredText` for its exact
 operation or blocker, or `requiredPattern` (a case-insensitive regular
 expression) for wording that may vary, or `forbiddenPattern` for wording that
 must not appear (an action the rules say to skip). A scenario may also declare

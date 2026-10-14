@@ -86,6 +86,32 @@ export function layoutProblems(reply) {
   return problems;
 }
 
+// The close-out question a finished session ends with (rules/core.md § Finishing work): one question
+// about closing, exactly the options `All done` (recommended) and `Pause`, then the line saying how to
+// reply. The options may be list items or plain lines. Returns the reply without that block, so the
+// rest can be graded as a plain completion, or null when the block is missing or has anything else in it.
+const CLOSING_QUESTION = /\b(?:clos\w*|finish\w*|wrap\w*|end)\b/i;
+export function closeOutOffer(reply) {
+  const lines = reply.split("\n");
+  const unmarked = (line) => line.trim().replace(ITEM, "");
+  const q = lines.findIndex((line) => QUESTION.test(line.trim()));
+  if (q < 0 || !CLOSING_QUESTION.test(unmarked(lines[q]))) return null;
+  const accept = lines.findIndex((line, i) => i > q && ACCEPT.test(line.trim()));
+  if (accept < 0) return null;
+  const options = lines.slice(q + 1, accept).filter((line) => line.trim());
+  if (
+    !optionsMatch(
+      options.map((line) => label(unmarked(line))),
+      ["All done", "Pause"],
+    )
+  )
+    return null;
+  if (!/\(Recommended/i.test(options[0])) return null;
+  const rest = [...lines.slice(0, q), ...lines.slice(accept + 1)].join("\n");
+  // Any other question is about something besides closing.
+  return rest.includes("?") ? null : rest;
+}
+
 // `expected` lists the label each option must start with, in order. A label ending in a letter or
 // digit must end there, so "Defer" does not accept "Deferentially publish".
 const WORD = /[\p{L}\p{N}]/u;
