@@ -10,4 +10,4 @@ printf '{"$schema":"https://opencode.ai/config.json","autoupdate":false}\n' > "$
 cd "$eor_work"
 XDG_CONFIG_HOME=$eor_tmp/config nice -n 10 timeout 600 \
   opencode run --standalone -m "${EOR_MODEL:-opencode-go/muse-spark-1.3-contributor}" \
-  "$(cat "$eor_tmp/prompt.txt")" < /dev/null 2> "$eor_tmp/err.txt"
+  "$(cat "$eor_tmp/prompt.txt")" < /dev/null 2> "$eor_tmp/err.txt" || { cat "$eor_tmp/err.txt" >&2; exit 1; }

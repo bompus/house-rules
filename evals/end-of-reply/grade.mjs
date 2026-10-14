@@ -38,13 +38,14 @@ const THEN = `\\bthen\\s+(?=(?:${ACTION})\\b)`;
 // A call that only looks: a read command, or a tool word (`read_file`, `functions.exec`,
 // `skill`, `grep`) that names a lookup, however the agent's harness spells it.
 const LOOKUP = new RegExp(
-  `^${WRAPPER}(?:(?:functions|collaboration)\\.\\w+\\s+)?(?:read(?:_\\w+)?|view|open|skill|search|grep|list|look\\s+up|inspect|check|cat|ls|rg|find|head|tail|stat|wc|date|pwd|git\\s+(?:status|log|diff|show|fetch|worktree\\s+list|rev-parse)|gh\\s+(?:pr|issue)\\s+(?:view|list|checks))\\b`,
+  `^${WRAPPER}(?:(?:functions|collaboration)\\.(?:\\w+\\s+)?)?(?:read(?:_\\w+)?|view(?:_\\w+)?|list(?:_\\w+)?|glob|skill|search|grep(?:_\\w+)?|look\\s+up|inspect|cat|ls|rg|find|head|tail|stat|wc|date|pwd|git\\s+(?:status|log|diff|show|fetch|worktree\\s+list|rev-parse)|gh\\s+(?:pr|issue)\\s+(?:view|list|checks))\\b`,
   "i",
 );
 
-// A call that starts with a lookup but also says it writes or sends is not dropped as a read.
+// A call that starts with a lookup but also says it writes, sends or runs something is not
+// dropped as a read.
 const ALSO_ACTS =
-  /\b(?:send|write|edit|create|record|update|append|save|commit|push|delete|remove|install|notify|relay|merge)\b/i;
+  /\b(?:send|write|edit|create|record|update|append|save|commit|push|delete|remove|install|notify|relay|merge|publish|post|comment|replace|fix|deploy|release|apply|reset|checkout|open|rm|mv|sed|pull request)\b/i;
 
 // With `allowRead`, a reply may open with read-only tool calls (the agent looks before it
 // answers). The reply is then the text after the last call in that leading run; a reply made

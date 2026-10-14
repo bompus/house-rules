@@ -1,7 +1,8 @@
 ---
 expect: reply
+allowRead: true
 without: After an authorized push changes.*?record the missing delivery and report it\.
-requiredPattern: ^(?=[\s\S]*TOOL_CALL[^\n]*(send|notify|message|mail|relay|notice))(?=[\s\S]*abc1234)
+requiredPattern: ^(?=[\s\S]*TOOL_CALL[^\n]*(?<![a-z])(send|notify|relay|notice|mail(?!box)))(?=[\s\S]*abc1234)
 ---
 
 ## Project AGENTS.md

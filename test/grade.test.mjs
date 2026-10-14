@@ -545,6 +545,21 @@ test("allowRead grades the reply after leading read-only calls and nothing else"
       "TOOL_CALL: read the plan and record offer O-1 in the ledger\nOffer text.",
       "TOOL_CALL: read the plan and record offer O-1 in the ledger\nOffer text.",
     ],
+    // A lookup word that is followed by an action is not a read, however it is spelled.
+    [
+      "TOOL_CALL: open a pull request for the fix\nNothing remains.",
+      "TOOL_CALL: open a pull request for the fix\nNothing remains.",
+    ],
+    [
+      "TOOL_CALL: check O-12 and publish the notes\nPublished.",
+      "TOOL_CALL: check O-12 and publish the notes\nPublished.",
+    ],
+    // The tool name may itself be the lookup word, and read-only wrappers like "run" stay reads.
+    ["TOOL_CALL: functions.read_file src/a.ts\nNo, keep them.", "No, keep them."],
+    [
+      "TOOL_CALL: functions.grep foo src\nTOOL_CALL: shell run read-only checks of sizes\nDone.",
+      "Done.",
+    ],
     // A reply of reads only is graded whole, so a continue reply still has its call.
     [lead, lead],
   ];

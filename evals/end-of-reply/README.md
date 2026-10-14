@@ -36,7 +36,7 @@ the ledger, a plan, notes or a handoff (`TOOL_CALL: edit the plan's ledger …`)
 `forbiddenInOffer: <pattern>` rejects a pattern in the offer's questions and
 options but not in the prose around the offer. `allowRead: true` (or `--allow-read` for every scenario) grades the reply after any leading
 read-only tool calls (`read`, `grep`, `git status`, a skill load), for agents that look before they
-answer. Narration before those calls goes with them. A call that also says it writes, records
+answer. Narration before or between those calls goes with them. A call that also says it writes, records
 or sends is not a read, and a reply made only of reads is graded whole. The check reads the
 call's description, like the other call checks. A run's result lists `behavior` (the expectation
 met, including the offer shape the rules ask for: the recommendation marker, the reply line, at
@@ -99,7 +99,8 @@ node evals/end-of-reply/run.mjs --rules <composed.md> --cmd evals/end-of-reply/m
 | `opencode.sh`     | OpenCode     | `opencode-go/muse-spark-1.3-contributor` | private `XDG_CONFIG_HOME`; its login in the data directory still applies                       |
 | `cursor-agent.sh` | Cursor Agent | `grok-4.7-high`                          | private `HOME` with your login directory (`EOR_CURSOR_CONFIG`) symlinked in; workspace in /tmp |
 
-Each call makes a scratch directory under `EOR_TMPDIR` (default `/tmp`), removes it on exit and
+Each call makes a scratch directory under `EOR_TMPDIR` (default `/tmp`; `cursor-agent.sh` always uses
+`/tmp`), removes it on exit and
 never copies a credential; logins are symlinked for the call. `EOR_EFFORT` (default `high`) sets
 reasoning effort for Claude Code and Codex. Set the model name to the one your account offers.
 
@@ -118,8 +119,9 @@ mentions "End of every reply" or "house rules".` The only instruction file shoul
   may still read a file first; use `allowRead` for that.
 - **OpenCode and Cursor Agent take the prompt as an argument** (about 128 KB at most), and
   `opencode run` hangs while stdin is an open pipe, so both get `</dev/null`.
-- **Slow models.** Run scenarios in parallel (`xargs -P`) with one wrapper per process; each call is
-  independent. The full campaign of 18 scenarios, a seven-scenario screen and the modifier screens took 2 to 4 hours per model.
+- **Slow models.** `--scenarios` takes a directory, so to run scenarios in parallel put each in its own
+  directory and start one `run.mjs` per directory (`xargs -P`); every call is independent. The full
+  campaign of 18 scenarios, a seven-scenario screen and the modifier screens took 2 to 4 hours per model.
 
 `scripts/continuity-boundary.mjs` checks an explicit version-1 record with
 `disposition`, `goal`, `result`, `remaining` and boolean `phaseBoundary`.

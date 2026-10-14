@@ -1,7 +1,8 @@
 ---
 expect: reply
-without: Periodic status updates.*?the run's completion\.
-requiredPattern: (5[- ]min|five[- ]minute|every five|\*/5|sleep 300|status update|progress update|periodic)
+allowRead: true
+without: Periodic status updates.*?the final report replaces them\.
+requiredPattern: (5[- ]min|five[- ]minute|every five|\*/5|sleep 300)
 ---
 
 ## Project AGENTS.md

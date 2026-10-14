@@ -1,5 +1,6 @@
 ---
 expect: reply
+allowRead: true
 without: Record a stable offer ID before presenting it\..*?latest open offer\.
 requiredPattern: ^(?:(?!\b1A\b)[\s\S])*\boffer\b[^\n]*(\b[A-Za-z]\w*-\d+\b|\bO\d+\b)
 ---

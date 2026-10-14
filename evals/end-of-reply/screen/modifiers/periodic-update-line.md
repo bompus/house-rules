@@ -1,7 +1,8 @@
 ---
 expect: reply
-without: Periodic status updates.*?the run's completion\.
-requiredPattern: ^(?![\s\S]{361})(?=[\s\S]*(612\s*/\s*1,?840|612 of 1,?840))(?=[\s\S]*(ETA|unmeasured|remaining|left|finish))
+allowRead: true
+without: Periodic status updates.*?the final report replaces them\.
+requiredPattern: ^(?![\s\S]{501})(?=[\s\S]*(612\s*/\s*1,?840|612 of 1,?840|33(\.\d)?\s*%))(?=[\s\S]*(ETA|unmeasured|remaining|left|finish))
 ---
 
 ## Project AGENTS.md

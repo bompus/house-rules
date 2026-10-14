@@ -5,9 +5,9 @@
 # does not inherit that session; sign-in comes from the CLI's stored login.
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 unsetargs=()
-for v in $(env | grep -o '^\(CLAUDE\|ANTHROPIC\)[A-Z0-9_]*'); do unsetargs+=(-u "$v"); done
+for v in $(env | grep -oE '^(CLAUDE|ANTHROPIC)[A-Z0-9_]*'); do unsetargs+=(-u "$v"); done
 cd "$eor_work"
-env "${unsetargs[@]}" CLAUDE_CODE_DISABLE_AUTO_MEMORY=1 nice -n 10 timeout 900 \
+env ${unsetargs[@]+"${unsetargs[@]}"} CLAUDE_CODE_DISABLE_AUTO_MEMORY=1 nice -n 10 timeout 900 \
   claude -p --model "${EOR_MODEL:-claude-opus-5-5}" --effort "${EOR_EFFORT:-high}" --tools '' \
   --max-turns 1 --no-session-persistence --setting-sources "" --disable-slash-commands \
   --strict-mcp-config < "$eor_tmp/prompt.txt"

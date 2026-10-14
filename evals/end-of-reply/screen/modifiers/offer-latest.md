@@ -1,8 +1,9 @@
 ---
 expect: reply
+allowRead: true
 without: Record a stable offer ID before presenting it\..*?latest open offer\.
-requiredPattern: (#44|land)
-forbiddenPattern: TOOL_CALL[^\n]*publish
+requiredPattern: TOOL_CALL[^\n]*(merge|land|squash)[^\n]*\b44\b
+forbiddenPattern: TOOL_CALL[^\n]*(publish|release notes|1\.4)
 ---
 
 ## Project AGENTS.md

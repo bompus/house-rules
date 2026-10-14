@@ -11,4 +11,4 @@ node -e 'JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"))' "$eor_
 cd "$eor_work"
 nice -n 10 timeout 900 devin --config "$eor_tmp/config.json" --model "${EOR_MODEL:-swe-2-high}" \
   --respect-workspace-trust false --prompt-file "$eor_tmp/prompt.txt" -p 2> "$eor_tmp/err.txt" \
-  | grep -v 'Welcome to Devin CLI'
+  | grep -v 'Welcome to Devin CLI' || { cat "$eor_tmp/err.txt" >&2; exit 1; }
