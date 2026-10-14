@@ -120,6 +120,8 @@ param([switch]$PrintRuntime)
     # .NET hashing: the Get-FileHash cmdlet is missing when the utility module is not loaded.
     function Get-Digest([string]$Root) {
       $sha = [System.Security.Cryptography.SHA256]::Create()
+      # FullName is absolute, so cut it at the absolute root even when the path given is relative.
+      $Root = (Resolve-Path -LiteralPath $Root).ProviderPath.TrimEnd('\')
       Get-ChildItem -LiteralPath $Root -Recurse -File -Force | Sort-Object FullName | ForEach-Object {
         $stream = [IO.File]::OpenRead($_.FullName)
         try {
@@ -130,7 +132,7 @@ param([switch]$PrintRuntime)
         $_.FullName.Substring($Root.Length) + ' ' + $hash
       }
     }
-    [bool](Compare-Object @(Get-Digest $A) @(Get-Digest $B))
+    [bool](Compare-Object -CaseSensitive @(Get-Digest $A) @(Get-Digest $B))
   }
 
   # Shows paths under the home directory as ~\... for the instructions.
