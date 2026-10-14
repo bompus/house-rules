@@ -24,6 +24,10 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   composes only `house-rules.json`. The review screen's reproduction command uses `config set`
   with the same runtime, and the installer's closing text points at `compose.mjs setup --config`
   with the real config path.
+- Core rules now ask for closure before a close-out, pause or end of work: what was done, the
+  overall findings with their key numbers, what was learned and what remains, plus a visual of the
+  findings when the work produced measurements, comparisons or decisions and the host can render
+  one. A status line or a list of open ledger items is not closure.
 - **Breaking for configs that list it:** the `swarmail` modifier is removed. It only told an agent
   where to find one coordination product's own instructions, so it was not general guidance. A
   `house-rules.json` that still lists `swarmail` under `modifiers` now fails. `compose.mjs`, the
