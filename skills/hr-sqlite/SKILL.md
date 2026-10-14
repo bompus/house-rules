@@ -152,15 +152,16 @@ different engine, driver or pool, read
 
 23. **With a synchronous driver, run reads on a worker connection.** Node's
     built-in `node:sqlite` runs each statement on the calling thread, so a slow
-    read holds the event loop for its whole duration, and a read on the writer
-    connection also queues behind any open write transaction. Route read-only
-    queries to a separate read-only connection in a worker thread. A text search
-    over 86,163 messages held the loop for a median 165 ms (range 97 to 308) on
-    the writer and 2.5 ms (2 to 4) on the worker, with wall time unchanged (165 and
-    157 ms, 12 runs per arm) (M). Prove the routing with a test that holds the
+    read holds the event loop for its whole duration. Where the application
+    shares one queued connection for reads and writes, a read also waits behind
+    any open write transaction. Route read-only queries to a separate read-only
+    connection in a worker thread. A text search over 86,163 messages held the
+    loop for a median 165 ms (range 97 to 308) on the writer connection and 2.5 ms
+    (2 to 4) on the worker, with no clear change in wall time (165 and 157 ms; 12
+    runs per arm, 2 ms probe) (M). Prove the routing with a test that holds the
     writer inside an open transaction and checks the read still completes. Record
-    the longest event-loop stall, not only the query time; see
-    [the JavaScript measurement reference](../hr-benchmarking/references/javascript.md).
+    the longest event-loop stall, not only the query time; `hr-benchmarking`'s
+    JavaScript reference covers the probe.
 
 ## What to leave out of a record
 

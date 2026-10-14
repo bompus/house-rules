@@ -54,8 +54,9 @@ workload and host, not a benchmark.
   records the largest gap between ticks while the call runs, after letting the
   loop settle first. Report it beside wall time. They differ: a snapshot read took
   79 ms of wall time and held the loop for 12.6 ms because the runtime yielded
-  between steps (M). `perf_hooks.monitorEventLoopDelay` read a floor of about 1 ms
-  in these harnesses, so use it for coarse trends, not for claims of a few ms.
+  between steps (M). `perf_hooks.monitorEventLoopDelay` has a resolution of at
+  least 1 ms, so use it for coarse trends, not for claims of a few ms. State the
+  probe interval beside any figure near it.
 - **Time the real function, not a copy.** A copied string-appending coalescer
   looked quadratic; the real one showed equal CPU and equal longest stall within
   noise, because V8 joins repeated concatenation lazily (M). A replica that leaves
@@ -78,12 +79,12 @@ workload and host, not a benchmark.
   the main connection or thread busy (an open transaction blocked on a latch) and
   assert the moved work still completes. A speed measurement alone cannot show
   where the work ran. Moving one read off the loop took the longest stall from a
-  median 165 ms to 2.5 ms over 12 runs per arm, with wall time unchanged (M).
+  median 165 ms to 2.5 ms over 12 runs per arm, with no clear change in wall time, measured with a 2 ms probe (M).
 - **Measure retention with forced garbage collection.** Run N synthetic sessions
   or turns, force a collection, and compare heap deltas with the suspect field
-  kept and dropped, keeping the owner reachable to the end. Keeping only the two
-  fields that were read took 61.45 MiB to 2.10 MiB over 30 sessions of 10 turns of
-  200 KiB (M).
+  kept and dropped, keeping the owner reachable to the end. One researcher's run, not
+  repeated, kept only the two fields that were read and went from 61.45 MiB to
+  2.10 MiB over 30 sessions of 10 turns of 200 KiB.
 - **Time startup on the built artifact, interleaved.** Alternate arms over at
   least 10 runs on one build. An environment variable can stand in for an API
   call, but note what it changes (it also reaches child processes). A V8 compile
