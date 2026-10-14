@@ -575,6 +575,13 @@ test("allowRead grades the reply after leading read-only calls and nothing else"
       "TOOL_CALL: read a.ts\nNo, keep them.\nTOOL_CALL: read b.ts",
       "No, keep them.\nTOOL_CALL: read b.ts",
     ],
+    // A command in backticks and a mutating `git remote` form are not reads.
+    ["TOOL_CALL: cat `rm -rf staging`\nDone.", "TOOL_CALL: cat `rm -rf staging`\nDone."],
+    [
+      "TOOL_CALL: git remote -v add origin url\nDone.",
+      "TOOL_CALL: git remote -v add origin url\nDone.",
+    ],
+    ["TOOL_CALL: git remote -v\nDone.", "Done."],
     // A reply of reads only is graded whole, so a continue reply still has its call.
     [lead, lead],
   ];
