@@ -582,6 +582,8 @@ test("allowRead grades the reply after leading read-only calls and nothing else"
       "TOOL_CALL: git remote -v add origin url\nDone.",
     ],
     ["TOOL_CALL: git remote -v\nDone.", "Done."],
+    ['TOOL_CALL: cat "`rm -rf staging`"\nDone.', 'TOOL_CALL: cat "`rm -rf staging`"\nDone.'],
+    ["TOOL_CALL: shell run `git status --short --branch`\nDone.", "Done."],
     // A reply of reads only is graded whole, so a continue reply still has its call.
     [lead, lead],
   ];

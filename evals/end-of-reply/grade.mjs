@@ -46,16 +46,19 @@ const LOOKUP = new RegExp(
 // dropped as a read. The leading wrapper (`shell run ...`) and file-path words (`save-lessons.md`)
 // are not actions.
 const WRAPPER_LEAD = new RegExp(`^${WRAPPER}`, "i");
-const actsAlso = (call) =>
-  ALSO_ACTS.test(
-    call
-      .replace(/^TOOL_CALL:?\s*/i, "")
-      .replace(WRAPPER_LEAD, "")
-      .replace(/"[^"]*"|(?<!\w)'[^']*'(?!\w)/g, "")
-      .split(/\s+/)
-      .filter((word) => !/[/\\]|\.\w{1,5}$/.test(word))
-      .join(" "),
+// Backticks run even inside double quotes, so their contents are checked on their own.
+const withoutPaths = (text) =>
+  text
+    .split(/\s+/)
+    .filter((word) => !/[/\\]|\.\w{1,5}$/.test(word))
+    .join(" ");
+const actsAlso = (call) => {
+  const body = call.replace(/^TOOL_CALL:?\s*/i, "").replace(WRAPPER_LEAD, "");
+  const unquoted = body.replace(/"[^"]*"|(?<!\w)'[^']*'(?!\w)/g, "");
+  return [unquoted, ...(body.match(/`[^`]*`/g) ?? [])].some((text) =>
+    ALSO_ACTS.test(withoutPaths(text)),
   );
+};
 const ALSO_ACTS =
   /\b(?:send|write|edit|create|record|update|append|save|commit|push|delete|remove|install|notify|relay|merge|publish|post|comment|replace|fix|run|deploy|release|apply|reset|checkout|open|rm|mv|sed|pull request)\b/i;
 
