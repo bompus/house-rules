@@ -16,12 +16,12 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 - **Breaking for configs that list it:** the `hr-change-impact` skill is removed; `hr-code-review`
   covers its method. A config that lists `hr-change-impact` in `skills.include` now fails
   composition with "unknown shipped skill". Replace it with `hr-code-review`.
-- Upgrade note: text that only matters with several parallel sessions or coded offers left the
-  core rules. The cross-session relay paragraph and the notice after an authorized push that
-  changes guidance or tooling are now in the opt-in `cross-session-relay` modifier (it declares
-  `hr-agent-guidance-refresh`); if you enable `multi-agent` and want those two paragraphs, enable
-  `cross-session-relay` as well. The sentence about offer IDs and `go`/`continue` is in
-  `coded-offers`. The `shared-host-load` modifier keeps its name and position, so existing configs
+- Upgrade note: text that only matters with several parallel sessions or coded offers (numbered
+  questions with options like 1A, 1B) left the core rules. The cross-session relay paragraph and
+  the notice after an authorized push that changes guidance or tooling were always on in 0.11.0.
+  They are now in the opt-in `cross-session-relay` modifier (it declares
+  `hr-agent-guidance-refresh`); enable it if you want them back. The sentence about offer IDs and
+  `go`/`continue` is in `coded-offers`. The `shared-host-load` modifier keeps its name and position, so existing configs
   still resolve, but its exclusive-slot and reservation text is gone.
 - New skills:
   - `hr-sqlite` is a checklist for code that opens, configures, queries or copies a SQLite
@@ -30,7 +30,7 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
     read-only script (`scripts/inspect-sqlite.py`) reports a file's journal mode, statistics, FTS
     tables, WAL size and mount options, and with `--source` scans source text for each
     `journal_mode` mention with no earlier `busy_timeout` in the same file; it does not establish
-    run order.
+    run order. One item covers running reads on a worker connection with a synchronous driver.
   - `hr-usage-report` measures where Claude Code, Codex and OpenCode usage went by provider, model
     and role at list prices, and renders model comparisons as self-contained HTML charts and
     verdict tables (it runs with Bun). For Claude Code it keeps the transcript line with the most
@@ -88,37 +88,38 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   a finding.
 - Core rules:
   - They are about 5% smaller by size when composed with every optional rule off (26,324 to 24,912
-    bytes against 0.11.0, measured with `--out`), in more direct wording with the same
+    bytes against 0.11.0, measured with `--out`), in more direct wording. The cross-session relay
+    text and the offer-ID sentence moved out (see the upgrade note), and the entries below add
     requirements.
-  - Before a close-out, pause or end of work, the agent gives closure: what was done, the overall
+  - Before a close-out (ending the session), pause or end of work, the agent gives closure: what was done, the overall
     findings with their key numbers, what was learned and what remains. It adds a visual of the
     findings when the work produced measurements, comparisons or decisions and the host can
     render one.
   - Session purpose: the session states its purpose in one sentence. Anything else it finds is
-    parked as one deferred ledger line instead of being investigated. The agent mentions it once
-    after the answer and keeps it out of offers until the user asks for the backlog or the
-    purpose is finished. The `plan-files` rule adds a `Purpose:` header line.
+    parked (noted, not investigated) as one deferred line in the ledger, the list of open items in
+    the session's plan file. The agent mentions it once after the answer and keeps it out of offers
+    until the user asks for the backlog or the purpose is finished. The `plan-files` rule adds a `Purpose:` header line.
   - Offers recommend the option that finishes the work properly and holds up over time, not the
     quickest one. Dependent steps are separate options labeled "(Recommended, phase 1)" and
     "(Recommended, phase 2)", and a required step is never an optional alternative. An option that
     produces a change names what it changes and the steps it includes; one that creates a rule,
     skill, document or script also names the owning repository and what was searched. With three
     or more offers open and unanswered, a new decision is queued in an `hr-what-next` walk-through.
-    With `coded-offers`, each option is a list item of a line or two, the acceptance line keeps its
-    exact form with nothing after it, `go` covers phase 1 only, and an offer visual is made only
+    With `coded-offers`, each option is a list item of a line or two, nothing may follow the
+    acceptance line, and an offer visual is made only
     when the user asks and the host can render one.
   - Finishing work and the ledger: before asking the user to do something, the agent checks the
     actual state and does what it can itself. A no is dropped, as are options the user passes over;
     only work the user wants done later is deferred. A session that has finished and landed its own
     work ends with a close-out question that recommends `All done`. Work filed upstream or handed
-    to another owner closes as moved, with the owner and link. Rebuilding a ledger from an earlier
-    plan carries every open or deferred line over; `hr-handoff`'s reconciliation checker rejects an
-    open line carried only as context, and an item that absorbs several open lines without saying
-    why.
+    to another owner closes as moved, with the owner and link. The `plan-files` rule adds that
+    rebuilding a ledger from an earlier plan carries every open or deferred line over;
+    `hr-handoff`'s reconciliation checker rejects an open line carried only as context, and an item
+    that absorbs several open lines without saying why.
   - Reporting explains why the answer must come after the last tool call (some hosts hide earlier
-    text behind a summary row). It says to finish bookkeeping first and to repeat the whole answer
-    if a tool call must follow, and it names the host clock zone as part of the session
-    environment. The always-on Writing rule asks for plain language in every reply, naming a thing
+    text behind a collapsed summary line). It says to finish bookkeeping first and to repeat the
+    whole answer if a tool call must follow, and it points to the host clock (`date +%Z`) as a
+    source for the user's local timezone. The always-on Writing rule asks for plain language in every reply, naming a thing
     by what it is, not by a label the agent coined (`hr-plain-prose` has the procedure).
   - The `multi-agent` modifier treats each review finding as a claim. A reproduced failure or a
     cited requirement confirms it and it gets fixed; otherwise the agent answers with the reason.
@@ -129,25 +130,28 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
     capture is checked for private paths and credentials. Attach with `gh ... --attach` where your
     `gh` version supports it; otherwise use a browser signed in to the user's GitHub account. The
     bug-reporting reference says to submit a YAML issue form through that form in the browser.
-  - Landing and review. The agent leaves alone a checkout another session or job uses, and
-    updates a default branch checked out elsewhere with `git merge --ff-only` to the fetched head.
-    It lets an enabled automatic review begin instead of requesting one, and merges only after an
-    existing review check reports completion. The `low-quota-handoff` modifier says five-hour limits do not trigger a handoff and
-    a usage reading must never cost model turns or read credentials.
+  - Landing and review. The agent also leaves alone a checkout whose use it cannot tell (0.11.0
+    covered only another session's checkout), and updates a default branch checked out elsewhere
+    with `git merge --ff-only` to the fetched head. The `squash-landing` modifier lets an enabled
+    automatic review begin instead of requesting one, and merges only after an existing review
+    check reports completion. The `low-quota-handoff` modifier says five-hour limits do not
+    trigger a handoff and a usage reading must never cost model turns or read credentials.
   - `no-attribution` and `hr-writing-pr` give agent or model disclosure exactly as a repository's
     contribution guidelines ask, where they ask for it, and nothing else.
-  - Composing rules inline (without `--out`) no longer drops three core rules. Landing and
-    Reporting are replaced by their reference text in that mode, and the references lacked the
+  - Composing rules inline (without `--out`) no longer drops three core rules. Sections that point to a
+    reference (Landing and Reporting among them) are replaced by the reference text in that mode,
+    and the Landing and Reporting references lacked the
     leave-alone-a-checkout rule, the five-items-per-list line and the benefit-column paragraph.
     They now carry them.
-  - Wording written for one setup, or that read as jargon, was rewritten for any user with each
-    rule's meaning unchanged ("decision" for "disposition"; the `## Ledger` section and `trigger:`
-    markers that scripts read are unchanged), and the core rules no longer name one host's version
-    or command. `hr-read-reddit` states that Reddit's RSS support ends November 13, 2026.
+  - Wording written for one setup, or that read as jargon, was rewritten for any user with the
+    requirements unchanged except where noted above ("decision" for "disposition"; the
+    `## Ledger` section and `trigger:` markers that scripts read are unchanged), and the core rules
+    no longer name one host's version or command. The `hr-read-reddit` description now states that
+    Reddit's RSS support ends November 13, 2026 and that output can omit comments.
 - Release procedure: before the first publish step of any version bump (tag, package publish,
   GitHub release or announcement), two audits run and their corrections land first. The changelog
   audit covers every repository: each pending entry is checked against the code that will ship,
-  iterations of one concern merge, and entries a user must act on stay whole. The public-materials
+  iterations of one concern merge, and entries a user must act on stay whole. The factual accuracy
   audit covers every public repository: READMEs, graphics with their alt text, listing text,
   documentation, release notes and the announcement are checked for old versions and figures.
   `rules/references/release-batching.md` holds both, and the `release-batching` modifier points to
@@ -157,7 +161,8 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
     when the repository cannot be downloaded, and no longer names a partial skills directory that
     does not exist. A re-run whose composed skills match the installed ones says "The skills are
     unchanged" and keeps no extra `composed-skills.previous-<date>` directory. Status lines use `~`
-    like the closing text. `install.ps1` gets the same changes.
+    like the closing text. `install.ps1` gets the same changes except the unknown-option check, which only `install.sh`
+    has.
   - An invalid or empty config names the file in the error, and an unknown modifier says to remove
     it from `modifiers` (`config set --disable-modifier <name>` for a stored one). The compose
     summary reads "composed N lines of rules from N optional or personal rule file(s)".
@@ -173,13 +178,14 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   timing, configuration or pinned dependency behavior. `references/reviewer-role.md` is a
   host-neutral brief for a standing reviewer or a read-only review sub-agent (`PASS` or
   `BLOCK: N`, findings by severity, verification limits reported separately).
-  - It can also set up, plan and adjudicate a review panel. `references/panel-setup.md` asks only
+  - It can also set up, plan and adjudicate a review panel (several independent model reviewers; a
+    seat is one reviewer). `references/panel-setup.md` asks only
     open questions and saves portable preferences after confirmation, stored in the config's
     `panel` object (`config set --panel-file`).
   - `scripts/panel-plan.mjs` resolves preferences and a bindings file into the seats a panel would
     run before any model is called. Project and task layers can only tighten the user's policy,
     and `meteredRoutes: included-only` rejects a metered route.
-  - `scripts/acp-panel-client.mjs` is an ACP stdio client for panel seats
+  - `scripts/acp-panel-client.mjs` is an Agent Client Protocol (ACP) client over stdio for panel seats
     (`references/acp-client.md`). `references/panel-adjudication.md` says which claims count as
     corroborated, and `scripts/check-receipts.mjs` checks the `path:line` citations in a panel's
     logs.
@@ -188,27 +194,26 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 - `hr-handoff` covers what the host binds to the thread being handed off. Scheduled tasks, linked
   pull requests and watches, and any agent-mail or messaging registration are each moved or
   recorded as staying. The skill names the receiver's exact call where only the receiver can bind
-  an item, and reads each move back.
+  an item, and reads each move back (for a handoff that is not a low-quota stop).
 - `hr-benchmarking` adds three method points: attribute time to a suspected component in the real
-  workload and time the change inside that workload, run an A/A arm when the workload's variation
-  is unknown, and check agent or model comparisons for a ceiling. Machine-specific procedures
-  (the benchmark lock, fenced-core and nice-value records) left the skill, and
+  workload and time the change inside that workload, run an A/A arm (the same variant twice) when the workload's variation
+  is unknown, and check agent or model comparisons for a ceiling. Procedures for one machine
+  (taking a benchmark lock and fencing CPU cores for a run) left the skill, and
   `references/priority-findings-20261006.md` is deleted. The JavaScript reference lists five
   verified Bun-versus-Node traps and now covers server code. It says to measure the longest
   event-loop stall next to wall time, time the real function, count events and bytes when volume
   is the cost, prove moved work with a test that holds the main connection busy, and treat another
-  researcher's numbers as leads. `hr-sqlite` adds a checklist item for running reads on a worker connection with a
-  synchronous driver.
+  researcher's numbers as leads.
 - `hr-agent-guidance-refresh` is trimmed to what holds on any host: it rereads changed instructions,
   skills, subagent definitions, configuration and the tools it relies on, holds the update while an
   evaluation fixes its context, and treats a reread as no proof that injected context changed. Its
-  name, path and `references/verification.md` are unchanged. `shared-host-load` follows the host's
+  name and path are unchanged. `shared-host-load` follows the host's
   declared budgets and checks load before resource-intensive work.
 - `hr-pr-followup` ships three landing helpers under `scripts/`. `merge-pr.sh` (needs Bun)
   squash-merges a pull request and deletes only its remote head. `verify-landed.sh` checks that
   the default branch contains the commit and fast-forwards a clean default checkout.
   `check-landing.py` reports by content whether a checkout's work landed and lists processes still
-  using it. A repository that lands by fast-forward push is named in `HR_PUSH_LANDED`.
+  using it. A repository that lands by fast-forward push is named in the `HR_PUSH_LANDED` environment variable.
 - `hr-writing-pr` leads with the measured benefit. The first sentence gives the figure and
   workload (for a bug, who hit it and what now works), and a qualified result gets a headline
   chart from `scripts/benefit-chart.py`. The script needs matplotlib, draws a dark PNG and prints
@@ -223,8 +228,8 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   guidance. `hr-maintainability-review` also handles whole-repository over-engineering audits.
   `hr-design-exploration` has a single-component mode (three variants on one design axis).
   `hr-lean-plan` leaves out steps added only in case something goes wrong.
-- Repository only (not in the npm package): the end-of-reply eval and `evals/skill-fires/` were
-  extended to screen other agents and the optional rules; see their READMEs.
+- Repository only (not in the npm package): the end-of-reply eval was extended to screen
+  other agents and the optional rules, and `evals/skill-fires/` is new; see their READMEs.
 
 ## 0.11.0 - 2026-10-09
 
