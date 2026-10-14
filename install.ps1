@@ -121,7 +121,12 @@ param([switch]$PrintRuntime)
     function Get-Digest([string]$Root) {
       $sha = [System.Security.Cryptography.SHA256]::Create()
       Get-ChildItem -LiteralPath $Root -Recurse -File -Force | Sort-Object FullName | ForEach-Object {
-        $hash = [BitConverter]::ToString($sha.ComputeHash([IO.File]::ReadAllBytes($_.FullName)))
+        $stream = [IO.File]::OpenRead($_.FullName)
+        try {
+          $hash = [BitConverter]::ToString($sha.ComputeHash($stream))
+        } finally {
+          $stream.Dispose()
+        }
         $_.FullName.Substring($Root.Length) + ' ' + $hash
       }
     }

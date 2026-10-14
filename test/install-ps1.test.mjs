@@ -211,9 +211,20 @@ for (const shell of shells) {
       assert.ok(readdirSync(join(config, "composed-skills")).length > 0);
 
       // A run that produces the same skills keeps the installed ones and adds no backup.
+      const snapshot = (dir) =>
+        readdirSync(dir, { recursive: true, withFileTypes: true })
+          .filter((entry) => entry.isFile())
+          .map((entry) => {
+            const file = join(entry.parentPath, entry.name);
+            return [file, readFileSync(file, "utf8")];
+          })
+          .sort(([a], [b]) => (a < b ? -1 : 1));
+      const installed = snapshot(join(config, "composed-skills"));
+      assert.ok(installed.length > 0);
       const third = run(shell, home, [], [], env);
       assert.equal(third.status, 0, third.stderr);
       assert.match(third.stdout, /The skills are unchanged/);
+      assert.deepEqual(snapshot(join(config, "composed-skills")), installed);
       assert.equal(
         readFileSync(join(config, "house-rules-references", "manifest.json"), "utf8"),
         referenceManifest,
