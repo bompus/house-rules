@@ -190,9 +190,10 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
     open questions and saves portable preferences after confirmation, stored in the config's
     `panel` object (`config set --panel-file`).
   - `scripts/panel-plan.mjs` resolves preferences and a bindings file (which gives each model alias
-    in your preferences its launch settings, model family and whether it is pay-per-use) into the
-    seats a panel would run before any model is called. Project and task layers can only tighten the
-    user's policy, and `meteredRoutes: included-only` rejects a pay-per-use route.
+    in your preferences its launch settings and, optionally, its model family and whether it is
+    pay-per-use) into the seats a panel would run before any model is called. Project and task
+    layers can only tighten the user's policy, and `meteredRoutes: included-only` rejects a
+    pay-per-use route.
   - `scripts/acp-panel-client.mjs` is an Agent Client Protocol (ACP) client over stdio for panel
     seats (`references/acp-client.md`). `references/panel-adjudication.md` says which claims count
     as corroborated, and `scripts/check-receipts.mjs` checks the `path:line` citations in a panel's
