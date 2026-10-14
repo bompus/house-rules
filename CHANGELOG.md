@@ -38,8 +38,8 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   only, and the interactive screen calls modifiers "optional rules". The modifier keeps the rest of
   Offers (recommendation, scope of each option, phases, the three-open-offer limit) and cannot be
   combined with `coded-offers` or `question-cards`.
-- Core rules are about a fifth shorter, in more direct and positive wording, with the same
-  requirements. Text that only makes sense with parallel sessions or coded offers left them: the
+- Core rules are about 7% shorter than in 0.11.0 (composed with every
+  optional rule off), in more direct and positive wording, with the same requirements. Text that only makes sense with parallel sessions or coded offers left them: the
   cross-session relay paragraph and the notice after an authorized push that changes guidance or
   tooling are in the opt-in `cross-session-relay` modifier, which declares
   `hr-agent-guidance-refresh`, so anyone with `multi-agent` enabled who wants those two paragraphs
@@ -186,8 +186,8 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   are unchanged. The `shared-host-load` modifier follows the host's declared budgets and checks load
   before resource-intensive work, gets operator direction before parallel workers or
   whole-repository commands when there is no budget, and constrains memory-hungry work. Its name and
-  position are unchanged, so existing configurations still resolve, but its exclusive-slot,
-  reservation and light-work-allowance text is gone.
+  position are unchanged, so existing configurations still resolve, but its exclusive-slot and
+  reservation text is gone, and bounded reads and edits may still continue without a budget.
 - `hr-benchmarking` keeps the portable method: defining and confirming the comparison, isolation and
   normal scheduling with the effective priority recorded, screening, repetition against a variation
   criterion, saved evidence, memory measurement, and reporting with the 3% band. Three method points

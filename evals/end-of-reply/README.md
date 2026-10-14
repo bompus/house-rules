@@ -149,7 +149,7 @@ without `--coded`, and only the rules arm sets the exit status.
 ## Results with `--baseline`
 
 A historical result, not a measurement of the current rules: `rules/core.md`
-was condensed after it (about 19% shorter) and the scenario set has grown since.
+was condensed after it (about 13% shorter by `394d382`) and the scenario set has grown since.
 Run on 2026-10-11 against `efd4d7b`, composed from the fresh-install
 configuration, with Claude Code 2.1.296 at high effort: all 18 scenarios, two
 runs per scenario and arm, text only (`--max-turns 1`, no tools). The replies
