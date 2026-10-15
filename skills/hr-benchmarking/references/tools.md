@@ -123,8 +123,10 @@ import error. Check that the expected threads and stacks appear.
 
 The npm CLI opens the default browser with `speedscope <profile>`. When using a
 controlled browser, serve its packaged `dist/release/` directory and the profile
-over loopback HTTP, then open `index.html#profileURL=<profile-url>`. Choose a free
-port and keep private captures on the local host. Follow the host's browser rules.
+over loopback HTTP, then open `index.html#profileURL=<URL-encoded-profile-url>`.
+Use `encodeURIComponent(profileUrl)` for the value so query parameters remain
+part of the profile URL. Choose a free port and keep private captures on the
+local host. Follow the host's browser rules.
 
 ### Allocation and waiting-time limits
 
