@@ -5,7 +5,7 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 ## Unreleased
 
 - `hr-benchmarking` no longer has a 3% default band for "no clear change". There is no minimum gain
-  size: a difference counts as a gain when it is outside the variation criterion declared before
+  size: a favorable difference counts as a gain when it is outside the variation criterion declared before
   the first run (the comparison's own run-to-run spread) and the outputs are identical. When the
   criterion cannot support a percentage, the result is kept separate and unsupported differences are
   labeled inconclusive. A gap inside the criterion is still "no clear change", and memory and CPU

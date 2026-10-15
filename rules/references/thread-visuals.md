@@ -4,7 +4,7 @@ Use an image, chart or diagram only to show a spatial interface state, compare
 before and after, show a trend across multiple measurements, or explain a flow
 with branches. Otherwise use text, a table or a short code block. Most comments
 are text. The exception is a qualified measured result. It lies outside its declared
-variation criterion. An
+variation criterion and the outputs are identical. An
 issue, discussion or pull request that reports one opens with a headline chart
 of it, so a reader sees the benefit before reading the body. A result with
 one row that moved by less than 10% stays text and a table.

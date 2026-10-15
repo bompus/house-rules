@@ -91,13 +91,16 @@ outcomes visible; collapse long commands or supporting detail when useful.
 Required scope or approval sections stay, with only the justification and links
 the reviewer needs.
 
-A qualified measured change outside the declared variation criterion gets a
+A qualified measured change outside the declared variation criterion, with
+identical outputs, gets a
 headline chart directly under the opening sentence, beside the exact result
 table. Render it with `scripts/benefit-chart.py` in this skill's directory. It reads
 a JSON spec and writes a dark PNG with labeled units, zero-based bars and a
 benefit badge per row. Skip the chart only when every row is no clear change,
-or the one row moved by less than 10%. Set the spec's top-level `band` (required) to the declared variation
-criterion as a fraction of the baseline, and name it beside the chart.
+or the one row moved by less than 10%. Set the spec's top-level `band`
+(required) to the declared variation criterion as a fraction of the baseline,
+and name it beside the chart. If the criterion cannot be a fraction of the
+baseline, skip the chart and label the result inconclusive.
 
 Show the workload and material limits beside it; a synthetic benchmark is not a
 production or UI speedup. Preview a chart in a different style with the user

@@ -149,7 +149,7 @@ measured workload; batch compatible probes when they dominate elapsed time.
 Report the selected repetition count or stopping rule, variation statistic and
 threshold, sample count, median and range. Always give the run count and the
 range with any central value, never a bare average. Apply the preset
-criterion and treat a gap within run-to-run variation as inconclusive. Profile
+criterion and report a gap within run-to-run variation as no clear change. Profile
 separately from the runs used to claim a speed difference.
 
 When using saved evidence for a performance claim, bind archived inputs, source,
@@ -203,13 +203,13 @@ percent change or a times improvement. Use the metric's direction and label
 worsening, unchanged or inconclusive results. With a zero or missing baseline,
 show an absolute change or state that the benefit cannot be calculated.
 
-There is no minimum gain size. A difference counts as a gain when it lies
-outside the variation criterion declared before the first run (the comparison's
+There is no minimum gain size. A favorable difference counts as a gain when it
+lies outside the variation criterion declared before the first run (the comparison's
 own run-to-run spread, from its A/A arm or already-known variation, as a
 percentage of the baseline) and the outputs are identical. Report a gap inside
 that criterion as no clear change, and name the statistic and threshold beside
-it. Report memory and CPU costs beside the gain.
-If the variation criterion cannot support a percentage, keep its result
+it. An unfavorable difference outside it is a regression; label it worsening.
+Report memory and CPU costs beside the gain. If the variation criterion cannot support a percentage, keep its result
 separate and label unsupported differences inconclusive. Changing presentation
 does not change frozen acceptance or rejection gates.
 
