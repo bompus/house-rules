@@ -124,8 +124,9 @@ when the scope changes.
 The default stopping rule for a performance claim is 3 runs per arm. Add 2 more
 per arm only when the arms' ranges overlap or the effect is near the noise,
 meaning the gap is within the variation criterion set below. 5 per arm is the
-cap. If 5 leave the comparison unresolved, report it as
-inconclusive rather than adding runs. Declare any other count before the first
+cap. If 5 runs per arm leave the comparison unresolved, report it as
+inconclusive rather than adding runs. Use another count only when the user asks
+for it or a run is too long to repeat 3 times, and declare it before the first
 run, with the reason. Alternate the arms in every run so drift reaches each arm.
 
 For a performance claim, assess run-to-run variation from those alternating runs.
