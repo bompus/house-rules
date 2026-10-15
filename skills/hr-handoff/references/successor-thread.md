@@ -71,6 +71,6 @@ registry row, the project and the thread id.
 - Mark the outgoing thread settled and record a pointer to the successor where
   the host keeps such notes. Do this last, after the successor confirms it has
   read the handoff.
-- The successor starts by reading the handoff in full, re-pointing each item it
-  can bind with a read-back and recording the result in the receipt, including
-  the items that stay behind, before taking new work.
+- The successor starts by reading the handoff in full. It re-points each item
+  it can bind, with a read-back, and records every result in the receipt,
+  including the items that stay behind. Only then does it take new work.
