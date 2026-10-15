@@ -4,6 +4,11 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- `hr-benchmarking` adds local profile viewing with speedscope, native/JavaScript CPU
+  attribution, the `perf report --no-inline` workaround, heaptrack overhead and
+  off-CPU tracing limits. Its oha guidance names `--latency-correction` and the
+  required `-q` rate limit.
+
 - `hr-handoff` gains a reference for handing work to a successor thread. A successor keeps the base
   title and ends it with ` v<N>`; the first thread counts as `v1` and is renamed at the handoff, and
   threads are found by registry row, project and thread id, never by title. A session is replaced

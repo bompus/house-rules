@@ -10,7 +10,7 @@ relying on flags or interpreting output.
 | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Whole CLI commands                 | [Hyperfine](https://github.com/sharkdp/hyperfine): repeated runs with wall time, CPU time and peak memory, warmup/preparation and JSON output.         | Works across Linux, macOS and Windows. Declare warm/cold conditions. Since 2.0 commands run without a shell unless `-S` or `--shell` is given; 1.x needs `-N` for that. Peak memory and `--metrics` hardware counters are measured on Linux and macOS only; on Windows use another tool for memory. Check `schema_version` before reading exported JSON; 2.0 changed its layout. |
 | JavaScript operations              | [Tinybench](https://github.com/tinylibs/tinybench), directly or through the project's benchmark runner: warmup and task latency/throughput statistics. | The unit is a task invocation. For 1,000-operation batches, batch p99 divided by 1,000 is the p99 of batch-average costs, not mean operation cost or individual-operation p99.                                                                                                                                                                                                   |
-| HTTP load, including JS/TS servers | [oha](https://github.com/hatoo/oha): a native load generator with concurrency/rate controls, latency distributions and JSON output.                    | Declare protocol, connections, rate, deadlines, keepalive and error handling. Check generator CPU/network limits. Latency correction requires rate limiting with `-q`.                                                                                                                                                                                                           |
+| HTTP load, including JS/TS servers | [oha](https://github.com/hatoo/oha): a native load generator with concurrency/rate controls, latency distributions and JSON output.                    | Declare protocol, connections, rate, deadlines, keepalive and error handling. Check generator CPU/network limits. For fixed-rate load, `--latency-correction` corrects coordinated omission; it is ignored unless `-q` is set.                                                                                                                                                   |
 | Command CPU and memory             | [GNU time](https://www.gnu.org/software/time/manual/time.html), commonly `/usr/bin/time -v`: wall time, CPU and maximum RSS.                           | GNU options differ from shell `time` and BSD/macOS tools. RSS is a lifetime high-water mark for the observed process; it does not isolate retained cache memory.                                                                                                                                                                                                                 |
 | Host or process contention         | Linux [mpstat/pidstat](https://github.com/sysstat/sysstat): processor utilization and process CPU, memory and I/O observations.                        | Sampling can miss short bursts; some counters need kernel support. These explain interference, not application latency.                                                                                                                                                                                                                                                          |
 
@@ -98,6 +98,47 @@ Use a separate diagnostic run; instrumentation changes the work it observes.
 | Where does native/kernel CPU work go?       | Linux [perf stat](https://github.com/torvalds/linux/blob/master/tools/perf/Documentation/perf-stat.txt) and [perf record](https://github.com/torvalds/linux/blob/master/tools/perf/Documentation/perf-record.txt): counters, samples and call graphs. | Permissions, hardware/kernel support, symbols and stack unwinding affect evidence. Frame-pointer unwinding needs compatible binaries.     |
 | Which system calls fail or wait?            | Linux [strace](https://github.com/strace/strace/blob/master/doc/strace.1.in): syscall results, errors and ordering.                                                                                                                                   | Interception changes execution; summaries are not ordinary throughput. Traces may contain sensitive paths or payloads.                    |
 | Which native allocations churn?             | Linux [heaptrack](https://github.com/KDE/heaptrack): allocation counts, temporary allocations and allocation stacks.                                                                                                                                  | Symbols improve attribution. Pool allocators need annotations; native allocation traces do not identify individual GC-managed JS objects. |
+
+### Native and JavaScript CPU profiles
+
+Keep native symbols in the diagnostic build. For a Rust release build, use
+`CARGO_PROFILE_RELEASE_DEBUG=line-tables-only CARGO_PROFILE_RELEASE_STRIP=none`.
+For Node JIT frames under `perf`, add `--perf-basic-prof`. A runtime CPU profile
+may attribute a native addon's work to its JavaScript caller; use native samples
+to see inside that call. Node `--cpu-prof` writes separate files for worker threads;
+retain them alongside the main-thread profile.
+
+If `perf report` stalls while expanding a large binary's inline frames, try
+`perf report --stdio --no-inline`. This omits inline-call expansion, so record
+that limit when attributing samples.
+
+### Viewing profiles
+
+[speedscope](https://github.com/jlfwong/speedscope) opens profiles locally as
+interactive flame graphs, including Node CPU profiles and Linux `perf` captures.
+It has been used to inspect JavaScript and native stacks across worker threads.
+To import a `perf` capture, write `perf script > profile.perf` without a custom
+`-F` field list; a partially recognized format can display one stack without an
+import error. Check that the expected threads and stacks appear.
+
+The npm CLI opens the default browser with `speedscope <profile>`. When using a
+controlled browser, serve its packaged `dist/release/` directory and the profile
+over loopback HTTP, then open `index.html#profileURL=<profile-url>`. Choose a free
+port and keep private captures on the local host. Follow the host's browser rules.
+
+### Allocation and waiting-time limits
+
+`heaptrack` unwinds a stack on each native allocation. Start with a small input:
+millions of allocations can make instrumentation dominate runtime. Treat that
+runtime as diagnostic overhead, and verify improvements with uninstrumented runs.
+
+On-CPU profiles omit time spent off CPU. Use a separate
+[bpftrace](https://bpftrace.org/docs) scheduler trace when a thread's wall time
+greatly exceeds its CPU time. Track the target and its descendants, and aggregate
+time between switch-out and switch-in. Off-CPU time includes both blocked time
+and time runnable threads wait for a CPU; sums across threads can exceed wall time.
+Kernel tracepoints, PID namespaces and privileges affect attribution, so verify
+the target's identity and that probes attached before starting it.
 
 Node `--heap-prof` samples allocation activity. Bun's documentation describes
 a full V8-format heap snapshot at exit, not the same sampled allocation history;
