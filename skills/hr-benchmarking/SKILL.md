@@ -206,8 +206,9 @@ show an absolute change or state that the benefit cannot be calculated.
 There is no minimum gain size. A difference counts as a gain when it lies
 outside the variation criterion declared before the first run (the comparison's
 own run-to-run spread, from its A/A arm or already-known variation, as a
-percentage of the baseline) and the outputs are identical. Report a gap inside that criterion as no clear change, and name the
-statistic and threshold beside it. Report memory and CPU costs beside the gain.
+percentage of the baseline) and the outputs are identical. Report a gap inside
+that criterion as no clear change, and name the statistic and threshold beside
+it. Report memory and CPU costs beside the gain.
 If the variation criterion cannot support a percentage, keep its result
 separate and label unsupported differences inconclusive. Changing presentation
 does not change frozen acceptance or rejection gates.
