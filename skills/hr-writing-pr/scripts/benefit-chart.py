@@ -21,8 +21,9 @@ The spec holds a headline, a workload line and one row per measured metric:
 Row fields: label, before, after, unit (text after the value), lower_is_better
 (default true), words (the two words after the percentage, for a good and a bad
 change; default "lower"/"higher", or "higher"/"lower" when lower_is_better is false), and
-note (extra text under the label). A change inside band (default 0.03) is
-labeled "no clear change". Bars start at zero and share a scale per row.
+note (extra text under the label). band is required: the variation criterion
+declared before the first run, as a fraction of the baseline. A change inside it
+is labeled "no clear change". Bars start at zero and share a scale per row.
 
 Values must be non-negative. Prints the alt text for the image on stdout. With --table it
 also prints a Markdown table of the same values, the text version of the chart
@@ -63,6 +64,13 @@ def fmt(value):
     return f"{value:,.3f}"
 
 
+def band_of(spec):
+    if "band" not in spec:
+        sys.exit('spec needs a top-level "band": the declared variation criterion as a fraction '
+                 "of the baseline, such as 0.04.")
+    return float(spec["band"])
+
+
 def judge(row, band):
     before, after = float(row["before"]), float(row["after"])
     lower_is_better = row.get("lower_is_better", True)
@@ -91,7 +99,7 @@ def render(spec, out_path):
     for row in rows:
         if float(row["before"]) < 0 or float(row["after"]) < 0:
             sys.exit(f"row {row['label']!r}: negative values are not supported (bars start at zero).")
-    band = float(spec.get("band", 0.03))
+    band = band_of(spec)
     arms = spec.get("arms", ["Before", "After"])
     count = len(rows)
     headline_lines = textwrap.wrap(spec["headline"], 54)
@@ -150,7 +158,7 @@ def render(spec, out_path):
 
 
 def table(spec):
-    band = float(spec.get("band", 0.03))
+    band = band_of(spec)
     arms = spec.get("arms", ["Before", "After"])
     lines = [f"| Metric | {arms[0]} | {arms[1]} | Change |", "| --- | ---: | ---: | --- |"]
     for row in spec["rows"]:

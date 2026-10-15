@@ -4,6 +4,15 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- `hr-benchmarking` no longer has a 3% default band for "no clear change". There is no minimum gain
+  size: a difference counts as a gain when it is outside the variation criterion declared before
+  the first run (the comparison's own run-to-run spread) and the outputs are identical. A gap inside
+  that criterion is still "no clear change", and memory and CPU costs are reported beside the gain.
+  The benefit chart script in `hr-writing-pr` now requires the spec's `band` (the declared
+  variation criterion as a fraction of the baseline) instead of defaulting to 0.03, so a spec saved
+  without one fails with a message. `hr-writing-pr`, the thread-visuals reference and the
+  `upstream-contributions` rule now point at the declared variation criterion instead of a
+  "reporting band".
 - `hr-benchmarking` now gives a default stopping rule for performance claims, in place of "no
   universal minimum". Run 3 alternating runs per arm, and add 2 more per arm only when the arms'
   ranges overlap or the gap is within the variation criterion, for a cap of 5. If 5 runs per arm

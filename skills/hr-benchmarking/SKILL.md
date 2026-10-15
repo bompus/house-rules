@@ -203,16 +203,14 @@ percent change or a times improvement. Use the metric's direction and label
 worsening, unchanged or inconclusive results. With a zero or missing baseline,
 show an absolute change or state that the benefit cannot be calculated.
 
-Use 3% as the default practical no-clear-change band for reported differences.
-This is a reporting convention, not a statistical margin of error. Use the
-variation statistic and threshold declared before collecting results. When that
-threshold, expressed as a percentage of the baseline, exceeds 3%, widen the
-reporting band to at least that percentage and name the statistic and threshold.
-If the variation criterion cannot support a percentage band, keep its result
-separate and label unsupported differences inconclusive. A change outside the
-band still needs qualified evidence and must meet the declared variation criterion. Set a different
-precision target before collecting results when the workload requires it;
-changing presentation does not change frozen acceptance or rejection gates.
+There is no minimum gain size. A difference counts as a gain when it lies
+outside the variation criterion declared before the first run (the comparison's
+own run-to-run spread, from its A/A arm or already-known variation, as a
+percentage of the baseline) and the outputs are identical. Report a gap inside that criterion as no clear change, and name the
+statistic and threshold beside it. Report memory and CPU costs beside the gain.
+If the variation criterion cannot support a percentage, keep its result
+separate and label unsupported differences inconclusive. Changing presentation
+does not change frozen acceptance or rejection gates.
 
 Show a comparison of three or more variants or conditions as a chart beside the
 before/after table, unless every row is no clear change. Choose the chart for the
@@ -227,7 +225,7 @@ question:
 | Change with load or time         | Line chart                                 |
 
 Put units and run counts on the axes, start bars at zero, mark a gap inside the
-reporting band as no clear change, and give the chart an explicit background colour so
+variation criterion as no clear change, and give the chart an explicit background colour so
 it reads the same on a light or a dark page.
 In a pull request, the headline chart and when it may be skipped come from
 `hr-writing-pr`; this table applies to any other chart.

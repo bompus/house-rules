@@ -26,6 +26,7 @@ describe.skipIf(!hasMatplotlib)("benefit-chart.py", () => {
   test("labels an improvement, a regression and a change inside the band", () => {
     const { result, alt, out } = chart({
       headline: "Opening a thread takes 371 ms, was 927 ms",
+      band: 0.03,
       rows: [
         { label: "Open", before: 927, after: 371, unit: "ms", words: ["faster", "slower"] },
         { label: "Memory", before: 100, after: 130, unit: "MiB" },
@@ -45,6 +46,7 @@ describe.skipIf(!hasMatplotlib)("benefit-chart.py", () => {
     const { result } = chart(
       {
         headline: "Build time",
+        band: 0.03,
         arms: ["Main", "Branch"],
         rows: [
           { label: "Build", before: 67.741, after: 46.181, unit: "s", words: ["faster", "slower"] },
@@ -60,6 +62,7 @@ describe.skipIf(!hasMatplotlib)("benefit-chart.py", () => {
   test("never rounds a near-total reduction up to 100%", () => {
     const { result, alt } = chart({
       headline: "Node read takes 0.08 ms, was 119 ms",
+      band: 0.03,
       rows: [{ label: "Read", before: 119.1, after: 0.083, unit: "ms" }],
     });
     expect(result.exitCode).toBe(0);
@@ -70,6 +73,7 @@ describe.skipIf(!hasMatplotlib)("benefit-chart.py", () => {
     const { alt } = chart(
       {
         headline: "Renders per switch: 2, was 9",
+        band: 0.03,
         note: "Lower is better.",
         rows: [{ label: "Renders", before: 9, after: 2, unit: "", note: "Dev build only." }],
       },
@@ -84,6 +88,7 @@ describe.skipIf(!hasMatplotlib)("benefit-chart.py", () => {
     const { alt } = chart(
       {
         headline: "Read | write takes 5 ms, was 9 ms",
+        band: 0.03,
         workload: "3 runs, dev build",
         rows: [{ label: "read | write", before: 9, after: 5, unit: "ms" }],
       },
@@ -94,9 +99,19 @@ describe.skipIf(!hasMatplotlib)("benefit-chart.py", () => {
     expect(alt.split("\n")[0]).toContain("Workload: 3 runs, dev build");
   });
 
+  test("requires the declared variation criterion as band", () => {
+    const { result } = chart({
+      headline: "Idle",
+      rows: [{ label: "Idle", before: 100, after: 101, unit: "ms" }],
+    });
+    expect(result.exitCode).not.toBe(0);
+    expect(result.stderr.toString()).toContain('spec needs a top-level "band"');
+  });
+
   test("rejects negative values instead of drawing them", () => {
     const { result } = chart({
       headline: "Delta",
+      band: 0.03,
       rows: [{ label: "Gain", before: -100, after: -50 }],
     });
     expect(result.exitCode).not.toBe(0);
@@ -106,6 +121,7 @@ describe.skipIf(!hasMatplotlib)("benefit-chart.py", () => {
   test("reports a missing baseline instead of dividing by zero", () => {
     const { result, alt } = chart({
       headline: "Allocations",
+      band: 0.03,
       rows: [{ label: "Calls", before: 0, after: 5, unit: "" }],
     });
     expect(result.exitCode).toBe(0);

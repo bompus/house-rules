@@ -29,7 +29,7 @@ issues invite, such as performance fixes or a reported defect.
 5. Title a performance discussion or issue with its headline result and the
    workload it holds for, such as "saving a file takes 1.1 s with 500
    open tabs, 0.17 s with the fix". Use a figure only when it clears the
-   `hr-benchmarking` bar (outside the reporting band, variation criterion met,
+   `hr-benchmarking` bar (outside the declared variation criterion,
    repetitions stated) and keep the caveats in the body. Title a defect by what
    the person sees, not by the code involved, and add how often only when the
    evidence supports a rate. Open the body with the same headline. A qualified
