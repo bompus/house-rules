@@ -6,9 +6,12 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 - `hr-benchmarking` now gives a default stopping rule for performance claims, in place of "no
   universal minimum". Run 3 alternating runs per arm, and add 2 more per arm only when the arms'
-  ranges overlap or the gap is within the variation criterion, for a cap of 5. Results always carry the run count
-  and range, never a bare average. The expected wall-clock time is stated before the first run. The
-  JavaScript reference no longer asks for at least 10 runs when timing startup.
+  ranges overlap or the gap is within the variation criterion, for a cap of 5. If 5 runs per arm
+  leave the comparison unresolved, it is reported as inconclusive. Another count is used only when
+  the user asks for it or a run is too long to repeat 3 times, and is declared with its reason
+  before the first run. Results always carry the run count and range, never a bare average. The
+  expected wall-clock time is stated before the first run. The JavaScript reference no longer asks
+  for at least 10 runs when timing startup.
 
 - The `hr-code-review` panel recommendations gain an entry for Muse Wonder Full 1.0 on the Bug Hunt
   board: two runs each at xhigh (41.5 of 105) and max (42.0), no published price, and reachable only
