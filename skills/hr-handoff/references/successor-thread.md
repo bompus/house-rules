@@ -50,22 +50,27 @@ registry row, the project and the thread id.
 ## What the handoff records
 
 - The outgoing thread's id and the successor's id, so each points to the other.
-- Each open offer by its offer ID, with its question, options and
-  recommendation. The successor treats an offer as open only if the handoff
-  lists it. A bare code or `go` in the successor selects an offer only when one
-  listed offer is open. With several, it asks which one, as the house rules'
-  § Offers requires.
-- The inventory and read-backs from the skill's thread-move step. For a
-  successor, the receiving thread re-points these to itself: registry rows,
-  scheduled tasks, pull request watches and the messaging name the work was
-  known by. Where the host does not let the successor take over the name, the
-  handoff says which name the successor registers and who needs to be told.
+- Each open offer by the offer ID the ledger recorded for it, with its
+  question, options and recommendation. The house rules' § Offers records an ID
+  for every offer, including a text-only one that never displayed it. The
+  successor treats an offer as open only if the handoff lists it and the latest
+  ledger or source record still shows it open. An offer answered, completed,
+  deferred or superseded since the handoff was written authorizes nothing. A
+  bare code or `go` in the successor selects an offer only when one listed offer
+  is open. With several, it asks which one, as § Offers requires.
+- The inventory and read-backs from the skill's thread-move step. The
+  receiving thread re-points to itself each item the host lets it bind:
+  registry rows, scheduled tasks, pull request watches and the messaging name
+  the work was known by. For an item it cannot bind, the handoff keeps the
+  recorded reason it stays with the outgoing thread. Where the host does not let
+  the successor take over the name, the handoff says which name the successor
+  registers and who needs to be told.
 
 ## Successor record
 
 - Mark the outgoing thread settled and record a pointer to the successor where
   the host keeps such notes. Do this last, after the successor confirms it has
   read the handoff.
-- The successor starts by reading the handoff in full, re-pointing each bound
-  item with a read-back and recording the result in the receipt before taking
-  new work.
+- The successor starts by reading the handoff in full, re-pointing each item it
+  can bind with a read-back and recording the result in the receipt, including
+  the items that stay behind, before taking new work.
