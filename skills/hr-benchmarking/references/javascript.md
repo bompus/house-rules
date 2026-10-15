@@ -59,7 +59,7 @@ Record null results and their tested conditions. Stop a candidate when its measu
 
 Prioritize hot paths, then inspect less frequent paths for long individual stalls. A rare operation can still delay unrelated requests.
 
-Measure both the longest blocked interval and blocked milliseconds multiplied by calls per second. The latter estimates duty cycle; it does not describe burst latency. Compare against the application's actual response and frame budgets. A 60 Hz frame is about 16.7 ms; higher refresh rates leave less time.
+Measure the longest blocked interval and the average blocked milliseconds per call multiplied by calls per second. The product is milliseconds blocked per second; divide by 1,000 to estimate the duty-cycle fraction. This average does not describe burst latency. Compare against the application's actual response and frame budgets. A 60 Hz frame is about 16.7 ms; higher refresh rates leave less time.
 
 Reduce unnecessary work first. Consider reuse, bounded caching, batching and yielding between chunks when their correctness requirements fit. A promise or `async` wrapper does not make CPU work leave the event loop.
 
