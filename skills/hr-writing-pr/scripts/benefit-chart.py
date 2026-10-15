@@ -22,8 +22,8 @@ Row fields: label, before, after, unit (text after the value), lower_is_better
 (default true), words (the two words after the percentage, for a good and a bad
 change; default "lower"/"higher", or "higher"/"lower" when lower_is_better is false), and
 note (extra text under the label). band is required: the variation criterion
-declared before the first run, as a fraction of the baseline. A change inside it
-is labeled "no clear change". Bars start at zero and share a scale per row.
+declared before the first run, as a fraction of the baseline. A change at or
+inside it is labeled "no clear change". Bars start at zero and share a scale per row.
 
 Values must be non-negative. Prints the alt text for the image on stdout. With --table it
 also prints a Markdown table of the same values, the text version of the chart
@@ -70,6 +70,8 @@ def band_of(spec):
         sys.exit('spec needs a top-level "band": the declared variation criterion as a fraction '
                  "of the baseline, such as 0.04.")
     try:
+        if isinstance(spec["band"], bool):
+            raise TypeError
         band = float(spec["band"])
     except (TypeError, ValueError):
         band = float("nan")
@@ -84,7 +86,7 @@ def judge(row, band):
     if before == 0:
         return NEUTRAL, "no baseline to compare", "no baseline to compare"
     change = (after - before) / before
-    if abs(change) < band:
+    if abs(change) <= band:
         return NEUTRAL, "no clear change", "no clear change"
     improved = change < 0 if lower_is_better else change > 0
     default_words = ("lower", "higher") if lower_is_better else ("higher", "lower")

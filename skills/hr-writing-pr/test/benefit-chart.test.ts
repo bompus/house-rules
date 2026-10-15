@@ -108,8 +108,17 @@ describe.skipIf(!hasMatplotlib)("benefit-chart.py", () => {
     expect(result.stderr.toString()).toContain('spec needs a top-level "band"');
   });
 
+  test("treats a change exactly at the band as no clear change", () => {
+    const { alt } = chart({
+      headline: "Idle",
+      band: 0.25,
+      rows: [{ label: "Idle", before: 100, after: 125, unit: "ms" }],
+    });
+    expect(alt).toContain("Idle: 100 ms to 125 ms, no clear change");
+  });
+
   test("rejects a band that is negative, not a number or not finite", () => {
-    for (const band of [-0.01, "abc", null, 1e999]) {
+    for (const band of [-0.01, "abc", null, true, "1e999"]) {
       const { result } = chart({
         headline: "Idle",
         band,
