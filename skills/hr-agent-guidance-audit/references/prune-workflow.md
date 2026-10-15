@@ -40,9 +40,12 @@ request does not need.
      confirm none of your own rule files appear; a few known extras (Devin's own
      global `AGENTS.md`, OpenCode's installed-skill list) are listed in the
      README. A leak makes the "without" arm obey the rule anyway.
-   - Use `--runs 4` or more. Four runs separate a rule only when the arms differ
-     by 4 and 0; a smaller gap needs 9 runs per arm before you act on it
-     (8 of 9 against 3 of 9 gave p = 0.05).
+   - Use `--runs 4` or more. This pass/fail screening is a deliberate exception
+     to the 3-runs-per-arm default for performance claims in `hr-benchmarking`,
+     because a count of passes needs more runs than a timing range does. Four
+     runs separate a rule only when the arms differ by 4 and 0; a smaller gap
+     needs 9 runs per arm before you act on it (8 of 9 against 3 of 9 gave
+     p = 0.05).
    - Read the output: "rule helps" keeps the rule; "no difference" on all
      models makes it a removal candidate; "fails with the rule" means fix the
      scenario first, because it tests nothing. A scenario that fails in both

@@ -12,6 +12,9 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   before the first run. Results always carry the run count and range, never a bare average. The
   expected wall-clock time is stated before the first run. The JavaScript reference no longer asks
   for at least 10 runs when timing startup.
+- `hr-agent-guidance-audit` now says its pass/fail rule screening (4 or more runs, 9 per arm for a
+  smaller gap) is a deliberate exception to the 3-runs-per-arm default for performance claims in
+  `hr-benchmarking`.
 
 - The `hr-code-review` panel recommendations gain an entry for Muse Wonder Full 1.0 on the Bug Hunt
   board: two runs each at xhigh (41.5 of 105) and max (42.0), no published price, and reachable only
