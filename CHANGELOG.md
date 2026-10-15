@@ -4,6 +4,11 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- `hr-benchmarking` adds JavaScript performance hunt guidance: count repeated work,
+  check growth and resource lifetimes, and compare synchronous work with async I/O,
+  yielding and workers. It covers queueing and transfer costs, runtime-specific
+  measurements, and responsiveness versus total CPU cost.
+
 - `hr-benchmarking` adds local profile viewing with speedscope, native/JavaScript CPU
   attribution, the `perf report --no-inline` workaround, heaptrack overhead and
   off-CPU tracing limits. Its oha guidance names `--latency-correction` and the

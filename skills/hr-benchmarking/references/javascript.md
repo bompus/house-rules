@@ -43,6 +43,37 @@ Verified on Bun 1.4.x:
   keys in its SQLite bindings. Record the exact Node version beside SQLite
   results; an older baseline does not establish the gap on the new runtime.
 
+## Choosing what to hunt
+
+Start with something a user waits for. Use a representative workload and data size, then count the work before timing individual functions.
+
+- Count messages and bytes per action, SQL statements, subprocesses, React commits, queue depth and oldest-item age. Measure idle CPU, event-loop delay and utilization. Use a CPU profile to attribute expensive work; delay alone does not identify its cause.
+- Check repeated work first: whole-state rebuilds after small updates, serialization per subscriber, repeated parsing or validation, N+1 queries and per-row transactions. Check for backpressure when producers outrun consumers.
+- Vary one input size while holding the rest fixed. Look for quadratic growth, large linear costs, and fixed costs paid too often. A high count alone does not establish a bottleneck.
+- Check work that survives its owner: listeners, timers, caches, pending requests and reconnect loops. Measure repeated open/close cycles and hidden, idle and disconnected states separately.
+- Profile startup imports, rendering and layout, compression, logging and tracing when they appear in the user-visible path. Investigate engine-specific tuning only when a profile identifies the relevant hot loop.
+
+Record null results and their tested conditions. Stop a candidate when its measured benefit is within the declared variation criterion, or when it cannot materially improve the chosen user-visible outcome. Do not use a universal percentage cutoff.
+
+### Deciding whether to move synchronous work
+
+Prioritize hot paths, then inspect less frequent paths for long individual stalls. A rare operation can still delay unrelated requests.
+
+Measure both the longest blocked interval and blocked milliseconds multiplied by calls per second. The latter estimates duty cycle; it does not describe burst latency. Compare against the application's actual response and frame budgets. A 60 Hz frame is about 16.7 ms; higher refresh rates leave less time.
+
+Reduce unnecessary work first. Consider reuse, bounded caching, batching and yielding between chunks when their correctness requirements fit. A promise or `async` wrapper does not make CPU work leave the event loop.
+
+Use the runtime's asynchronous APIs for supported I/O. They add scheduling and completion overhead and can contend for a shared thread pool. For CPU work, compare chunked yielding with a reused [worker or worker pool](https://nodejs.org/api/worker_threads.html). Include worker startup, message and clone or transfer costs, queueing, memory, cancellation and shutdown. Do not create a new worker for every small call by default.
+
+Compare equal completed work under representative concurrency. Report wall time, CPU, memory and unrelated-request latency beside the longest stall. Offloading may improve responsiveness while costing more total CPU; state that tradeoff. A saturated worker queue can erase the improvement. There is no universal payload size or duration at which async or a worker wins.
+
+### Runtime checks
+
+- **Cloudflare Workers:** [deployed timers](https://developers.cloudflare.com/workers/runtime-apis/performance/) such as `Date.now()` and `performance.now()` advance after I/O, so they cannot time an uninterrupted CPU section. Local Wrangler uses workerd and permits advancing timers; use it for attribution and confirm deployed behavior with platform CPU metrics. Check current platform limits. A Durable Object runs JavaScript on one thread, but requests can interleave across awaits; distinguish synchronous blocking from storage gates and explicit concurrency controls.
+- **Bun:** JavaScriptCore and V8 can have different hot paths. Verify the runtime and use its profiler; remeasure relevant changes on each supported runtime.
+- **Electron:** attribute renderer and main-process work separately. Synchronous IPC blocks the caller; expensive main-thread work can delay all windows.
+- **React Native and web:** use production builds. Count commits per actual streamed update or action, not per estimated token. Separate JavaScript work from layout, paint and native UI work. Record visibility and observer overhead.
+
 ## Event-loop and server-code measurement
 
 Each event-loop thread of a Node or Bun server runs request handling, timers and
