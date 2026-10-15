@@ -69,6 +69,10 @@ the host binds to the outgoing thread:
    retire it.
 5. Give each bound item a row in the receipt, with owner, state and next action.
 
+When the new thread replaces this one as its successor, also follow
+[successor-thread.md](references/successor-thread.md) for when a replacement is
+warranted, its safe boundary, the title and the successor record.
+
 At a low-quota stop, save essential state first and record partial coverage
 when feasible. An unfinished receipt or failing check never delays that stop.
 

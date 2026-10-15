@@ -4,6 +4,16 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- `hr-handoff` gains a reference for handing work to a successor thread. A successor keeps the base
+  title and ends it with ` v<N>`; the first thread counts as `v1` and is renamed at the handoff, and
+  threads are found by registry row, project and thread id, never by title. A session is replaced
+  for stale injected guidance only when the change is session-critical (an always-on rule, a safety
+  rule, the catalog entry of a skill the session uses, a subagent definition); skill bodies and docs
+  need only the reread. A replacement never happens mid-turn, mid-evaluation that fixed its
+  guidance, or with an external action pending, and only when the session is idle with its ledger
+  reconciled. The handoff names each open offer by ID so a bare `go` cannot select the wrong one,
+  the outgoing thread is marked settled with a pointer to the successor, and the successor
+  re-points registry rows, scheduled tasks, pull request watches and its messaging name.
 - `hr-benchmarking` no longer has a 3% default band for "no clear change". There is no minimum gain
   size: a favorable difference counts as a gain when it is outside the variation criterion declared before
   the first run (the comparison's own run-to-run spread) and the outputs are identical. When the
