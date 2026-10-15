@@ -6,7 +6,7 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 - `hr-benchmarking` now gives a default stopping rule for performance claims, in place of "no
   universal minimum". Run 3 alternating runs per arm, and add 2 more per arm only when the arms'
-  ranges overlap or the effect is near the noise, for a cap of 5. Results always carry the run count
+  ranges overlap or the gap is within the variation criterion, for a cap of 5. Results always carry the run count
   and range, never a bare average. The expected wall-clock time is stated before the first run. The
   JavaScript reference no longer asks for at least 10 runs when timing startup.
 
