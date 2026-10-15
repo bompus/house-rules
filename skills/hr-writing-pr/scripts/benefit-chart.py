@@ -30,6 +30,7 @@ also prints a Markdown table of the same values, the text version of the chart
 for readers and agents that cannot parse the image. Requires matplotlib.
 """
 import json
+import math
 import sys
 import textwrap
 
@@ -68,7 +69,13 @@ def band_of(spec):
     if "band" not in spec:
         sys.exit('spec needs a top-level "band": the declared variation criterion as a fraction '
                  "of the baseline, such as 0.04.")
-    return float(spec["band"])
+    try:
+        band = float(spec["band"])
+    except (TypeError, ValueError):
+        band = float("nan")
+    if not math.isfinite(band) or band < 0:
+        sys.exit('spec "band" must be a finite non-negative number.')
+    return band
 
 
 def judge(row, band):

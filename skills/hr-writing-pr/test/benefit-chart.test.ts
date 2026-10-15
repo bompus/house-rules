@@ -108,6 +108,18 @@ describe.skipIf(!hasMatplotlib)("benefit-chart.py", () => {
     expect(result.stderr.toString()).toContain('spec needs a top-level "band"');
   });
 
+  test("rejects a band that is negative, not a number or not finite", () => {
+    for (const band of [-0.01, "abc", null, 1e999]) {
+      const { result } = chart({
+        headline: "Idle",
+        band,
+        rows: [{ label: "Idle", before: 100, after: 101, unit: "ms" }],
+      });
+      expect(result.exitCode).not.toBe(0);
+      expect(result.stderr.toString()).toContain('"band" must be a finite non-negative number');
+    }
+  });
+
   test("rejects negative values instead of drawing them", () => {
     const { result } = chart({
       headline: "Delta",

@@ -6,11 +6,13 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 - `hr-benchmarking` no longer has a 3% default band for "no clear change". There is no minimum gain
   size: a difference counts as a gain when it is outside the variation criterion declared before
-  the first run (the comparison's own run-to-run spread) and the outputs are identical. A gap inside
-  that criterion is still "no clear change", and memory and CPU costs are reported beside the gain.
-  The benefit chart script in `hr-writing-pr` now requires the spec's `band` (the declared
-  variation criterion as a fraction of the baseline) instead of defaulting to 0.03, so a spec saved
-  without one fails with a message. `hr-writing-pr`, the thread-visuals reference and the
+  the first run (the comparison's own run-to-run spread) and the outputs are identical. When the
+  criterion cannot support a percentage, the result is kept separate and unsupported differences are
+  labeled inconclusive. A gap inside the criterion is still "no clear change", and memory and CPU
+  costs are reported beside the gain. The benefit chart script in `hr-writing-pr` now requires the
+  spec's `band` (the declared variation criterion as a fraction of the baseline, a finite
+  non-negative number) instead of defaulting to 0.03, so a spec saved without one fails with a
+  message. `hr-writing-pr`, the thread-visuals reference and the
   `upstream-contributions` rule now point at the declared variation criterion instead of a
   "reporting band".
 - `hr-benchmarking` now gives a default stopping rule for performance claims, in place of "no
