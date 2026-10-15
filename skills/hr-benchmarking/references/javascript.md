@@ -88,8 +88,9 @@ workload and host, not a benchmark.
   kept and dropped, keeping the owner reachable to the end. One researcher's run, not
   repeated, kept only the two fields that were read and went from 61.45 MiB to
   2.10 MiB over 30 sessions of 10 turns of 200 KiB.
-- **Time startup on the built artifact, interleaved.** Alternate arms over at
-  least 10 runs on one build. An environment variable can stand in for an API
+- **Time startup on the built artifact, interleaved.** Alternate arms on
+  one build, using the default run count in [the skill](../SKILL.md). An
+  environment variable can stand in for an API
   call, but note what it changes (it also reaches child processes). A V8 compile
   cache took a CLI's `--help` from a 554 ms median to 381 ms over 11 runs (M).
 - **Treat another researcher's numbers as leads.** Of three top candidates from a

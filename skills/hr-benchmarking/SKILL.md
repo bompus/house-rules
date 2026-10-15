@@ -30,7 +30,8 @@ Before running, list the selected engines, workloads, metrics, controls and
 repetitions. Count the planned runs explicitly, including controls and stages;
 state which decision each retained dimension helps make. Choose combinations
 for that decision rather than automatically running every combination. Use a
-broader matrix when its required coverage is stated.
+broader matrix when its required coverage is stated. State the benchmark's
+expected wall-clock time, waits included, before the first run.
 Name the measurement unit: request, operation, batch or whole command. State
 whether setup, startup, compilation, input loading, retries and cleanup count.
 
@@ -118,18 +119,23 @@ Before exploratory runs, define the decision-relevant signal for selecting
 comparisons for confirmation. Choose comparisons that meet that signal, plus
 decision-critical comparisons, for repeated confirmation; keep necessary controls.
 Set the confirmation plan before its runs and update the explicit run count
-when the scope changes. Repetition counts depend on the
-decision and observed variation; there is no universal minimum.
+when the scope changes.
 
-For a performance claim, add alternating runs to assess run-to-run variation.
+The default stopping rule for a performance claim is 3 runs per arm. Add 2 more
+per arm only when the arms' ranges overlap or the effect is near the noise, so
+5 per arm is the cap. If 5 leave the comparison unresolved, report it as
+inconclusive rather than adding runs. Declare any other count before the first
+run, with the reason. Alternate the arms in every run so drift reaches each arm.
+
+For a performance claim, assess run-to-run variation from those alternating runs.
 Treat variation as already known only when earlier repeated runs of the
 same variant, build and input used the same workload, host, run conditions and
 variation statistic, and met the repetition count or stopping rule declared for
 this claim. Otherwise include an A/A arm,
 which runs the same variant twice in the same alternation. Its spread is that
 comparison's own noise floor, and it can supply the preset variation statistic.
-Before the first run used in that claim, set a repetition count or stopping
-rule and a reproducible variation criterion (statistic and threshold).
+Before the first run used in that claim, set a reproducible variation criterion
+(statistic and threshold), and the stopping rule if it differs from the default.
 
 For short or tail metrics, such as the longest stall in a run, give the
 threshold an absolute floor or use a percentile or count metric; a percentage
@@ -139,7 +145,8 @@ claim's sample. Capture raw results, exit status, elapsed time, CPU and memory
 observations. Report monitoring overhead separately from the
 measured workload; batch compatible probes when they dominate elapsed time.
 Report the selected repetition count or stopping rule, variation statistic and
-threshold, sample count, median and range. Apply the preset
+threshold, sample count, median and range. Always give the run count and the
+range with any central value, never a bare average. Apply the preset
 criterion and treat a gap within run-to-run variation as inconclusive. Profile
 separately from the runs used to claim a speed difference.
 
