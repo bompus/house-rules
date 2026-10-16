@@ -15,25 +15,29 @@ cancel only for pull-request events:
 
 ```yaml
 concurrency:
-  group: ${{ github.event_name == 'pull_request' && format('ci-pr-{0}', github.event.pull_request.number) || format('ci-{0}', github.sha) }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 ```
 
-- Keep the pull-request key stable across pushes: never a commit SHA or run ID,
-  which differs on every push, so nothing is cancelled. A workflow that runs only
-  on pull requests can use `${{ github.workflow }}-${{ github.event.pull_request.number }}`
-  with `cancel-in-progress: true`. A reusable workflow inherits the caller's
-  `github.workflow`, so give caller and callee different keys.
+- Concurrency groups are shared by every workflow in the repository, so keep
+  `github.workflow` (or another name unique to the workflow) in the key. Without
+  it, one workflow's run can cancel another's.
+- Keep the pull-request key stable across pushes: never a commit SHA or run ID
+  for a pull-request run, which differs on every push, so nothing is cancelled.
+  A workflow that runs only on pull requests can use `cancel-in-progress: true`.
+  A reusable workflow inherits the caller's `github.workflow`, so give caller and
+  callee different keys.
 - Cancellation needs a newer run in the same group. When a path filter means a
   push starts no run, the older run finishes. Add a cleanup workflow only when
-  that stale result would mislead; it must not check out pull-request code.
+  run history shows older runs finishing after pushes that started no
+  replacement; it must not check out pull-request code.
 - To skip checks on draft pull requests, add `github.event.pull_request.draft != true`
   to each check job's `if`, including reusable-workflow callers and aggregate
   jobs. A job guard stops a runner being allocated; a step guard does not. Add
   `ready_for_review` and `converted_to_draft` to the `pull_request` types, so
   checks start when review begins and a replacement run can cancel old work.
-  This pays off only where drafts are common and the repository does not treat
-  drafts as reviewable.
+  Use this only when the repository's policy says draft pull requests do not
+  need these checks.
 
 ### Choose the concurrency boundary
 
