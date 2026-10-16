@@ -20,6 +20,10 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   ships the tagged content without the later commits. A package that has never been tagged has no
   baseline, so the check says so and treats the publish as its first release. The recommendation
   does not permit tagging, publishing or announcing.
+- The README header now reads the latest GitHub release and the npm version from badgen, which
+  replaces the Shields release badge that failed with a token-pool error. A text link under the
+  badges opens each of the banner's four feature chips: core rules, opt-in modifiers, your own
+  layer and a project's `AGENTS.md`. The banner's alt text names the project and what it is.
 
 ## 0.13.0 - 2026-10-16
 
