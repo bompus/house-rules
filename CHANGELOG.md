@@ -11,8 +11,9 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   refuses, and `--wait` polls it. A completed one must conclude SUCCESS, so a NEUTRAL or skipped
   result, which means cubic did not review the head, also refuses until someone comments
   `@cubic review` or its limit clears. A head commit with no cubic check is not blocked, and
-  `--wait` does not wait for one to appear, so confirm cubic's check has posted before landing. The
-  `.coderabbit.yaml` missing-check test still looks only for CodeRabbit.
+  `--wait` does not wait for one to appear, so in a repository that uses cubic, confirm its check
+  has posted before landing. The `.coderabbit.yaml` missing-check test still looks only for
+  CodeRabbit.
 - The release procedure (`release-batching` reference) now says to check every package for commits
   past its latest release tag before any decision to publish. When there are any, it recommends a
   new release first. This covers public and private packages and republishing an existing tag, which
