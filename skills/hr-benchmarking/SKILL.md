@@ -66,12 +66,15 @@ benchmark each changed piece through its actual production entry point with
 representative fixed inputs and equivalent consumed outputs. Do not benchmark a
 copied implementation or stub out work material to the comparison.
 
-Compare each piece before and after against its immediate predecessor. At
-integration milestones, compare the integrated workload with both its immediate
-predecessor and the original baseline to track cumulative effects. Plan targeted
+Compare each piece before and after against its immediate predecessor. Before
+running, declare integration milestones when changed pieces enter the consuming
+workload. Keep that workload before any piece changes as the original baseline.
+At those milestones, compare the integrated workload with both its immediate
+predecessor and the original baseline to track cumulative effects. Plan applicable
 caller and integration checks for copying, serialization, startup and orchestration
-costs that isolation excludes. Re-time the change in the workload that uses it at
-those milestones; a full-application run is not required after every piece.
+costs that isolation excludes. Run those checks at the milestones and report
+results or specific coverage limits. Re-time the change in the workload that uses
+it at those milestones; a full-application run is not required after every piece.
 An isolated gain does not establish an end-to-end gain. A setting that ran 7.6
 times faster in isolation changed a 33 s indexing run by 0.1 s.
 
@@ -81,7 +84,8 @@ metric's unit, process scope and interval; distinguish peak process memory from
 retained memory, logical bytes from physical storage I/O, and warm from cold cache
 state. Cache hits and delayed writeback can hide storage costs; record unavailable
 counters and attribution limits rather than inferring physical I/O from logical
-bytes. Do not require irrelevant counters.
+bytes. Do not require irrelevant additional counters; retain the CPU and memory
+observations required below.
 
 ## Measure without changing the experiment
 
