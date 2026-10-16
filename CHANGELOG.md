@@ -4,6 +4,12 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- The release procedure (`release-batching` reference) now says to check every package for
+  commits past its latest release tag before any decision to publish. When there are any, it
+  recommends a new release first. This covers public and private packages and republishing an
+  existing tag, which ships the tagged content without the later commits. The recommendation does
+  not permit tagging, publishing or announcing.
+
 ## 0.13.0 - 2026-10-16
 
 - **Breaking for saved chart specs:** `skills/hr-writing-pr/scripts/benefit-chart.py` now requires
