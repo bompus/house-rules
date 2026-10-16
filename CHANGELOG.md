@@ -18,8 +18,9 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   plan, session and turn (`--json --session <id> --turn <id>`; both flags together, never with
   `--archive`). Every open item needs an explicit classification, ready actions and unsent results
   block handback, and each ready decision must appear as a presented offer option. A host's own
-  stop, hold, pause or low-quota signal passes the check; a producer's `paused` disposition alone
-  does not. Version-1 records and two-argument calls fail; `evals/end-of-reply/README.md` ("Adapter
+  stop, hold, pause or low-quota signal (`context.stopReason`) passes the check without validating
+  the record, even when it is absent. A producer's `paused` disposition alone does not. Without that
+  signal, version-1 records and two-argument calls fail; `evals/end-of-reply/README.md` ("Adapter
   migration") describes the records.
 - Decision questions now explain what would change and why it matters before recommending an option,
   in every offer format. Coded options no longer limit reasons to when the user asks. The Writing
