@@ -4,6 +4,12 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- The `hr-pr-followup` review gate (`check-pr-review.ts`) now treats a cubic check on the head
+  commit like CodeRabbit's. A running cubic check refuses, and `--wait` polls it. A completed one
+  must conclude SUCCESS, so a NEUTRAL or skipped result, which means cubic did not review the head,
+  also refuses until someone comments `@cubic review` or its limit clears. A head commit with no
+  cubic check is not blocked.
+
 - The release procedure (`release-batching` reference) now says to check every package for
   commits past its latest release tag before any decision to publish. When there are any, it
   recommends a new release first. This covers public and private packages and republishing an

@@ -126,6 +126,52 @@ test("failed review statuses cannot pass with a completion description", () => {
   expect(openFeedback(pr({ contexts: [ctx] }))).toEqual([]);
 });
 
+const CUBIC = "cubic · AI code reviewer";
+const FOLLOW_UP = "check the review integration and repository review policy";
+const CUBIC_RETRY = "comment `@cubic review` or wait for its limit to clear";
+
+// cubic posts a CheckRun and has no config file, so only a check that exists can block.
+test("blocks a cubic check that is still running", () => {
+  for (const status of ["QUEUED", "IN_PROGRESS", "PENDING"]) {
+    const ctx = { name: CUBIC, status, conclusion: null };
+    expect(openFeedback(pr({ contexts: [ctx] }))).toEqual([`review still running: ${CUBIC}`]);
+  }
+});
+
+test("blocks a cubic check that concluded without reviewing the head", () => {
+  for (const conclusion of ["NEUTRAL", "SKIPPED", "FAILURE", "CANCELLED", "TIMED_OUT", null]) {
+    const ctx = { name: CUBIC, status: "COMPLETED", conclusion };
+    expect(openFeedback(pr({ contexts: [ctx] }))).toEqual([
+      `${CUBIC} review concluded ${conclusion ?? "(missing conclusion)"}: ${FOLLOW_UP}; ${CUBIC_RETRY}`,
+    ]);
+  }
+});
+
+test("passes a successful cubic check and a repository with no cubic check", () => {
+  const done = { name: CUBIC, status: "COMPLETED", conclusion: "SUCCESS" };
+  expect(openFeedback(pr({ contexts: [done] }))).toEqual([]);
+  expect(openFeedback(pr({ contexts: [{ name: "check", status: "COMPLETED" }] }))).toEqual([]);
+  const similar = { name: "bicubic-resize tests", status: "COMPLETED", conclusion: "FAILURE" };
+  expect(openFeedback(pr({ contexts: [similar] }))).toEqual([]);
+});
+
+test("a cubic commit status needs success but no CodeRabbit description", () => {
+  expect(openFeedback(pr({ contexts: [{ context: CUBIC, state: "SUCCESS" }] }))).toEqual([]);
+  expect(openFeedback(pr({ contexts: [{ context: CUBIC, state: "FAILURE" }] }))).toHaveLength(1);
+});
+
+test("waitForReview polls while cubic runs and stops on its result", async () => {
+  const running = pr({ contexts: [{ name: CUBIC, status: "IN_PROGRESS", conclusion: null }] });
+  const neutral = pr({ contexts: [{ name: CUBIC, status: "COMPLETED", conclusion: "NEUTRAL" }] });
+  let clock = 0;
+  const opts = { pollMs: 30_000, sleep: async (ms) => (clock += ms), now: () => clock };
+  const reads = [running, running, neutral];
+  const open = await waitForReview(() => reads.shift(), { ...opts, timeoutMs: 600_000 });
+  expect(clock).toBe(60_000);
+  expect(open).toHaveLength(1);
+  expect(open[0]).toContain("NEUTRAL");
+});
+
 // Hand-written wait loops read a field that stays blank and never stopped; --wait polls this way.
 test("waitForReview polls while the review runs and stops when it finishes or time runs out", async () => {
   const running = pr({ contexts: [{ context: "CodeRabbit", state: "PENDING" }] });

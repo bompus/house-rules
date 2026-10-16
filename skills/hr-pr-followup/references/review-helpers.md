@@ -14,12 +14,22 @@ bun scripts/check-pr-review.ts 123 --repo OWNER/REPO
 
 The gate exits 0 when its selected feedback checks pass, 1 for open feedback,
 and 2 when coverage cannot be verified. It checks unresolved threads, pending
-CodeRabbit review, skipped review statuses and a missing check when the head
-contains `.coderabbit.yaml`. It also checks bot review bodies with outside-diff,
-nitpick or duplicate findings. A completed CodeRabbit CheckRun must conclude SUCCESS;
-failed, cancelled, skipped or missing conclusions block the gate. A CodeRabbit status also requires SUCCESS
-and a description starting with "Review completed". It does not
-check every CI result or authorize landing.
+CodeRabbit or cubic review, skipped review statuses and a missing check when
+the head contains `.coderabbit.yaml`. It also checks bot review bodies with
+outside-diff, nitpick or duplicate findings. A completed CodeRabbit CheckRun
+must conclude SUCCESS; failed, cancelled, skipped or missing conclusions block
+the gate. A CodeRabbit status also requires SUCCESS and a description starting
+with "Review completed". It does not check every CI result or authorize landing.
+
+A check named "cubic · AI code reviewer" on the head commit is held to the same
+rule: while it runs, the gate refuses, and a completed one must conclude
+SUCCESS. A NEUTRAL or skipped conclusion means cubic did not review the head
+("Incremental review could not start", "Automatic AI review not started after
+branch rewrite", "AI review line limit reached"), so the gate refuses it too.
+That pull request stays blocked until someone comments `@cubic review` or the
+limit clears, and the refusal says so. A head commit with no cubic check is not blocked,
+because cubic has no config file to require. Right after a push, the gate cannot tell a
+missing check from one that has not posted yet.
 
 If a review is missing or incomplete, inspect the integration and the repository's
 review policy. The helper does not determine automatic-review enablement or
@@ -42,7 +52,7 @@ judges whether the explanation answers the findings.
 Connections are paginated. Partial responses, malformed fields, repeated
 cursors and head changes fail closed. A final head read does not make review
 feedback an atomic snapshot. `--wait --timeout 30` polls only while CodeRabbit
-runs, or briefly while its expected check has not appeared.
+or cubic runs, or briefly while CodeRabbit's expected check has not appeared.
 
 ## Resolve one review thread
 

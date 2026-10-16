@@ -291,7 +291,7 @@ changing the configuration.
 | `hr-ordering-tests`         | Enumerate event orderings through the real code to find race bugs.                                        |
 | `hr-plain-prose`            | Make text people read plain and specific.                                                                 |
 | `hr-progress-report`        | Report current task activity, milestone completion and remaining wall-clock time.                         |
-| `hr-pr-followup`            | Address conflicts, feedback and failing checks for a PR; honor landing authority; CodeRabbit review gate. |
+| `hr-pr-followup`            | Address conflicts, feedback and failing checks for a PR; landing authority; CodeRabbit and cubic gate.    |
 | `hr-read-reddit`            | Read Reddit feed output while supported; RSS support ends November 13, 2026. Partial web-search fallback. |
 | `hr-read-x-links`           | Read the full content of X posts.                                                                         |
 | `hr-research-shared-links`  | Research a shared link or repository in depth, compare it with your setup and rate each idea.             |

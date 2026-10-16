@@ -1,16 +1,21 @@
 #!/usr/bin/env bun
 // Refuses to land a pull request while review feedback is open: an unresolved review thread, a
-// review bot (CodeRabbit) whose check is still running, or a bot review whose body carries findings
+// review bot (CodeRabbit or cubic) whose check is still running, or a bot review whose body carries findings
 // GitHub cannot show as threads ("Outside diff range comments", "Nitpick comments", "Duplicate comments") with no human
 // explicit acknowledgement for that review and the current head. Run only when the repository
 // selects this gate. It also refuses when CodeRabbit's status on the
 // head commit says anything but "Review completed": CodeRabbit marks a skipped review (for example
 // on a non-default base) as success with "Review skipped: …". When the head commit has
-// `.coderabbit.yaml` but no CodeRabbit check, it refuses too. Missing or incomplete reviews
+// `.coderabbit.yaml` but no CodeRabbit check, it refuses too. A cubic check ("cubic · AI code
+// reviewer") on the head commit must also complete with SUCCESS: a running one refuses, and so does
+// any other conclusion, NEUTRAL and skipped included, because NEUTRAL means cubic did not review the
+// head ("Incremental review could not start", "AI review line limit reached"). That PR stays blocked
+// until someone comments `@cubic review` or the limit clears. A head commit with no cubic check is
+// not blocked, since cubic has no config file to require. Missing or incomplete reviews
 // require inspection of the review integration and the repository's selected review policy.
 //   bun scripts/check-pr-review.ts <pr> [--repo <owner>/<name>] [--wait [--timeout <minutes>]]
 // Exit 1 while feedback is open, 2 when gh fails. Without --repo, gh resolves the repository from
-// the current checkout. --wait polls every 30 s while CodeRabbit's review is still running, and for
+// the current checkout. --wait polls every 30 s while CodeRabbit's or cubic's review is still running, and for
 // up to 3 minutes while the head commit has no CodeRabbit check yet (CodeRabbit posts it a little
 // after a push), then reports as usual; after --timeout minutes (default 30) it reports what is
 // still open.
@@ -30,13 +35,16 @@
 import { spawnSync } from "node:child_process";
 import { parseArgs } from "node:util";
 
-const REVIEW_BOTS = /coderabbit/i;
+const REVIEW_BOTS = /coderabbit|^cubic\b/i;
+const CUBIC = /^cubic\b/i;
 const REVIEW_BOT_CONFIG = ".coderabbit.yaml";
 const BODY_FINDINGS = /Outside diff range comments|Nitpick comments|Duplicate comments/;
 const REVIEWED = /^Review completed/;
 const FOLLOW_UP = "check the review integration and repository review policy";
 const RUNNING = "review still running: ";
 const NO_CHECK = "no CodeRabbit check on the head commit";
+// A neutral cubic result means it did not review the head; a person has to ask again.
+const CUBIC_RETRY = "comment `@cubic review` or wait for its limit to clear";
 const POLL_MS = 30_000;
 const NO_CHECK_GRACE_MS = 180_000;
 
@@ -377,12 +385,13 @@ export function openFeedback(pr: ReviewState): string[] {
     if (running) {
       open.push(`${RUNNING}${name}`);
     } else if (ctx.name !== undefined && ctx.conclusion !== "SUCCESS") {
+      const retry = CUBIC.test(name) ? `; ${CUBIC_RETRY}` : "";
       open.push(
-        `${name} review concluded ${ctx.conclusion ?? "(missing conclusion)"}: ${FOLLOW_UP}`,
+        `${name} review concluded ${ctx.conclusion ?? "(missing conclusion)"}: ${FOLLOW_UP}${retry}`,
       );
     } else if (
       ctx.context !== undefined &&
-      (ctx.state !== "SUCCESS" || !REVIEWED.test(ctx.description ?? ""))
+      (ctx.state !== "SUCCESS" || (!CUBIC.test(name) && !REVIEWED.test(ctx.description ?? "")))
     ) {
       open.push(
         `${name} did not review the head commit ("${ctx.description ?? ""}"): ${FOLLOW_UP}`,

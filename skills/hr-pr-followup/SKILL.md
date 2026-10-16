@@ -55,8 +55,8 @@ Name the exact revision, failed or unfinished gates and unresolved decisions.
 Clean CI alone is not evidence that every review finding was handled.
 
 When the repository or user selects these GitHub helper policies, use
-[the CodeRabbit review gate and one-thread resolver](references/review-helpers.md).
-Its review-status checks cover CodeRabbit only; its thread check covers any
+[the CodeRabbit and cubic review gate and one-thread resolver](references/review-helpers.md).
+Its review-status checks cover CodeRabbit and cubic only; its thread check covers any
 reviewer and its review-body check any bot. It does not replace other required
 checks or the caller's judgment. The same reference describes the landing helper scripts (`merge-pr.sh`,
 `verify-landed.sh`, `check-landing.py`).
