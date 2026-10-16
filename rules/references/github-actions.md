@@ -19,9 +19,10 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 ```
 
-- Concurrency groups are shared by every workflow in the repository, so keep
-  `github.workflow` (or another name unique to the workflow) in the key. Without
-  it, one workflow's run can cancel another's.
+- Concurrency groups are shared by every workflow in the repository, so keep a
+  value unique to the workflow in the key. `github.workflow` is the workflow's
+  name, so it is unique only while workflow names are; otherwise use a fixed
+  prefix. Without a unique value, one workflow's run can cancel another's.
 - Keep the pull-request key stable across pushes: never a commit SHA or run ID
   for a pull-request run, which differs on every push, so nothing is cancelled.
   A workflow that runs only on pull requests can use `cancel-in-progress: true`.
