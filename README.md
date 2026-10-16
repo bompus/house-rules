@@ -1,17 +1,15 @@
 <h1 align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/assets/banner-dark.png">
-    <img src="docs/assets/banner-light.png" alt="house-rules" width="100%">
+    <img src="docs/assets/banner-light.png" alt="house-rules: Always-on working rules and skills for AI coding agents" width="100%">
   </picture>
 </h1>
 
-<p align="center"><strong>Working rules and skills for AI coding agents</strong></p>
-
 <p align="center">
   <a href="https://github.com/bompus/house-rules/actions/workflows/check.yml"><img src="https://github.com/bompus/house-rules/actions/workflows/check.yml/badge.svg" alt="CI status"></a>
-  <a href="https://github.com/bompus/house-rules/releases/latest"><img src="https://flat.badgen.net/github/release/bompus/house-rules" alt="Latest GitHub release"></a>
-  <a href="https://www.npmjs.com/package/@bompus/house-rules"><img src="https://flat.badgen.net/npm/v/@bompus/house-rules" alt="Latest npm version"></a>
-  <a href="LICENSE"><img src="https://flat.badgen.net/static/license/MIT/blue" alt="MIT license"></a>
+  <a href="https://github.com/bompus/house-rules/releases/latest"><img src="https://badgen.net/github/release/bompus/house-rules" alt="Latest GitHub release"></a>
+  <a href="https://www.npmjs.com/package/@bompus/house-rules"><img src="https://badgen.net/npm/v/@bompus/house-rules" alt="Latest npm version"></a>
+  <a href="LICENSE"><img src="https://badgen.net/badge/license/MIT/blue" alt="MIT license"></a>
 </p>
 
 <p align="center">
