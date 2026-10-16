@@ -6,6 +6,10 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 - The GitHub Actions reference now covers cancelling superseded pull-request runs (a stable group key,
   cancelling only on pull-request events, the path-filter caveat) and skipping checks on draft pull requests.
+- The squash-landing procedure no longer quotes CodeRabbit's status text. It says an existing review
+  check on the head must report completion and that a skipped or cancelled review is not a
+  completed one. The CodeRabbit status test ("Review completed") stays in the `hr-pr-followup`
+  review helpers reference, where the gate applies it.
 
 ## 0.14.0 - 2026-10-16
 

@@ -19,7 +19,9 @@ the head contains `.coderabbit.yaml`. It also checks bot review bodies with
 outside-diff, nitpick or duplicate findings. A completed CodeRabbit CheckRun
 must conclude SUCCESS; failed, cancelled, skipped or missing conclusions block
 the gate. A CodeRabbit status also requires SUCCESS and a description starting
-with "Review completed". It does not check every CI result or authorize landing.
+with "Review completed"; that is how the gate tests the general squash rule that an
+existing review check must report completion. It does not check every CI result or
+authorize landing.
 
 The check named exactly "cubic · AI code reviewer" on the head commit is held to the
 same rule: while it runs, the gate refuses, and a completed one must conclude
