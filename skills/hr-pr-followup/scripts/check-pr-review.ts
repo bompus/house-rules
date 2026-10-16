@@ -11,7 +11,8 @@
 // any other conclusion, NEUTRAL and skipped included, because NEUTRAL means cubic did not review the
 // head ("Incremental review could not start", "AI review line limit reached"). That PR stays blocked
 // until someone comments `@cubic review` or the limit clears. A head commit with no cubic check is
-// not blocked, since cubic has no config file to require. Missing or incomplete reviews
+// not blocked, since cubic has no config file to require, and --wait does not wait for one to
+// appear. Missing or incomplete reviews
 // require inspection of the review integration and the repository's selected review policy.
 //   bun scripts/check-pr-review.ts <pr> [--repo <owner>/<name>] [--wait [--timeout <minutes>]]
 // Exit 1 while feedback is open, 2 when gh fails. Without --repo, gh resolves the repository from
@@ -35,8 +36,9 @@
 import { spawnSync } from "node:child_process";
 import { parseArgs } from "node:util";
 
-const REVIEW_BOTS = /coderabbit|^cubic\b/i;
-const CUBIC = /^cubic\b/i;
+const CODERABBIT = /coderabbit/i;
+const CUBIC = /^cubic · AI code reviewer$/i;
+const isReviewBot = (name: string) => CODERABBIT.test(name) || CUBIC.test(name);
 const REVIEW_BOT_CONFIG = ".coderabbit.yaml";
 const BODY_FINDINGS = /Outside diff range comments|Nitpick comments|Duplicate comments/;
 const REVIEWED = /^Review completed/;
@@ -372,14 +374,14 @@ export function openFeedback(pr: ReviewState): string[] {
   const head = pr.commits.nodes[0]?.commit;
   const contexts = head?.statusCheckRollup?.contexts.nodes ?? [];
   const hasConfig = head?.tree.entries.some((e) => e.name === REVIEW_BOT_CONFIG) ?? false;
-  if (hasConfig && !contexts.some((ctx) => REVIEW_BOTS.test(ctx.context ?? ctx.name ?? ""))) {
+  if (hasConfig && !contexts.some((ctx) => CODERABBIT.test(ctx.context ?? ctx.name ?? ""))) {
     open.push(`${NO_CHECK}: ${FOLLOW_UP}`);
   }
   for (const ctx of contexts) {
     const name = ctx.context ?? ctx.name ?? "";
     const running =
       ctx.state === "PENDING" || (ctx.status !== undefined && ctx.status !== "COMPLETED");
-    if (!REVIEW_BOTS.test(name)) {
+    if (!isReviewBot(name)) {
       continue;
     }
     if (running) {
@@ -391,7 +393,7 @@ export function openFeedback(pr: ReviewState): string[] {
       );
     } else if (
       ctx.context !== undefined &&
-      (ctx.state !== "SUCCESS" || (!CUBIC.test(name) && !REVIEWED.test(ctx.description ?? "")))
+      (ctx.state !== "SUCCESS" || (CODERABBIT.test(name) && !REVIEWED.test(ctx.description ?? "")))
     ) {
       open.push(
         `${name} did not review the head commit ("${ctx.description ?? ""}"): ${FOLLOW_UP}`,

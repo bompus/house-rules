@@ -151,8 +151,18 @@ test("passes a successful cubic check and a repository with no cubic check", () 
   const done = { name: CUBIC, status: "COMPLETED", conclusion: "SUCCESS" };
   expect(openFeedback(pr({ contexts: [done] }))).toEqual([]);
   expect(openFeedback(pr({ contexts: [{ name: "check", status: "COMPLETED" }] }))).toEqual([]);
-  const similar = { name: "bicubic-resize tests", status: "COMPLETED", conclusion: "FAILURE" };
-  expect(openFeedback(pr({ contexts: [similar] }))).toEqual([]);
+  for (const other of ["bicubic-resize tests", "cubic-tests", "cubic-lint"]) {
+    const similar = { name: other, status: "COMPLETED", conclusion: "FAILURE" };
+    expect(openFeedback(pr({ contexts: [similar] }))).toEqual([]);
+  }
+});
+
+// cubic's check must not stand in for CodeRabbit's when the repository configures CodeRabbit.
+test("a successful cubic check does not satisfy the .coderabbit.yaml presence check", () => {
+  const done = { name: CUBIC, status: "COMPLETED", conclusion: "SUCCESS" };
+  expect(openFeedback(pr({ files: [".coderabbit.yaml"], contexts: [done] }))).toEqual([
+    `no CodeRabbit check on the head commit: ${FOLLOW_UP}`,
+  ]);
 });
 
 test("a cubic commit status needs success but no CodeRabbit description", () => {
