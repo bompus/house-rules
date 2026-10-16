@@ -1,7 +1,7 @@
 <h1 align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/assets/banner-dark.png">
-    <img src="docs/assets/banner-light.png" alt="house-rules: Always-on working rules and skills for AI coding agents" width="100%">
+    <img src="docs/assets/banner-light.png" alt="house-rules: Working rules and skills for AI coding agents" width="100%">
   </picture>
 </h1>
 
