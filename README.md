@@ -15,9 +15,9 @@
 </p>
 
 <p align="center">
-  <a href="rules/core.md">Core rules</a> ·
-  <a href="#modifiers">Opt-in modifiers</a> ·
-  <a href="#writing-your-own-sections">Your own layer</a> ·
+  <a href="rules/core.md">Core rules</a>&nbsp;·
+  <a href="#modifiers">Opt-in modifiers</a>&nbsp;·
+  <a href="#writing-your-own-sections">Your own layer</a>&nbsp;·
   <a href="examples/project/AGENTS.md">Each repo's AGENTS.md</a>
 </p>
 
