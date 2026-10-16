@@ -5,10 +5,20 @@
   </picture>
 </h1>
 
+<p align="center"><strong>Working rules and skills for AI coding agents</strong></p>
+
 <p align="center">
   <a href="https://github.com/bompus/house-rules/actions/workflows/check.yml"><img src="https://github.com/bompus/house-rules/actions/workflows/check.yml/badge.svg" alt="CI status"></a>
-  <a href="https://github.com/bompus/house-rules/releases/latest"><img src="https://img.shields.io/github/v/release/bompus/house-rules" alt="Latest release"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/github/license/bompus/house-rules" alt="MIT license"></a>
+  <a href="https://github.com/bompus/house-rules/releases/latest"><img src="https://flat.badgen.net/github/release/bompus/house-rules" alt="Latest GitHub release"></a>
+  <a href="https://www.npmjs.com/package/@bompus/house-rules"><img src="https://flat.badgen.net/npm/v/@bompus/house-rules" alt="Latest npm version"></a>
+  <a href="LICENSE"><img src="https://flat.badgen.net/static/license/MIT/blue" alt="MIT license"></a>
+</p>
+
+<p align="center">
+  <a href="rules/core.md">Core rules</a> ·
+  <a href="#modifiers">Opt-in modifiers</a> ·
+  <a href="#writing-your-own-sections">Your own layer</a> ·
+  <a href="examples/project/AGENTS.md">Each repo's AGENTS.md</a>
 </p>
 
 A practical starting point for ordinary development with AI coding agents.
