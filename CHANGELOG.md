@@ -4,6 +4,9 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- The GitHub Actions reference now covers cancelling superseded pull-request runs (a stable group key,
+  cancelling only on pull-request events, the path-filter caveat) and skipping checks on draft pull requests.
+
 ## 0.14.0 - 2026-10-16
 
 - The `hr-pr-followup` review gate (`skills/hr-pr-followup/scripts/check-pr-review.ts`) now treats

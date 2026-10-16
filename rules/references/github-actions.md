@@ -8,6 +8,33 @@ Give jobs finite timeouts. Cancel an older pull-request run only when a newer
 run for the same pull request covers the same required checks; preserve required
 default-branch and release evidence.
 
+### Cancel superseded pull-request runs
+
+Key the `concurrency` group on the workflow and the pull request number, and
+cancel only for pull-request events:
+
+```yaml
+concurrency:
+  group: ${{ github.event_name == 'pull_request' && format('ci-pr-{0}', github.event.pull_request.number) || format('ci-{0}', github.sha) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+```
+
+- Keep the pull-request key stable across pushes: never a commit SHA or run ID,
+  which differs on every push, so nothing is cancelled. A workflow that runs only
+  on pull requests can use `${{ github.workflow }}-${{ github.event.pull_request.number }}`
+  with `cancel-in-progress: true`. A reusable workflow inherits the caller's
+  `github.workflow`, so give caller and callee different keys.
+- Cancellation needs a newer run in the same group. When a path filter means a
+  push starts no run, the older run finishes. Add a cleanup workflow only when
+  that stale result would mislead; it must not check out pull-request code.
+- To skip checks on draft pull requests, add `github.event.pull_request.draft != true`
+  to each check job's `if`, including reusable-workflow callers and aggregate
+  jobs. A job guard stops a runner being allocated; a step guard does not. Add
+  `ready_for_review` and `converted_to_draft` to the `pull_request` types, so
+  checks start when review begins and a replacement run can cancel old work.
+  This pays off only where drafts are common and the repository does not treat
+  drafts as reviewable.
+
 ### Choose the concurrency boundary
 
 Independent jobs can run on separate runners. A job's steps normally run in
