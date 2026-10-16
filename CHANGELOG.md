@@ -24,8 +24,8 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 - Decision questions now explain what would change and why it matters before recommending an option,
   in every offer format. Coded options no longer limit reasons to when the user asks. The Writing
   rule and the plain-prose skill prefer ordinary names before identifiers, and the plain-prose skill
-  adds that a question says what each answer authorizes. A new `evals/skill-fires` scenario checks the
-  explanation, and its grader rejects a reply that performs or presumes a check the user has not
+  adds that a question says what each answer authorizes. A new `evals/skill-fires` scenario checks
+  the explanation, and its grader rejects a reply that performs or presumes a check the user has not
   selected.
 - Add the opt-in `web-image-formats` modifier. It prefers WebP for supported raster images when it
   saves bytes at acceptable quality, preserves other format requirements, and checks delivered
@@ -38,17 +38,18 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   replacement never happens mid-turn, mid-evaluation that fixed its guidance, or with an external
   action pending, and only when the session is idle with its ledger reconciled. The handoff names
   each open offer by ID so a bare `go` cannot select the wrong one. The outgoing thread is marked
-  settled with a pointer to the successor. The successor re-points registry rows, scheduled tasks,
-  pull request watches and its messaging name.
+  settled with a pointer to the successor. The successor re-points each registry row, scheduled
+  task, pull request watch and messaging name that the host lets it bind. Items it cannot bind stay
+  with the outgoing thread, with a recorded reason.
 - `hr-benchmarking` no longer has a 3% default band for "no clear change". There is no minimum gain
-  size. A favorable difference counts as a gain when it is outside the variation criterion declared
-  before the first run (the comparison's own run-to-run spread) and the outputs are identical. A
-  worse difference outside the criterion is a regression, labeled worsening. When the criterion
-  cannot support a percentage, the result is kept separate and unsupported differences are labeled
-  inconclusive. A gap inside the criterion is still "no clear change", and memory and CPU costs are
-  reported beside the gain. `hr-writing-pr`, the thread-visuals reference and the
-  `upstream-contributions` rule now point at the declared variation criterion instead of a
-  "reporting band".
+  size. A favorable difference counts as a gain when the outputs are identical and it lies outside
+  the variation criterion. The criterion is declared before the first run and is the comparison's
+  own run-to-run spread, from its A/A arm or already-known variation. A worse difference outside the
+  criterion is a regression, labeled worsening. When the criterion cannot support a percentage, the
+  result is kept separate and unsupported differences are labeled inconclusive. A gap inside the
+  criterion is still "no clear change", and memory and CPU costs are reported beside the gain.
+  `hr-writing-pr`, the thread-visuals reference and the `upstream-contributions` rule now point at
+  the declared variation criterion instead of a "reporting band".
 - `hr-benchmarking` now gives a default stopping rule for performance claims, in place of "no
   universal minimum". Run 3 alternating runs per arm. Add 2 more per arm only when the arms' ranges
   overlap or the gap is within the variation criterion, for a cap of 5. If 5 runs per arm leave the
