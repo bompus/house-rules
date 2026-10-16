@@ -15,14 +15,15 @@ or readiness condition in the task plan. Backlog items do not authorize
 implementation or landing. Do not hold a ready batch for unrelated, unapproved
 or indefinite work.
 
-Before any decision to publish, check every package for commits past its
-latest release tag, and recommend a new release first when there are any. This
-covers public and private packages alike, and a republish of an existing tag,
-which ships the tagged content without the later commits. State how many
-commits are unreleased and what they change, and name the version the
-repository's scheme gives the combined changes. The recommendation is not
-permission to tag, publish or announce, and it does not hold a ready batch for
-unrelated work.
+Before any decision to publish, check every package for commits past its latest
+release tag, and recommend a new release first when there are any. This covers
+public and private packages alike, and a republish of an existing tag, which
+ships the tagged content without the later commits. State how many commits are
+unreleased and what they change, and name the version the repository's scheme
+gives the combined changes. A package that has never been tagged has no
+baseline, so say that and treat the publish as its first release. The
+recommendation is not permission to tag, publish or announce, and it does not
+hold a ready batch for unrelated work.
 
 Before any release or public announcement, audit every public-facing
 material against the intended revision or artifact and current verified state:
