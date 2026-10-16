@@ -11,8 +11,8 @@
 // any other conclusion, NEUTRAL and skipped included, because NEUTRAL means cubic did not review the
 // head ("Incremental review could not start", "AI review line limit reached"). That PR stays blocked
 // until someone comments `@cubic review` or the limit clears. A head commit with no cubic check is
-// not blocked, since cubic has no config file to require, and --wait does not wait for one to
-// appear. Missing or incomplete reviews
+// not blocked, since cubic's `cubic.yaml` is optional and its absence does not show that cubic
+// is expected, and --wait does not wait for one to appear. Missing or incomplete reviews
 // require inspection of the review integration and the repository's selected review policy.
 //   bun scripts/check-pr-review.ts <pr> [--repo <owner>/<name>] [--wait [--timeout <minutes>]]
 // Exit 1 while feedback is open, 2 when gh fails. Without --repo, gh resolves the repository from

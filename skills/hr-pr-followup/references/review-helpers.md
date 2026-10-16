@@ -27,8 +27,9 @@ SUCCESS. A NEUTRAL or skipped conclusion means cubic did not review the head
 ("Incremental review could not start", "Automatic AI review not started after
 branch rewrite", "AI review line limit reached"), so the gate refuses it too.
 That pull request stays blocked until someone comments `@cubic review` or the
-limit clears, and the refusal says so. A head commit with no cubic check is not blocked, because cubic has no config file
-to require. `--wait` does not wait for a cubic check that has not posted yet, so right
+limit clears, and the refusal says so. A head commit with no cubic check is not blocked,
+because cubic's `cubic.yaml` is optional and its absence does not show that cubic is
+expected. `--wait` does not wait for a cubic check that has not posted yet, so right
 after a push, confirm that cubic's check has appeared before landing.
 
 If a review is missing or incomplete, inspect the integration and the repository's

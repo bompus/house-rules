@@ -130,7 +130,7 @@ const CUBIC = "cubic · AI code reviewer";
 const FOLLOW_UP = "check the review integration and repository review policy";
 const CUBIC_RETRY = "comment `@cubic review` or wait for its limit to clear";
 
-// cubic posts a CheckRun and has no config file, so only a check that exists can block.
+// cubic posts a CheckRun and its `cubic.yaml` is optional, so only a check that exists can block.
 test("blocks a cubic check that is still running", () => {
   for (const status of ["QUEUED", "IN_PROGRESS", "PENDING"]) {
     const ctx = { name: CUBIC, status, conclusion: null };
