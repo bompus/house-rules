@@ -33,15 +33,15 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   derivatives before claiming savings.
 - `hr-handoff` gains a reference for handing work to a successor thread. A successor keeps the base
   title and ends it with ` v<N>`. The first thread counts as `v1` and is renamed at the handoff.
-  Threads are found by registry row, project and thread id, never by title. A session is replaced
-  only for a session-critical guidance change (an always-on rule, a safety rule, the catalog entry
-  of a skill it uses, a subagent definition). Skill bodies and docs need only the reread. A
-  replacement never happens mid-turn, mid-evaluation that fixed its guidance, or with an external
-  action pending, and only when the session is idle with its ledger reconciled. The handoff names
-  each open offer by ID so a bare `go` cannot select the wrong one. The outgoing thread is marked
-  settled with a pointer to the successor. The successor re-points each registry row, scheduled
-  task, pull request watch and messaging name that the host lets it bind. Items it cannot bind stay
-  with the outgoing thread, with a recorded reason.
+  Threads are found by registry row, project and thread id, never by title. Stale injected guidance
+  warrants replacing a session only when the change is session-critical (an always-on rule, a safety
+  rule, the catalog entry of a skill it uses, a subagent definition). Skill bodies and docs need
+  only the reread. A replacement never happens mid-turn, mid-evaluation that fixed its guidance, or
+  with an external action pending, and only when the session is idle with its ledger reconciled. The
+  handoff names each open offer by ID so a bare `go` cannot select the wrong one. The outgoing
+  thread is marked settled with a pointer to the successor. The successor re-points each registry
+  row, scheduled task, pull request watch and messaging name that the host lets it bind. Items it
+  cannot bind stay with the outgoing thread, with a recorded reason.
 - `hr-benchmarking` no longer has a 3% default band for "no clear change". There is no minimum gain
   size. A favorable difference counts as a gain when the outputs are identical and it lies outside
   the variation criterion. The criterion is declared before the first run and is the comparison's
