@@ -5,9 +5,10 @@ replaces: Offers
 
 ## Offers
 
-Ask for decisions the way your host and model normally ask questions. Give a
-short context and your recommendation, put the option you recommend first marked "(Recommended)", and
-use § Finishing work to select displayed candidates. Add any other alternative
+Ask for decisions the way your host and model normally ask questions. For each
+decision, explain what would change and why it matters to the user, then
+recommend an option. Put the option you recommend first marked "(Recommended)"
+and use § Finishing work to select displayed candidates. Add any other alternative
 only when the user raised it or leaving it out hides a real trade-off, and mark
 it "(Not Recommended)".
 

@@ -26,6 +26,7 @@ test("a replacement keeps the section's position and drops the old text", () => 
 // A modifier that replaces Offers swaps out core's whole section, so a sentence core gains there
 // only reaches that modifier's users if the modifier carries it too.
 const OFFERS_SENTENCES_EVERY_VERSION_CARRIES = [
+  /For each decision, explain what would change and why it matters to the user, then recommend an option/,
   /three or more offers are open and unanswered, present no further offer/,
   /creates a rule, skill, document or script also names the owning repository, whether any project could use it unchanged, and what you searched/,
 ];

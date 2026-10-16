@@ -38,7 +38,8 @@ cards section follows.
 
 Write the offer as normal text that stands alone, with these parts in order:
 
-1. One or two lines of context and your recommendation.
+1. For each decision, explain what would change and why it matters to the user,
+   then recommend an option.
 2. One numbered question per independent decision, ending in a question mark.
 3. Its options, one per line, starting with the one you recommend, marked
    "(Recommended)". Use § Finishing work to select displayed candidates.
@@ -325,8 +326,9 @@ messages, pull requests, docs, replies) uses plain, specific language.
 In every reply, status note and question, write for a reader who has not seen
 your working notes. Name a thing by what it is or does, not by a label you
 coined, a file or section name, or a term from a tool, repository or rule set.
-When the user must find, run or check the exact name, give it with a
-plain-words explanation the first time in the conversation. Do not reuse a
+Use ordinary names before identifiers. Keep internal labels and technical terms
+only when the reader needs them to understand, find, run or check the work;
+explain an unfamiliar term when first used. Do not reuse a
 coined label without saying again what it means. `hr-plain-prose` has the
 full procedure.
 

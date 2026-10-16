@@ -7,15 +7,15 @@ replaces: Offers
 
 Use § Finishing work to select displayed candidates. Each offer stands alone:
 
-1. Brief context and the recommendation beside the result the user needs.
+1. For each decision, explain what would change and why it matters to the user,
+   then recommend an option.
 2. One numbered question per independent decision, such as
    `**Question 1: Next step?**`. If all options combine, add "Pick any combination."
 3. One list item per option, so options cannot run together. Start each with its
    inline-code code (`1A`, `1B`; Question 2 uses `2A`, `2B`). Put the recommendation
    first, with "(Recommended)" immediately after its code. Mark options you would not
    pick "(Not Recommended)"; name partial combinations, such as "(Combinable with 1A)".
-   Keep each to a line or two that says what it does and how far it goes. Add reasons
-   only when the user asks.
+   Keep each to a line or two that says what it does and how far it goes.
 4. The exact acceptance line, a plain paragraph after the list. One question uses
    "Recommended: reply `<code>` or `go`". Several use "Recommended combination: reply
    `<code>, <code>` or `go`". Nothing follows that line, so a parked-item note, or any

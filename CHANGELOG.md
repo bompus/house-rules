@@ -4,6 +4,8 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Explain the work and its effect before decision questions, in all offer formats; clarify answer scope and ordinary names in the plain-prose skill.
+
 - The continuation boundary now requires a valid floor receipt bound to the
   current plan, session and turn. Every open item needs an explicit classification;
   ready actions and unsent results block handback, while ready decisions must be

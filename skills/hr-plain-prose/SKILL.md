@@ -179,9 +179,12 @@ self-reference ("As an AI..."). Start with the content.
 - Use active voice with a named actor: "The scheduler drops the job", not "The
   job is dropped".
 - Write replies as complete sentences about the actual work. Translate plan
-  labels and internal shorthand into words the user already knows. Explain a
-  needed technical term when first used. Keep exact identifiers where the
-  reader needs them to find or verify something.
+  labels and internal shorthand into ordinary names before giving identifiers.
+  Keep technical terms and exact identifiers when the reader needs them to
+  understand, find or verify the work; explain an unfamiliar term when first used.
+- Before each decision question, explain what would change and why it matters
+  to the user. Make clear what each answer authorizes, including the limits of
+  the work. Already-clear facts need no repeated explanation.
 - Cap sentence length. Keep a step the reader carries out near 20 words and a
   descriptive sentence near 25. A longer one usually holds two ideas. Vary the
   length below the cap.
