@@ -61,9 +61,27 @@ a separate profile. Check that throughput is possible given the machine and
 input. When the generator limits the result, report that limit.
 
 Before changing a component to remove a suspected cost, attribute time to that
-component in the real workload with a profile or a counter. Then time the change
-inside the workload that uses it. A standalone gain can vanish there. A setting
-that ran 7.6 times faster in isolation changed a 33 s indexing run by 0.1 s.
+component in the real workload with a profile or a counter. For fast feedback,
+benchmark each changed piece through its actual production entry point with
+representative fixed inputs and equivalent consumed outputs. Do not benchmark a
+copied implementation or stub out work material to the comparison.
+
+Compare each piece before and after against its immediate predecessor. At
+integration milestones, compare the integrated workload with both its immediate
+predecessor and the original baseline to track cumulative effects. Plan targeted
+caller and integration checks for copying, serialization, startup and orchestration
+costs that isolation excludes. Re-time the change in the workload that uses it at
+those milestones; a full-application run is not required after every piece.
+An isolated gain does not establish an end-to-end gain. A setting that ran 7.6
+times faster in isolation changed a 33 s indexing run by 0.1 s.
+
+Select metrics for the question and limiting resource: wall time or latency,
+memory, disk I/O, CPU, throughput, errors and output size as relevant. State each
+metric's unit, process scope and interval; distinguish peak process memory from
+retained memory, logical bytes from physical storage I/O, and warm from cold cache
+state. Cache hits and delayed writeback can hide storage costs; record unavailable
+counters and attribution limits rather than inferring physical I/O from logical
+bytes. Do not require irrelevant counters.
 
 ## Measure without changing the experiment
 

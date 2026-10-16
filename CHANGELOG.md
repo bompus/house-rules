@@ -4,6 +4,12 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- `hr-benchmarking` supports fast component feedback through real production entry
+  points, comparing each piece with its immediate predecessor. Integration
+  milestones check caller costs against the predecessor and original baseline;
+  isolated gains do not establish application gains. Metric selection follows the
+  question, with memory, storage I/O and cache-state limits made explicit.
+
 - `hr-benchmarking` adds JavaScript performance hunt guidance: count repeated work,
   check growth and resource lifetimes, and compare synchronous work with async I/O,
   yielding and workers. It covers queueing and transfer costs, runtime-specific
