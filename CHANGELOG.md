@@ -9,6 +9,10 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   ready actions and unsent results block handback, while ready decisions must be
   presented. Version-1 callers require migration. Host adoption remains separate.
 
+- Add the opt-in `web-image-formats` modifier. It prefers WebP for supported
+  raster images when it saves bytes at acceptable quality, preserves other
+  format requirements, and checks delivered derivatives before claiming savings.
+
 - `hr-benchmarking` supports fast component feedback through real production entry
   points, comparing each piece with its immediate predecessor. Integration
   milestones compare the integrated workload with its predecessor and original
