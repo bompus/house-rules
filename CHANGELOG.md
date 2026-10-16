@@ -4,75 +4,80 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
-- Explain the work and its effect before decision questions, in all offer formats; clarify answer scope and ordinary names in the plain-prose skill.
+## 0.13.0 - 2026-10-16
 
-- The continuation boundary now requires a valid floor receipt bound to the
-  current plan, session and turn. Every open item needs an explicit classification;
-  ready actions and unsent results block handback, while ready decisions must be
-  presented. Version-1 callers require migration. Host adoption remains separate.
-
-- Add the opt-in `web-image-formats` modifier. It prefers WebP for supported
-  raster images when it saves bytes at acceptable quality, preserves other
-  format requirements, and checks delivered derivatives before claiming savings.
-
-- `hr-benchmarking` supports fast component feedback through real production entry
-  points, comparing each piece with its immediate predecessor. Integration
-  milestones compare the integrated workload with its predecessor and original
-  baseline and check caller costs; isolated gains do not establish application gains.
-  Metric selection follows the
-  question, with memory, storage I/O and cache-state limits made explicit.
-
-- `hr-benchmarking` adds JavaScript performance hunt guidance: count repeated work,
-  check growth and resource lifetimes, and compare synchronous work with async I/O,
-  yielding and workers. It covers queueing and transfer costs, runtime-specific
-  measurements, and responsiveness versus total CPU cost.
-
-- `hr-benchmarking` adds local profile viewing with speedscope, native/JavaScript CPU
-  attribution, the `perf report --no-inline` workaround, heaptrack overhead and
-  off-CPU tracing limits. Its oha guidance names `--latency-correction` and the
-  required `-q` rate limit.
-
+- **Breaking for saved chart specs:** `skills/hr-writing-pr/scripts/benefit-chart.py` now requires
+  the spec's top-level `band`, the variation criterion declared before the first run, as a finite
+  non-negative fraction of the baseline (for example `0.04`). It used to default to 0.03, so a spec
+  saved without `band` now exits with a message; add one. A change at or inside the band is labeled
+  "no clear change".
+- **Breaking for hosts that check the reply boundary:** `checkBoundary(reply, state, context)` in
+  `scripts/continuity-boundary.mjs` (a repository script, not part of the npm package) now accepts
+  only version-2 handback records. The host passes the current plan text, session id and turn id in
+  `context`. It also copies in the receipt that the `hr-what-next` open-work check prints for that
+  plan, session and turn (`--json --session <id> --turn <id>`; both flags together, never with
+  `--archive`). Every open item needs an explicit classification, ready actions and unsent results
+  block handback, and each ready decision must appear as a presented offer option. A host's own
+  stop, hold, pause or low-quota signal passes the check; a producer's `paused` disposition alone
+  does not. Version-1 records and two-argument calls fail; `evals/end-of-reply/README.md` ("Adapter
+  migration") describes the records.
+- Decision questions now explain what would change and why it matters before recommending an option,
+  in every offer format. Coded options no longer limit reasons to when the user asks. The Writing
+  rule and the plain-prose skill prefer ordinary names before identifiers, and the plain-prose skill
+  adds that a question says what each answer authorizes. A new `evals/skill-fires` scenario checks the
+  explanation, and its grader rejects a reply that performs or presumes a check the user has not
+  selected.
+- Add the opt-in `web-image-formats` modifier. It prefers WebP for supported raster images when it
+  saves bytes at acceptable quality, preserves other format requirements, and checks delivered
+  derivatives before claiming savings.
 - `hr-handoff` gains a reference for handing work to a successor thread. A successor keeps the base
-  title and ends it with ` v<N>`; the first thread counts as `v1` and is renamed at the handoff, and
-  threads are found by registry row, project and thread id, never by title. A session is replaced
-  for stale injected guidance only when the change is session-critical (an always-on rule, a safety
-  rule, the catalog entry of a skill the session uses, a subagent definition); skill bodies and docs
-  need only the reread. A replacement never happens mid-turn, mid-evaluation that fixed its
-  guidance, or with an external action pending, and only when the session is idle with its ledger
-  reconciled. The handoff names each open offer by ID so a bare `go` cannot select the wrong one,
-  the outgoing thread is marked settled with a pointer to the successor, and the successor
-  re-points registry rows, scheduled tasks, pull request watches and its messaging name.
+  title and ends it with ` v<N>`. The first thread counts as `v1` and is renamed at the handoff.
+  Threads are found by registry row, project and thread id, never by title. A session is replaced
+  only for a session-critical guidance change (an always-on rule, a safety rule, the catalog entry
+  of a skill it uses, a subagent definition). Skill bodies and docs need only the reread. A
+  replacement never happens mid-turn, mid-evaluation that fixed its guidance, or with an external
+  action pending, and only when the session is idle with its ledger reconciled. The handoff names
+  each open offer by ID so a bare `go` cannot select the wrong one. The outgoing thread is marked
+  settled with a pointer to the successor. The successor re-points registry rows, scheduled tasks,
+  pull request watches and its messaging name.
 - `hr-benchmarking` no longer has a 3% default band for "no clear change". There is no minimum gain
-  size: a favorable difference counts as a gain when it is outside the variation criterion declared before
-  the first run (the comparison's own run-to-run spread) and the outputs are identical. When the
-  criterion cannot support a percentage, the result is kept separate and unsupported differences are
-  labeled inconclusive. A gap inside the criterion is still "no clear change", and memory and CPU
-  costs are reported beside the gain. The benefit chart script in `hr-writing-pr` now requires the
-  spec's `band` (the declared variation criterion as a fraction of the baseline, a finite
-  non-negative number) instead of defaulting to 0.03, so a spec saved without one fails with a
-  message. `hr-writing-pr`, the thread-visuals reference and the
+  size. A favorable difference counts as a gain when it is outside the variation criterion declared
+  before the first run (the comparison's own run-to-run spread) and the outputs are identical. A
+  worse difference outside the criterion is a regression, labeled worsening. When the criterion
+  cannot support a percentage, the result is kept separate and unsupported differences are labeled
+  inconclusive. A gap inside the criterion is still "no clear change", and memory and CPU costs are
+  reported beside the gain. `hr-writing-pr`, the thread-visuals reference and the
   `upstream-contributions` rule now point at the declared variation criterion instead of a
   "reporting band".
 - `hr-benchmarking` now gives a default stopping rule for performance claims, in place of "no
-  universal minimum". Run 3 alternating runs per arm, and add 2 more per arm only when the arms'
-  ranges overlap or the gap is within the variation criterion, for a cap of 5. If 5 runs per arm
-  leave the comparison unresolved, it is reported as inconclusive. Another count is used only when
-  the user asks for it or a run is too long to repeat 3 times, and is declared with its reason
-  before the first run. Results always carry the run count and range, never a bare average. The
-  expected wall-clock time is stated before the first run. The JavaScript reference no longer asks
-  for at least 10 runs when timing startup.
-- `hr-agent-guidance-audit` now says its pass/fail rule screening (4 or more runs, 9 per arm for a
-  smaller gap) is a deliberate exception to the 3-runs-per-arm default for performance claims in
-  `hr-benchmarking`.
-
-- The `hr-code-review` panel recommendations gain an entry for Muse Wonder Full 1.0 on the Bug Hunt
-  board: two runs each at xhigh (41.5 of 105) and max (42.0), no published price, and reachable only
-  through a Muse Code subscription plan. The existing Opus 5.5 and Sonnet 5.5 entries were checked
-  against the same board data again and their figures are unchanged.
+  universal minimum". Run 3 alternating runs per arm. Add 2 more per arm only when the arms' ranges
+  overlap or the gap is within the variation criterion, for a cap of 5. If 5 runs per arm leave the
+  comparison unresolved, it is reported as inconclusive. Another count is used only when the user
+  asks for it or a run is too long to repeat 3 times. It is declared with its reason before the
+  first run. Results always carry the run count and range, never a bare average. The expected
+  wall-clock time is stated before the first run. The JavaScript reference no longer asks for at
+  least 10 runs when timing startup. `hr-agent-guidance-audit` keeps its pass/fail rule screening (4
+  or more runs, 9 per arm for a smaller gap) as a deliberate exception to this default.
 - `hr-benchmarking` now says to test the newest stable release of each candidate. If the installed
-  or deployed version differs, the results say so; the agent asks which to test when the request
-  does not settle it, and when told to use an older version it uses that and offers the newest as an
+  or deployed version differs, the results say so. The agent asks which to test when the request
+  does not settle it. When told to use an older version, it uses that and offers the newest as an
   alternative.
+- `hr-benchmarking` supports fast component feedback through real production entry points, comparing
+  each piece with its immediate predecessor. Integration milestones compare the integrated workload
+  with its predecessor and original baseline and check caller costs; isolated gains do not establish
+  application gains. Metric selection follows the question, with memory, storage I/O and cache-state
+  limits made explicit.
+- `hr-benchmarking` adds JavaScript performance hunt guidance: count repeated work, check growth and
+  resource lifetimes, and compare synchronous work with async I/O, yielding and workers. It covers
+  queueing and transfer costs, runtime-specific measurements, and responsiveness versus total CPU
+  cost.
+- `hr-benchmarking` adds local profile viewing with speedscope, native/JavaScript CPU attribution,
+  the `perf report --no-inline` workaround, heaptrack overhead and off-CPU tracing limits. Its oha
+  guidance names `--latency-correction` and the required `-q` rate limit.
+- The `hr-code-review` panel recommendations gain an entry for Muse Wonder Full 1.0 on the Bug Hunt
+  board: two runs each at xhigh (41.5 of 105) and max (42.0). It has no published price and is
+  reachable only through a Muse Code subscription plan. The existing Opus 5.5 and Sonnet 5.5 entries
+  were checked against the same board data again and their figures are unchanged.
 
 ## 0.12.0 - 2026-10-14
 
