@@ -143,7 +143,7 @@ or that unavailable history contains no other work.
 For a host that checks the reply boundary, add `--json --session <id> --turn <id>`
 to the existing floor command. It emits a bound `reconciliation` receipt alongside
 the usual report. An invalid plan exits `1`, even when displayed groups are empty.
-Exit `2` reports open work and does not classify its readiness or authority.
+Exit `2` reports open work or findings and does not classify readiness or authority.
 
 The house-rules repository's `evals/end-of-reply/README.md`, Adapter migration,
 defines version-2 records, exact item coverage and adapter migration. The floor
