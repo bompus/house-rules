@@ -25,12 +25,22 @@
 // A plan with a `Project: <name>` line is checked against <notes>/audits/<name>/last-audit.json, the record
 // hr-forgotten-work-audit writes: a missing, unreadable or older-than-30-days record is a warning. A plan
 // without that line gets no audit warning.
+import { createHash } from "node:crypto";
+import { pathToFileURL } from "node:url";
 import { spawn, spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, statSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  realpathSync,
+  renameSync,
+  statSync,
+} from "node:fs";
 import { basename, dirname, join, resolve, sep } from "node:path";
 
 const usage =
-  "usage: check-open-work.mjs <plan.md> [--checkout <path>]... [--app-managed <path>]... [--scratch <dir>] [--repo <owner/repo>] [--offline] [--today <YYYY-MM-DD>] [--archive] [--json]\n" +
+  "usage: check-open-work.mjs <plan.md> [--checkout <path>]... [--app-managed <path>]... [--scratch <dir>] [--repo <owner/repo>] [--offline] [--today <YYYY-MM-DD>] [--archive] [--json] [--session <id> --turn <id>]\n" +
   'The output lists deferred items whose trigger is only the user\'s own action ("user selects", "user asks for the backlog") as "awaiting your yes/no"; this is a text match, see the header.';
 const TERMINAL_STATUS = /^(completed?|done|archived)\b/i;
 const COMPLETED_STATUS = /^completed\b/i;
@@ -99,16 +109,30 @@ function parseArguments(argv) {
     today: new Date().toLocaleDateString("sv"),
     archive: false,
     json: false,
+    sessionId: null,
+    turnId: null,
   };
   for (let index = 0; index < argv.length; index++) {
     const argument = argv[index];
     if (argument === "--archive") options.archive = true;
     else if (argument === "--json") options.json = true;
     else if (argument === "--offline") options.offline = true;
-    else if (["--checkout", "--app-managed", "--scratch", "--repo", "--today"].includes(argument)) {
+    else if (
+      [
+        "--checkout",
+        "--app-managed",
+        "--scratch",
+        "--repo",
+        "--today",
+        "--session",
+        "--turn",
+      ].includes(argument)
+    ) {
       const value = argv[++index];
       if (!value) throw new Error(`${argument} needs a value\n${usage}`);
-      if (argument === "--checkout") options.checkouts.push(value);
+      if (argument === "--session") options.sessionId = value;
+      else if (argument === "--turn") options.turnId = value;
+      else if (argument === "--checkout") options.checkouts.push(value);
       else if (argument === "--app-managed") options.appManaged.push(value);
       else if (argument === "--repo") {
         if (!/^[\w.-]+\/[\w.-]+$/.test(value)) throw new Error(`--repo needs owner/repo\n${usage}`);
@@ -121,13 +145,17 @@ function parseArguments(argv) {
     else options.plan = argument;
   }
   if (!options.plan) throw new Error(usage);
+  if (Boolean(options.sessionId) !== Boolean(options.turnId))
+    throw new Error("--session and --turn must be supplied together");
+  if (options.sessionId && options.archive)
+    throw new Error("a reconciliation receipt cannot archive its plan");
   return options;
 }
 
 const clip = (text, length = 90) => (text.length > length ? `${text.slice(0, length - 1)}…` : text);
 
-function readPlan(path) {
-  const lines = readFileSync(path, "utf8").split(/\r?\n/);
+function parsePlan(text) {
+  const lines = text.split(/\r?\n/);
   const header = lines.slice(0, 40);
   const field = (name) =>
     header
@@ -184,6 +212,24 @@ function readPlan(path) {
       narrative.push({ line: i + 1, text: line.trim() });
   });
   return { status, owner, purpose, project, items, errors, narrative };
+}
+
+const sha256 = (text) => createHash("sha256").update(text).digest("hex");
+
+// Identity is local to these exact UTF-8 plan bytes. No readiness is inferred here.
+export function planSnapshot(planText) {
+  const plan = parsePlan(planText);
+  return {
+    planSHA256: sha256(planText),
+    errors: plan.errors,
+    openItems: plan.items
+      .filter((item) => item.mark === " " || item.mark === "~")
+      .map((item) => ({
+        id: `L${item.line}:${sha256(item.mark + item.text)}`,
+        ...item,
+        recheck: item.text.match(RECHECK)?.[1] ?? null,
+      })),
+  };
 }
 
 function notesRoot(planPath) {
@@ -506,7 +552,8 @@ async function run(options) {
   const planPath = resolve(options.plan);
   if (!existsSync(planPath) || !statSync(planPath).isFile())
     throw new Error(`cannot read ${options.plan}`);
-  const plan = readPlan(planPath);
+  const planText = readFileSync(planPath, "utf8");
+  const plan = parsePlan(planText);
   const report = {
     plan: planPath,
     status: plan.status ?? null,
@@ -520,10 +567,20 @@ async function run(options) {
     findings: [],
     warnings: [],
     errors: [...plan.errors],
+    ...(options.sessionId
+      ? {
+          reconciliation: {
+            version: 1,
+            sessionId: options.sessionId,
+            turnId: options.turnId,
+            ...planSnapshot(planText),
+          },
+        }
+      : {}),
   };
-  if (report.errors.length) return report;
   const open = plan.items.filter((item) => item.mark === " " || item.mark === "~");
   report.open = open.map(row);
+  if (report.errors.length) return report;
   report.awaitingUser = open.filter(awaitsUser).map(row);
   if (TERMINAL_STATUS.test(plan.status) && open.length)
     report.findings.push(
@@ -610,6 +667,12 @@ async function main() {
     process.exit(1);
   }
   const code = report.errors.length ? 1 : report.findings.length || report.open.length ? 2 : 0;
+  if (report.reconciliation)
+    Object.assign(report.reconciliation, {
+      exit: code,
+      errors: report.errors,
+      findings: report.findings,
+    });
   if (options.json) console.log(JSON.stringify({ exit: code, ...report }, null, 2));
   else {
     console.log(
@@ -640,4 +703,9 @@ async function main() {
   process.exit(code);
 }
 
-await main();
+if (
+  process.argv[1] &&
+  existsSync(process.argv[1]) &&
+  import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href
+)
+  await main();

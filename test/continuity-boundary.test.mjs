@@ -2,18 +2,55 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
-import { checkBoundary } from "../scripts/continuity-boundary.mjs";
+import { checkBoundary as boundary } from "../scripts/continuity-boundary.mjs";
 import { grade } from "../evals/end-of-reply/grade.mjs";
 
-const state = (disposition, extra = {}) => ({
-  version: 1,
-  disposition,
-  goal: "Reduce repeated prompting.",
-  result: "Offline checks passed.",
-  remaining: "The integration slot is occupied.",
-  phaseBoundary: false,
-  ...extra,
+import { planSnapshot } from "../skills/hr-what-next/scripts/check-open-work.mjs";
+
+const plan = (complete) =>
+  `Owner: test\nStatus: active\n## Ledger\n${complete ? "- [x] Done; evidence: checked" : "- [ ] Open"}\n`;
+const context = (complete) => ({
+  planText: plan(complete),
+  sessionId: "test",
+  turnId: "turn",
+  today: "2030-01-01",
 });
+const checkBoundary = (reply, state) =>
+  boundary(reply, state, context(state?.disposition === "complete"));
+const state = (disposition, extra = {}) => {
+  const snapshot = planSnapshot(plan(disposition === "complete"));
+  const id = snapshot.openItems[0]?.id;
+  return {
+    version: 2,
+    disposition,
+    goal: "Reduce repeated prompting.",
+    result: "Offline checks passed.",
+    remaining: "The integration slot is occupied.",
+    phaseBoundary: false,
+    reconciliation: {
+      version: 1,
+      sessionId: "test",
+      turnId: "turn",
+      ...snapshot,
+      exit: id ? 2 : 0,
+      findings: [],
+    },
+    items: id
+      ? [
+          {
+            id,
+            kind: disposition === "offer" ? "ready-user-decision" : "live-owner-wait",
+            next: "Run the assessment.",
+            owner: "worker",
+            reference: "task",
+            recheck: "2030-01-03",
+          },
+        ]
+      : [],
+    decisions: disposition === "offer" ? [{ id, text: "Run the assessment." }] : [],
+    ...extra,
+  };
+};
 const offer =
   "**Question 1: Next step?**\n\n`1A` (Recommended): Run the assessment.\n\n`1B`: Defer.\n\nRecommended: reply `1A` or `go`";
 
@@ -52,8 +89,9 @@ test("complete, frozen, paused and missing records remain distinct", () => {
       "Work is paused. Resume only when asked.",
       state("paused", { remaining: "Resume only when asked." }),
     ).pass,
-    true,
+    false,
   );
+  assert.equal(boundary("Paused.", null, { stopReason: "pause" }).pass, true);
   assert.equal(
     checkBoundary(
       "Blocked. The evaluation input is frozen.",
@@ -80,7 +118,6 @@ test("final dispositions reject declared tool calls", () => {
     ["offer", offer],
     ["complete", "Nothing remains."],
     ["blocked", "Blocked. The integration slot is occupied."],
-    ["paused", "Paused. The integration slot is occupied."],
   ]) {
     assert.equal(checkBoundary(reply, state(disposition)).pass, true);
     assert.equal(

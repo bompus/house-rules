@@ -131,13 +131,81 @@ mentions "End of every reply" or "house rules".` The only instruction file shoul
   directory and start one `run.mjs` per directory (`xargs -P`); every call is independent. The full
   campaign of 18 scenarios, an eight-scenario screen and the modifier screens took 2 to 4 hours per model.
 
-`scripts/continuity-boundary.mjs` checks an explicit version-1 record with
-`disposition`, `goal`, `result`, `remaining` and boolean `phaseBoundary`.
-Dispositions are `continue`, `offer`, `blocked`, `complete` and `paused`.
-A final handback cannot pass with ready work recorded as `continue`.
-At a phase boundary, the reply must include the recorded goal, result and
-remaining work. The caller supplies current state; this helper cannot prove
-permission, backlog completeness or truth of the record.
+`scripts/continuity-boundary.mjs` exports `checkBoundary(reply, state, context)`.
+It validates version-2 handback records against a current plan and floor receipt.
+Version-1 records and two-argument calls fail. `replyFacts`, used by the offline
+grader, keeps its existing interface. These tests do not change frozen evaluations.
+
+### Adapter migration
+
+The adapter supplies `context.planText` (the current UTF-8 plan contents),
+`context.sessionId` and `context.turnId` from its actual session and turn.
+It may supply `context.today` as a real `YYYY-MM-DD` date in its local timezone;
+the default is the current local date. Read the plan again immediately before
+checking. Serialize the check with the actual reply boundary so a subsequent
+plan edit or turn change invalidates the check before handback.
+
+Run the existing floor with `--json --session <id> --turn <id>` and the usual
+checkout, scratch and repository arguments. Both identity flags are required
+together; they cannot be combined with `--archive`. Ordinary floor invocations
+keep their exit codes and existing report fields. The added `reconciliation`
+object contains:
+
+| Field                 | Meaning                                                                                                |
+| --------------------- | ------------------------------------------------------------------------------------------------------ |
+| `version`             | Receipt version `1`                                                                                    |
+| `sessionId`, `turnId` | Adapter-supplied identities                                                                            |
+| `planSHA256`          | SHA256 of the UTF-8 plan contents                                                                      |
+| `exit`                | Floor exit code, `0`, `1` or `2`                                                                       |
+| `errors`, `findings`  | Floor validation errors and unaccounted work                                                           |
+| `openItems`           | Every open or deferred ledger item with `id`, `line`, `mark`, full `text` and `recheck` date or `null` |
+
+An item's ID is `L<line>:<sha256(mark + full parsed text)>`, scoped to the exact
+plan hash. It is an opaque snapshot identity, not a persistent task ID.
+Invalid plans still list parsed open items; empty groups never imply validity.
+The adapter must retain the floor's actual exit status and output. Failed runs,
+unreadable output and errors cannot be replaced with empty successful receipts.
+Copy the adapter-obtained receipt into `state.reconciliation`; do not accept a
+producer's substitute for the floor result.
+
+The producer supplies `state.version: 2`, `disposition`, `goal`, `result`,
+`remaining`, boolean `phaseBoundary`, `items` and `decisions`.
+Dispositions remain `continue`, `offer`, `blocked`, `complete` and `paused`.
+Every current open identity must appear exactly once in `items`, with its `id`,
+concrete `next` action or blocker, and one of these `kind` values:
+
+| Kind                      | Additional fields and handback result                           |
+| ------------------------- | --------------------------------------------------------------- |
+| `authorized-ready-action` | Attests existing authority and readiness; blocks handback       |
+| `unsent-result`           | Required result still needs delivery; blocks handback           |
+| `ready-user-decision`     | Requires an `offer` disposition and a presented decision        |
+| `live-owner-wait`         | `owner`, evidence `reference` and future `recheck` date         |
+| `external-trigger-wait`   | Unmet `trigger`, evidence `reference` and future `recheck` date |
+
+`decisions` contains exactly one `{id, text}` per ready user decision and no
+other identities. Each `text` must equal that item's concrete `next` text and
+appear on a coded option line in the reply. Unrelated options or decision text
+outside an option cannot satisfy it. Use an empty array when no decision is ready.
+A ready decision among waits still requires presentation. A wait cannot hide a
+recheck that is due today or overdue in either the plan or its classification.
+Reconcile the item and update the plan before producing a new receipt.
+
+The checker recomputes the plan hash and current open identities. It rejects
+invalid syntax, floor errors or findings, exit `1`, stale identities and inexact
+coverage. Exit `2` can pass for valid waits or presented decisions; it never
+means the session is complete. At a phase boundary the reply must still include
+the recorded goal, result and remaining work.
+
+Only the adapter may supply `context.stopReason`, one of `stop`, `hold`, `pause`
+or `low-quota`. These explicit signals bypass reconciliation and suppress
+corrective continuation, including when the record is absent. A producer's
+`paused` disposition alone cannot bypass validation. Preserve the host's bounded
+correction limit and interruption checks; this helper neither retries nor starts work.
+
+Classification is a producer attestation. The checker does not prove authority,
+owner liveness, trigger truth, completeness of the plan or semantic readiness.
+A valid receipt does not prove a host invoked this helper at the real reply
+boundary. Source installation and qualified host invocation are separate requirements.
 
 Add `--baseline` to see what the rules add. Each scenario then also runs with
 a one-sentence instruction in place of the rules, and with no rules at all.

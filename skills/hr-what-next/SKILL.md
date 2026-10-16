@@ -137,3 +137,15 @@ and `scripts/check-reconciliation.mjs` checker. Otherwise retain the mapping
 and coverage gaps without claiming a mechanical check. A passing checker
 accounts for supplied records; it does not prove every promise was understood
 or that unavailable history contains no other work.
+
+## Machine reconciliation
+
+For a host that checks the reply boundary, add `--json --session <id> --turn <id>`
+to the existing floor command. It emits a bound `reconciliation` receipt alongside
+the usual report. An invalid plan exits `1`, even when displayed groups are empty.
+Exit `2` reports open work and does not classify its readiness or authority.
+
+The house-rules repository's `evals/end-of-reply/README.md`, Adapter migration,
+defines version-2 records, exact item coverage and adapter migration. The floor
+only supplies snapshot identities; the producer must explicitly classify each
+item. Source availability does not establish host enforcement.

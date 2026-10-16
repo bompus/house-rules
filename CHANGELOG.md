@@ -4,6 +4,11 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- The continuation boundary now requires a valid floor receipt bound to the
+  current plan, session and turn. Every open item needs an explicit classification;
+  ready actions and unsent results block handback, while ready decisions must be
+  presented. Version-1 callers require migration. Host adoption remains separate.
+
 - `hr-benchmarking` supports fast component feedback through real production entry
   points, comparing each piece with its immediate predecessor. Integration
   milestones compare the integrated workload with its predecessor and original
