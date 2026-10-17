@@ -4,21 +4,29 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
-- The `periodic-updates` modifier now says to arm the status watcher in the step that launches the job, and
-  that the watcher posts a line every interval even when nothing changed, so a watcher that fires only on
-  milestones does not satisfy it. It also says to wait on the job through the watcher, not in one long
-  blocking call, and to give the total ETA in the launch reply and again when it changes, including when more
-  rounds are queued. A new screening scenario, `periodic-launch`, grades the launch reply.
+## 0.16.0 - 2026-10-17
+
+- The `periodic-updates` modifier now says to arm the status watcher in the step that launches the job.
+  The watcher posts a line every interval even when nothing changed, so one that fires only on milestones
+  does not satisfy it. The modifier also says to wait on the job through the watcher, not in one long
+  blocking call. The launch reply gives the total ETA, and gives it again when it changes, including when
+  more rounds are queued.
+- `check-pr-review.ts`, and so `merge-pr.sh`, now refuses while any check on the head commit is
+  unfinished, failed, cancelled or timed out. It used to look only at CodeRabbit and cubic, so a
+  pull request with a red CI check could merge. Neutral and skipped check runs still pass, a head
+  commit with no checks passes, and `--wait` polls while another check runs. The gate does not tell
+  required checks from optional ones, so a failing optional check also blocks the merge.
+- The headline in `docs/assets/overview.png` now reads "Working rules for coding agents". It still said
+  "Always-on", which the README and the banners dropped in 0.14.2.
+- Repository only (not in the npm package): a new end-of-reply screening scenario, `periodic-launch`, grades
+  the launch reply of a long job. The reply must give the update interval and either an ETA with its basis
+  or the word "unmeasured". It fails when it blocks on one `sleep` or `timeout` of 10 minutes or more.
 - Repository only (not in the npm package): the end-of-reply eval wrapper `claude.sh` accepts `EOR_KEEP_ENV`.
   It is a space-separated list of `CLAUDE*` or `ANTHROPIC*` variable names to keep, so a run can use a login
   that lives in the environment. The default is unchanged, and every such variable is still unset.
 - Repository only (not in the npm package): the end-of-reply eval grader no longer drops a reply's opening
   prose when a scenario allows reads. A reply with a status line, a read-only call and an acting call, and
   no prose after them, is now graded whole. Its required patterns can match the status line.
-- `check-pr-review.ts`, and so `merge-pr.sh`, now refuses while any check on the head commit is
-  unfinished, failed, cancelled or timed out. It used to look only at CodeRabbit and cubic, so a
-  pull request with a red CI check could merge. Neutral and skipped check runs still pass, a head
-  commit with no checks passes, and `--wait` polls while another check runs.
 
 ## 0.15.2 - 2026-10-17
 
