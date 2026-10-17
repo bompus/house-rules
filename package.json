@@ -1,6 +1,6 @@
 {
   "name": "@bompus/house-rules",
-  "version": "0.14.0",
+  "version": "0.14.1",
   "description": "Composable working rules and skills for AI coding agents",
   "homepage": "https://github.com/bompus/house-rules#readme",
   "license": "MIT",
