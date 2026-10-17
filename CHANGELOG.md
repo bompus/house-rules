@@ -4,6 +4,14 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+## 0.14.2 - 2026-10-17
+
+- The README banner images no longer say "Always-on". Their tagline now matches the README alt text and
+  the repository description: "Working rules and skills for AI coding agents".
+- The repository has a security policy (`SECURITY.md`). It says what the installer and skill scripts do,
+  asks for vulnerabilities to be reported through GitHub's private vulnerability reporting, and states that
+  only the latest release gets fixes. The file is not part of the npm package.
+
 ## 0.14.1 - 2026-10-17
 
 - The GitHub Actions reference now covers cancelling superseded pull-request runs (a stable group key,
