@@ -4,6 +4,8 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+## 0.15.1 - 2026-10-17
+
 - The `hr-handoff` reconciliation checker no longer ignores item lines outside a plan's `## Ledger`
   section, done and dropped ones included. It counts them and reports a gap naming the first five (the open
   or deferred ones, when there are any). The receipt is then partial, and a receipt that claims complete
