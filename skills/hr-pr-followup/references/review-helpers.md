@@ -62,8 +62,8 @@ judges whether the explanation answers the findings.
 
 Connections are paginated. Partial responses, malformed fields, repeated
 cursors and head changes fail closed. A final head read does not make review
-feedback an atomic snapshot. `--wait --timeout 30` polls only while CodeRabbit
-or cubic runs, or briefly while CodeRabbit's expected check has not appeared.
+feedback an atomic snapshot. `--wait --timeout 30` polls while CodeRabbit,
+cubic or any other check runs, or briefly while CodeRabbit's expected check has not appeared.
 
 ## Resolve one review thread
 
