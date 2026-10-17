@@ -4,6 +4,12 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- The `periodic-updates` modifier now says to arm the status watcher in the step that launches the job, and
+  that the watcher posts a line every interval even when nothing changed, so a watcher that fires only on
+  milestones does not satisfy it. It also says to wait on the job through the watcher, not in one long
+  blocking call, and to give the total ETA in the launch reply and again when it changes, including when more
+  rounds are queued. A new screening scenario, `periodic-launch`, grades the launch reply.
+
 ## 0.15.2 - 2026-10-17
 
 - The plan-source paragraph in the `hr-handoff` reconciliation reference is split in two, so no paragraph
