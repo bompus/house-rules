@@ -19,8 +19,10 @@ issues invite, such as performance fixes or a reported defect.
    request. A behavior change, or a project that asks for prior approval, starts
    with a comment or discussion, not a pull request. Count the underlying
    problems and split the submission when the guide asks for one per request.
-3. Meet § Repository work first: the search for existing reports, the review of
-   the diff, the relevant checks, and the project's template and disclosure ask.
+3. Meet § Repository work first. Base the work on the default branch of the
+   repository the pull request targets. Search for existing reports, review the
+   diff, run the relevant checks, and follow the project's template and
+   disclosure ask.
 4. Show the user the exact text and channel once before posting. Posting is
    public and cannot be undone; this rule makes submitting the expected next
    step, not a waiver of that look. Only a user instruction naming the kind of

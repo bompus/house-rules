@@ -20,6 +20,11 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   writes itself. It limits zstd to runtimes that have it and negotiates browser responses by
   `Accept-Encoding`. It keeps gzip where another tool reads the file, keeps WebSocket compression on
   `permessage-deflate`, and gives starting levels for hot, cold, dynamic and static data.
+- Repository work now says to read the default branch of the repository the change will land in before
+  creating a branch or worktree. The agent fetches it and bases the work on its tip. That repository is your
+  fork when the change lands there and upstream when a pull request targets upstream. A branch name shown by a
+  tool or harness is not evidence of the default branch. A base named by the repository's own guidance still wins. The upstream-contributions modifier lists that
+  base read among the steps before submitting a pull request.
 
 ## 0.14.2 - 2026-10-17
 

@@ -190,6 +190,8 @@ Transfer to another top-level conversation only at the user's direction, under a
 
 Keep independent repository edits on separate branches and isolated worktrees when a checkout may be shared. Leave other people's and sessions' edits alone.
 
+Before creating a branch or worktree, read the default branch of the repository the change will land in (`gh repo view <owner>/<repo> --json defaultBranchRef` or `git ls-remote --symref <remote> HEAD`), fetch it and base the work on its tip. That repository is your fork when the change lands there and upstream when a pull request targets upstream. A branch name shown by a tool or harness is not evidence of the default branch, which need not be `main`. If the repository's own guidance names another base, follow it and say so.
+
 Before creating an issue or pull request, search the target repository's open and closed issues and pull requests for the same change. Reuse or coordinate with a match; otherwise link related work and say how yours differs. If you cannot search, say so instead of claiming no matches.
 
 Before submitting a pull request to an external upstream project, review the
