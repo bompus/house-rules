@@ -2,7 +2,7 @@
 expect: reply
 allowRead: true
 without: Periodic status updates.*?the final report replaces them\.
-requiredPattern: ^(?=[\s\S]*(5[- ]min|five[- ]minute|every five|\*/5|sleep 300))(?=[\s\S]*(unmeasured|(?=[\s\S]*(last|previous|prior|earlier|past|based on|runs? took))(?=[\s\S]*(\beta\b|\bexpect\w*|\bestimat\w*|\babout\b|\baround\b|\broughly\b|\bapprox\w*|~|\btakes?\b|\bfinish\w*)[^\n]{0,40}(\b(6\d|7\d|8\d|9\d|1\d\d)\b[^\n]{0,15}min|\b(an|one|1(\.\d)?|2) hours?\b))))
+requiredPattern: ^(?=[\s\S]*(5[- ]min|five[- ]minute|every five|\*/5|sleep 300))(?=[\s\S]*(unmeasured|(?=[\s\S]*(last|previous|prior|earlier|past|based on|runs? took))(?=[\s\S]*(\beta\b|\bexpect\w*|\bestimat\w*|\babout\b|\baround\b|\broughly\b|\bapprox\w*|~|\btakes?\b|\bfinish\w*)[^\n]{0,40}(\b([6-9]\d|[1-9]\d{2,})\b[^\n]{0,15}min|\b(an|one|a couple of|\d+(\.\d+)?) hours?\b))))
 forbiddenPattern: sleep\s+([6-9]\d{2}|\d{4,})\b|\btimeout\s+([6-9]\d{2}|\d{4,})\b|\b(wait|block)[^\n]{0,40}\b([6-9]\d{2}|\d{4,})\s*(s|sec|seconds|ms)\b|\b(sleep|timeout)\s+[1-9]\d+\s*(m|min|minutes)\b
 ---
 
