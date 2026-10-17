@@ -358,7 +358,7 @@ const previousPlan = [
   "- [~] cache experiment ... trigger: next release",
   "",
   "## Log",
-  "- [ ] a box outside the ledger is not a record",
+  "- plain text outside the ledger is not a record",
 ].join("\n");
 
 function withPlan(change = () => {}, plan = previousPlan) {
@@ -435,4 +435,54 @@ test("one item that absorbs several open predecessor lines must say why they are
 test("a Markdown source without a ledger is an error", () => {
   const result = run(withPlan(() => {}, "Owner: x\nStatus: paused\n").file);
   expect(result.report.errors).toContain("source previous: no `## Ledger` section in the plan");
+});
+
+test("item lines outside the ledger section are counted as a gap, not read silently", () => {
+  const outside = [
+    previousPlan,
+    "- [ ] open step one",
+    "- [~] deferred step",
+    "- [x] finished step ... evidence: PR 8",
+  ].join("\n");
+  const partial = withPlan((r) => {
+    r.coverage = "partial";
+  }, outside);
+  const result = run(partial.file);
+  expect(result.code).toBe(2);
+  expect(result.report.status).toBe("partial");
+  expect(result.report.gaps).toEqual([
+    "source previous: 3 item line(s) outside the `## Ledger` section were not read, 2 of them open or deferred (L11, L12); move them into the ledger section",
+  ]);
+  const claimed = run(withPlan(() => {}, outside).file);
+  expect(claimed.code).toBe(1);
+  expect(claimed.report.errors).toContain("complete coverage claimed despite source gaps");
+});
+
+test("the outside-ledger gap names the first five lines and counts the rest", () => {
+  const lines = Array.from({ length: 8 }, (_, index) => `- [ ] outside ${index}`);
+  const result = run(
+    withPlan(
+      (r) => {
+        r.coverage = "partial";
+      },
+      [previousPlan, ...lines].join("\n"),
+    ).file,
+  );
+  expect(result.report.gaps).toEqual([
+    expect.stringContaining(
+      "8 item line(s) outside the `## Ledger` section were not read, 8 of them open or deferred (L11, L12, L13, L14, L15 and 3 more)",
+    ),
+  ]);
+});
+
+test("item lines after a deeper heading inside the ledger section stay in the ledger", () => {
+  const nested = previousPlan.replace(
+    "- [~] cache experiment",
+    "### Cache\n- [~] cache experiment",
+  );
+  const paths = withPlan((r) => {
+    r.accounting.at(-1).record = "L8";
+    r.items.at(-1).evidence = [{ source: "previous", record: "L8" }];
+  }, nested);
+  expect(run(paths.file).report).toMatchObject({ status: "complete", errors: [], gaps: [] });
 });

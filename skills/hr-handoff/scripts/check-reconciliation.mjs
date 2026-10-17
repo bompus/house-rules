@@ -56,18 +56,36 @@ function unique(entries, label) {
 // A plan file (`.md`) is read as its `## Ledger` item lines, one record per item, named `L<line>`;
 // other text in the section, wrapped continuation lines included, is not read.
 // Open (`- [ ]`) and deferred (`- [~]`) lines are remembered: they must carry over as items.
+// Item lines elsewhere in the file are not records either, but they are counted and reported as a gap.
 function ledgerRecords(raw) {
   const lines = raw.split(/\r?\n/);
   const start = lines.findIndex((line) => /^#{1,6}\s+Ledger\s*$/i.test(line));
   if (start < 0) return null;
   const level = lines[start].match(/^#+/)[0].length;
   const records = [];
-  for (let i = start + 1; i < lines.length; i++) {
-    if (new RegExp(`^#{1,${level}}\\s`).test(lines[i])) break;
+  const outside = [];
+  let inside = false;
+  for (let i = 0; i < lines.length; i++) {
+    if (i === start) inside = true;
+    else if (inside && new RegExp(`^#{1,${level}}\\s`).test(lines[i])) inside = false;
     const match = lines[i].match(/^\s*[-*]\s+\[([ x~-])\]\s+(.*)$/i);
-    if (match) records.push({ id: `L${i + 1}`, text: match[2], mark: match[1] });
+    if (!match) continue;
+    if (inside) records.push({ id: `L${i + 1}`, text: match[2], mark: match[1] });
+    else outside.push({ id: `L${i + 1}`, mark: match[1] });
   }
-  return { records };
+  return { records, outside };
+}
+
+function outsideGap(label, outside) {
+  const open = outside.filter((line) => /[ ~]/.test(line.mark));
+  const named = open.length > 0 ? open : outside;
+  const shown = named
+    .slice(0, 5)
+    .map((line) => line.id)
+    .join(", ");
+  const more = named.length > 5 ? ` and ${named.length - 5} more` : "";
+  const count = open.length > 0 ? `, ${open.length} of them open or deferred` : "";
+  return `${label}: ${outside.length} item line(s) outside the \`## Ledger\` section were not read${count} (${shown}${more}); move them into the ledger section`;
 }
 
 function check(receipt, directory) {
@@ -125,6 +143,8 @@ function check(receipt, directory) {
       errors.push(`${label}: snapshot must be an object`);
       continue;
     }
+    if (source.file.endsWith(".md") && data.outside.length > 0)
+      gaps.push(outsideGap(label, data.outside));
     const rows = unique(entries(data.records, `${label}.records`), `${label} record`);
     if (Number.isSafeInteger(source.expectedRecords) && source.expectedRecords !== rows.size) {
       gaps.push(`${label}: expected ${source.expectedRecords} records, read ${rows.size}`);

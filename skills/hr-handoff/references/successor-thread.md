@@ -57,7 +57,9 @@ registry row, the project and the thread id.
   ledger or source record still shows it open. An offer answered, completed,
   deferred or superseded since the handoff was written authorizes nothing. A
   bare code or `go` in the successor selects an offer only when one listed offer
-  is open. With several, it asks which one, as § Offers requires.
+  is open. With several, it asks which one, as § Offers requires. A thread that
+  holds no offer, such as a project Orchestrator, writes the list as "none"; an
+  empty list is not left out.
 - The inventory and read-backs from the skill's thread-move step. The
   receiving thread re-points to itself each item the host lets it bind:
   registry rows, scheduled tasks, pull request watches and the messaging name

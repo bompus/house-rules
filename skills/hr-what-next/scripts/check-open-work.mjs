@@ -209,7 +209,11 @@ function parsePlan(text) {
       i > 0 &&
       (NARRATIVE.test(line) || PROSE_MARKER.test(line) || /^\s*[-*]\s+\[[ ~]\]/.test(line))
     )
-      narrative.push({ line: i + 1, text: line.trim() });
+      narrative.push({
+        line: i + 1,
+        text: line.trim(),
+        box: /^\s*[-*]\s+\[[ ~]\]/.test(line),
+      });
   });
   return { status, owner, purpose, project, items, errors, narrative };
 }
@@ -580,7 +584,15 @@ async function run(options) {
   };
   const open = plan.items.filter((item) => item.mark === " " || item.mark === "~");
   report.open = open.map(row);
-  if (report.errors.length) return report;
+  // A plan that fails its lint still gets every check that reads only its text. The checks that read the
+  // host (scratch, checkouts, the audit record, GitHub) wait until the plan is valid.
+  const invalid = report.errors.length > 0;
+  if (invalid) {
+    report.invalidPlan = true;
+    report.skipped.push(
+      "scratch, checkout, audit record and GitHub checks: they wait until the plan passes its lint",
+    );
+  }
   report.awaitingUser = open.filter(awaitsUser).map(row);
   if (TERMINAL_STATUS.test(plan.status) && open.length)
     report.findings.push(
@@ -588,7 +600,7 @@ async function run(options) {
     );
   const roots = notesRoot(planPath);
   const scratch = options.scratch ?? (roots ? join(roots.notes, "tmp") : null);
-  if (scratch) {
+  if (scratch && !invalid) {
     const { owned, unreadable } = ownedScratch(scratch, plan.owner);
     for (const manifest of unreadable)
       report.errors.push(
@@ -596,7 +608,7 @@ async function run(options) {
       );
     for (const name of owned) accountFor(`scratch ${name}`, [name], plan.items, report.findings);
   }
-  for (const path of options.checkouts) {
+  for (const path of invalid ? [] : options.checkouts) {
     const state = checkoutState(path);
     if (state.error) report.errors.push(state.error);
     else if (state.dirty || state.unpushed)
@@ -608,7 +620,7 @@ async function run(options) {
       );
   }
   // An app retires its own checkouts, so their state is reported but is not a finding.
-  for (const path of options.appManaged) {
+  for (const path of invalid ? [] : options.appManaged) {
     const state = checkoutState(path);
     if (state.error) report.errors.push(state.error);
     else if (state.dirty || state.unpushed)
@@ -620,20 +632,23 @@ async function run(options) {
     report.warnings.push(
       "no `Purpose:` line in the first 40 lines (the session's purpose, one sentence)",
     );
-  for (const entry of plan.narrative.slice(0, 5))
-    report.warnings.push(`L${entry.line} outside the ledger: ${clip(entry.text, 70)}`);
-  if (plan.narrative.length > 5)
-    report.warnings.push(`${plan.narrative.length - 5} more narrative marker line(s)`);
+  // Every unchecked box outside the ledger is a possible lost item, so each is listed. Prose labels such
+  // as "Deferred:" are listed up to five, with a count of the rest. Lines stay in file order.
+  let prose = 0;
+  for (const entry of plan.narrative)
+    if (entry.box || ++prose <= 5)
+      report.warnings.push(`L${entry.line} outside the ledger: ${clip(entry.text, 70)}`);
+  if (prose > 5) report.warnings.push(`${prose - 5} more narrative marker line(s)`);
   offerWarnings(plan.items, report.warnings);
   report.unansweredOffers = unansweredOffers(plan.items);
   if (report.unansweredOffers.length >= OFFER_LIMIT)
     report.warnings.push(
       `${report.unansweredOffers.length} offers are open and unanswered; the offers rule says to present no further offer at ${OFFER_LIMIT} or more. Queue the new decision in a walk-through (hr-what-next, Walk-through) instead`,
     );
-  const audit = plan.project && auditWarning(plan.project, roots, options.today);
+  const audit = !invalid && plan.project && auditWarning(plan.project, roots, options.today);
   if (audit) report.warnings.push(audit);
   report.recheckDue = rechecks(open, options.today, report.warnings);
-  report.stale = await possiblyFinished(open, options, report);
+  if (!invalid) report.stale = await possiblyFinished(open, options, report);
   if (options.archive && !report.errors.length) {
     if (!COMPLETED_STATUS.test(plan.status))
       report.findings.push(`archiving refused: Status is "${plan.status}", not completed`);
@@ -678,7 +693,7 @@ async function main() {
     console.log(
       `plan: ${report.plan}\nstatus: ${report.status ?? "?"} | owner: ${report.owner ?? "?"}`,
     );
-    if (code !== 1) console.log(`unanswered offers: ${report.unansweredOffers.length}`);
+    console.log(`unanswered offers: ${report.unansweredOffers.length}`);
     for (const [label, rows] of [
       ["error", report.errors],
       ["open", report.open],
@@ -696,7 +711,7 @@ async function main() {
       code === 0
         ? "result: nothing open"
         : code === 1
-          ? "result: invalid input"
+          ? `result: invalid input${report.invalidPlan ? " (the checks that read only the plan text still ran)" : ""}`
           : `result: ${report.open.length} open item(s) (${report.awaitingUser.length} awaiting your yes/no), ${report.findings.length} finding(s)`,
     );
   }

@@ -4,6 +4,19 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- The `hr-handoff` reconciliation checker no longer ignores item lines outside a plan's `## Ledger`
+  section, done and dropped ones included. It counts them and reports a gap naming the first five (the open
+  or deferred ones, when there are any). The receipt is then partial, and a receipt that claims complete
+  coverage is invalid. A plan with every item line in its ledger section reports as before.
+- The `hr-what-next` open-work check keeps running the checks that read only the plan text when the plan
+  fails its lint. Offers, re-check dates, the Purpose line and the open markers outside the ledger are
+  reported next to the lint errors, and the result is still invalid input. The checks that read the host
+  (scratch, checkouts, the audit record, GitHub) wait for a valid plan. Every unchecked box outside the
+  ledger is listed; prose labels such as "Deferred:" are listed up to five, with a count of the rest.
+- The successor-thread reference says a thread that holds no offer writes its offer list as "none".
+- The header comments of `verify-landed.sh` and `merge-pr.sh` say exactly what the deprecated
+  `--idle-primary` and `--preflight` flags do in each script.
+
 ## 0.15.0 - 2026-10-17
 
 - Landing no longer waits on, or asks the user about, a local checkout. The landing rule, the landing and

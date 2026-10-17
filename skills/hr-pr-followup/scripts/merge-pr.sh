@@ -28,6 +28,8 @@
 #
 # Exit status: 0 landed and every local default current; 1 refused or failed; 2 usage; 3 landed, local sync pending.
 # --idle-primary <path> is deprecated: accepted and ignored with a note on stderr, removed in a later release.
+# It takes the next argument as its path unless that argument is missing or starts with "-".
+# --preflight is not accepted here (unknown argument, exit 2); only verify-landed.sh still takes it.
 #
 # Usage: bash scripts/merge-pr.sh <pr> [--merge] [--remote <name>]
 set -euo pipefail

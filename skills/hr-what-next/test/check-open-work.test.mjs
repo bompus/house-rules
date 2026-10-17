@@ -302,6 +302,63 @@ test("marker lines outside the ledger warn but do not change the result", () => 
   expect(report.warnings).toHaveLength(2);
 });
 
+test("a ledger lint error still reports every open marker outside the ledger", () => {
+  const boxes = Array.from({ length: 7 }, (_, index) => `- [ ] stray box ${index}`);
+  const { plan } = setup({
+    ledger: ["- [x] a: said done", "- [ ] b: still open"],
+    extra: ["## Notes", "- pending: an old line", ...boxes].join("\n"),
+  });
+  const { code, report } = check(plan);
+  expect(code).toBe(1);
+  expect(report.errors).toEqual([expect.stringContaining("needs `evidence:`")]);
+  expect(report.open).toHaveLength(1);
+  expect(report.warnings.filter((warning) => warning.includes("stray box"))).toHaveLength(7);
+  expect(report.warnings.join("\n")).toContain("pending: an old line");
+});
+
+test("every unchecked box outside the ledger is listed, with prose labels capped at five", () => {
+  const boxes = Array.from({ length: 8 }, (_, index) => `- [ ] stray box ${index}`);
+  const labels = Array.from({ length: 7 }, (_, index) => `- pending: label ${index}`);
+  const { plan } = setup({
+    status: "completed",
+    ledger: ["- [x] a: shipped - evidence: x"],
+    extra: ["## Notes", ...boxes, ...labels].join("\n"),
+  });
+  const { code, report } = check(plan);
+  expect(code).toBe(0);
+  expect(report.warnings.filter((warning) => warning.includes("stray box"))).toHaveLength(8);
+  expect(report.warnings.filter((warning) => warning.includes("label"))).toHaveLength(5);
+  expect(report.warnings).toContain("2 more narrative marker line(s)");
+});
+
+test("the text report names the offers count and the markers even when the plan is invalid", () => {
+  const { plan } = setup({
+    ledger: ["- [x] a: said done"],
+    extra: "## Notes\n- [ ] stray box\n",
+  });
+  const run = spawnSync("node", [script, plan], { encoding: "utf8" });
+  expect(run.status).toBe(1);
+  expect(run.stdout).toContain("unanswered offers: 0");
+  expect(run.stdout).toContain("outside the ledger: - [ ] stray box");
+  expect(run.stdout).toContain("skipped: scratch, checkout, audit record and GitHub checks");
+  expect(run.stdout).toContain(
+    "result: invalid input (the checks that read only the plan text still ran)",
+  );
+});
+
+test("an error from a host check on a valid plan is not blamed on the plan", () => {
+  const { notes, plan } = setup({
+    status: "completed",
+    ledger: ["- [x] a: shipped - evidence: x"],
+  });
+  mkdirSync(join(notes, "tmp", "broken"), { recursive: true });
+  writeFileSync(join(notes, "tmp", "broken", "manifest.json"), "{not json");
+  const run = spawnSync("node", [script, plan], { encoding: "utf8" });
+  expect(run.status).toBe(1);
+  expect(run.stdout).toMatch(/result: invalid input\n?$/);
+  expect(run.stdout).not.toContain("still ran");
+});
+
 test("a plan without a Purpose line warns but does not change the result", () => {
   const { plan } = setup({ status: "completed", ledger: ["- [x] a: shipped - evidence: x"] });
   const text = readFileSync(plan, "utf8").replace("Purpose: demo\n", "");

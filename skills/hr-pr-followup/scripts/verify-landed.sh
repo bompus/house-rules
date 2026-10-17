@@ -26,8 +26,11 @@
 # verified, but a local checkout was skipped (local sync pending). After a failure, rerun this
 # script, not merge-pr.sh: the PR is already merged.
 #
-# Deprecated, accepted and ignored with a note on stderr, and removed in a later release:
-# --idle-primary <path> and --preflight. Landing no longer waits on any local checkout.
+# Deprecated, removed in a later release; landing no longer waits on any local checkout.
+# --idle-primary <path> is accepted and ignored with a note on stderr. It takes the next argument as its
+# path unless that argument is missing or starts with "-".
+# --preflight prints a note and "preflight skipped: it no longer gates landing" and exits 0 without
+# checking anything; with --commit or --branch it exits 2.
 # Usage:
 #   bash scripts/verify-landed.sh --commit <sha> [--default <branch>]
 #     [--branch <merged-head>] [--remote <name>] [--ff]
