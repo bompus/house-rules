@@ -26,7 +26,9 @@ the section is not read, so turn any follow-up written there into an item line
 before the handoff. Item lines elsewhere in the file are not read either. The
 checker counts them and reports a gap that names the first five lines (the open
 or deferred ones, when there are any), so the receipt is partial and cannot claim complete
-coverage until they move into the ledger section. Take a copy of the plan as it stood at the handoff,
+coverage until they move into the ledger section.
+
+Take a copy of the plan as it stood at the handoff,
 because later edits renumber the lines. Each open or deferred line must map to
 an item; a context-only reason such as "the rest, reopen only if asked" is
 rejected. When one item absorbs several open or deferred lines, give the item

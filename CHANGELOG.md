@@ -4,6 +4,9 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- The plan-source paragraph in the `hr-handoff` reconciliation reference is split in two, so no paragraph
+  in the skill exceeds 900 characters. The wording is unchanged.
+
 ## 0.15.1 - 2026-10-17
 
 - The `hr-handoff` reconciliation checker no longer ignores item lines outside a plan's `## Ledger`
