@@ -2,8 +2,8 @@
 expect: reply
 allowRead: true
 without: Periodic status updates.*?the final report replaces them\.
-requiredPattern: ^(?=[\s\S]*(5[- ]min|five[- ]minute|every five|\*/5|sleep 300))(?=[\s\S]*(60|75|90|hour|ETA))
-forbiddenPattern: sleep\s+([6-9]\d{2}|\d{4,})\b|(wait|timeout)[^\n]{0,40}\b([6-9]\d{5}|\d{7,})\b
+requiredPattern: ^(?=[\s\S]*(5[- ]min|five[- ]minute|every five|\*/5|sleep 300))(?=[\s\S]*(unmeasured|(?=[\s\S]*(last|previous|prior|earlier|past|based on|runs? took))(?=[\s\S]*(\b(6\d|7\d|8\d|9\d|1\d\d)\b[^\n]{0,15}min|\b(an|one|1(\.\d)?|2) hours?\b))))
+forbiddenPattern: sleep\s+([6-9]\d{2}|\d{4,})\b|\btimeout\s+([6-9]\d{2}|\d{4,})\b|\b(wait|block)[^\n]{0,40}\b([6-9]\d{2}|\d{4,})\s*(s|sec|seconds|ms)\b
 ---
 
 ## Project AGENTS.md
