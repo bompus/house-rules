@@ -9,25 +9,34 @@ recommended option includes it, is that direction.
 
 At task completion, unlanded or uncommitted task changes get one landing option, `Land PR #<n>` or `Commit and land <change>`, never a bare done; only an explicit user deferral (recorded with branch, commits and reason) leaves it out. The option covers this section and § Cleanup, merge included; name only departures from that. Land through the repository's required path without bypassing checks. Landing is done when a fresh fetch shows the change in the default branch.
 
-Leave alone a checkout another
-session or job uses, or whose use you cannot tell. Never merge, reset, stash or
-switch it to make it match the default.
+Never reset, stash, switch or merge-commit a checkout to make it match the default.
+A session or job running in it is not a reason to wait or ask. A checkout of the
+default branch that is strictly behind, with no uncommitted changes to tracked files, is fast-forwarded
+with `git merge --ff-only <sha>`. Leave a dirty, diverged or mid-operation one, report its path and reason,
+and do not ask the user.
+Landing never waits on a local checkout, and a roster entry in one is not an input either: the
+checkout's own state decides whether it can be fast-forwarded (below). Removing a worktree is
+different; § Cleanup still waits on use.
 
 After integration:
 
-- Fetch, then bring the local default branch current. When it is clean,
-  strictly behind and not checked out elsewhere, fast-forward it. When another
-  worktree has it checked out and you know no session or running job is using
-  that worktree (your own main checkout, for example), run
-  `git merge --ff-only <sha>` there with the remote head you just fetched and
-  verified; unrelated uncommitted files may stay. Avoid `git pull` there: a
-  fetch by another process can rewrite the shared `FETCH_HEAD` mid-pull and
-  fail it with "Cannot fast-forward to multiple branches". When you cannot
-  tell, treat it as in use. Confirm the local and fetched remote heads match.
-- If the default branch is diverged, on another branch, in use, or the merge
-  refuses because local edits would be overwritten, leave it and report its
-  path and the blocker. Never merge, reset, stash or switch branches to make it
-  match, and never update other sessions' worktrees or separate clones.
+- Fetch, then bring the local default branch current, whoever else has it open.
+  When no checkout has it, fast-forward the branch ref. When one checkout has it
+  (your own, the primary or another linked worktree), run `git merge --ff-only <sha>`
+  there with the remote head you just fetched and verified, provided that checkout
+  is on the default branch, has no uncommitted changes to tracked files and no
+  unfinished Git operation (merge, rebase, cherry-pick, revert, bisect), and is
+  strictly behind. Read that state right before the merge. Untracked files may
+  stay, and Git refuses a merge that would overwrite one. Avoid `git pull` there: a fetch by another process can rewrite the shared
+  `FETCH_HEAD` mid-pull and fail it with "Cannot fast-forward to multiple
+  branches". Confirm the local and fetched remote heads match.
+- If that checkout is dirty, diverged, mid-operation or no longer on the default
+  branch, or the merge refuses because local edits would be overwritten, leave it
+  and write down its path and the reason as a pending local sync. The landing
+  stands, so finish the task and do not ask the user to confirm or wait for the
+  checkout to go idle. Never merge, reset, stash or switch branches to make it
+  match, and never touch a separate clone or a worktree that does not hold the
+  default branch.
 - Delete the merged remote branch when it is this task's own branch
   (`git push origin --delete <branch>` when the merge did not); § Cleanup
   covers branches others may rely on. Before merging a pull request that another open pull

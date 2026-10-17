@@ -108,18 +108,34 @@ It does not clear that gate's review-body findings or change the landing workflo
 Three scripts in `scripts/` implement the landing steps § Landing describes. They never
 reset, switch or delete a checkout.
 
-- `merge-pr.sh <pr> [--merge] [--remote <name>] [--idle-primary <path>]` squash-merges
+- `merge-pr.sh <pr> [--merge] [--remote <name>]` squash-merges
   (or merge-commits) an open pull request and deletes its remote head without
   `gh pr merge --delete-branch`, which removes other sessions' linked worktrees. It
   refuses while review feedback is open (`check-pr-review.ts`), while another open pull
   request targets the head, and for a repository listed in `HR_PUSH_LANDED`
   (space-separated `owner/repo`; those land by fast-forward push, which it prints). The
   merge passes `--match-head-commit`. It lists worktrees still on the merged branch so
-  their owners clean up.
-- `verify-landed.sh --commit <sha> [--ff [--idle-primary <path>]]` fetches, checks that
-  the default branch contains the commit, and checks the local default; `--ff`
-  fast-forwards a clean default checkout. `--preflight --ff` checks eligibility before
-  landing. After a blocked check, rerun this script, not `merge-pr.sh`.
+  their owners clean up. The merge never waits on a local checkout; the local default is
+  synchronized afterwards as `verify-landed.sh` describes.
+- `verify-landed.sh --commit <sha> [--ff]` fetches, checks that the default branch
+  contains the commit, and checks the local default. `--ff` brings the local default
+  current: it moves the branch ref when no checkout has it, and runs
+  `merge --ff-only <sha>` in the one checkout that has it when that checkout is on the
+  default branch, free of uncommitted changes to tracked files and of an unfinished Git
+  operation, and strictly behind. Untracked files may stay; Git refuses a fast-forward
+  that would overwrite one. Sessions,
+  processes and roster entries are never inputs. Any other checkout is left alone and
+  reported on one line, `sync skipped at <path>: <reason>`, with a reason of
+  `working tree dirty` (tracked changes), `diverged from <remote>/<default>`, `on branch
+<name>, not <default>`, `unfinished Git operation: <name>`, `fast-forward refused: <why>`,
+  `cannot inspect Git state` or `cannot inspect working tree`.
+  Exit 0 means landed and current; 1 is a failure; 2 is usage; 3 means landed with a local
+  sync pending, which is not a failed landing and needs no question to the user: record
+  the path and reason in the task plan. Both scripts use these exit codes. After a
+  failure, rerun this script, not `merge-pr.sh`. The old `--idle-primary <path>` and
+  `--preflight` flags are accepted and ignored with a note, and will be removed.
 - `check-landing.py [--path <checkout>] [--base <ref>]` reports whether a checkout's
   work is in the base branch by content, so squash-merged branches count as landed, and
-  lists live processes whose working directory is inside the checkout (Linux only).
+  lists live processes whose working directory is inside the checkout (Linux only). That
+  list is a blocker for removing the worktree only. Landing and syncing the default
+  checkout never read it.

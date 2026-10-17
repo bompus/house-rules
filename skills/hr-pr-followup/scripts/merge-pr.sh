@@ -15,25 +15,26 @@
 # empty by default): its own guidance lands by fast-forwarding the base to the head, because a GitHub
 # merge writes the account's profile name into public history. It prints that push instead.
 #
-# Before merging, verifies that the local default can be synchronized, even if it is current.
-# Refuses a dirty/diverged target or a default held in another checkout without --idle-primary.
-# After merging, fast-forwards the confirmed local default and fails if it is still stale.
-# To update the primary checkout from a task worktree, pass --idle-primary <path>
-# using existing ownership evidence or the operator's standing idle direction, unless current
-# evidence contradicts it; keep it idle through landing.
-# If verification
-# fails after "merged", rerun verify-landed.sh with the printed commit, not this script.
+# Landing never waits on a local checkout. After the merge it fast-forwards the checkout that holds
+# the default branch when that checkout is on the default branch, clean, free of an unfinished Git
+# operation and strictly behind (verify-landed.sh), whoever else has it open. Otherwise it leaves the
+# checkout alone, prints `sync skipped at <path>: <reason>` and exits 3: landed, local sync pending.
+# Record the path and reason in the task plan; nothing needs the user. If verification fails after
+# "merged" (exit 1), rerun verify-landed.sh with the printed commit, not this script.
 #
 # --merge lands with a merge commit instead of a squash. Use it only for a PR whose second parent
 # must stay in history, such as an `-s ours` merge that records an upstream reconcile; a squash
 # would drop that parent. Every other PR is squashed.
 #
-# Usage: bash scripts/merge-pr.sh <pr> [--merge] [--remote <name>] [--idle-primary <path>]
+# Exit status: 0 landed and every local default current; 1 refused or failed; 2 usage; 3 landed, local sync pending.
+# --idle-primary <path> is deprecated: accepted and ignored with a note on stderr, removed in a later release.
+#
+# Usage: bash scripts/merge-pr.sh <pr> [--merge] [--remote <name>]
 set -euo pipefail
 
 PUSH_LANDED=" ${HR_PUSH_LANDED:-} "
 
-PR="${1:?usage: merge-pr.sh <pr> [--merge] [--remote <name>] [--idle-primary <path>]}"
+PR="${1:?usage: merge-pr.sh <pr> [--merge] [--remote <name>]}"
 shift
 REMOTE=origin
 STRATEGY=--squash
@@ -42,7 +43,9 @@ while [ $# -gt 0 ]; do
   case "$1" in
     --merge) STRATEGY=--merge; shift;;
     --remote) REMOTE="${2:?}"; shift 2;;
-    --idle-primary) SYNC_ARGS+=(--idle-primary "${2:?}"); shift 2;;
+    --idle-primary)
+      echo "note: --idle-primary is ignored; the checkout holding the default branch is fast-forwarded when it is clean and strictly behind. The flag will be removed in a later release." >&2
+      shift; case "${1:-}" in ''|-*) ;; *) shift;; esac;;
     *) echo "unknown argument: $1" >&2; exit 2;;
   esac
 done
@@ -67,9 +70,6 @@ if [[ "$PUSH_LANDED" == *" $REPO "* ]]; then
   exit 1
 fi
 
-bash "$(dirname "${BASH_SOURCE[0]}")/verify-landed.sh" --preflight \
-  --default "$BASE" --remote "$REMOTE" "${SYNC_ARGS[@]}"
-
 gh pr merge "$PR" "$STRATEGY" --match-head-commit "$OID"
 SHA="$(gh pr view "$PR" --json mergeCommit --jq '.mergeCommit.oid // empty')"
 if ! [[ "$SHA" =~ ^([0-9a-f]{40}|[0-9a-f]{64})$ ]]; then
@@ -91,10 +91,13 @@ if [ "$FORK" != true ]; then
   fi
 fi
 
+# Exit 3 (local sync pending) is not a failure: finish the worktree report, then pass it on.
+STATUS=0
 bash "$(dirname "${BASH_SOURCE[0]}")/verify-landed.sh" --commit "$SHA" --branch "$HEAD" \
-  --default "$BASE" --remote "$REMOTE" "${SYNC_ARGS[@]}"
+  --default "$BASE" --remote "$REMOTE" "${SYNC_ARGS[@]}" || STATUS=$?
 
 git worktree list --porcelain | awk -v want="branch refs/heads/$HEAD" '
   /^worktree / { path = substr($0, 10) }
   $0 == want { print "still on " substr(want, 19) ": " path " (its owner retires it)" }
 '
+exit "$STATUS"

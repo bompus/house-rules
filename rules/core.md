@@ -223,9 +223,11 @@ At task completion, unlanded or uncommitted task changes get one landing option,
 Before integration, updating a default checkout or deleting a landed branch, read
 [the landing procedure](references/landing.md).
 
-Leave alone a checkout another
-session or job uses, or whose use you cannot tell. Never merge, reset, stash or
-switch it to make it match the default.
+Never reset, stash, switch or merge-commit a checkout to make it match the default.
+A session or job running in it is not a reason to wait or ask. A checkout of the
+default branch that is strictly behind, with no uncommitted changes to tracked files, is fast-forwarded
+with `git merge --ff-only <sha>`. Leave a dirty, diverged or mid-operation one, report its path and reason,
+and do not ask the user.
 
 Before the first publish step of a version bump (tag, publish, release, announcement), review unreleased changelog entries and public materials (READMEs, charts, graphics with alt text, listing text, announcement) and fix what is stale first; an urgent release may limit only the materials to what it affects.
 
@@ -236,7 +238,7 @@ Remove a task worktree only when the default branch contains its work, its tree 
 ## Coordination and isolation
 
 A coordination roster, where there is one, may omit sessions. Check checkout and
-branch ownership independently before treating them as free.
+branch ownership independently before treating them as free to edit or remove.
 
 Stop only processes you started, by the PID you recorded when starting them.
 Never kill by pattern (`pkill -f`, `pgrep | kill`, or a PID found by matching

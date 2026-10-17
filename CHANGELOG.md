@@ -4,6 +4,19 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Landing no longer waits on, or asks the user about, a local checkout. The landing rule and the squash-landing
+  and landing references drop "leave alone a checkout another session or job uses, or whose use you cannot
+  tell", and the squash-landing modifier and reference no longer stop on doubtful ownership. A checkout of
+  the default branch that is strictly behind and has no uncommitted changes to tracked files is
+  fast-forwarded with `git merge --ff-only <sha>` whoever has it open. A dirty, diverged or mid-operation
+  one is skipped and reported with its path and reason. Removing a worktree still waits on use.
+- `verify-landed.sh --ff` and `merge-pr.sh` fast-forward the checkout that holds the default branch themselves,
+  and no longer take `--idle-primary` or run the pre-merge `--preflight` check. Processes, sessions and
+  roster entries are never inputs, and untracked files do not block the sync. A checkout they skip is reported as `sync skipped at <path>: <reason>`,
+  and both scripts then exit 3: landed, local sync pending. `--idle-primary <path>` and `--preflight` are
+  still accepted and ignored with a note on stderr, and will be removed in a later release. A checkout whose
+  Git state cannot be read is skipped and reported, never updated.
+
 ## 0.14.2 - 2026-10-17
 
 - The README banner images no longer say "Always-on". Their tagline now matches the README alt text and

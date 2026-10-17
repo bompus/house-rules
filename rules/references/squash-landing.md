@@ -26,8 +26,9 @@ During integration, never switch, reset or remove the session's own checkout: no
 `checkout` or `switch` to another ref, no `reset` or branch force-move, and no
 `worktree remove` on it. Updating the default branch it has checked out
 (`merge --squash`, or `merge --ff-only` to the fetched remote head after a remote merge)
-under the fast-forward conditions in § Landing is expected; report other paths
-to their owners.
+under the fast-forward conditions in § Landing is expected, and so is fast-forwarding
+the one other checkout that holds the default branch. Report a checkout that cannot be
+fast-forwarded with its path and reason.
 
 After the merge, do not leave the session's own checkout on a landed branch.
 Fetch first, then:
@@ -41,8 +42,8 @@ Fetch first, then:
   commits.
 - When an app manages the checkout, leave it for the app to retire. Report it;
   it is not a blocker.
-- When the tree is dirty or ownership is in doubt, stop: record the
-  merged commit, the checkout path and the owner wherever you track the task.
+- When the tree is dirty, leave the checkout where it is and record the merged
+  commit, the checkout path and the blocker. The landing stands.
 
 After each landing, update the task list and any active handoff with the
 commit, the verification result and the remaining work, then retire the task

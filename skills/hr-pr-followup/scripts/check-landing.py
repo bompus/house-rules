@@ -8,7 +8,8 @@ the base. Read-only; never fetches — the caller fetches first.
 
 It also lists live processes whose working directory is inside the checkout
 (Linux /proc only), excluding the checker's ancestors and its pipeline. Each listed process
-blocks worktree removal unless its PID is one you recorded when you started it. `own_session`
+blocks worktree removal unless its PID is one you recorded when you started it. The list says nothing
+about landing or about fast-forwarding a default checkout: neither reads it. `own_session`
 is true only for a process that descends from the nearest agent CLI above the checker (a
 process whose comm is one of AGENT_COMMS); a process under another session of the same agent
 host's server, or any process when the checker has no agent ancestor, is false. A process
