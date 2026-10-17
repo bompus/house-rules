@@ -16,6 +16,10 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   and both scripts then exit 3: landed, local sync pending. `--idle-primary <path>` and `--preflight` are
   still accepted and ignored with a note on stderr, and will be removed in a later release. A checkout whose
   Git state cannot be read is skipped and reported, never updated.
+- A new opt-in modifier, `compression-codecs`, prefers zstd, then brotli, then gzip for data a project
+  writes itself. It limits zstd to runtimes that have it and negotiates browser responses by
+  `Accept-Encoding`. It keeps gzip where another tool reads the file, keeps WebSocket compression on
+  `permessage-deflate`, and gives starting levels for hot, cold, dynamic and static data.
 
 ## 0.14.2 - 2026-10-17
 
