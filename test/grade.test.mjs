@@ -586,6 +586,16 @@ test("allowRead grades the reply after leading read-only calls and nothing else"
     ["TOOL_CALL: shell run `git status --short --branch`\nDone.", "Done."],
     // A reply of reads only is graded whole, so a continue reply still has its call.
     [lead, lead],
+    // Prose before the reads is the reply when no prose follows them, so a status line survives.
+    [
+      "Status: 0/4 stages done, ETA 68 to 81 minutes.\nTOOL_CALL: date +%Z\nTOOL_CALL: start a background watcher every 5 minutes",
+      "Status: 0/4 stages done, ETA 68 to 81 minutes.\nTOOL_CALL: date +%Z\nTOOL_CALL: start a background watcher every 5 minutes",
+    ],
+    // Without prose before the reads, the acting call alone is graded, as before.
+    [
+      "TOOL_CALL: date +%Z\nTOOL_CALL: start a background watcher every 5 minutes",
+      "TOOL_CALL: start a background watcher every 5 minutes",
+    ],
   ];
   for (const [reply, rest] of cases) assert.equal(afterLeadingReads(reply), rest, reply);
 
@@ -593,6 +603,12 @@ test("allowRead grades the reply after leading read-only calls and nothing else"
   const opened = "TOOL_CALL: grep -rn staging test\nNo. Two tests still import them.";
   assert.equal(grade(opened, "reply", answer).pass, false);
   assert.equal(grade(opened, "reply", { ...answer, allowRead: true }).pass, true);
+  // A status line before a read and an acting call still counts toward the declared checks.
+  const status =
+    "Status: 0/4 stages done, ETA 68 to 81 minutes.\nTOOL_CALL: date +%Z\nTOOL_CALL: start a background watcher every 5 minutes";
+  const eta = { requiredPattern: "ETA 68 to 81 minutes", allowRead: true };
+  assert.equal(grade(status, "continue", eta).pass, true);
+  assert.equal(grade(status, "continue", { ...eta, requiredPattern: "ETA 99" }).pass, false);
   // The shipped complete scenario accepts a read of the reporting procedure before the statement.
   const complete = parseFragment(
     readFileSync(join(import.meta.dirname, "../evals/end-of-reply/scenarios/complete.md"), "utf8"),

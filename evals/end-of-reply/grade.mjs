@@ -65,7 +65,8 @@ const ALSO_ACTS =
 // With `allowRead`, a reply may open with read-only tool calls (the agent looks before it
 // answers). The reply is then the text after the last call in that leading run, which ends at
 // the first call that acts or the first prose line after a call; text before the first call is
-// narration and goes with the reads. A reply made only of reads is graded whole.
+// narration and goes with the reads. A reply made only of reads is graded whole, and so is one whose
+// only prose comes before the first call (a status line, then a read, then an acting call).
 export function afterLeadingReads(reply) {
   const lines = reply.split("\n");
   let last = -1;
@@ -83,7 +84,11 @@ export function afterLeadingReads(reply) {
     .slice(last + 1)
     .join("\n")
     .trim();
-  return last >= 0 && rest ? rest : reply;
+  const isCall = (line) => /^TOOL_CALL\b/.test(line.trim());
+  const hasProse = (list) => list.some((line) => line.trim() && !isCall(line));
+  const proseOnlyBefore =
+    hasProse(lines.slice(0, lines.findIndex(isCall))) && !hasProse(lines.slice(last + 1));
+  return last >= 0 && rest && !proseOnlyBefore ? rest : reply;
 }
 
 export function grade(

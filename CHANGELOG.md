@@ -12,6 +12,9 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 - Repository only (not in the npm package): the end-of-reply eval wrapper `claude.sh` accepts `EOR_KEEP_ENV`.
   It is a space-separated list of `CLAUDE*` or `ANTHROPIC*` variable names to keep, so a run can use a login
   that lives in the environment. The default is unchanged, and every such variable is still unset.
+- Repository only (not in the npm package): the end-of-reply eval grader no longer drops a reply's opening
+  prose when a scenario allows reads. A reply with a status line, a read-only call and an acting call, and
+  no prose after them, is now graded whole. Its required patterns can match the status line.
 
 ## 0.15.2 - 2026-10-17
 
