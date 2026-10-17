@@ -20,8 +20,15 @@ outside-diff, nitpick or duplicate findings. A completed CodeRabbit CheckRun
 must conclude SUCCESS; failed, cancelled, skipped or missing conclusions block
 the gate. A CodeRabbit status also requires SUCCESS and a description starting
 with "Review completed"; that is how the gate tests the general squash rule that an
-existing review check must report completion. It does not check every CI result or
-authorize landing.
+existing review check must report completion.
+
+Every other check on the head commit must have finished and passed. A check run that is
+not COMPLETED, or that concluded anything but SUCCESS, NEUTRAL or SKIPPED, blocks the gate,
+and so does a commit status that is not SUCCESS. A head commit with no checks is not blocked,
+so a repository without CI passes on this point. The gate does not tell required checks from
+optional ones. A check that fails for a known unrelated reason blocks the merge until it passes
+or the owner decides to land another way. `--wait` also polls while such a check runs. The gate
+does not authorize landing.
 
 The check named exactly "cubic · AI code reviewer" on the head commit is held to the
 same rule: while it runs, the gate refuses, and a completed one must conclude

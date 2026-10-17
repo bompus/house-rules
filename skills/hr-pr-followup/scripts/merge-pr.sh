@@ -6,7 +6,8 @@
 # worktree or local branch: it lists the worktrees still on the head so their owners clean up.
 #
 # Refuses a PR that is not open, one with open review feedback (check-pr-review.ts: an unresolved
-# thread, a review bot still running, unanswered findings in a bot's review body), or one another
+# thread, a review bot still running, unanswered findings in a bot's review body, any other check on
+# the head commit that is unfinished or did not pass), or one another
 # open PR targets (deleting the head would close that PR; retarget it first with
 # `gh pr edit <n> --base <base>`). The merge passes
 # --match-head-commit, so a push after the head was read fails the merge instead of landing it.

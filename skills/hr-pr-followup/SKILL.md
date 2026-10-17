@@ -56,10 +56,11 @@ Clean CI alone is not evidence that every review finding was handled.
 
 When the repository or user selects these GitHub helper policies, use
 [the CodeRabbit and cubic review gate and one-thread resolver](references/review-helpers.md).
-Its review-status checks cover CodeRabbit and cubic only; its thread check covers any
-reviewer and its review-body check any bot. It does not replace other required
-checks or the caller's judgment. The same reference describes the landing helper scripts (`merge-pr.sh`,
-`verify-landed.sh`, `check-landing.py`).
+Its review-status checks cover CodeRabbit and cubic; its thread check covers any
+reviewer and its review-body check any bot. It also refuses while any other check on the head
+commit is unfinished or did not pass. It does not replace the caller's judgment. The same
+reference describes the landing helper scripts (`merge-pr.sh`, `verify-landed.sh`,
+`check-landing.py`).
 
 Immediately before landing, re-read the head, base, checks, review bodies and
 unresolved threads. If the head or base changed, discard readiness and repeat

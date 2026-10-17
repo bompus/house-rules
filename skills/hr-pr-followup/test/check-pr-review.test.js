@@ -34,7 +34,7 @@ test("passes once threads are resolved, the bot is done and body findings were a
     comments: [ack()],
     contexts: [
       { context: "CodeRabbit", state: "SUCCESS", description: "Review completed" },
-      { name: "check", status: "COMPLETED" },
+      { name: "check", status: "COMPLETED", conclusion: "SUCCESS" },
     ],
   });
   expect(openFeedback(state)).toEqual([]);
@@ -70,7 +70,7 @@ test("duplicate body findings still need acknowledgement after the earlier threa
   expect(openFeedback({ ...state, comments: { nodes: [ack()] } })).toEqual([]);
 });
 
-test("blocks unresolved threads and a review bot still running, but not other pending checks", () => {
+test("blocks unresolved threads, a review bot still running and another running check", () => {
   const state = pr({
     threads: [{ isResolved: false, comments: { nodes: [{ url: "https://example.test/t1" }] } }],
     contexts: [
@@ -81,6 +81,7 @@ test("blocks unresolved threads and a review bot still running, but not other pe
   expect(openFeedback(state)).toEqual([
     "unresolved thread: https://example.test/t1",
     "review still running: CodeRabbit",
+    "check still running: build",
   ]);
 });
 
@@ -88,7 +89,7 @@ test("blocks unresolved threads and a review bot still running, but not other pe
 test("blocks a repository with .coderabbit.yaml whose head commit has no CodeRabbit check", () => {
   const state = pr({
     files: [".coderabbit.yaml", "README.md"],
-    contexts: [{ name: "check", status: "COMPLETED" }],
+    contexts: [{ name: "check", status: "COMPLETED", conclusion: "SUCCESS" }],
   });
   expect(openFeedback(state)).toEqual([
     "no CodeRabbit check on the head commit: check the review integration and repository review policy",
@@ -150,10 +151,14 @@ test("blocks a cubic check that concluded without reviewing the head", () => {
 test("passes a successful cubic check and a repository with no cubic check", () => {
   const done = { name: CUBIC, status: "COMPLETED", conclusion: "SUCCESS" };
   expect(openFeedback(pr({ contexts: [done] }))).toEqual([]);
-  expect(openFeedback(pr({ contexts: [{ name: "check", status: "COMPLETED" }] }))).toEqual([]);
+  expect(
+    openFeedback(pr({ contexts: [{ name: "check", status: "COMPLETED", conclusion: "SUCCESS" }] })),
+  ).toEqual([]);
+  // Names that merely contain "cubic" are ordinary checks: no cubic retry advice, same pass rules.
   for (const other of ["bicubic-resize tests", "cubic-tests", "cubic-lint"]) {
     const similar = { name: other, status: "COMPLETED", conclusion: "FAILURE" };
-    expect(openFeedback(pr({ contexts: [similar] }))).toEqual([]);
+    expect(openFeedback(pr({ contexts: [similar] }))).toEqual([`check ${other} concluded FAILURE`]);
+    expect(openFeedback(pr({ contexts: [{ ...similar, conclusion: "SUCCESS" }] }))).toEqual([]);
   }
 });
 
@@ -209,7 +214,10 @@ test("waitForReview polls while the review runs and stops when it finishes or ti
 // Right after a push CodeRabbit has not posted its check yet; --wait used to give up at once.
 test("waitForReview waits a few minutes for a CodeRabbit check that has not appeared yet", async () => {
   const files = [".coderabbit.yaml"];
-  const missing = pr({ files, contexts: [{ name: "check", status: "COMPLETED" }] });
+  const missing = pr({
+    files,
+    contexts: [{ name: "check", status: "COMPLETED", conclusion: "SUCCESS" }],
+  });
   const running = pr({ files, contexts: [{ context: "CodeRabbit", state: "PENDING" }] });
   const done = pr({
     files,
@@ -227,6 +235,60 @@ test("waitForReview waits a few minutes for a CodeRabbit check that has not appe
     "no CodeRabbit check on the head commit: check the review integration and repository review policy",
   ]);
   expect(clock).toBe(180_000);
+});
+
+test("blocks any other check that failed, was cancelled or is unfinished, and passes finished ones", () => {
+  const run = (conclusion, status = "COMPLETED") => ({ name: "build", status, conclusion });
+  for (const conclusion of [
+    "FAILURE",
+    "CANCELLED",
+    "TIMED_OUT",
+    "ACTION_REQUIRED",
+    "STARTUP_FAILURE",
+    "STALE",
+  ]) {
+    expect(openFeedback(pr({ contexts: [run(conclusion)] }))).toEqual([
+      `check build concluded ${conclusion}`,
+    ]);
+  }
+  expect(openFeedback(pr({ contexts: [run(null)] }))).toEqual([
+    "check build concluded (missing conclusion)",
+  ]);
+  for (const conclusion of ["SUCCESS", "NEUTRAL", "SKIPPED"]) {
+    expect(openFeedback(pr({ contexts: [run(conclusion)] }))).toEqual([]);
+  }
+  for (const status of ["QUEUED", "IN_PROGRESS", "WAITING", "PENDING", "REQUESTED"]) {
+    expect(openFeedback(pr({ contexts: [run(null, status)] }))).toEqual([
+      "check still running: build",
+    ]);
+  }
+});
+
+test("blocks a commit status that is not SUCCESS", () => {
+  const status = (state) => ({ context: "ci/legacy", state, description: null });
+  expect(openFeedback(pr({ contexts: [status("SUCCESS")] }))).toEqual([]);
+  for (const state of ["PENDING", "EXPECTED"]) {
+    expect(openFeedback(pr({ contexts: [status(state)] }))).toEqual([
+      "check still running: ci/legacy",
+    ]);
+  }
+  for (const state of ["FAILURE", "ERROR"]) {
+    expect(openFeedback(pr({ contexts: [status(state)] }))).toEqual([
+      `check ci/legacy reported ${state}`,
+    ]);
+  }
+});
+
+test("waitForReview polls while another check runs and returns its failure", async () => {
+  const running = pr({ contexts: [{ name: "build", status: "IN_PROGRESS", conclusion: null }] });
+  const failed = pr({ contexts: [{ name: "build", status: "COMPLETED", conclusion: "FAILURE" }] });
+  let clock = 0;
+  const opts = { pollMs: 30_000, sleep: async (ms) => (clock += ms), now: () => clock };
+  const reads = [running, running, failed];
+  expect(await waitForReview(() => reads.shift(), { ...opts, timeoutMs: 600_000 })).toEqual([
+    "check build concluded FAILURE",
+  ]);
+  expect(clock).toBe(60_000);
 });
 
 function ack(overrides = {}) {

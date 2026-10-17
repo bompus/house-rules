@@ -15,6 +15,10 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 - Repository only (not in the npm package): the end-of-reply eval grader no longer drops a reply's opening
   prose when a scenario allows reads. A reply with a status line, a read-only call and an acting call, and
   no prose after them, is now graded whole. Its required patterns can match the status line.
+- `check-pr-review.ts`, and so `merge-pr.sh`, now refuses while any check on the head commit is
+  unfinished, failed, cancelled or timed out. It used to look only at CodeRabbit and cubic, so a
+  pull request with a red CI check could merge. Neutral and skipped check runs still pass, a head
+  commit with no checks passes, and `--wait` polls while another check runs.
 
 ## 0.15.2 - 2026-10-17
 

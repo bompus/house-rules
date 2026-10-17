@@ -14,9 +14,12 @@
 // not blocked, since cubic's `cubic.yaml` is optional and its absence does not show that cubic
 // is expected, and --wait does not wait for one to appear. Missing or incomplete reviews
 // require inspection of the review integration and the repository's selected review policy.
+// Every other check on the head commit must have finished and passed too: a check run that is not
+// COMPLETED, or that concluded anything but SUCCESS, NEUTRAL or SKIPPED, and a commit status that
+// is not SUCCESS, refuse. A head commit with no checks is not blocked.
 //   bun scripts/check-pr-review.ts <pr> [--repo <owner>/<name>] [--wait [--timeout <minutes>]]
 // Exit 1 while feedback is open, 2 when gh fails. Without --repo, gh resolves the repository from
-// the current checkout. --wait polls every 30 s while CodeRabbit's or cubic's review is still running, and for
+// the current checkout. --wait polls every 30 s while CodeRabbit's or cubic's review or any other check is still running, and for
 // up to 3 minutes while the head commit has no CodeRabbit check yet (CodeRabbit posts it a little
 // after a push), then reports as usual; after --timeout minutes (default 30) it reports what is
 // still open.
@@ -44,6 +47,9 @@ const BODY_FINDINGS = /Outside diff range comments|Nitpick comments|Duplicate co
 const REVIEWED = /^Review completed/;
 const FOLLOW_UP = "check the review integration and repository review policy";
 const RUNNING = "review still running: ";
+const CHECK_RUNNING = "check still running: ";
+// Check-run conclusions that do not block a merge; every other conclusion does.
+const PASSING_CONCLUSIONS = ["SUCCESS", "NEUTRAL", "SKIPPED"];
 const NO_CHECK = "no CodeRabbit check on the head commit";
 // A neutral cubic result means it did not review the head; a person has to ask again.
 const CUBIC_RETRY = "comment `@cubic review` or wait for its limit to clear";
@@ -382,6 +388,17 @@ export function openFeedback(pr: ReviewState): string[] {
     const running =
       ctx.state === "PENDING" || (ctx.status !== undefined && ctx.status !== "COMPLETED");
     if (!isReviewBot(name)) {
+      if (ctx.status !== undefined) {
+        if (ctx.status !== "COMPLETED") {
+          open.push(`${CHECK_RUNNING}${name}`);
+        } else if (!PASSING_CONCLUSIONS.includes(ctx.conclusion ?? "")) {
+          open.push(`check ${name} concluded ${ctx.conclusion ?? "(missing conclusion)"}`);
+        }
+      } else if (ctx.state === "PENDING" || ctx.state === "EXPECTED") {
+        open.push(`${CHECK_RUNNING}${name}`);
+      } else if (ctx.state !== "SUCCESS") {
+        open.push(`check ${name} reported ${ctx.state ?? "(missing state)"}`);
+      }
       continue;
     }
     if (running) {
@@ -441,7 +458,8 @@ export function openFeedback(pr: ReviewState): string[] {
   return open;
 }
 
-const reviewRunning = (open: string[]) => open.some((line) => line.startsWith(RUNNING));
+const reviewRunning = (open: string[]) =>
+  open.some((line) => line.startsWith(RUNNING) || line.startsWith(CHECK_RUNNING));
 
 /**
  * Re-reads the pull request while a review is still running, or briefly while its check has not
