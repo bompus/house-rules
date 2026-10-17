@@ -9,6 +9,9 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   milestones does not satisfy it. It also says to wait on the job through the watcher, not in one long
   blocking call, and to give the total ETA in the launch reply and again when it changes, including when more
   rounds are queued. A new screening scenario, `periodic-launch`, grades the launch reply.
+- Repository only (not in the npm package): the end-of-reply eval wrapper `claude.sh` accepts `EOR_KEEP_ENV`.
+  It is a space-separated list of `CLAUDE*` or `ANTHROPIC*` variable names to keep, so a run can use a login
+  that lives in the environment. The default is unchanged, and every such variable is still unset.
 
 ## 0.15.2 - 2026-10-17
 

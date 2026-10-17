@@ -110,6 +110,9 @@ Each call makes a scratch directory under `EOR_TMPDIR` (default `/tmp`; `cursor-
 never copies a credential. Codex and Cursor Agent logins are symlinked in for the call; Claude Code,
 OpenCode and Devin use their existing login stores in place. `EOR_EFFORT` (default `high`) sets
 reasoning effort for Claude Code and Codex. Set the model name to the one your account offers.
+`claude.sh` unsets every `CLAUDE*` and `ANTHROPIC*` variable, which also removes a login that lives in the
+environment (a config directory or gateway token). `EOR_KEEP_ENV` lists variable names to keep, separated by spaces,
+for example `EOR_KEEP_ENV="CLAUDE_CONFIG_DIR ANTHROPIC_AUTH_TOKEN ANTHROPIC_BASE_URL"`. Unset, nothing is kept.
 
 - **Check for rule leaks first.** Every one of these agents loads your own rules by default, and
   a leaked rule makes the "without the rule" arm look as good as the "with" arm. Before a run,
