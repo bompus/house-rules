@@ -8,6 +8,10 @@
 // trigger text, which must be the user plus a verb such as selects, picks, decides, asks or approves and
 // at most a short object ("it", "the backlog"); a trigger with a date, event or another condition
 // stays an ordinary deferred item. The group is a subset of `open` and does not change the exit code.
+// "close-out due" prints when every open item is deferred and the plan is not completed: the session's work
+// is finished, so the user owes a decision on each item and the reply offers All done or Pause. A plan whose
+// Status is paused without a done line recording the user's Pause choice is a finding; with one, the pause
+// stands and the prompt does not print.
 // "possibly finished" lists open or deferred items whose every named pull request or issue is merged or
 // closed on GitHub: done work left open, or a trigger that has fired. A named commit that a --checkout has
 // outside its default branch keeps the item off the list. Bare numbers ("PR #4") are looked up only in
@@ -49,14 +53,22 @@ const usage =
   'The output lists deferred items whose trigger is only the user\'s own action ("user selects", "user asks for the backlog") as "awaiting your yes/no"; this is a text match, see the header.';
 const TERMINAL_STATUS = /^(completed?|done|archived)\b/i;
 const COMPLETED_STATUS = /^completed\b/i;
+const PAUSED_STATUS = /^paused\b/i;
 const MARKS = { " ": "open", "~": "deferred", x: "done", "-": "dropped" };
 const REQUIRED = {
   "~": ["trigger", "a trigger"],
   x: ["evidence", "evidence"],
   "-": ["by", "who dropped it"],
 };
+// The verb may take a short object of up to four plain words ("user asks for a release"), none of them a
+// condition or time word, so "user selects after the release ships" and "user approves the release on
+// Friday" stay ordinary deferred items.
 const USER_ONLY_TRIGGER =
-  /^(?:when |once |until )?(?:the )?user(?:'s)?\s+(?:select\w*|pick\w*|choos\w*|decid\w*|decision|choice|answer\w*|direction|approv\w*|ask\w*|say\w*|request\w*)(?:\s+(?:for |to )?(?:it|this|them|that|one|the backlog|the item|a decision))?$/i;
+  /^(?:when |once |until )?(?:the )?user(?:'s)?\s+(?:select\w*|pick\w*|choos\w*|decid\w*|decision|choice|answer\w*|direction|approv\w*|ask\w*|say\w*|request\w*)(?:\s+(?!(?:after|when|once|if|until|unless|before|and|or|on|at|by|in|next|this|every|each|today|tomorrow|tonight|later|during|while|since|from)\b)[a-z'-]+){0,4}$/i;
+// A done line that records the user choosing Pause ("user chose Pause in offer X"), not any line that
+// mentions the word ("add pause/resume controls").
+const PAUSE_CHOICE =
+  /\buser\b[^.;]{0,40}\b(?:chose|chosen|selected|picked|asked for|requested)\s+(?:the\s+|a\s+)?`?pause\b(?![/-]\w)|\bpause\b`?\s+(?:was\s+)?(?:chosen|selected|picked)\s+by\s+(?:the\s+)?user/i;
 const NARRATIVE =
   /^\s*(?:[-*]\s+|#+\s+)?\**(pending|waiting|deferred|blocked-on-user|blocked-by|todo|follow-?ups?)\b/i;
 // A labelled follow-up inside a prose sentence ("Merged. Deferred: the listing", "Still open for later: x").
@@ -669,6 +681,20 @@ async function run(options) {
     report.findings.push(
       `Status says "${plan.status}" but ${open.length} ledger item(s) are open or deferred`,
     );
+  // Pausing is the user's choice. A plan marked paused needs a done line that records it.
+  const pauseRecorded = plan.items.some(
+    (item) => item.mark === "x" && PAUSE_CHOICE.test(item.text),
+  );
+  if (PAUSED_STATUS.test(plan.status ?? "") && !pauseRecorded)
+    report.findings.push(
+      'Status is "paused" but no done ledger item records the user choosing Pause; reopen the plan and offer the close-out',
+    );
+  // A pause the user chose stands: it is not asked again.
+  report.closeOutDue =
+    open.length > 0 &&
+    open.every((item) => item.mark === "~") &&
+    !TERMINAL_STATUS.test(plan.status ?? "") &&
+    !(PAUSED_STATUS.test(plan.status ?? "") && pauseRecorded);
   const roots = notesRoot(planPath);
   const scratch = options.scratch ?? (roots ? join(roots.notes, "tmp") : null);
   if (scratch && !invalid) {
@@ -780,6 +806,10 @@ async function main() {
     ])
       for (const row of rows) console.log(`${label}: ${row}`);
     if (report.archived) console.log(`archived: ${report.archived}`);
+    if (report.closeOutDue)
+      console.log(
+        "close-out due: every remaining item is deferred. Ask the user to decide each one (do it now, hand it to an owner, or drop it) and offer All done or Pause; do not mark the plan paused yourself",
+      );
     console.log(
       code === 0
         ? "result: nothing open"

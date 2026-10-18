@@ -110,6 +110,67 @@ test("a deferral with a dated, event or compound trigger is not listed as awaiti
   expect(report.open).toHaveLength(5);
 });
 
+test("a short user-action object still awaits a yes or no, and a condition does not", () => {
+  const { plan } = setup({
+    ledger: [
+      "- [~] a: ship it - trigger: user asks for a release",
+      "- [~] b: rerun - trigger: user decides whether to rerun it",
+      "- [~] c: later - trigger: user asks for a release once CI passes",
+    ],
+  });
+  const { report } = check(plan);
+  expect(report.awaitingUser).toHaveLength(2);
+  expect(report.awaitingUser.join("\n")).not.toContain("L8");
+  const dated = setup({
+    ledger: [
+      "- [~] a: ship it - trigger: user approves the release on Friday",
+      "- [~] b: ship it - trigger: user approves it at noon",
+      "- [~] c: ship it - trigger: user asks tomorrow",
+    ],
+  });
+  expect(check(dated.plan).report.awaitingUser).toEqual([]);
+});
+
+test("when every open item is deferred the report says the close-out is due", () => {
+  const { plan } = setup({
+    ledger: ["- [~] a: later - trigger: 2026-12-01", "- [x] b: shipped - evidence: PR 1"],
+  });
+  const { report } = check(plan);
+  expect(report.closeOutDue).toBe(true);
+  const text = spawnSync("node", [script, plan], { encoding: "utf8" }).stdout;
+  expect(text).toContain("close-out due:");
+  const withOpen = setup({ ledger: ["- [~] a: later - trigger: 2026-12-01", "- [ ] b: working"] });
+  expect(check(withOpen.plan).report.closeOutDue).toBe(false);
+});
+
+test("a paused plan without a done line recording the user's Pause is a finding", () => {
+  const bare = setup({ status: "paused", ledger: ["- [~] a: later - trigger: 2026-12-01"] });
+  expect(check(bare.plan).report.findings.join("\n")).toContain("no done ledger item records");
+  const chosen = setup({
+    status: "paused",
+    ledger: [
+      "- [~] a: later - trigger: 2026-12-01",
+      "- [x] user chose Pause in offer DEMO-9 - evidence: reply 1B",
+    ],
+  });
+  expect(check(chosen.plan).report.findings).toEqual([]);
+  // The user's pause stands: no second close-out prompt.
+  expect(check(chosen.plan).report.closeOutDue).toBe(false);
+  const text = spawnSync("node", [script, chosen.plan], { encoding: "utf8" }).stdout;
+  expect(text).not.toContain("close-out due");
+  // A done line that only mentions the word is not the user's choice.
+  const unrelated = setup({
+    status: "paused",
+    ledger: [
+      "- [~] a: later - trigger: 2026-12-01",
+      "- [x] add pause/resume controls - evidence: PR 9",
+      "- [x] user asked for pause/resume controls - evidence: PR 10",
+    ],
+  });
+  expect(check(unrelated.plan).report.findings.join("\n")).toContain("no done ledger item records");
+  expect(check(unrelated.plan).report.closeOutDue).toBe(true);
+});
+
 test("all items done under a completed status is the only clean result", () => {
   const { plan } = setup({
     status: "completed",

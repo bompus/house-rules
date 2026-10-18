@@ -4,6 +4,11 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- A session is closed out, not paused, whenever it can be. The core rules now say a deferral you chose
+  yourself, or one that waits only on the user, is a decision to offer in the same reply, and that only
+  the user pauses a session. The open-work check prints "close-out due" when every remaining item is
+  deferred, treats a short user request such as "user asks for a release" as awaiting the user's yes or no,
+  and reports a plan marked paused without a done line recording the user's Pause as a finding.
 - `hr-plain-prose` now says how to write a code comment: keep one for a non-obvious reason, a hidden
   constraint, a gotcha or documentation a signature cannot carry, skip one that restates the code, and leave
   an existing comment alone unless the change makes it false. `hr-diagnosing-bugs` gains a reference on

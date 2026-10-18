@@ -26,6 +26,9 @@ completed state before the completion message; a report alone does not do so.
    `--app-managed <path>` for one an app retires, which is reported but not a
    finding): run it and quote its result instead of recalling the ledger. Its
    "awaiting your yes/no" group lists the user-trigger deferrals by a text match.
+   When every remaining item is deferred it prints "close-out due": ask the user
+   to decide each item and offer `All done` or `Pause`; a plan marked paused with
+   no done line recording the user's Pause is a finding.
    Its "possibly finished" group lists items whose named pull requests or
    issues are all merged or closed (add `--repo <owner/repo>` for bare numbers),
    unless a named commit sits outside a `--checkout`'s default branch,
