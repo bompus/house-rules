@@ -51,8 +51,11 @@ rather than one that fires wrongly.
 **A failure under your change is not yours until the base has run repeatedly.**
 A suite that holds a flaky file fails a different test each run. One red
 against one green is a single sample of two distributions. Run the unpatched
-base until its own failure set is seen to vary, and compare the sets of test
-names, because an unchanged failure count hides a swap. The rule cuts both ways.
+base several times, within the retry budget the skill sets, and compare the sets
+of test names, because an unchanged failure count hides a swap. If the set
+varies, a single difference proves nothing. If it holds steady across the runs,
+the base is stable and the comparison stands. Report how many runs you made.
+The rule cuts both ways.
 A failure that survives the check is yours. The next question is whether the
 defect is in the change or in the fixture that pins it. A fixture can assert a
 resolution that a correct change removes.
