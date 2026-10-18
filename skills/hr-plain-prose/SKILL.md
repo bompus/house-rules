@@ -208,8 +208,9 @@ A comment earns its place by telling the reader what the code cannot. Write one
 for a non-obvious reason, a constraint or invariant the code does not show, or
 a gotcha. Also write one to document a declaration or file where it says
 something its signature does not. Do not add a comment that restates the adjacent code or
-narrates its mechanism. If a clearer name or structure carries the point,
-change that instead. A repository's own comment rules win. Leave an existing
+narrates its mechanism. If a clearer name or structure would carry the point
+and the task already covers code changes, change that instead. Otherwise leave
+the code alone and write the comment. A repository's own comment rules win. Leave an existing
 comment alone unless your change makes it false, and then fix or delete it in
 that change.
 
