@@ -4,6 +4,11 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- The core rules now say three more things. An inventory report or a merged-branch status does not prove a
+  worktree is released, any more than a finished turn or an absent process does. A change keeps no second
+  algorithm, transport or scrape that quietly takes over when the first breaks: it ships and proves the
+  primary, deletes the old path and fails loudly. A file with uncommitted changes you did not write is
+  edited, never rewritten, because a whole-file write takes the other changes with it.
 - A session is closed out, not paused, whenever it can be. The core rules now say a deferral you chose
   yourself, or one that waits only on the user, is a decision to offer in the same reply, and that only
   the user pauses a session. The open-work check prints "close-out due" when every remaining item is

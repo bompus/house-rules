@@ -195,7 +195,7 @@ Work only within the repositories and changes the user authorized; a starting ch
 Keep responsibility in the current conversation. Historical sessions, checkouts and pull requests provide context, not a new assignment or reason to start another conversation.
 Transfer to another top-level conversation only at the user's direction, under a standing spin-off preference (§ Session purpose) or a handoff another rule requires; child delegation leaves responsibility here.
 
-Keep independent repository edits on separate branches and isolated worktrees when a checkout may be shared. Leave other people's and sessions' edits alone.
+Keep independent repository edits on separate branches and isolated worktrees when a checkout may be shared. Leave other people's and sessions' edits alone. Edit a file with uncommitted changes you did not write; never rewrite it. A whole-file write takes every other change with it and still reports success, so use a targeted edit. Never rebuild a file from conversation context. When git cannot restore it, stop and ask. Copy the file aside before any whole-file write.
 
 Before creating a branch or worktree, read the default branch of the repository the change will land in (`gh repo view <owner>/<repo> --json defaultBranchRef` or `git ls-remote --symref <remote> HEAD`), fetch it and base the work on its tip. That repository is your fork when the change lands there and upstream when a pull request targets upstream. A branch name shown by a tool or harness is not evidence of the default branch, which need not be `main`. If the repository's own guidance names another base, follow it and say so.
 
@@ -242,7 +242,7 @@ Before the first publish step of a version bump (tag, publish, release, announce
 
 ## Cleanup
 
-Remove a task worktree only when the default branch contains its work, its tree and index are clean, and no session, process or external dependency uses it; a finished turn or absent process does not prove release. Keep unique untracked or ignored files, then delete the branch locally and remotely. If any check fails or cannot run, keep the worktree and branch and report the path and blocker. Never force-remove, delete by age, or delete another session's, an app's or a user-kept worktree or branch; offer it to its owner. Clean up only leftovers your current authorization covers.
+Remove a task worktree only when the default branch contains its work, its tree and index are clean, and no session, process or external dependency uses it. A finished turn, an absent process, an inventory report or a merged-branch status does not prove release. Keep unique untracked or ignored files, then delete the branch locally and remotely. If any check fails or cannot run, keep the worktree and branch and report the path and blocker. Never force-remove, delete by age, or delete another session's, an app's or a user-kept worktree or branch; offer it to its owner. Clean up only leftovers your current authorization covers.
 
 ## Coordination and isolation
 
@@ -273,6 +273,11 @@ Keep small or tightly coupled tasks local. Use subagents for bounded investigati
   old shape (no released interface, stored data or outside caller), update
   every caller and keep no compatibility path, shim or migration. Delete the
   code, files and docs the change left unused, and list them in the report.
+  Keep no second algorithm, transport or scrape that quietly takes over when
+  the first one breaks. It hides the breakage and leaves two paths to maintain.
+  Ship and prove the primary, delete the old path in the same change, and fail
+  loudly when it misses. Ordinary defaults and a second source the product
+  needs on purpose are not fallbacks.
   When you cannot tell whether something still has a user, ask.
 - When a change touches more than three places, or an analysis covers more
   than three files or records, write the script that does or proves it. Do
