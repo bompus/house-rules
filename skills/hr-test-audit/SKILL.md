@@ -39,6 +39,12 @@ the fix. One regression at the owning boundary covers the bug; don't replay it
 at every layer it crosses. For a sequence `hr-ordering-tests` found, that
 regression is the named test beside its enumeration.
 
+When a test separates two states, such as fixed and unfixed or live source and
+fallback, name the ruled-out state first. At least one assertion must be false
+in that state. Then run the test against it by reverting the change, stubbing
+the branch or pointing the fixture at the fallback. The litmus above cannot
+catch a test that passes both ways.
+
 Changing an existing test so it checks less counts as removing it: deleting or
 skipping it, loosening an assertion, or rewriting an expected value to match new
 output. It needs the audit-mode evidence from step 2, not only these answers.
@@ -88,6 +94,13 @@ Authoring rejects new tests that match; audits hunt for existing ones that do.
   the input, or the production path never reaches the check)
 - names or fixtures that promise more than the test exercises
 - tests that break under a behavior-preserving refactor
+- tests for modules the change did not touch, or a new harness or snapshot
+  suite added for completeness
+- tests written to lift a coverage threshold that still pass with the branch
+  they cover deleted; read the threshold as a floor, never a target
+- a fixed delay where an observable condition (a stored key, a rendered node,
+  a drained queue) could be awaited. Polling a condition is fine. A timeout
+  tuned until the test passes is not
 
 ## Retention bar
 

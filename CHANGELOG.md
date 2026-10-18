@@ -4,6 +4,11 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- `hr-test-audit` rejects three more kinds of test: one for a module the change did not touch or a harness
+  added for completeness, one written to lift a coverage threshold that still passes with the covered branch
+  deleted, and one that waits a fixed delay where an observable condition could be awaited. Its authoring
+  gate also says a test that separates two states must be run against the ruled-out state, because the
+  usual check cannot catch a test that passes both ways.
 - The core rules now say three more things. An inventory report or a merged-branch status does not prove a
   worktree is released, any more than a finished turn or an absent process does. A change keeps no second
   algorithm, transport or scrape that quietly takes over when the first breaks: it ships and proves the
