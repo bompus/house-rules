@@ -163,3 +163,34 @@ test("without --time it stamps the local time with its UTC offset", () => {
     /^- \[x\] a: one … evidence: x \(closed \d{4}-\d{2}-\d{2} \d{2}:\d{2} [+-]\d{2}:\d{2}\)$/,
   );
 });
+
+test("a retry whose note is only a prefix of the recorded one is refused, not reported as done", () => {
+  const plan = setup(["- [ ] a: one", "- [ ] b: two"]);
+  close(plan, "--line", "6", "--evidence", "merged another PR");
+  close(plan, "--line", "7", "--drop", "--by", "Bobby");
+  const before = readFileSync(plan, "utf8");
+  for (const args of [
+    ["--line", "6", "--evidence", "merged"],
+    ["--line", "7", "--drop", "--by", "Bob"],
+  ]) {
+    const run = close(plan, ...args);
+    expect(run.status).toBe(1);
+    expect(run.stderr).toMatch(/different note/);
+  }
+  expect(readFileSync(plan, "utf8")).toBe(before);
+});
+
+test("a note with a line break is refused", () => {
+  const plan = setup(["- [ ] a: one"]);
+  const before = readFileSync(plan, "utf8");
+  for (const args of [
+    ["--line", "6", "--evidence", "tests passed\nbuild passed"],
+    ["--line", "6", "--drop", "--by", "user\r\nagain"],
+    ["--match", "one\ntwo", "--evidence", "x"],
+  ]) {
+    const run = close(plan, ...args);
+    expect(run.status).toBe(1);
+    expect(run.stderr).toMatch(/one line/);
+  }
+  expect(readFileSync(plan, "utf8")).toBe(before);
+});

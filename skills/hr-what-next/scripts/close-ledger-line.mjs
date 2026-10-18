@@ -22,6 +22,8 @@ function parseArguments(argv) {
     else if (["--line", "--match", "--evidence", "--by", "--time"].includes(argument)) {
       const value = argv[++index];
       if (value === undefined) throw new Error(`${argument} needs a value\n${usage}`);
+      // A line break would end the ledger item early and leave the rest of the note outside it.
+      if (/[\r\n]/.test(value)) throw new Error(`${argument} must be one line\n${usage}`);
       options[argument.slice(2)] = value.trim();
     } else if (argument.startsWith("--") || options.plan) throw new Error(usage);
     else options.plan = argument;
@@ -61,7 +63,10 @@ function close(options) {
   const [mark, label, note] = options.drop
     ? ["-", "by", options.by]
     : ["x", "evidence", options.evidence];
-  const closedHere = (item) => item.mark === mark && item.text.includes(`${label}: ${note}`);
+  // The whole recorded note, up to the stamp this script writes, so "Bob" does not match "by: Bobby".
+  const escaped = note.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const recorded = new RegExp(`… ${label}: ${escaped} \\((?:closed|dropped) [^()]*\\)$`);
+  const closedHere = (item) => item.mark === mark && recorded.test(item.text);
   let item;
   if (options.line !== null) {
     item = items.find((candidate) => candidate.line === Number(options.line));
