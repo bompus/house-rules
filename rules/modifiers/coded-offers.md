@@ -60,11 +60,14 @@ work from the plan "(Not Recommended)". `go` covers phase 1 only; offer phase 2 
 lands. Record conditional work with its trigger.
 
 Make an offer visual only when the user asks for one, and only where the host
-can render a visual. It is a rendered page, not a question-card tool, so
-§ Question cards does not gate it. It sits beside the complete text offer, which
+can render a visual. It is a rendered page, not a question-card tool, so the
+optional question-cards modifier does not govern it, whether that modifier is
+on or off. It sits beside the complete text offer, which
 still carries the acceptance line. Give each question one block. Show every
 option's code, a short label and its steps from start to finish, and mark the
 recommended options. Add a short box on how to reply.
 
-Use text for questions unless § Question cards is enabled. Tool availability
-alone does not enable it. When enabled, follow it beside the complete text offer.
+Ask questions in text. Question cards are a separate, optional modifier
+(`question-cards`); while it is off, which is the default, never call a
+question-card tool. Tool availability alone does not turn it on. When it is on,
+follow it beside the complete text offer.
