@@ -110,6 +110,44 @@ test("a deferral with a dated, event or compound trigger is not listed as awaiti
   expect(report.open).toHaveLength(5);
 });
 
+test("a short user-action object still awaits a yes or no, and a condition does not", () => {
+  const { plan } = setup({
+    ledger: [
+      "- [~] a: ship it - trigger: user asks for a release",
+      "- [~] b: rerun - trigger: user decides whether to rerun it",
+      "- [~] c: later - trigger: user asks for a release once CI passes",
+    ],
+  });
+  const { report } = check(plan);
+  expect(report.awaitingUser).toHaveLength(2);
+  expect(report.awaitingUser.join("\n")).not.toContain("L8");
+});
+
+test("when every open item is deferred the report says the close-out is due", () => {
+  const { plan } = setup({
+    ledger: ["- [~] a: later - trigger: 2026-12-01", "- [x] b: shipped - evidence: PR 1"],
+  });
+  const { report } = check(plan);
+  expect(report.closeOutDue).toBe(true);
+  const text = spawnSync("node", [script, plan], { encoding: "utf8" }).stdout;
+  expect(text).toContain("close-out due:");
+  const withOpen = setup({ ledger: ["- [~] a: later - trigger: 2026-12-01", "- [ ] b: working"] });
+  expect(check(withOpen.plan).report.closeOutDue).toBe(false);
+});
+
+test("a paused plan without a done line recording the user's Pause is a finding", () => {
+  const bare = setup({ status: "paused", ledger: ["- [~] a: later - trigger: 2026-12-01"] });
+  expect(check(bare.plan).report.findings.join("\n")).toContain("no done ledger item records");
+  const chosen = setup({
+    status: "paused",
+    ledger: [
+      "- [~] a: later - trigger: 2026-12-01",
+      "- [x] user chose Pause in offer DEMO-9 - evidence: reply 1B",
+    ],
+  });
+  expect(check(chosen.plan).report.findings).toEqual([]);
+});
+
 test("all items done under a completed status is the only clean result", () => {
   const { plan } = setup({
     status: "completed",

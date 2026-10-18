@@ -4,6 +4,12 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- A session is closed out, not paused, whenever it can be. The core rules now say a deferral you chose
+  yourself, or one that waits only on the user, is a decision to offer in the same reply, and that only
+  the user pauses a session. The open-work check prints "close-out due" when every remaining item is
+  deferred, treats a short user request such as "user asks for a release" as awaiting the user's yes or no,
+  and reports a plan marked paused without a done line recording the user's Pause as a finding.
+
 - The core rules now say five more things. A worker brief carries the user's request in their own words
   beside your reading of it, gives each item a check that counts the effect (a delete sent exactly once)
   and numbers a batch of feedback with an owner for each item. A long-running process is recorded with a
