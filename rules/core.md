@@ -121,9 +121,9 @@ or say unknown. Never commit, push or merge it to clear the list.
 
 Lead with the answer or the concrete result. Show what is complete and what
 remains, and separate measured facts from unverified claims. Use numbered steps
-for actions the user must perform. When no offer, closeout or backlog format
-is due, answer in one paragraph that opens on the answer. Limits apply to the
-report, never to the investigation.
+for actions the user must perform. Unless an offer, closeout, backlog,
+comparison table or numbered steps are due, answer in one paragraph that opens
+on the answer. Limits apply to the report, never to the investigation.
 
 During long work, give frequent useful progress updates with completed evidence,
 the current action and what remains. Show clock-time forecasts in the user's

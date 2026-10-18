@@ -9,9 +9,9 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   and numbers a batch of feedback with an owner for each item. A long-running process is recorded with a
   time limit as well as its PID, port and stop command. A question that presumes a property ("only behind
   the flag, right?") is a request to check it: answer with evidence and fix a mismatch only where the task
-  already authorizes the fix, otherwise report it and offer. A reply with no offer, closeout or backlog
-  format due is one paragraph that opens on the answer, and the limit applies to the report, never to the
-  investigation.
+  already authorizes the fix, otherwise report it and offer. A reply is one paragraph that opens on the
+  answer unless an offer, closeout, backlog, comparison table or numbered steps are due, and the limit
+  applies to the report, never to the investigation.
 - `hr-better-accessibility` now asks for a single-pointer alternative to every drag (buttons, a menu, or
   tap to pick up and tap to place), because a keyboard path does not help touch and switch users.
 
