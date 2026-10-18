@@ -63,6 +63,9 @@ for credentials and redact captured headers or logs before displaying them.
 Tag temporary instrumentation so it can be found and removed. When a human must
 perform a reproduction step, give clear steps and the expected observation.
 
+Before you accept a result as the cause, read
+[Keeping a diagnosis honest](references/evidence-discipline.md).
+
 ## Bound the loop
 
 When retrying a probe or fix, cap attempts per hypothesis, stop on

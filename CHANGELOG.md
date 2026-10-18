@@ -9,7 +9,12 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   the user pauses a session. The open-work check prints "close-out due" when every remaining item is
   deferred, treats a short user request such as "user asks for a release" as awaiting the user's yes or no,
   and reports a plan marked paused without a done line recording the user's Pause as a finding.
-
+- `hr-plain-prose` now says how to write a code comment: keep one for a non-obvious reason, a hidden
+  constraint, a gotcha or documentation a signature cannot carry, skip one that restates the code, and leave
+  an existing comment alone unless the change makes it false. `hr-diagnosing-bugs` gains a reference on
+  keeping a diagnosis honest: compare against an owned baseline, treat a contradicted theory as dead, do not
+  count two routes that share a premise as corroboration, and do not trust a query's projection, a
+  half-rebuilt arm or a single run against a flaky base.
 - The core rules now say five more things. A worker brief carries the user's request in their own words
   beside your reading of it, gives each item a check that counts the effect (a delete sent exactly once)
   and numbers a batch of feedback with an owner for each item. A long-running process is recorded with a
