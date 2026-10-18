@@ -4,6 +4,13 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- The `hr-what-next` open-work check (`check-open-work.mjs`) has a new group, "possibly resolved by a later
+  done line". It lists open or deferred items whose `recheck:` date has passed and that share a pull
+  request, issue, commit, `mcp:` thread id or offer ID with a later done line. The result was probably
+  logged as a new line instead of closing the old one. A token that more than 8 ledger lines name is too
+  common to count, and a bare pull request number is read as `--repo`'s. The group reads only the plan
+  text, runs on a plan that fails its lint, and does not change the exit code.
+
 ## 0.16.0 - 2026-10-17
 
 - The `periodic-updates` modifier now says to arm the status watcher in the step that launches the job.

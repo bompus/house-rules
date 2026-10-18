@@ -30,6 +30,10 @@ completed state before the completion message; a report alone does not do so.
    issues are all merged or closed (add `--repo <owner/repo>` for bare numbers),
    unless a named commit sits outside a `--checkout`'s default branch,
    and "re-check due" lists `recheck:` dates that are past or within a week.
+   Its "possibly resolved by a later done line" group lists open or deferred
+   items whose `recheck:` date has passed and whose pull request, issue,
+   commit, thread id or offer ID a later done line also names: the result was
+   likely logged as a new line instead of closing the old one.
    Look at each before reporting it as done or still waiting.
    It also prints `unanswered offers: N`, the number of offer IDs ("Offer
    ABC-12") on open ledger lines that no line records as answered, dropped or

@@ -726,6 +726,71 @@ test("items tied to another thread need a re-check date, and dates within a week
   ]);
 });
 
+test("an open line whose re-check date has passed and whose pull request, thread or commit a later done line names is listed", () => {
+  const { plan } = setup({
+    ledger: [
+      "- [ ] a: wait for acme/tool#5 ... recheck: 2026-10-01",
+      "- [~] b: ask mcp:0a1b2c3d about the tag ... trigger: reply recheck: 2026-10-02",
+      "- [ ] c: land fix 1a2b3c4 ... recheck: 2026-10-03",
+      "- [ ] d: PR #9 review ... recheck: 2026-10-04",
+      "- [ ] e: ask about acme/tool#6 ... recheck: 2026-10-05",
+      "- [ ] f: DEMO-OFFER-20261001-7 follow-up ... recheck: 2026-10-06",
+      "- [x] a done: acme/tool#5 merged ... evidence: merge commit",
+      "- [x] b done: reply from mcp:0a1b2c3d-1111-2222-3333-444444444444 ... evidence: thread",
+      "- [x] c done: landed 1a2b3c4d5e ... evidence: git log",
+      "- [x] d done: acme/tool#9 closed ... evidence: closed",
+      "- [x] f done: DEMO-OFFER-20261001-7 answered ... evidence: reply",
+    ],
+  });
+  const { code, report } = check(plan, "--offline", "--repo", "acme/tool", "--today", "2026-10-11");
+  expect(report.resolvedLater).toEqual([
+    expect.stringMatching(/^L6 .*acme\/tool#5.*L12/),
+    expect.stringMatching(/^L7 .*thread:0a1b2c3d.*L13/),
+    expect.stringMatching(/^L8 .*commit:1a2b3c4.*L14/),
+    expect.stringMatching(/^L9 .*acme\/tool#9.*L15/),
+    expect.stringMatching(/^L11 .*offer:DEMO-OFFER-20261001-7.*L16/),
+  ]);
+  // A group, not a finding: the exit code still comes from the open items.
+  expect(code).toBe(2);
+  expect(report.findings).toEqual([]);
+});
+
+test("a done line that comes first, a future re-check date, a common token or a different item does not list the open line", () => {
+  const common = Array.from(
+    { length: 8 },
+    (_, i) => `- [x] common ${i}: see acme/tool#77 ... evidence: x`,
+  );
+  const { plan } = setup({
+    ledger: [
+      "- [x] earlier: acme/tool#1 merged ... evidence: merge",
+      "- [ ] a: wait for acme/tool#1 ... recheck: 2026-10-01",
+      "- [ ] b: wait for acme/tool#2 ... recheck: 2026-10-20",
+      "- [x] b done: acme/tool#2 merged ... evidence: merge",
+      "- [ ] c: wait for acme/tool#77 ... recheck: 2026-10-01",
+      "- [ ] d: wait for acme/tool#3 ... recheck: 2026-10-01",
+      "- [x] d other: acme/tool#4 merged ... evidence: merge",
+      "- [ ] e: wait for acme/tool#5 ... recheck: 2026-10-01",
+      "- [x] e other: acme/tool#5 merged but check UTF-8 ... evidence: merge",
+      ...common,
+    ],
+  });
+  const { report } = check(plan, "--offline", "--repo", "acme/tool", "--today", "2026-10-11");
+  expect(report.resolvedLater).toEqual([expect.stringMatching(/^L13 .*acme\/tool#5/)]);
+});
+
+test("the later-done-line group still runs on a plan that fails its lint", () => {
+  const { plan } = setup({
+    ledger: [
+      "- [ ] a: wait for acme/tool#5 ... recheck: 2026-10-01",
+      "- [~] broken: deferred without a trigger",
+      "- [x] a done: acme/tool#5 merged ... evidence: merge",
+    ],
+  });
+  const { code, report } = check(plan, "--offline", "--repo", "acme/tool", "--today", "2026-10-11");
+  expect(code).toBe(1);
+  expect(report.resolvedLater).toEqual([expect.stringMatching(/^L6 .*acme\/tool#5/)]);
+});
+
 // notes/audits/<project>/last-audit.json, the record hr-forgotten-work-audit writes.
 function auditRecord(notes, project, record) {
   mkdirSync(join(notes, "audits", project), { recursive: true });

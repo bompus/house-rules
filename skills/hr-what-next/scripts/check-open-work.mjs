@@ -12,8 +12,13 @@
 // closed on GitHub: done work left open, or a trigger that has fired. A named commit that a --checkout has
 // outside its default branch keeps the item off the list. Bare numbers ("PR #4") are looked up only in
 // --repo. The check needs `gh`; without it, offline, or with --offline it is skipped and "skipped" says so.
-// "re-check due" lists items whose `recheck: YYYY-MM-DD` date is past or within 7 days. Both groups are
-// subsets of `open` and do not change the exit code.
+// "re-check due" lists items whose `recheck: YYYY-MM-DD` date is past or within 7 days.
+// "possibly resolved by a later done line" lists open or deferred items whose `recheck:` date has passed and
+// that share a token with a LATER done (`- [x]`) line: the result may have been logged as a new line instead
+// of closing the old one. A token names one thing: a pull request or issue (a bare number counts as --repo's),
+// a commit, an `mcp:` thread id or an offer ID of three or more parts. A token that more than 8 ledger lines
+// name is too common to tie two lines together. The check reads only the plan text, so it runs on a plan that
+// fails its lint. These three groups are subsets of `open` and do not change the exit code.
 // "unanswered offers" counts the open (`- [ ]`) ledger items that name an offer, one per offer ID, and warns at
 // three or more, the point where the offers rule says to present no further offer. A line names an offer when
 // an ID (capitals and digits joined by hyphens) follows the word "offer" directly ("Offer ABC-12 ...", "Pilot offer ABC-12").
@@ -85,6 +90,10 @@ const GITHUB_URL = /https:\/\/github\.com\/([\w.-]+)\/([\w.-]+)\/(?:pull|issues)
 const GITHUB_REF = /(?<![\w./-])([\w.-]+)\/([\w.-]+)#(\d+)\b/g;
 const BARE_REF = /(?:\bPR\s*#?\s*|(?<![\w/#&])#)(\d{1,6})\b/gi;
 const COMMIT = /\b[0-9a-f]{7,40}\b/g;
+const THREAD_ID = /\bmcp:([0-9a-f]{8})(?:-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})?/g;
+// Three or more parts, so "UTF-8" is not an offer ID but "ABC-12-3" is.
+const LONG_OFFER_ID = /\b[A-Z][A-Z0-9]*(?:-[A-Z0-9]+){2,}\b/g;
+const SHARED_TOKEN_LINES = 8;
 // Monthly: items in a full audit were lost within two to four weeks of being promised.
 const AUDIT_DAYS = 30;
 const PROJECT_NAME = /^\w[\w.-]*$/;
@@ -507,6 +516,62 @@ function rechecks(open, today, warnings) {
   return due;
 }
 
+// What a line names that a later line can answer: pull requests, issues, threads, offers and commits,
+// compared by equality. A bare pull request number is `repo`'s when one is given.
+function namedThings(text, repo) {
+  const found = new Set();
+  const github = (_, owner, name, number) => {
+    found.add(`${owner}/${name}#${number}`.toLowerCase());
+    return " ";
+  };
+  let rest = text.replace(GITHUB_URL, github).replace(GITHUB_REF, github);
+  rest = rest.replace(THREAD_ID, (_, id) => {
+    found.add(`thread:${id}`);
+    return " ";
+  });
+  rest = rest.replace(LONG_OFFER_ID, (id) => {
+    if (/\d/.test(id)) found.add(`offer:${id}`);
+    return " ";
+  });
+  for (const match of rest.matchAll(BARE_REF))
+    found.add(repo ? `${repo}#${match[1]}`.toLowerCase() : `#${match[1]}`);
+  for (const [sha] of rest.matchAll(COMMIT))
+    if (/\d/.test(sha) && /[a-f]/.test(sha)) found.add(`commit:${sha.slice(0, 7)}`);
+  return [...found];
+}
+
+// An open or deferred line whose re-check date has passed and that names the same thing as a later done
+// line: the result was probably logged as a new line and the old one left open.
+function resolvedLater(items, today, repo) {
+  const named = new Map(items.map((item) => [item, namedThings(item.text, repo)]));
+  const lines = new Map();
+  for (const tokens of named.values())
+    for (const token of tokens) lines.set(token, (lines.get(token) ?? 0) + 1);
+  const resolved = [];
+  for (const item of items) {
+    if (item.mark !== " " && item.mark !== "~") continue;
+    const date = item.text.match(RECHECK)?.[1];
+    if (!date || !validDate(date) || date >= today) continue;
+    const mine = named.get(item).filter((token) => lines.get(token) <= SHARED_TOKEN_LINES);
+    const later = items.filter(
+      (other) =>
+        other.mark === "x" &&
+        other.line > item.line &&
+        mine.some((token) => named.get(other).includes(token)),
+    );
+    if (!later.length) continue;
+    const shared = [
+      ...new Set(
+        later.flatMap((other) => mine.filter((token) => named.get(other).includes(token))),
+      ),
+    ].sort();
+    resolved.push(
+      `${row(item)} — recheck ${date} has passed and ${shared.join(", ")} is named by later done line(s) ${later.map((other) => `L${other.line}`).join(", ")}`,
+    );
+  }
+  return resolved;
+}
+
 // An answered offer must say what happened to the options the user did not pick, on its own line or on
 // another ledger line that names the same offer ID.
 function offerWarnings(items, warnings) {
@@ -567,6 +632,7 @@ async function run(options) {
     unansweredOffers: [],
     stale: [],
     recheckDue: [],
+    resolvedLater: [],
     skipped: [],
     findings: [],
     warnings: [],
@@ -648,6 +714,7 @@ async function run(options) {
   const audit = !invalid && plan.project && auditWarning(plan.project, roots, options.today);
   if (audit) report.warnings.push(audit);
   report.recheckDue = rechecks(open, options.today, report.warnings);
+  report.resolvedLater = resolvedLater(plan.items, options.today, options.repo);
   if (!invalid) report.stale = await possiblyFinished(open, options, report);
   if (options.archive && !report.errors.length) {
     if (!COMPLETED_STATUS.test(plan.status))
@@ -701,6 +768,7 @@ async function main() {
       ["unanswered offer", report.unansweredOffers],
       ["possibly finished", report.stale],
       ["re-check due", report.recheckDue],
+      ["possibly resolved by a later done line", report.resolvedLater],
       ["skipped", report.skipped],
       ["finding", report.findings],
       ["warning", report.warnings],
