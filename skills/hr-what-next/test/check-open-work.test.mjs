@@ -778,6 +778,24 @@ test("a done line that comes first, a future re-check date, a common token or a 
   expect(report.resolvedLater).toEqual([expect.stringMatching(/^L13 .*acme\/tool#5/)]);
 });
 
+test("a commit of only digits or only letters counts after the word commit or sha, a bare run of them does not", () => {
+  const { plan } = setup({
+    ledger: [
+      "- [ ] a: land commit 1234567 ... recheck: 2026-10-01",
+      "- [ ] b: land sha abcdefa ... recheck: 2026-10-01",
+      "- [ ] c: land 7654321 ... recheck: 2026-10-01",
+      "- [x] a done: commit 1234567890 landed ... evidence: git log",
+      "- [x] b done: sha ABCDEFAB landed ... evidence: git log",
+      "- [x] c done: landed 7654321 ... evidence: git log",
+    ],
+  });
+  const { report } = check(plan, "--offline", "--today", "2026-10-11");
+  expect(report.resolvedLater).toEqual([
+    expect.stringMatching(/^L6 .*commit:1234567.*L9/),
+    expect.stringMatching(/^L7 .*commit:abcdefa.*L10/),
+  ]);
+});
+
 test("the later-done-line group still runs on a plan that fails its lint", () => {
   const { plan } = setup({
     ledger: [

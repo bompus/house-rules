@@ -93,6 +93,9 @@ const COMMIT = /\b[0-9a-f]{7,40}\b/g;
 const THREAD_ID = /\bmcp:([0-9a-f]{8})(?:-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})?/g;
 // Three or more parts, so "UTF-8" is not an offer ID but "ABC-12-3" is.
 const LONG_OFFER_ID = /\b[A-Z][A-Z0-9]*(?:-[A-Z0-9]+){2,}\b/g;
+// A commit written after the word "commit" or "sha" counts whatever its characters, since git short ids can
+// be all digits or all letters; a bare hex-looking run needs a digit and a letter, or dates and counts match.
+const NAMED_COMMIT = /\b(?:commit|sha)\s+([0-9a-f]{7,40})\b/gi;
 const SHARED_TOKEN_LINES = 8;
 // Monthly: items in a full audit were lost within two to four weeks of being promised.
 const AUDIT_DAYS = 30;
@@ -535,6 +538,8 @@ function namedThings(text, repo) {
   });
   for (const match of rest.matchAll(BARE_REF))
     found.add(repo ? `${repo}#${match[1]}`.toLowerCase() : `#${match[1]}`);
+  for (const [, sha] of rest.matchAll(NAMED_COMMIT))
+    found.add(`commit:${sha.slice(0, 7).toLowerCase()}`);
   for (const [sha] of rest.matchAll(COMMIT))
     if (/\d/.test(sha) && /[a-f]/.test(sha)) found.add(`commit:${sha.slice(0, 7)}`);
   return [...found];
