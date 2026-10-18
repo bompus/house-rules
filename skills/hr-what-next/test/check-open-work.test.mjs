@@ -816,7 +816,7 @@ test("an open line whose re-check date has passed and whose pull request, thread
   expect(report.findings).toEqual([]);
 });
 
-test("a done line that comes first, a future re-check date, a common token or a different item does not list the open line", () => {
+test("a done line that comes first, a common token or a different item does not list the open line", () => {
   const common = Array.from(
     { length: 8 },
     (_, i) => `- [x] common ${i}: see acme/tool#77 ... evidence: x`,
@@ -825,8 +825,8 @@ test("a done line that comes first, a future re-check date, a common token or a 
     ledger: [
       "- [x] earlier: acme/tool#1 merged ... evidence: merge",
       "- [ ] a: wait for acme/tool#1 ... recheck: 2026-10-01",
-      "- [ ] b: wait for acme/tool#2 ... recheck: 2026-10-20",
-      "- [x] b done: acme/tool#2 merged ... evidence: merge",
+      "- [x] b first: acme/tool#2 merged ... evidence: merge",
+      "- [ ] b: follow up on acme/tool#2 ... recheck: 2026-10-01",
       "- [ ] c: wait for acme/tool#77 ... recheck: 2026-10-01",
       "- [ ] d: wait for acme/tool#3 ... recheck: 2026-10-01",
       "- [x] d other: acme/tool#4 merged ... evidence: merge",
@@ -837,6 +837,44 @@ test("a done line that comes first, a future re-check date, a common token or a 
   });
   const { report } = check(plan, "--offline", "--repo", "acme/tool", "--today", "2026-10-11");
   expect(report.resolvedLater).toEqual([expect.stringMatching(/^L13 .*acme\/tool#5/)]);
+});
+
+test("an open line is listed without waiting for its re-check date, and a work id ties lines together", () => {
+  const { plan } = setup({
+    ledger: [
+      "- [ ] a: wait for acme/tool#5 ... recheck: 2026-10-20",
+      "- [ ] b: land demo-docs-fix-20261016",
+      "- [~] c: sync release-0.17.0-20261018 to the mirror ... trigger: release",
+      "- [ ] d: tidy hr-plain-prose wording",
+      "- [ ] e: rerun on 2026-10-16-03",
+      "- [x] a done: acme/tool#5 merged ... evidence: merge",
+      "- [x] b done: demo-docs-fix-20261016 landed ... evidence: git log",
+      "- [x] c done: release-0.17.0-20261018 synced ... evidence: mirror",
+      "- [x] d other: hr-plain-prose checker fixed ... evidence: x",
+      "- [x] e other: rerun on 2026-10-16-03 ... evidence: x",
+    ],
+  });
+  const { report } = check(plan, "--offline", "--repo", "acme/tool", "--today", "2026-10-11");
+  expect(report.resolvedLater).toEqual([
+    expect.stringMatching(/^L6 .*acme\/tool#5.*L11/),
+    expect.stringMatching(/^L7 .*work:demo-docs-fix-20261016.*L12/),
+    expect.stringMatching(/^L8 .*work:release-0\.17\.0-20261018.*L13/),
+  ]);
+});
+
+test("an open ledger of more than 100 lines or a plan over 256 KiB warns", () => {
+  const items = (count) => Array.from({ length: count }, (_, i) => `- [ ] item ${i}`);
+  const budget = (report) => report.warnings.filter((warning) => /budget/.test(warning));
+  expect(budget(check(setup({ ledger: items(100) }).plan, "--offline").report)).toEqual([]);
+  expect(budget(check(setup({ ledger: items(101) }).plan, "--offline").report)).toEqual([
+    expect.stringMatching(/101 open or deferred ledger lines.*over the budget of 100/),
+  ]);
+  const large = setup({ ledger: items(1), extra: "x".repeat(256 * 1024) });
+  expect(budget(check(large.plan, "--offline").report)).toEqual([
+    expect.stringMatching(/plan is 25\d KiB.*over the budget of 256 KiB/),
+  ]);
+  const small = setup({ ledger: items(1), extra: "x".repeat(255 * 1024) });
+  expect(budget(check(small.plan, "--offline").report)).toEqual([]);
 });
 
 test("a commit of only digits or only letters counts after the word commit or sha, a bare run of them does not", () => {

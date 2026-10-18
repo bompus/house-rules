@@ -66,7 +66,9 @@ does not judge the outcome.
   checkout you touched and `--repo <owner/repo>` when items name pull requests
   or issues by number alone, and quote its result. Open or deferred items, and owned
   resources no open item names, mean work remains. Check each item it lists as
-  possibly finished or due for a re-check, and update its line.
+  possibly finished, due for a re-check or resolved by a later done line,
+  and update its line in place: the same skill's `scripts/close-ledger-line.mjs`
+  marks it done with its evidence or dropped, instead of a new line.
 - Before archiving a completed plan, save its completed status, completion
   time and evidence. Apply § Finishing work before marking the whole session
   completed. Then archive with the same script's `--archive` flag; it moves the

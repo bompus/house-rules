@@ -15,6 +15,9 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   keeping a diagnosis honest: compare against an owned baseline, treat a contradicted theory as dead, do not
   count two routes that share a premise as corroboration, and do not trust a query's projection, a
   half-rebuilt arm or a single run against a flaky base.
+- hr-what-next has `close-ledger-line.mjs`, which marks one open or deferred ledger line done with its evidence and the time, or dropped with who dropped it, in place. It refuses without evidence, and a second run changes nothing.
+- `check-open-work.mjs` lists an open line that names the same pull request, issue, commit, thread, offer or work id as a later done line. It no longer waits for the line's `recheck:` date, and it counts work ids such as `docs-fix-20261016`. On a 579-open-line archived ledger it now flags 259 lines, 233 of them already finished, up from 91 (85 finished).
+- `check-open-work.mjs` warns when a ledger has more than 100 open or deferred lines or the plan reaches 256 KiB.
 - The core rules now say five more things. A worker brief carries the user's request in their own words
   beside your reading of it, gives each item a check that counts the effect (a delete sent exactly once)
   and numbers a batch of feedback with an owner for each item. A long-running process is recorded with a

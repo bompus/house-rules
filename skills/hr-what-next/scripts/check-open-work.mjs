@@ -17,12 +17,14 @@
 // outside its default branch keeps the item off the list. Bare numbers ("PR #4") are looked up only in
 // --repo. The check needs `gh`; without it, offline, or with --offline it is skipped and "skipped" says so.
 // "re-check due" lists items whose `recheck: YYYY-MM-DD` date is past or within 7 days.
-// "possibly resolved by a later done line" lists open or deferred items whose `recheck:` date has passed and
-// that share a token with a LATER done (`- [x]`) line: the result may have been logged as a new line instead
-// of closing the old one. A token names one thing: a pull request or issue (a bare number counts as --repo's),
-// a commit, an `mcp:` thread id or an offer ID of three or more parts. A token that more than 8 ledger lines
-// name is too common to tie two lines together. The check reads only the plan text, so it runs on a plan that
-// fails its lint. These three groups are subsets of `open` and do not change the exit code.
+// "possibly resolved by a later done line" lists open or deferred items that share a token with a LATER done
+// (`- [x]`) line, whatever their `recheck:` date: the result may have been logged as a new line instead of
+// closing the old one, which close-ledger-line.mjs does in place. A token names one thing: a pull request or
+// issue (a bare number counts as --repo's), a commit, an `mcp:` thread id, an offer ID of three or more parts
+// or a work id (lowercase words joined by hyphens with a digit, such as `docs-fix-20261016`). A token that more
+// than 8 ledger lines name is too common to tie two lines together. The check reads only the plan text, so it
+// runs on a plan that fails its lint. These three groups are subsets of `open` and do not change the exit code.
+// The ledger budget warns above 100 open or deferred lines or a plan over 256 KiB: see LEDGER_BUDGET.
 // "unanswered offers" counts the open (`- [ ]`) ledger items that name an offer, one per offer ID, and warns at
 // three or more, the point where the offers rule says to present no further offer. A line names an offer when
 // an ID (capitals and digits joined by hyphens) follows the word "offer" directly ("Offer ABC-12 ...", "Pilot offer ABC-12").
@@ -108,7 +110,15 @@ const LONG_OFFER_ID = /\b[A-Z][A-Z0-9]*(?:-[A-Z0-9]+){2,}\b/g;
 // A commit written after the word "commit" or "sha" counts whatever its characters, since git short ids can
 // be all digits or all letters; a bare hex-looking run needs a digit and a letter, or dates and counts match.
 const NAMED_COMMIT = /\b(?:commit|sha)\s+([0-9a-f]{7,40})\b/gi;
+// A work or task id: lowercase parts joined by hyphens or dots, three or more parts, with a hyphen and a digit
+// ("docs-fix-20261016", "release-0.17.0-20261018"). Dates start with a digit and skill names have none.
+const WORK_ID = /(?<![\w.-])[a-z][a-z0-9]*(?:[-.][a-z0-9]+){2,}(?![\w-]|\.\w)/g;
 const SHARED_TOKEN_LINES = 8;
+// A ledger past these sizes is no longer reviewed line by line, and an agent reading the plan has to page
+// through it. 100 open lines is about what one backlog review can still show one row each; 256 KiB is where
+// common agent file readers stop returning a whole file in one read. The archived ledger this budget was set
+// from had 579 open or deferred lines in 1.3 MB, and 448 of them were already finished.
+const LEDGER_BUDGET = { open: 100, kib: 256 };
 // Monthly: items in a full audit were lost within two to four weeks of being promised.
 const AUDIT_DAYS = 30;
 const PROJECT_NAME = /^\w[\w.-]*$/;
@@ -178,7 +188,7 @@ function parseArguments(argv) {
 
 const clip = (text, length = 90) => (text.length > length ? `${text.slice(0, length - 1)}…` : text);
 
-function parsePlan(text) {
+export function parsePlan(text) {
   const lines = text.split(/\r?\n/);
   const header = lines.slice(0, 40);
   const field = (name) =>
@@ -548,6 +558,13 @@ function namedThings(text, repo) {
     if (/\d/.test(id)) found.add(`offer:${id}`);
     return " ";
   });
+  rest = rest.replace(WORK_ID, (id) => {
+    if (/\d/.test(id) && id.includes("-")) {
+      found.add(`work:${id}`);
+      return " ";
+    }
+    return id;
+  });
   for (const match of rest.matchAll(BARE_REF))
     found.add(repo ? `${repo}#${match[1]}`.toLowerCase() : `#${match[1]}`);
   for (const [, sha] of rest.matchAll(NAMED_COMMIT))
@@ -557,9 +574,9 @@ function namedThings(text, repo) {
   return [...found];
 }
 
-// An open or deferred line whose re-check date has passed and that names the same thing as a later done
-// line: the result was probably logged as a new line and the old one left open.
-function resolvedLater(items, today, repo) {
+// An open or deferred line that names the same thing as a later done line: the result was probably logged
+// as a new line and the old one left open. Its re-check date does not matter; a result can arrive early.
+function resolvedLater(items, repo) {
   const named = new Map(items.map((item) => [item, namedThings(item.text, repo)]));
   const lines = new Map();
   for (const tokens of named.values())
@@ -567,8 +584,6 @@ function resolvedLater(items, today, repo) {
   const resolved = [];
   for (const item of items) {
     if (item.mark !== " " && item.mark !== "~") continue;
-    const date = item.text.match(RECHECK)?.[1];
-    if (!date || !validDate(date) || date >= today) continue;
     const mine = named.get(item).filter((token) => lines.get(token) <= SHARED_TOKEN_LINES);
     const later = items.filter(
       (other) =>
@@ -583,7 +598,7 @@ function resolvedLater(items, today, repo) {
       ),
     ].sort();
     resolved.push(
-      `${row(item)} — recheck ${date} has passed and ${shared.join(", ")} is named by later done line(s) ${later.map((other) => `L${other.line}`).join(", ")}`,
+      `${row(item)} — ${shared.join(", ")} is named by later done line(s) ${later.map((other) => `L${other.line}`).join(", ")}`,
     );
   }
   return resolved;
@@ -745,7 +760,16 @@ async function run(options) {
   const audit = !invalid && plan.project && auditWarning(plan.project, roots, options.today);
   if (audit) report.warnings.push(audit);
   report.recheckDue = rechecks(open, options.today, report.warnings);
-  report.resolvedLater = resolvedLater(plan.items, options.today, options.repo);
+  report.resolvedLater = resolvedLater(plan.items, options.repo);
+  if (open.length > LEDGER_BUDGET.open)
+    report.warnings.push(
+      `${open.length} open or deferred ledger lines, over the budget of ${LEDGER_BUDGET.open}: close finished lines in place with close-ledger-line.mjs and move parked ones to a backlog`,
+    );
+  const kib = Math.floor(Buffer.byteLength(planText) / 1024);
+  if (kib >= LEDGER_BUDGET.kib)
+    report.warnings.push(
+      `the plan is ${kib} KiB, at or over the budget of ${LEDGER_BUDGET.kib} KiB: archive closed history (the plan's own completed sections and done lines) before it grows further`,
+    );
   if (!invalid) report.stale = await possiblyFinished(open, options, report);
   if (options.archive && !report.errors.length) {
     if (!COMPLETED_STATUS.test(plan.status))

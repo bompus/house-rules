@@ -34,10 +34,16 @@ completed state before the completion message; a report alone does not do so.
    unless a named commit sits outside a `--checkout`'s default branch,
    and "re-check due" lists `recheck:` dates that are past or within a week.
    Its "possibly resolved by a later done line" group lists open or deferred
-   items whose `recheck:` date has passed and whose pull request, issue,
-   commit, thread id or offer ID a later done line also names: the result was
+   items whose pull request, issue, commit, thread id, offer ID or work id
+   (such as `docs-fix-20261016`) a later done line also names: the result was
    likely logged as a new line instead of closing the old one.
-   Look at each before reporting it as done or still waiting.
+   Look at each before reporting it as done or still waiting. Close a
+   finished line in place with `scripts/close-ledger-line.mjs <plan>
+--line <n> --evidence "<what shows it is done>"`, or drop it with
+   `--drop --by "<who>"`; `--match <text>` picks the line by its text. It
+   refuses without evidence and changes nothing when run again. The checker
+   warns when a ledger has more than 100 open or deferred lines or the plan
+   reaches 256 KiB.
    It also prints `unanswered offers: N`, the number of offer IDs ("Offer
    ABC-12") on open ledger lines that no line records as answered, dropped or
    superseded, and warns at three. Plans that number offers without an ID are
