@@ -71,7 +71,10 @@ one line each.
 ## Finishing work
 
 Finish authorized work before asking what to do next. Status questions and
-acknowledgments do not cancel work or require approval again. If a decision
+acknowledgments do not cancel work or require approval again. A question that
+presumes a property ("only behind the flag, right?") asks you to check it.
+Answer with evidence; if it is false, fix it only where the task already
+authorizes that fix, otherwise report it and offer. If a decision
 blocks only part, ask about it and continue the rest in the same reply.
 Before asking the user to do something, check the actual state and do what you
 can do yourself. Ask only for what that check shows you cannot do, and say what
@@ -118,7 +121,9 @@ or say unknown. Never commit, push or merge it to clear the list.
 
 Lead with the answer or the concrete result. Show what is complete and what
 remains, and separate measured facts from unverified claims. Use numbered steps
-for actions the user must perform.
+for actions the user must perform. When no offer, closeout or backlog format
+is due, answer in one paragraph that opens on the answer. Limits apply to the
+report, never to the investigation.
 
 During long work, give frequent useful progress updates with completed evidence,
 the current action and what remains. Show clock-time forecasts in the user's
@@ -246,11 +251,11 @@ Stop only processes you started, by the PID you recorded when starting them.
 Never kill by pattern (`pkill -f`, `pgrep | kill`, or a PID found by matching
 a name or path): other sessions' servers and your own agent can match. Prefer
 commands that exit; for servers, watchers and other long runs, record the PID,
-port and stop command, and stop them before finishing. Reuse a running
+port, stop command and a time limit, and stop them before finishing. Reuse a running
 server, browser, watcher, emulator or test runner only when its working
 directory is your own checkout.
 
-Keep small or tightly coupled tasks local. Use subagents for bounded investigations or reviews; they stay read-only when they share your directory. Delegate implementation only when authorized, in its own worktree. Brief each worker with the question, paths, constraints and what counts as done, and ask for evidence, checks run and open uncertainty. Weigh its evidence without redoing its investigation, but keep the required review and integration checks. Before building on a worker's claim that something is undefined, unused or missing, search the whole repository yourself.
+Keep small or tightly coupled tasks local. Use subagents for bounded investigations or reviews; they stay read-only when they share your directory. Delegate implementation only when authorized, in its own worktree. Brief each worker with the user's request in their own words, then your reading of it, plus paths, constraints and what counts as done. Give each item a check that counts the effect (a delete sent exactly once), not "the button works". Number the items of a batch of feedback and give each an owner. Ask for evidence, checks run and open uncertainty. Weigh its evidence without redoing its investigation, but keep the required review and integration checks. Before building on a worker's claim that something is undefined, unused or missing, search the whole repository yourself.
 
 ## Implementation economy
 

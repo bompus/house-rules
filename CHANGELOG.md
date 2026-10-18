@@ -4,6 +4,17 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- The core rules now say five more things. A worker brief carries the user's request in their own words
+  beside your reading of it, gives each item a check that counts the effect (a delete sent exactly once)
+  and numbers a batch of feedback with an owner for each item. A long-running process is recorded with a
+  time limit as well as its PID, port and stop command. A question that presumes a property ("only behind
+  the flag, right?") is a request to check it: answer with evidence and fix a mismatch only where the task
+  already authorizes the fix, otherwise report it and offer. A reply with no offer, closeout or backlog
+  format due is one paragraph that opens on the answer, and the limit applies to the report, never to the
+  investigation.
+- `hr-better-accessibility` now asks for a single-pointer alternative to every drag (buttons, a menu, or
+  tap to pick up and tap to place), because a keyboard path does not help touch and switch users.
+
 ## 0.17.0 - 2026-10-17
 
 - The `hr-what-next` open-work check (`check-open-work.mjs`) has a new group, "possibly resolved by a later

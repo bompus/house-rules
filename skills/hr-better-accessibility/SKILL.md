@@ -33,7 +33,7 @@ A custom ring needs a project focus token or another explicit color. Verify the 
 
 ## Full keyboard support
 
-Every pointer interaction needs a keyboard path. Follow the ARIA APG patterns: Escape closes overlays, arrow keys move within composite widgets, Tab moves between widgets, Enter and Space activate.
+Every pointer interaction needs a keyboard path. Every drag also needs a single-pointer alternative (buttons, a menu, or tap to pick up and tap to place), because a keyboard path does not help touch and switch users. Follow the ARIA APG patterns: Escape closes overlays, arrow keys move within composite widgets, Tab moves between widgets, Enter and Space activate.
 
 Use only `tabindex="0"` to join the natural tab order and `tabindex="-1"` for programmatic focus. Positive values break that order. Composite widgets use roving tabindex, where the active item is `0` and every other is `-1`.
 
