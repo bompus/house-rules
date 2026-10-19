@@ -33,13 +33,17 @@ test("every catalog entry records the evidence the setup procedure promises", ()
   assert(catalog.entries.length > 0);
   const ids = new Set();
   for (const entry of catalog.entries) {
-    for (const field of fields) assert.notEqual(entry[field], undefined, `${entry.id}: ${field}`);
+    for (const field of fields) {
+      assert.notEqual(entry[field], undefined, `${entry.id}: ${field}`);
+    }
     assert(!ids.has(entry.id), `duplicate ${entry.id}`);
     ids.add(entry.id);
     assert.match(entry.checked, /^\d{4}-\d{2}-\d{2}$/);
     assert.match(entry.sourceUrl, /^https:\/\//);
     assert(["current", "superseded", "withdrawn", "unverified"].includes(entry.status));
-    for (const profile of entry.profiles) assert(["quick", "balanced", "deep"].includes(profile));
+    for (const profile of entry.profiles) {
+      assert(["quick", "balanced", "deep"].includes(profile));
+    }
     assert(entry.efforts.length > 0);
     for (const row of entry.efforts) {
       assert.equal(typeof row.effort, "string");
@@ -55,8 +59,12 @@ test("a current entry was fetched from its source and defines every figure it re
     assert(entry.checked <= catalog.reviewed, `${entry.id}: checked after the catalog review date`);
     assert.doesNotMatch(entry.limitations, /not fetched again/i, entry.id);
     const numeric = (key) => entry.efforts.some((row) => Number.isFinite(row[key]));
-    if (numeric("listCostUsd")) assert.notEqual(entry.costDefinition, "unknown", entry.id);
-    if (numeric("wallMinutes")) assert.notEqual(entry.timeDefinition, "unknown", entry.id);
+    if (numeric("listCostUsd")) {
+      assert.notEqual(entry.costDefinition, "unknown", entry.id);
+    }
+    if (numeric("wallMinutes")) {
+      assert.notEqual(entry.timeDefinition, "unknown", entry.id);
+    }
   }
 });
 
@@ -94,7 +102,9 @@ test("the setup reference links resolve inside the installed skill", () => {
   ]) {
     const base = dirname(resolve(skill, file));
     for (const [, target] of read(file).matchAll(/\]\(([^)#\s]+)(?:#[^)]*)?\)/g)) {
-      if (/^https?:/.test(target)) continue;
+      if (/^https?:/.test(target)) {
+        continue;
+      }
       const resolved = resolve(base, target);
       assert(resolved.startsWith(skill + sep), `${file} -> ${target} leaves the skill`);
       assert(existsSync(resolved), `${file} -> ${target}`);

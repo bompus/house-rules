@@ -8,8 +8,8 @@ the base. Read-only; never fetches — the caller fetches first.
 
 It also lists live processes whose working directory is inside the checkout
 (Linux /proc only), excluding the checker's ancestors and its pipeline. Each listed process
-blocks worktree removal unless its PID is one you recorded when you started it. The list says nothing
-about landing or about fast-forwarding a default checkout: neither reads it. `own_session`
+blocks worktree removal unless its PID is one you recorded when you started it. The list says
+nothing about landing or about fast-forwarding a default checkout: neither reads it. `own_session`
 is true only for a process that descends from the nearest agent CLI above the checker (a
 process whose comm is one of AGENT_COMMS); a process under another session of the same agent
 host's server, or any process when the checker has no agent ancestor, is false. A process
@@ -42,10 +42,8 @@ def git(path, *args):
 
 def default_base(path):
     """origin/HEAD's target (e.g. origin/fork/consolidated), else origin/main."""
-    r = git(path, "symbolic-ref", "--quiet", "--short",
-            "refs/remotes/origin/HEAD")
-    return r.stdout.strip() if r.returncode == 0 and r.stdout.strip() \
-        else "origin/main"
+    r = git(path, "symbolic-ref", "--quiet", "--short", "refs/remotes/origin/HEAD")
+    return r.stdout.strip() if r.returncode == 0 and r.stdout.strip() else "origin/main"
 
 
 def _ppid(pid):
@@ -112,8 +110,7 @@ def checkout_processes(path):
         if cwd != root and not cwd.startswith(root + os.sep):
             continue
         own = agent is not None and agent in _chain(int(entry))
-        found.append({"pid": int(entry), "own_session": own,
-                      "comm": comm})
+        found.append({"pid": int(entry), "own_session": own, "comm": comm})
     return found
 
 
@@ -163,10 +160,8 @@ def landing_state(path, base):
             if not report["content_landed"]:
                 # Base may have advanced on the same files after the merge
                 # base: then a diff is expected even for landed content.
-                r = git(path, "diff", "--name-only", "--no-renames", "-z", mb, base,
-                         "--", *files)
-                if r.returncode == 0 and any(
-                        f for f in r.stdout.split("\0") if f):
+                r = git(path, "diff", "--name-only", "--no-renames", "-z", mb, base, "--", *files)
+                if r.returncode == 0 and any(f for f in r.stdout.split("\0") if f):
                     report["indeterminate"] = True
     landed = bool(report["content_landed"])
     if landed and report["clean"]:
@@ -175,8 +170,7 @@ def landing_state(path, base):
     elif landed:
         report["reason"] = "content landed but tree is dirty"
     elif report.get("indeterminate"):
-        report["reason"] = ("indeterminate - base advanced on touched "
-                            "files, confirm PR")
+        report["reason"] = "indeterminate - base advanced on touched files, confirm PR"
     else:
         report["reason"] = "unlanded content vs base"
     return report
@@ -185,9 +179,7 @@ def landing_state(path, base):
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--path", default=".", help="checkout to inspect")
-    ap.add_argument(
-        "--base", help="base ref (default: origin/HEAD, else origin/main)"
-    )
+    ap.add_argument("--base", help="base ref (default: origin/HEAD, else origin/main)")
     ap.add_argument(
         "--fail-on-unlanded",
         action="store_true",

@@ -14,4 +14,7 @@ ln -s "$real_config" "$eor_tmp/home/.config/cursor"
 cd "$eor_work"
 HOME=$eor_tmp/home nice -n 10 timeout 900 \
   cursor-agent -p --output-format text --mode ask --trust --model "${EOR_MODEL:-grok-4.7-high}" --workspace "$eor_work" \
-  < "$eor_tmp/prompt.txt" 2> "$eor_tmp/err.txt" || { cat "$eor_tmp/err.txt" >&2; exit 1; }
+  <"$eor_tmp/prompt.txt" 2>"$eor_tmp/err.txt" || {
+  cat "$eor_tmp/err.txt" >&2
+  exit 1
+}

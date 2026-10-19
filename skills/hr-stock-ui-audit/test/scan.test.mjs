@@ -190,6 +190,7 @@ describe("exit codes and output", () => {
     expect(report.counts).toEqual({ high: 0, medium: 0, low: 2 });
   });
 
+  /** @type {[string, string[]][]} */
   const usage = [
     ["no arguments", []],
     ["an unknown flag", ["--strict", join(FIX, "clean")]],

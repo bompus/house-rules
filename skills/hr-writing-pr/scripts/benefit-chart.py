@@ -29,6 +29,7 @@ Values must be non-negative. Prints the alt text for the image on stdout. With -
 also prints a Markdown table of the same values, the text version of the chart
 for readers and agents that cannot parse the image. Requires matplotlib.
 """
+
 import json
 import math
 import sys
@@ -67,8 +68,10 @@ def fmt(value):
 
 def band_of(spec):
     if "band" not in spec:
-        sys.exit('spec needs a top-level "band": the declared variation criterion as a fraction '
-                 "of the baseline, such as 0.04.")
+        sys.exit(
+            'spec needs a top-level "band": the declared variation criterion as a fraction '
+            "of the baseline, such as 0.04."
+        )
     try:
         if isinstance(spec["band"], bool):
             raise TypeError
@@ -107,7 +110,9 @@ def render(spec, out_path):
     rows = spec["rows"]
     for row in rows:
         if float(row["before"]) < 0 or float(row["after"]) < 0:
-            sys.exit(f"row {row['label']!r}: negative values are not supported (bars start at zero).")
+            sys.exit(
+                f"row {row['label']!r}: negative values are not supported (bars start at zero)."
+            )
     band = band_of(spec)
     arms = spec.get("arms", ["Before", "After"])
     count = len(rows)
@@ -122,10 +127,24 @@ def render(spec, out_path):
     ax.set_facecolor(BACKGROUND)
 
     top = height - 0.3
-    ax.text(0.4, top, "\n".join(headline_lines), color=TEXT, fontsize=19, fontweight="bold",
-            va="top", linespacing=1.25)
-    ax.text(0.4, top - 0.4 * len(headline_lines) - 0.2, spec.get("workload", ""), color=MUTED,
-            fontsize=10.5, va="top")
+    ax.text(
+        0.4,
+        top,
+        "\n".join(headline_lines),
+        color=TEXT,
+        fontsize=19,
+        fontweight="bold",
+        va="top",
+        linespacing=1.25,
+    )
+    ax.text(
+        0.4,
+        top - 0.4 * len(headline_lines) - 0.2,
+        spec.get("workload", ""),
+        color=MUTED,
+        fontsize=10.5,
+        va="top",
+    )
 
     arm_right, bar_left, bar_span = 1.35, 1.5, 5.6
     y = height - head - 0.45
@@ -144,12 +163,25 @@ def render(spec, out_path):
         for index, (arm, value, bar_color) in enumerate(bars):
             bar_y = y - 0.5 - index * 0.32
             width = max(bar_span * value / top_value, 0.03)
-            ax.add_patch(FancyBboxPatch((bar_left, bar_y - 0.11), width, 0.22,
-                                        boxstyle="round,pad=0,rounding_size=0.04",
-                                        linewidth=0, facecolor=bar_color))
+            ax.add_patch(
+                FancyBboxPatch(
+                    (bar_left, bar_y - 0.11),
+                    width,
+                    0.22,
+                    boxstyle="round,pad=0,rounding_size=0.04",
+                    linewidth=0,
+                    facecolor=bar_color,
+                )
+            )
             ax.text(arm_right, bar_y, arm, color=MUTED, fontsize=9.5, va="center", ha="right")
-            ax.text(bar_left + width + 0.12, bar_y, f"{fmt(value)}{suffix}", color=TEXT,
-                    fontsize=10.5, va="center")
+            ax.text(
+                bar_left + width + 0.12,
+                bar_y,
+                f"{fmt(value)}{suffix}",
+                color=TEXT,
+                fontsize=10.5,
+                va="center",
+            )
         row_alt = f"{row['label']}: {fmt(before)}{suffix} to {fmt(after)}{suffix}, {alt_badge}"
         if row.get("note"):
             row_alt += f" ({row['note']})"
@@ -174,8 +206,10 @@ def table(spec):
         suffix = f" {row['unit']}" if row.get("unit") else ""
         change = judge(row, band)[2]
         label = row["label"].replace("|", "\\|")
-        lines.append(f"| {label} | {fmt(float(row['before']))}{suffix} | "
-                     f"{fmt(float(row['after']))}{suffix} | {change} |")
+        lines.append(
+            f"| {label} | {fmt(float(row['before']))}{suffix} | "
+            f"{fmt(float(row['after']))}{suffix} | {change} |"
+        )
     notes = [f"Workload: {spec['workload']}"] if spec.get("workload") else []
     notes += [spec["note"]] if spec.get("note") else []
     notes += [f"{row['label']}: {row['note']}" for row in spec["rows"] if row.get("note")]

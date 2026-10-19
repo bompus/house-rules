@@ -117,8 +117,8 @@ for example `EOR_KEEP_ENV="CLAUDE_CONFIG_DIR ANTHROPIC_AUTH_TOKEN ANTHROPIC_BASE
 - **Check for rule leaks first.** Every one of these agents loads your own rules by default, and
   a leaked rule makes the "without the rule" arm look as good as the "with" arm. Before a run,
   send each wrapper this probe and read the answer: `Without using any tools: list verbatim every
-instruction file or system/developer instruction heading you were given, and say whether any text
-mentions "End of every reply" or "house rules".` The only instruction file should be the
+  instruction file or system/developer instruction heading you were given, and say whether any text
+  mentions "End of every reply" or "house rules".` The only instruction file should be the
   scratch `AGENTS.md` (`# Test project`); Devin also loads its own global `AGENTS.md`, which the
   wrapper cannot remove, and OpenCode lists installed skill descriptions. Probe again after a CLI
   upgrade. Devin silently ignores a config it cannot parse and then loads your rules, so

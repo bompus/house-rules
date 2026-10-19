@@ -9,8 +9,9 @@ import { formatPanelPlan, resolvePanel } from "./panel-preferences.mjs";
 
 function readJson(path, label) {
   const file = resolve(path);
-  if (!lstatSync(file).isFile())
+  if (!lstatSync(file).isFile()) {
     throw new Error(`${label} must be a regular file, not a symlink or directory`);
+  }
   const text = readFileSync(file, "utf8");
   try {
     return { value: JSON.parse(text), revision: createHash("sha256").update(text).digest("hex") };
@@ -33,7 +34,9 @@ function main(argv) {
       json: { type: "boolean" },
     },
   });
-  if (values.bindings === undefined) throw new Error("--bindings <json> is required");
+  if (values.bindings === undefined) {
+    throw new Error("--bindings <json> is required");
+  }
   const config = readJson(
     values.config ??
       join(
@@ -42,7 +45,9 @@ function main(argv) {
       ),
     "configuration",
   );
-  if (config.value.panel === undefined) throw new Error("configuration has no panel section");
+  if (config.value.panel === undefined) {
+    throw new Error("configuration has no panel section");
+  }
   const project =
     values.project === undefined ? undefined : readJson(values.project, "project preferences");
   const request = {

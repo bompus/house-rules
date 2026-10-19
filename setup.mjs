@@ -31,9 +31,25 @@ Only an explicit save changes configuration. Output and hosts are separate.
 For scripting, use house-rules config help and config set --apply --expect.
 --json returns the existing config status report without prompting or writing.`;
 
+/**
+ * One numbered choice: an optional rule (modifier) or a skill.
+ * @typedef {object} Row
+ * @property {string} kind "modifier" or "skill"
+ * @property {string} name
+ * @property {number} number
+ * @property {boolean} enabled
+ * @property {string} [description]
+ * @property {boolean} [explicitOnly]
+ * @property {string} [origin]
+ * @property {string} [requires]
+ */
+
+const message = (/** @type {unknown} */ error) =>
+  error instanceof Error ? error.message : String(error);
+
 // Terminal output must not execute control sequences from personal metadata or paths.
-const safe = (value) => String(value).replace(/\p{Cc}/gu, " ");
-const quote = (value) =>
+const safe = (/** @type {unknown} */ value) => String(value).replace(/\p{Cc}/gu, " ");
+const quote = (/** @type {string} */ value) =>
   process.platform === "win32"
     ? `'${value.replaceAll("'", "''")}'`
     : `'${value.replaceAll("'", "'\\''")}'`;
@@ -54,30 +70,33 @@ const cliCommand = () =>
 const installerPath = () =>
   join(dirname(entry), process.platform === "win32" ? "install.ps1" : "install.sh");
 // The installer composes <config dir>/house-rules.json only.
-const usesInstaller = (configPath) =>
+const usesInstaller = (/** @type {string} */ configPath) =>
   !packaged && existsSync(installerPath()) && basename(configPath) === "house-rules.json";
 
+/** @param {string} configPath */
 function recomposeCommand(configPath) {
   const configDir = dirname(configPath);
   const checkout = dirname(entry);
   const windows = process.platform === "win32";
   const installer = installerPath();
-  if (!usesInstaller(configPath))
+  if (!usesInstaller(configPath)) {
     return `${cliCommand()} --config ${quote(configPath)} --out ${quote(join(configDir, "rules.md"))}`;
+  }
   // The installer reads these variables, so a copy or config outside the defaults must name them.
   const home = homedir();
   const data =
     process.env.XDG_DATA_HOME ?? (windows ? process.env.LOCALAPPDATA : join(home, ".local/share"));
   const config = process.env.XDG_CONFIG_HOME ?? join(home, ".config");
-  const env = [
+  const env = /** @type {[string, string, string][]} */ ([
     ["HOUSE_RULES_DIR", checkout, join(data ?? "", "house-rules")],
     ["HOUSE_RULES_CONFIG_DIR", configDir, join(config, "house-rules")],
-  ].filter(([, actual, normal]) => resolve(actual) !== resolve(normal));
+  ]).filter(([, actual, normal]) => resolve(actual) !== resolve(normal));
   return windows
     ? `${env.map(([name, value]) => `$env:${name}=${quote(value)}; `).join("")}& ${quote(installer)}`
     : `${env.map(([name, value]) => `${name}=${quote(value)} `).join("")}sh ${quote(installer)}`;
 }
 
+/** @param {string[]} argv */
 export async function setupCommand(argv) {
   let values;
   try {
@@ -91,16 +110,19 @@ export async function setupCommand(argv) {
       },
     }));
   } catch (error) {
-    error.exitCode = 2;
+    /** @type {Error & { exitCode?: number }} */ (error).exitCode = 2;
     throw error;
   }
-  if (values.help) return console.log(HELP);
-  if (values.json)
+  if (values.help) {
+    return console.log(HELP);
+  }
+  if (values.json) {
     return configCommand([
       "status",
       "--json",
       ...(values.config ? ["--config", values.config] : []),
     ]);
+  }
   let snapshot = readConfiguration(configurationPath(values.config));
   if (!process.stdin.isTTY || !process.stdout.isTTY) {
     console.error("setup requires a terminal for input and output; no selections saved.");
@@ -110,21 +132,29 @@ export async function setupCommand(argv) {
   }
 
   const intent = new Map();
-  let questions,
-    stage = 0,
+  /** @type {string | undefined} */
+  let questions;
+  let stage = 0,
     query = "",
     selectedOnly = true,
-    stale = false;
+    stale = /** @type {boolean} */ (false);
   let saveAttempted = false;
   const options = () => {
+    /** @type {import("./config.mjs").SelectionOptions} */
     const result = {};
-    if (questions !== undefined) result.questions = questions;
+    if (questions !== undefined) {
+      result.questions = questions;
+    }
     for (const { kind, name, enabled } of intent.values()) {
       const key = `${enabled ? "enable" : "disable"}-${kind}`;
-      (result[key] ??= []).push(name);
+      /** @type {string[]} */ (result[key] ??= []).push(name);
     }
     return result;
   };
+  /**
+   * @returns {{ next: import("./config.mjs").Configuration, report: ReturnType<typeof selectionReport>, error?: undefined }
+   *   | { next?: undefined, report?: undefined, error: unknown }}
+   */
   const draft = () => {
     try {
       const next = changeSelection(snapshot.config, options(), snapshot.path);
@@ -142,15 +172,18 @@ export async function setupCommand(argv) {
     if (
       projection.modifiers.includes("question-cards") &&
       !projection.modifiers.includes("coded-offers")
-    )
+    ) {
       projection.modifiers.push("coded-offers");
-    if (projection.modifiers.includes("model-default-questions"))
+    }
+    if (projection.modifiers.includes("model-default-questions")) {
       projection.modifiers = projection.modifiers.filter(
         (name) => !["coded-offers", "question-cards"].includes(name),
       );
+    }
     return selectionReport(projection, snapshot.path);
   };
   let baseline = catalog(); // Malformed layers, composition or legacy names still stop setup.
+  /** @returns {Row[]} */
   const rows = () => {
     const current = draft();
     const report = current.report ?? baseline;
@@ -177,14 +210,16 @@ export async function setupCommand(argv) {
       let rest = safe(line);
       while (rest.length > width) {
         let cut = rest.lastIndexOf(" ", width);
-        if (cut < 1) cut = width;
+        if (cut < 1) {
+          cut = width;
+        }
         console.log(rest.slice(0, cut));
         rest = rest.slice(cut).trimStart();
       }
       console.log(rest);
     }
   };
-  const printCommand = (command) => {
+  const printCommand = (/** @type {string} */ command) => {
     if (/\p{Cc}/u.test(command)) {
       print(
         "The path contains control characters. Use config help with the original path arguments.",
@@ -198,9 +233,12 @@ export async function setupCommand(argv) {
     print(`Choose guidance / ${["Optional rules", "Skills", "Review"][stage]}`);
     print(`Config: ${snapshot.path}`);
     const current = draft();
-    if (current.error) print(`Selection needs repair: ${current.error.message}`);
-    if (stale)
+    if (current.error) {
+      print(`Selection needs repair: ${message(current.error)}`);
+    }
+    if (stale) {
       print("Configuration changed. Use refresh for a new comparison, then review and save again.");
+    }
     if (stage === 2 && current.report) {
       print(
         renderConfig({
@@ -252,21 +290,25 @@ export async function setupCommand(argv) {
       print(
         `${row.number}. [${row.enabled ? "on" : "off"}] ${row.name}${row.explicitOnly ? " (explicit only)" : ""}`,
       );
-      print(`   ${row.description.split(/(?<=\.)\s/)[0]}`);
+      print(`   ${(row.description ?? "").split(/(?<=\.)\s/)[0]}`);
     }
-    if (!visible.length)
+    if (!visible.length) {
       print(`No matches for ${JSON.stringify(query)}. Use clear search or show all.`);
-    if (selectedOnly && nothingSelected)
+    }
+    if (selectedOnly && nothingSelected) {
       print("Nothing is selected yet, so every choice is listed. Use toggle N to select.");
-    else if (selectedOnly)
+    } else if (selectedOnly) {
       print("Showing current selections. Search for relevant additions or use show all.");
-    if (baseline.unavailable.length)
+    }
+    if (baseline.unavailable.length) {
       print(`Retained unavailable exclusions: ${baseline.unavailable.join(", ")}`);
+    }
     print("toggle N [N ...] / search TEXT / help N / next / back / cancel");
   };
   const input = createInterface({ input: process.stdin, terminal: false });
   const lines = input[Symbol.asyncIterator]();
-  let interrupted = false;
+  // Set by the SIGINT handler while a prompt is waiting.
+  let interrupted = /** @type {boolean} */ (false);
   const interrupt = () => {
     interrupted = true;
     process.exitCode = 130;
@@ -283,7 +325,7 @@ export async function setupCommand(argv) {
       `CLI package version: ${JSON.parse(readFileSync(new URL("./package.json", import.meta.url), "utf8")).version}`,
     );
     show();
-    while (true) {
+    for (;;) {
       process.stdout.write("setup> ");
       const line = await lines.next();
       if (line.done || interrupted) {
@@ -305,7 +347,9 @@ export async function setupCommand(argv) {
           return;
         }
         if (command === "next") {
-          if (stage === 1 && draft().error) throw draft().error;
+          if (stage === 1 && draft().error) {
+            throw draft().error;
+          }
           stage = Math.min(2, stage + 1);
           query = "";
           selectedOnly = true;
@@ -316,15 +360,18 @@ export async function setupCommand(argv) {
         } else if (command.startsWith("search ")) {
           query = command.slice(7);
           selectedOnly = false;
-        } else if (command === "clear search") query = "";
-        else if (command === "show selected") selectedOnly = true;
-        else if (command === "show all") {
+        } else if (command === "clear search") {
+          query = "";
+        } else if (command === "show selected") {
+          selectedOnly = true;
+        } else if (command === "show all") {
           query = "";
           selectedOnly = false;
         } else if (command.startsWith("questions ")) {
           const preset = command.slice(10);
-          if (!QUESTION_PRESETS.includes(preset))
+          if (!QUESTION_PRESETS.includes(preset)) {
             throw new Error("Choose questions default|plain|coded|cards.");
+          }
           questions = preset;
         } else if (command.startsWith("toggle ") || command.startsWith("help ")) {
           const help = command.startsWith("help ");
@@ -334,30 +381,35 @@ export async function setupCommand(argv) {
             const matches = available.filter(
               (row) => String(row.number) === name || row.name === name,
             );
-            if (matches.length !== 1)
+            const [match] = matches;
+            if (matches.length !== 1 || match === undefined) {
               throw new Error(`Choose an unambiguous listed number or name: ${name}`);
-            return matches[0];
+            }
+            return match;
           });
           if (
             !help &&
             new Set(chosen.map((row) => `${row.kind}:${row.name}`)).size !== chosen.length
-          )
+          ) {
             throw new Error("List each choice only once in a toggle command.");
+          }
           if (
             !help &&
             chosen.some((row) => row.kind === "modifier" && !known.has(row.name) && !row.enabled)
-          )
+          ) {
             throw new Error("An unavailable modifier can only be removed.");
+          }
           for (const row of chosen) {
             if (help) {
               print(`${row.name}: ${row.description}`);
               print(
                 `Source: ${row.origin ?? "shipped modifier"}${row.explicitOnly ? "; explicit invocation only" : ""}`,
               );
-              if (row.kind === "skill")
+              if (row.kind === "skill") {
                 print(
                   "Exclusion applies to this name in every layer, including a personal override.",
                 );
+              }
             } else {
               const enabled = !(intent.get(`${row.kind}:${row.name}`)?.enabled ?? row.enabled);
               intent.set(`${row.kind}:${row.name}`, { kind: row.kind, name: row.name, enabled });
@@ -365,8 +417,12 @@ export async function setupCommand(argv) {
               for (const need of enabled ? (row.requires ?? "").split(",") : []) {
                 const skill = available.find((r) => r.kind === "skill" && r.name === need.trim());
                 // A skill listed in the same command keeps the toggle the user typed.
-                if (!skill || chosen.includes(skill)) continue;
-                if (intent.get(`skill:${skill.name}`)?.enabled ?? skill.enabled) continue;
+                if (!skill || chosen.includes(skill)) {
+                  continue;
+                }
+                if (intent.get(`skill:${skill.name}`)?.enabled ?? skill.enabled) {
+                  continue;
+                }
                 intent.set(`skill:${skill.name}`, {
                   kind: "skill",
                   name: skill.name,
@@ -377,10 +433,11 @@ export async function setupCommand(argv) {
             }
           }
         } else if (command === "refresh") {
-          if (!stale)
+          if (!stale) {
             throw new Error(
               "Refresh is available after a changed configuration; review the current draft first.",
             );
+          }
           snapshot = readConfiguration(snapshot.path);
           baseline = catalog();
           stale = false;
@@ -388,10 +445,16 @@ export async function setupCommand(argv) {
             "Fresh configuration loaded; retained selection intent is shown for review. Refresh did not write configuration.",
           );
         } else if (command === "save") {
-          if (stage !== 2) throw new Error("Use next to reach Review before saving.");
-          if (stale) throw new Error("Use refresh and review the new comparison before saving.");
+          if (stage !== 2) {
+            throw new Error("Use next to reach Review before saving.");
+          }
+          if (stale) {
+            throw new Error("Use refresh and review the new comparison before saving.");
+          }
           const current = draft();
-          if (current.error) throw current.error;
+          if (current.next === undefined) {
+            throw current.error;
+          }
           if (!selectionChanges(snapshot.config, current.next).length) {
             print("No selection changes; configuration was not written.");
             return;
@@ -401,7 +464,9 @@ export async function setupCommand(argv) {
             writeConfiguration(snapshot, current.next, snapshot.revision);
           } catch (error) {
             try {
-              if (readConfiguration(snapshot.path).revision !== snapshot.revision) stale = true;
+              if (readConfiguration(snapshot.path).revision !== snapshot.revision) {
+                stale = true;
+              }
             } catch {
               stale = true;
             }
@@ -410,13 +475,15 @@ export async function setupCommand(argv) {
           let saved;
           try {
             saved = readConfiguration(snapshot.path);
-            if (JSON.stringify(saved.config) !== JSON.stringify(current.next))
+            if (JSON.stringify(saved.config) !== JSON.stringify(current.next)) {
               throw new Error("Saved configuration changed; inspect config status.");
+            }
             selectionReport(saved.config, saved.path);
           } catch (error) {
             stale = true;
             throw new Error(
-              `Save completed but verification failed; inspect config status or refresh: ${error.message}`,
+              `Save completed but verification failed; inspect config status or refresh: ${message(error)}`,
+              { cause: error },
             );
           }
           print(`Selections saved: ${saved.path}`);
@@ -424,17 +491,19 @@ export async function setupCommand(argv) {
             "Output was not regenerated and hosts were not connected by setup. To apply the selections, run:",
           );
           printCommand(recomposeCommand(saved.path));
-          if (!usesInstaller(saved.path))
+          if (!usesInstaller(saved.path)) {
             print(
               "This rebuilds the rules only; add --skills-out with a new or empty directory to rebuild the skills too.",
             );
+          }
           return;
-        } else
+        } else {
           throw new Error(
             "Unknown command. Use toggle, questions, search, help, next, back, save or cancel.",
           );
+        }
       } catch (error) {
-        print(`Cannot continue: ${error.message}`);
+        print(`Cannot continue: ${message(error)}`);
       }
       show();
     }

@@ -50,13 +50,15 @@ try {
     "LICENSE",
     "THIRD_PARTY_NOTICES.md",
     "docs/configuration.md",
-  ])
+  ]) {
     assert(files.has(required), `Missing ${required}`);
-  for (const path of files)
+  }
+  for (const path of files) {
     assert(
       !/^(?:test|evals|notes|scripts|\.github)\/|^skills\/[^/]+\/test\//.test(path),
       `Unexpected ${path}`,
     );
+  }
   const prefix = join(scratch, "installed");
   run(process.execPath, [
     npm,
@@ -74,7 +76,9 @@ try {
   assert.equal(metadata.name, "@bompus/house-rules");
   assert.equal(metadata.bin["house-rules"], "compose.mjs");
   assert(!metadata.dependencies || Object.keys(metadata.dependencies).length === 0);
-  for (const hook of ["preinstall", "install", "postinstall"]) assert(!metadata.scripts?.[hook]);
+  for (const hook of ["preinstall", "install", "postinstall"]) {
+    assert(!metadata.scripts?.[hook]);
+  }
   assert(
     existsSync(
       join(
@@ -153,17 +157,21 @@ try {
     );
     function compare(source, target) {
       for (const entry of readdirSync(source, { withFileTypes: true })) {
-        if (entry.name === "test" || entry.name === "__pycache__") continue;
+        if (entry.name === "test" || entry.name === "__pycache__") {
+          continue;
+        }
         const from = join(source, entry.name),
           to = join(target, entry.name);
         assert(existsSync(to), `Missing installed resource ${to}`);
-        if (entry.isDirectory()) compare(from, to);
-        else
+        if (entry.isDirectory()) {
+          compare(from, to);
+        } else {
           assert.deepEqual(
             readFileSync(to),
             readFileSync(from),
             `Changed installed resource ${to}`,
           );
+        }
       }
     }
     compare(join(root, "skills"), output);

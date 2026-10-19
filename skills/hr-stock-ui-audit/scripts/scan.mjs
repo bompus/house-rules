@@ -84,15 +84,23 @@ function rgbToHsl(r, g, b) {
   const max = Math.max(r, g, b);
   const min = Math.min(r, g, b);
   const l = (max + min) / 2;
-  if (max === min) return { h: 0, s: 0, l };
+  if (max === min) {
+    return { h: 0, s: 0, l };
+  }
   const d = max - min;
   const s = d / (1 - Math.abs(2 * l - 1));
   let h;
-  if (max === r) h = ((g - b) / d) % 6;
-  else if (max === g) h = (b - r) / d + 2;
-  else h = (r - g) / d + 4;
+  if (max === r) {
+    h = ((g - b) / d) % 6;
+  } else if (max === g) {
+    h = (b - r) / d + 2;
+  } else {
+    h = (r - g) / d + 4;
+  }
   h *= 60;
-  if (h < 0) h += 360;
+  if (h < 0) {
+    h += 360;
+  }
   return { h, s: Math.min(1, s), l };
 }
 
@@ -124,7 +132,9 @@ function colorsIn(line) {
   const out = [];
   for (const m of line.matchAll(/#([0-9a-f]{8}|[0-9a-f]{6}|[0-9a-f]{3,4})(?![0-9a-z_-])/gi)) {
     let hex = m[1];
-    if (hex.length <= 4) hex = [...hex].map((c) => c + c).join("");
+    if (hex.length <= 4) {
+      hex = [...hex].map((c) => c + c).join("");
+    }
     const [r, g, b] = [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
     out.push({ ...rgbToHsl(r, g, b), index: m.index });
   }
@@ -186,8 +196,11 @@ function closingParen(text, open) {
     } else if (text[i] === "/" && text[i + 1] === "*") {
       comment = true;
       i++;
-    } else if (text[i] === "(") depth++;
-    else if (text[i] === ")" && --depth === 0) return i;
+    } else if (text[i] === "(") {
+      depth++;
+    } else if (text[i] === ")" && --depth === 0) {
+      return i;
+    }
   }
   return -1;
 }
@@ -201,7 +214,9 @@ function cssGradients(text) {
     let end = closingParen(text, m.index + m[0].length - 1);
     if (end === -1) {
       end = text.indexOf("\n", m.index);
-      if (end === -1) end = text.length;
+      if (end === -1) {
+        end = text.length;
+      }
     }
     const body = text.slice(m.index, end + 1).replaceAll(/\/\*[\s\S]*?\*\//g, " ");
     const stops = colorsIn(body).filter(chromatic);
@@ -225,7 +240,9 @@ function twGradientHit(line) {
 
 function violetHit(line) {
   const c = colorsIn(line).find(isViolet);
-  if (c) return c.index;
+  if (c) {
+    return c.index;
+  }
   const m = line.match(TW_VIOLET);
   return m ? m.index : -1;
 }
@@ -244,11 +261,17 @@ function frostedHit(line) {
 
 function glowHit(line) {
   const tw = line.match(new RegExp(`\\bshadow-(?:${TW_CHROMA})-\\d{2,3}\\b`));
-  if (tw) return tw.index;
+  if (tw) {
+    return tw.index;
+  }
   const prop = line.search(/box-shadow|text-shadow|boxShadow|textShadow|drop-shadow|shadow-\[/);
-  if (prop === -1) return -1;
+  if (prop === -1) {
+    return -1;
+  }
   const off = line.match(/(?:^|[\s:,'"(_[])0(?:px)?[\s_]+0(?:px)?[\s_]+(\d+(?:\.\d+)?)px/);
-  if (!off || parseFloat(off[1]) < 10) return -1;
+  if (!off || parseFloat(off[1]) < 10) {
+    return -1;
+  }
   const saturated = colorsIn(line).some((c) => c.s >= 0.5 && c.l >= 0.25 && c.l <= 0.8);
   return saturated ? prop : -1;
 }
@@ -259,8 +282,12 @@ const EMOJI_CONTEXT =
 function emojiHit(line, prev) {
   for (const m of line.matchAll(/\p{Extended_Pictographic}/gu)) {
     // Below U+2600 sit (c), (R), TM, arrows and other text symbols, not icons.
-    if (m[0].codePointAt(0) < 0x2600) continue;
-    if (EMOJI_CONTEXT.test(line) || EMOJI_CONTEXT.test(prev)) return m.index;
+    if (m[0].codePointAt(0) < 0x2600) {
+      continue;
+    }
+    if (EMOJI_CONTEXT.test(line) || EMOJI_CONTEXT.test(prev)) {
+      return m.index;
+    }
   }
   return -1;
 }
@@ -282,21 +309,31 @@ const LIBRARY_DEFAULTS = [
 function libraryHit(line) {
   for (const [re, source] of LIBRARY_DEFAULTS) {
     const m = line.match(re);
-    if (m) return { index: m.index, source };
+    if (m) {
+      return { index: m.index, source };
+    }
   }
   return null;
 }
 
 function twTrackedCapsHit(line) {
-  if (!/(?:^|[\s"'`])uppercase(?=[\s"'`]|$)/.test(line)) return -1;
+  if (!/(?:^|[\s"'`])uppercase(?=[\s"'`]|$)/.test(line)) {
+    return -1;
+  }
   const m = line.match(/\btracking-(?:wider|widest|\[([\d.]+)(em|rem|px)\])/);
-  if (!m) return -1;
-  if (m[1] && !wideSpacing(parseFloat(m[1]), m[2])) return -1;
+  if (!m) {
+    return -1;
+  }
+  if (m[1] && !wideSpacing(parseFloat(m[1]), m[2])) {
+    return -1;
+  }
   return m.index;
 }
 
 function wideSpacing(value, unit) {
-  if (unit === "em" || unit === "rem") return value >= 0.08;
+  if (unit === "em" || unit === "rem") {
+    return value >= 0.08;
+  }
   return value >= 1.5; // px, or a unitless number in a JS style object
 }
 
@@ -306,15 +343,21 @@ function trackedCapsBlocks(text) {
   for (const m of text.matchAll(/\{[^{}]*\}/g)) {
     const body = m[0];
     const caps = body.search(/text-transform\s*:\s*uppercase|textTransform\s*:\s*['"]uppercase/);
-    if (caps === -1) continue;
+    if (caps === -1) {
+      continue;
+    }
     const sp = body.match(
       /letter-spacing\s*:\s*([\d.]+)(em|rem|px)|letterSpacing\s*:\s*['"]?([\d.]+)(em|rem|px)?/,
     );
-    if (!sp) continue;
+    if (!sp) {
+      continue;
+    }
     const ok = sp[1]
       ? wideSpacing(parseFloat(sp[1]), sp[2])
       : wideSpacing(parseFloat(sp[3]), sp[4] ?? "px");
-    if (ok) hits.push(m.index + caps);
+    if (ok) {
+      hits.push(m.index + caps);
+    }
   }
   return hits;
 }
@@ -375,21 +418,33 @@ function normalizeFamily(raw) {
 
 function primaryFamily(list) {
   const first = list.split(",")[0]?.trim() ?? "";
-  if (!first || first.startsWith("var(") || first.startsWith("$")) return null;
+  if (!first || first.startsWith("var(") || first.startsWith("$")) {
+    return null;
+  }
   const name = normalizeFamily(first);
-  if (!/^[a-z0-9 ]+$/.test(name) || GENERIC_FONTS.has(name)) return null;
-  if (/mono|code|courier|consolas|menlo/.test(name)) return null;
+  if (!/^[a-z0-9 ]+$/.test(name) || GENERIC_FONTS.has(name)) {
+    return null;
+  }
+  if (/mono|code|courier|consolas|menlo/.test(name)) {
+    return null;
+  }
   return name;
 }
 
 function fontDeclarations(line) {
   const lists = [];
-  for (const m of line.matchAll(/font-family\s*:\s*([^;{}]+)/gi)) lists.push([m[1], m.index]);
-  for (const m of line.matchAll(/fontFamily\s*:\s*(.+)/g)) lists.push([m[1], m.index]);
-  for (const m of line.matchAll(/\b(?:sans|display|heading|body|brand)\s*:\s*\[([^\]]*)/g))
+  for (const m of line.matchAll(/font-family\s*:\s*([^;{}]+)/gi)) {
     lists.push([m[1], m.index]);
-  for (const m of line.matchAll(/\bfont\s*:[^;]*?\d(?:px|rem|em|%)(?:\/[\d.]+\w*)?\s+([^;]+)/g))
+  }
+  for (const m of line.matchAll(/fontFamily\s*:\s*(.+)/g)) {
     lists.push([m[1], m.index]);
+  }
+  for (const m of line.matchAll(/\b(?:sans|display|heading|body|brand)\s*:\s*\[([^\]]*)/g)) {
+    lists.push([m[1], m.index]);
+  }
+  for (const m of line.matchAll(/\bfont\s*:[^;]*?\d(?:px|rem|em|%)(?:\/[\d.]+\w*)?\s+([^;]+)/g)) {
+    lists.push([m[1], m.index]);
+  }
   const gf = line.match(/fonts\.googleapis\.com\/css2?\?[^"'\s)]*/);
   if (gf) {
     for (const m of gf[0].matchAll(/family=([^&:;"')]+)/g)) {
@@ -397,9 +452,14 @@ function fontDeclarations(line) {
     }
   }
   const nf = line.match(/import\s*\{([^}]+)\}\s*from\s*['"]next\/font\/google['"]/);
-  if (nf) for (const name of nf[1].split(",")) lists.push([name.split(/\s+as\s+/)[0], nf.index]);
-  for (const m of line.matchAll(/@fontsource(?:-variable)?\/([\w-]+)/g))
+  if (nf) {
+    for (const name of nf[1].split(",")) {
+      lists.push([name.split(/\s+as\s+/)[0], nf.index]);
+    }
+  }
+  for (const m of line.matchAll(/@fontsource(?:-variable)?\/([\w-]+)/g)) {
     lists.push([m[1], m.index]);
+  }
   return lists
     .map(([list, index]) => ({ family: primaryFamily(list), index }))
     .filter((d) => d.family);
@@ -409,7 +469,9 @@ function fontDeclarations(line) {
 
 function excerpt(line, index) {
   const at = Math.max(0, index);
-  if (line.trim().length <= 120) return line.trim();
+  if (line.trim().length <= 120) {
+    return line.trim();
+  }
   const start = Math.max(0, at - 40);
   const piece = line.slice(start, start + 120).trim();
   return `${start > 0 ? "..." : ""}${piece}${start + 120 < line.length ? "..." : ""}`;
@@ -422,7 +484,9 @@ function scanFile(path, display, fonts) {
   const seen = new Set();
   const add = (rule, lineNo, index, hint = HINTS[rule]) => {
     const key = `${rule}:${lineNo}`;
-    if (seen.has(key)) return;
+    if (seen.has(key)) {
+      return;
+    }
     seen.add(key);
     findings.push({
       rule,
@@ -435,14 +499,21 @@ function scanFile(path, display, fonts) {
   };
 
   const starts = [0];
-  for (let i = 0; i < text.length; i++) if (text[i] === "\n") starts.push(i + 1);
+  for (let i = 0; i < text.length; i++) {
+    if (text[i] === "\n") {
+      starts.push(i + 1);
+    }
+  }
   const lineAt = (offset) => {
     let lo = 0;
     let hi = starts.length - 1;
     while (lo < hi) {
       const mid = (lo + hi + 1) >> 1;
-      if (starts[mid] <= offset) lo = mid;
-      else hi = mid - 1;
+      if (starts[mid] <= offset) {
+        lo = mid;
+      } else {
+        hi = mid - 1;
+      }
     }
     return lo;
   };
@@ -464,23 +535,38 @@ function scanFile(path, display, fonts) {
   lines.forEach((line, i) => {
     const n = i + 1;
     let at = twGradientHit(line);
-    if (at !== -1) add("purple-blue-gradient", n, at);
-    else if ((at = violetHit(violetLines[i])) !== -1) add("violet-accent", n, at);
-    if ((at = gradientTextHit(line)) !== -1) add("gradient-text", n, at);
-    if ((at = frostedHit(line)) !== -1) add("frosted-glass", n, at);
-    if ((at = glowHit(line)) !== -1) add("neon-glow", n, at);
-    if ((at = emojiHit(line, lines[i - 1] ?? "")) !== -1) add("emoji-icon", n, at);
-    if ((at = twTrackedCapsHit(line)) !== -1) add("tracked-caps", n, at);
+    if (at !== -1) {
+      add("purple-blue-gradient", n, at);
+    } else if ((at = violetHit(violetLines[i])) !== -1) {
+      add("violet-accent", n, at);
+    }
+    if ((at = gradientTextHit(line)) !== -1) {
+      add("gradient-text", n, at);
+    }
+    if ((at = frostedHit(line)) !== -1) {
+      add("frosted-glass", n, at);
+    }
+    if ((at = glowHit(line)) !== -1) {
+      add("neon-glow", n, at);
+    }
+    if ((at = emojiHit(line, lines[i - 1] ?? "")) !== -1) {
+      add("emoji-icon", n, at);
+    }
+    if ((at = twTrackedCapsHit(line)) !== -1) {
+      add("tracked-caps", n, at);
+    }
     const lib = libraryHit(line);
-    if (lib)
+    if (lib) {
       add(
         "library-default-token",
         n,
         lib.index,
         `${lib.source}. ${HINTS["library-default-token"]}`,
       );
-    for (const d of fontDeclarations(line))
+    }
+    for (const d of fontDeclarations(line)) {
       fonts.push({ ...d, file: display, line: n, text: line });
+    }
   });
 
   for (const offset of trackedCapsBlocks(text)) {
@@ -492,9 +578,13 @@ function scanFile(path, display, fonts) {
 
 function fontFinding(fonts) {
   const families = new Set(fonts.map((d) => d.family));
-  if (families.size !== 1 || fonts.length < 2) return null;
+  if (families.size !== 1 || fonts.length < 2) {
+    return null;
+  }
   const [family] = families;
-  if (!STOCK_SANS.has(family)) return null;
+  if (!STOCK_SANS.has(family)) {
+    return null;
+  }
   const first = fonts[0];
   return {
     rule: "single-stock-font",
@@ -512,7 +602,9 @@ function collect(paths) {
     for (const entry of readdirSync(dir, { withFileTypes: true })) {
       const full = join(dir, entry.name);
       if (entry.isDirectory()) {
-        if (!SKIP_DIRS.has(entry.name)) walk(full);
+        if (!SKIP_DIRS.has(entry.name)) {
+          walk(full);
+        }
       } else if (entry.isFile() && wanted(entry.name)) {
         files.add(full);
       }
@@ -521,8 +613,11 @@ function collect(paths) {
   for (const p of paths) {
     const abs = resolve(p);
     const st = statSync(abs);
-    if (st.isDirectory()) walk(abs);
-    else if (st.isFile() && wanted(abs)) files.add(abs);
+    if (st.isDirectory()) {
+      walk(abs);
+    } else if (st.isFile() && wanted(abs)) {
+      files.add(abs);
+    }
   }
   return [...files].sort();
 }
@@ -559,8 +654,9 @@ function main(argv) {
       json = true;
     } else if (arg === "--fail-on" || arg.startsWith("--fail-on=")) {
       const value = arg.includes("=") ? arg.slice(arg.indexOf("=") + 1) : argv[++i];
-      if (!(value in SEVERITY_RANK))
+      if (!(value in SEVERITY_RANK)) {
         usageError(`--fail-on needs high, medium or low, got ${value ?? "nothing"}`);
+      }
       failOn = value;
     } else if (arg.startsWith("-")) {
       usageError(`unknown flag ${arg}`);
@@ -568,7 +664,9 @@ function main(argv) {
       paths.push(arg);
     }
   }
-  if (paths.length === 0) usageError("no files or directories given");
+  if (paths.length === 0) {
+    usageError("no files or directories given");
+  }
   for (const p of paths) {
     try {
       statSync(p);
@@ -578,15 +676,18 @@ function main(argv) {
   }
 
   const files = collect(paths);
-  if (files.length === 0)
+  if (files.length === 0) {
     usageError(`no scannable files (${[...EXTENSIONS].join(" ")}) under the given paths`);
+  }
 
   const fonts = [];
   const findings = files.flatMap((f) =>
     scanFile(f, (relative(process.cwd(), f) || f).split(sep).join("/"), fonts),
   );
   const font = fontFinding(fonts);
-  if (font) findings.push(font);
+  if (font) {
+    findings.push(font);
+  }
   findings.sort(
     (a, b) =>
       a.file.localeCompare(b.file) ||
@@ -595,7 +696,9 @@ function main(argv) {
   );
 
   const counts = { high: 0, medium: 0, low: 0 };
-  for (const f of findings) counts[f.severity]++;
+  for (const f of findings) {
+    counts[f.severity]++;
+  }
   const failing = findings.some((f) => SEVERITY_RANK[f.severity] >= SEVERITY_RANK[failOn]);
 
   if (json) {

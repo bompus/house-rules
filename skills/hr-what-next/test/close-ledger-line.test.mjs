@@ -9,7 +9,9 @@ const checker = join(import.meta.dirname, "..", "scripts", "check-open-work.mjs"
 const roots = [];
 
 afterEach(() => {
-  for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
+  for (const root of roots.splice(0)) {
+    rmSync(root, { recursive: true, force: true });
+  }
 });
 
 // Ledger lines start at L6, as in check-open-work.test.mjs.

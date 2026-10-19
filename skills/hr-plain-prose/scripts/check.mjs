@@ -33,7 +33,9 @@ function termPattern(term) {
 // second: "| delve into | look at, read, test |". Returns the two cells.
 function wordTableRow(line) {
   const cells = line.split("|").map((c) => c.trim());
-  if (cells.length !== 4 || cells[0] !== "" || cells[3] !== "") return null;
+  if (cells.length !== 4 || cells[0] !== "" || cells[3] !== "") {
+    return null;
+  }
   return /^[a-z][a-z ,]*$/.test(cells[1]) ? cells.slice(1, 3) : null;
 }
 
@@ -41,7 +43,9 @@ export function parseWordTables(markdown) {
   const terms = [];
   for (const line of markdown.split("\n")) {
     const row = wordTableRow(line);
-    if (!row) continue;
+    if (!row) {
+      continue;
+    }
     const [words, hint] = row;
     for (const term of words.split(/,\s*/)) {
       terms.push({ term, hint, re: new RegExp(`\\b${termPattern(term)}\\b`, "gi") });
@@ -110,8 +114,12 @@ function prose(doc) {
 // the files". "- Semantic risk is the larger tax: ..." stays a reveal.
 const LINKING = /\b(is|are|was|were|be|been|has|have|had|do|does|did|can|will|should|must)\b/i;
 function listLabel(head) {
-  if (/[.!?]\s|: /.test(head)) return false;
-  if (new RegExp(`(\\)|${KEPT})$`).test(head.trimEnd())) return true;
+  if (/[.!?]\s|: /.test(head)) {
+    return false;
+  }
+  if (new RegExp(`(\\)|${KEPT})$`).test(head.trimEnd())) {
+    return true;
+  }
   return head.trim().split(/\s+/).length <= 6 && !LINKING.test(head);
 }
 
@@ -122,11 +130,17 @@ function colonReveals(text) {
   const marker = text.match(/^\s*([-*+]|\d+\.)\s+/)?.[0].length;
   for (const m of text.matchAll(/: +(?=[A-Za-z])/g)) {
     const head = text.slice(marker ?? 0, m.index);
-    if (marker && listLabel(head)) continue;
+    if (marker && listLabel(head)) {
+      continue;
+    }
     const before = head.split(/[.!?]\s+/).pop();
     const after = text.slice(m.index + m[0].length).split(/[.!?](\s|$)/)[0];
-    if (before.trim().split(/\s+/).length < 4 || /\*\*|__/.test(before)) continue;
-    if (after.includes(",") || after.trim().split(/\s+/).length < 2) continue;
+    if (before.trim().split(/\s+/).length < 4 || /\*\*|__/.test(before)) {
+      continue;
+    }
+    if (after.includes(",") || after.trim().split(/\s+/).length < 2) {
+      continue;
+    }
     found.push({ index: m.index, text: text.slice(m.index, m.index + m[0].length + after.length) });
   }
   return found;
@@ -140,16 +154,21 @@ function skippedLines(lines) {
   return lines.map((raw) => {
     const fenceMark = raw.match(/^\s*(`{3,}|~{3,})/);
     if (fence) {
-      if (fenceMark && fenceMark[1][0] === fence[0] && fenceMark[1].length >= fence.length)
+      if (fenceMark && fenceMark[1][0] === fence[0] && fenceMark[1].length >= fence.length) {
         fence = null;
+      }
       return true;
     }
     if (fenceMark) {
       fence = fenceMark[1];
       return true;
     }
-    if (/plain-prose:\s*keep/.test(raw)) return (keep = true);
-    if (raw.trim() === "") return (keep = false);
+    if (/plain-prose:\s*keep/.test(raw)) {
+      return (keep = true);
+    }
+    if (raw.trim() === "") {
+      return (keep = false);
+    }
     return keep || /^\s*>/.test(raw);
   });
 }
@@ -169,7 +188,9 @@ function longSentences(doc, raws, skipped) {
         joined += " ";
         at.push(null);
       }
-      for (let c = 0; c < text.length; c++) at.push([i, c]);
+      for (let c = 0; c < text.length; c++) {
+        at.push([i, c]);
+      }
       joined += text;
     }
     unit = [];
@@ -177,9 +198,13 @@ function longSentences(doc, raws, skipped) {
     // initialism may end a sentence when the next word starts with a capital.
     const ends = [...joined.matchAll(/[.!?]+(?=\s|$)/g)]
       .filter((e) => {
-        if (e[0] !== ".") return true;
+        if (e[0] !== ".") {
+          return true;
+        }
         const initialism = joined.slice(0, e.index).match(/(?:^|\s)((?:[A-Za-z]\.)+[A-Za-z])$/);
-        if (!initialism) return true;
+        if (!initialism) {
+          return true;
+        }
         return /^[A-Z.]+$/.test(initialism[1]) && /^\s+[A-Z]/.test(joined.slice(e.index + 1));
       })
       .map((e) => e.index + e[0].length);
@@ -189,7 +214,9 @@ function longSentences(doc, raws, skipped) {
       const start = from;
       from = end;
       const words = sentence.match(/[A-Za-z0-9][\w'-]*(?:\.[A-Za-z0-9][\w'-]*)*/g) ?? [];
-      if (words.length <= LONG) continue;
+      if (words.length <= LONG) {
+        continue;
+      }
       const lead = start + sentence.search(/\S/);
       const [i, col] = at[lead];
       found.push({
@@ -205,8 +232,12 @@ function longSentences(doc, raws, skipped) {
   const front = raws[0] === "---" ? raws.indexOf("---", 1) : -1;
   lines.forEach((text, i) => {
     const raw = raws[i];
-    if (i <= front || skipped[i] || raw.trim() === "" || /^\s*(#|\|)/.test(raw)) return flush();
-    if (/^\s*([-*+]|\d+\.)\s/.test(raw)) flush();
+    if (i <= front || skipped[i] || raw.trim() === "" || /^\s*(#|\|)/.test(raw)) {
+      return flush();
+    }
+    if (/^\s*([-*+]|\d+\.)\s/.test(raw)) {
+      flush();
+    }
     unit.push({ i, text });
   });
   flush();
@@ -232,7 +263,9 @@ export function check(markdown, terms = parseWordTables(readFileSync(SKILL, "utf
     const raw = raws[i];
     const start = offset;
     offset += text.length + 1;
-    if (skipped[i] || raw.trim() === "") return;
+    if (skipped[i] || raw.trim() === "") {
+      return;
+    }
     const line = i + 1;
     const add = (rule, index, match, hint) =>
       findings.push({
@@ -247,36 +280,44 @@ export function check(markdown, terms = parseWordTables(readFileSync(SKILL, "utf
         // A table cell holding only a dash marks an empty cell.
         const cell =
           /\|\s*$/.test(text.slice(0, m.index)) && /^\s*\|/.test(text.slice(m.index + m[0].length));
-        if (!cell) add(rule, m.index, m[0], "end the sentence or use a comma");
+        if (!cell) {
+          add(rule, m.index, m[0], "end the sentence or use a comma");
+        }
       }
     }
     for (const m of text.matchAll(/[‘’“”]/g)) {
       add("curly-quote", m.index, m[0], "use straight quotes");
     }
     for (const re of JOINED_PROSE) {
-      for (const m of text.matchAll(re))
+      for (const m of text.matchAll(re)) {
         add(
           "missing-space",
           m.index,
           m[0],
           "separate prose words, counts and units; keep literal identifiers in code",
         );
+      }
     }
     if (!/^\s*(#|\|)/.test(raw)) {
-      for (const c of colonReveals(text))
+      for (const c of colonReveals(text)) {
         add("colon-reveal", c.index, c.text, "state the point directly");
+      }
     }
     if (!defines(raw)) {
       for (const { term, hint, re } of terms) {
         for (const m of text.matchAll(re)) {
           const at = start + m.index;
-          if (technical.some(([a, b]) => at >= a && at < b)) continue;
+          if (technical.some(([a, b]) => at >= a && at < b)) {
+            continue;
+          }
           add("word", m.index, m[0], `${term}: ${hint}`);
         }
       }
     }
     for (const { term, re } of CHAT) {
-      for (const m of text.matchAll(re)) add("filler", m.index, m[0], `cut "${term}"`);
+      for (const m of text.matchAll(re)) {
+        add("filler", m.index, m[0], `cut "${term}"`);
+      }
     }
   });
   findings.push(...longSentences(doc, raws, skipped));
@@ -308,7 +349,9 @@ function main() {
       console.error(`${file}: ${e.message}`);
       return 2;
     }
-    for (const f of check(body, terms)) all.push({ file: file === "-" ? "<stdin>" : file, ...f });
+    for (const f of check(body, terms)) {
+      all.push({ file: file === "-" ? "<stdin>" : file, ...f });
+    }
   }
   if (parsed.values.json) {
     console.log(JSON.stringify(all, null, 2));
@@ -318,7 +361,9 @@ function main() {
         `${f.file}:${f.line}:${f.col} ${f.rule} "${f.text}"${f.hint ? ` (${f.hint})` : ""}`,
       );
     }
-    if (all.length) console.log(`${all.length} spot(s) to reread. Each is a cue, not a verdict.`);
+    if (all.length) {
+      console.log(`${all.length} spot(s) to reread. Each is a cue, not a verdict.`);
+    }
   }
   return all.length ? 1 : 0;
 }

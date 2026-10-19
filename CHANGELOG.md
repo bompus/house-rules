@@ -13,6 +13,10 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   off: `--ignore-scripts` for bun, npm, pnpm and Yarn 1, and `--mode=skip-build` for Yarn 2 and later. A
   repository's `postinstall` can be production setup, and merging must not run it. A `check` command that
   needs such a script runs it itself.
+- The repository has a `check` command, `npm run check`, which CI runs on every pull request. It runs oxfmt,
+  oxlint with type information, tsc, ruff, shfmt and shellcheck with the shared settings, so `merge-pr.sh`
+  now checks house-rules pull requests too. Every file passes all of them except tsc, which covers the root
+  modules for now; `tsconfig.check.json` lists the folders still to type-check. The fixes change no behavior.
 - `hr-benchmarking` asks each reported result to name the runtime versions it was measured on, and to be
   rerun when a new runtime release is likely to change it.
 - `merge-pr.sh` in `hr-pr-followup` runs the repository's own `check` command at the pull request head

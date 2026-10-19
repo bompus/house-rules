@@ -45,15 +45,21 @@ try {
 }
 const count = (name, min) => {
   const n = Number(values[name]);
-  if (!Number.isInteger(n) || n < min) fail(`--${name} must be an integer of at least ${min}`);
+  if (!Number.isInteger(n) || n < min) {
+    fail(`--${name} must be an integer of at least ${min}`);
+  }
   return n;
 };
-if (!values.rules || !values.cmd) fail("--rules and --cmd are required");
+if (!values.rules || !values.cmd) {
+  fail("--rules and --cmd are required");
+}
 const dir = values.scenarios ? resolve(values.scenarios) : join(here, "scenarios");
 const slice = count("slice", 0);
 const runs = count("runs", 1);
 let rules = readFileSync(values.rules, "utf8");
-if (slice) rules = rules.split("\n").slice(0, slice).join("\n");
+if (slice) {
+  rules = rules.split("\n").slice(0, slice).join("\n");
+}
 
 // Read and check every scenario before spending a model call.
 const scenarios = readdirSync(dir)
@@ -61,8 +67,9 @@ const scenarios = readdirSync(dir)
   .sort()
   .map((file) => {
     const { meta, body } = parseFragment(readFileSync(join(dir, file), "utf8"), file);
-    if (!EXPECTS.includes(meta.expect))
+    if (!EXPECTS.includes(meta.expect)) {
       fail(`${file}: expect: must be one of ${EXPECTS.join(", ")}`);
+    }
     for (const key of [
       "requiredPattern",
       "forbiddenPattern",
@@ -75,11 +82,15 @@ const scenarios = readdirSync(dir)
         fail(`${file}: ${key}: ${e.message}`);
       }
     }
-    if (!["true", "false", undefined].includes(meta.allowRead))
+    if (!["true", "false", undefined].includes(meta.allowRead)) {
       fail(`${file}: allowRead: must be true or false`);
-    if (!["true", "false", undefined].includes(meta.closeOut))
+    }
+    if (!["true", "false", undefined].includes(meta.closeOut)) {
       fail(`${file}: closeOut: must be true or false`);
-    if (values.screen) removeRule(file, meta.without);
+    }
+    if (values.screen) {
+      removeRule(file, meta.without);
+    }
     return {
       file,
       expect: meta.expect,
@@ -100,12 +111,15 @@ const scenarios = readdirSync(dir)
 
 // Control arms are graded without --coded: one sentence does not ask for codes.
 const arms = [{ name: "rules", text: rules, coded: values.coded, sliced: slice }];
-if (values.baseline)
+if (values.baseline) {
   arms.push(
     { name: "one-line", text: CONTROL, coded: false, sliced: 0 },
     { name: "no-rules", text: "(none)", coded: false, sliced: 0 },
   );
-if (values.screen) arms.push({ name: "without", text: "", coded: values.coded, sliced: slice });
+}
+if (values.screen) {
+  arms.push({ name: "without", text: "", coded: values.coded, sliced: slice });
+}
 const passes = new Map(arms.map((a) => [a.name, new Map()]));
 const behaviors = new Map(arms.map((a) => [a.name, 0]));
 const indent = (text) =>
@@ -117,10 +131,13 @@ const indent = (text) =>
 
 // A screening arm is the rules with the one rule a scenario names taken out.
 function removeRule(file, pattern) {
-  if (!pattern) fail(`${file}: --screen needs a without: pattern naming the rule to remove`);
+  if (!pattern) {
+    fail(`${file}: --screen needs a without: pattern naming the rule to remove`);
+  }
   const found = [...rules.matchAll(new RegExp(pattern, "gis"))];
-  if (found.length !== 1)
+  if (found.length !== 1) {
     fail(`${file}: without: must match the rules exactly once, matched ${found.length}`);
+  }
   return rules.replace(found[0][0], "");
 }
 
@@ -141,7 +158,9 @@ for (const {
   closeOut,
   without,
 } of scenarios) {
-  if (values.screen) arms.find((a) => a.name === "without").text = removeRule(file, without);
+  if (values.screen) {
+    arms.find((a) => a.name === "without").text = removeRule(file, without);
+  }
   for (const arm of arms) {
     const label = values.baseline ? `[${arm.name}] ${file}` : file;
     const prompt = [
@@ -164,14 +183,18 @@ for (const {
       });
       // A failed command counts against its arm, like a failing reply.
       if (r.error || r.status !== 0) {
-        if (arm.name === "rules") failed++;
+        if (arm.name === "rules") {
+          failed++;
+        }
         console.log(
           `FAIL ${label} run ${i + 1}: command ${r.error ? `error ${r.error.message}` : `exited ${r.status ?? r.signal}`}`,
         );
-        if (r.stderr) console.log(indent(r.stderr));
+        if (r.stderr) {
+          console.log(indent(r.stderr));
+        }
         continue;
       }
-      const g = grade(r.stdout ?? "", expect, {
+      const g = grade(r.stdout, expect, {
         coded: arm.coded,
         requiredCall,
         requiredText,
@@ -184,11 +207,18 @@ for (const {
         allowRead,
         closeOut,
       });
-      if (g.behavior) behaviors.set(arm.name, behaviors.get(arm.name) + 1);
-      if (g.pass) passed++;
-      else if (arm.name === "rules") failed++;
+      if (g.behavior) {
+        behaviors.set(arm.name, behaviors.get(arm.name) + 1);
+      }
+      if (g.pass) {
+        passed++;
+      } else if (arm.name === "rules") {
+        failed++;
+      }
       console.log(`${g.pass ? "PASS" : "FAIL"} ${label} run ${i + 1}: ${JSON.stringify(g)}`);
-      if (!g.pass && arm.name === "rules") console.log(indent(r.stdout ?? ""));
+      if (!g.pass && arm.name === "rules") {
+        console.log(indent(r.stdout));
+      }
     }
     passes.get(arm.name).set(file, passed);
   }
@@ -217,11 +247,13 @@ if (values.baseline) {
   console.log(
     `behavior only: ${arms.map((a) => `${a.name} ${behaviors.get(a.name)}/${total}`).join(", ")}`,
   );
-  for (const { file } of scenarios)
-    if (arms.every((a) => passes.get(a.name).get(file) === runs))
+  for (const { file } of scenarios) {
+    if (arms.every((a) => passes.get(a.name).get(file) === runs)) {
       console.log(
         `WARN ${file} passes every run in every arm, so it cannot show what the rules add`,
       );
+    }
+  }
 }
 // Only the rules arm decides the exit status; the control arms are expected to fail.
 process.exit(failed ? 1 : 0);

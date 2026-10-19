@@ -26,6 +26,7 @@ cpSync(join(here, "../../skills"), join(destination, "skills"), {
 });
 for (const name of readdirSync(here, { withFileTypes: true })
   .filter((entry) => entry.isDirectory())
-  .map((entry) => entry.name))
+  .map((entry) => entry.name)) {
   cpSync(join(here, name), join(destination, "evals", name), { recursive: true });
+}
 console.log(`evaluation copy ready: ${destination}`);

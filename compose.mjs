@@ -31,8 +31,11 @@ export {
 const BASE = dirname(fileURLToPath(import.meta.url));
 const NOTICES = ["LICENSE", "THIRD_PARTY_NOTICES.md"];
 
+/** @param {string[]} argv */
 function main(argv) {
-  if (argv[0] === "setup") return setupCommand(argv.slice(1));
+  if (argv[0] === "setup") {
+    return setupCommand(argv.slice(1));
+  }
   if (argv[0] === "config") {
     return configCommand(argv.slice(1));
   }
@@ -47,7 +50,9 @@ function main(argv) {
     },
   });
   if (values.list) {
-    for (const m of modifierList()) console.log(`${m.name}: ${m.description ?? ""}`);
+    for (const m of modifierList()) {
+      console.log(`${m.name}: ${m.description ?? ""}`);
+    }
     return;
   }
   const configPath = configurationPath(values.config);
@@ -55,57 +60,84 @@ function main(argv) {
   try {
     config = JSON.parse(readFileSync(configPath, "utf8").replace(/^\uFEFF/, ""));
   } catch (error) {
-    if (!(error instanceof SyntaxError)) throw error;
-    throw new Error(`${configPath} is not valid JSON (${error.message}); fix it or move it aside`);
+    if (!(error instanceof SyntaxError)) {
+      throw error;
+    }
+    throw new Error(`${configPath} is not valid JSON (${error.message}); fix it or move it aside`, {
+      cause: error,
+    });
   }
   const { out, "skills-out": skillsOut, "references-out": explicitReferences } = values;
-  if (explicitReferences && !out) throw new Error("--references-out requires --out");
+  if (explicitReferences && !out) {
+    throw new Error("--references-out requires --out");
+  }
   const referencesOut = out
     ? resolve(explicitReferences ?? join(dirname(resolve(out)), "house-rules-references"))
     : null;
   const { fragments, rules, skills, warnings, references } = composeConfiguration(
     config,
     dirname(configPath),
-    referencesOut
+    out && referencesOut
       ? { referencesDirectory: relative(dirname(resolve(out)), referencesOut) || "." }
       : {},
   );
-  for (const warning of warnings) console.error(`warning: ${warning}`);
-  const paths = [
-    out && { path: resolve(out), directory: false },
-    skillsOut && { path: resolve(skillsOut), directory: true },
-    referencesOut && { path: referencesOut, directory: true },
-  ].filter(Boolean);
-  for (const { path, directory } of paths) checkOutputPath(path, directory);
-  for (const a of paths)
+  for (const warning of warnings) {
+    console.error(`warning: ${warning}`);
+  }
+  /** @type {{ path: string, directory: boolean }[]} */
+  const paths = [];
+  if (out) {
+    paths.push({ path: resolve(out), directory: false });
+  }
+  if (skillsOut) {
+    paths.push({ path: resolve(skillsOut), directory: true });
+  }
+  if (referencesOut) {
+    paths.push({ path: referencesOut, directory: true });
+  }
+  for (const { path, directory } of paths) {
+    checkOutputPath(path, directory);
+  }
+  for (const a of paths) {
     for (const b of paths) {
-      if (a === b) continue;
+      if (a === b) {
+        continue;
+      }
       const rel = relative(a.path, b.path);
       if (
         !rel ||
         (rel !== ".." &&
           !rel.startsWith(`..${process.platform === "win32" ? "\\" : "/"}`) &&
           !isAbsolute(rel))
-      )
+      ) {
         throw new Error("Output paths must not overlap");
+      }
     }
+  }
   // Composition errors and a non-empty --skills-out stop the run before anything is written.
-  if (skillsOut && existsSync(skillsOut) && readdirSync(skillsOut).length)
+  if (skillsOut && existsSync(skillsOut) && readdirSync(skillsOut).length) {
     throw new Error(`--skills-out ${skillsOut} must be empty or absent`);
-  const referenceWrites = references.size ? planReferenceOutput(referencesOut, references) : [];
+  }
+  const referenceWrites =
+    references.size && referencesOut ? planReferenceOutput(referencesOut, references) : [];
   writeReferenceOutput(referenceWrites);
   if (out) {
     mkdirSync(dirname(resolve(out)), { recursive: true });
     writeFileSync(out, rules);
-  } else process.stdout.write(rules);
+  } else {
+    process.stdout.write(rules);
+  }
   if (skillsOut) {
     // Skill tests stay in the source checkout; hosts get only what the skill uses.
-    for (const [name, from] of skills)
+    for (const [name, from] of skills) {
       cpSync(from, join(skillsOut, name), {
         recursive: true,
         filter: (src) => src !== join(from, "test"),
       });
-    for (const f of NOTICES) cpSync(join(BASE, f), join(skillsOut, f));
+    }
+    for (const f of NOTICES) {
+      cpSync(join(BASE, f), join(skillsOut, f));
+    }
   }
   console.error(
     `composed ${rules.split("\n").length} lines of rules from ${fragments.length} optional or personal rule file(s)${skillsOut ? ` and ${skills.size} skill(s)` : ""}`,
@@ -119,7 +151,8 @@ if (
   try {
     await main(process.argv.slice(2));
   } catch (e) {
-    console.error(`house-rules: ${e.message}`);
-    process.exit(e.exitCode ?? 1);
+    const failure = /** @type {Error & { exitCode?: number }} */ (e);
+    console.error(`house-rules: ${failure.message}`);
+    process.exit(failure.exitCode ?? 1);
   }
 }

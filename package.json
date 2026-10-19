@@ -37,7 +37,15 @@
     "registry": "https://registry.npmjs.org/"
   },
   "scripts": {
+    "check": "oxfmt --check && oxlint --deny-warnings . && tsc --noEmit -p tsconfig.check.json && ruff format --check . && ruff check . && bash scripts/check-shell.sh",
     "check:package": "node scripts/check-package.mjs"
+  },
+  "devDependencies": {
+    "@types/bun": "1.4.3",
+    "oxfmt": "0.73.0",
+    "oxlint": "1.88.0",
+    "oxlint-tsgolint": "7.0.2004",
+    "typescript": "7.0.2"
   },
   "engines": {
     "node": ">=22"

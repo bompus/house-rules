@@ -10,7 +10,9 @@ const script = fileURLToPath(new URL("../scripts/inspect-sqlite.py", import.meta
 // On the Windows CI runner a Python start sometimes stalls for 7 s or more (issue #368), while
 // these tests take 0.26 to 0.9 s there otherwise. Bun ends the test and its Python child at 5 s.
 const limit = process.platform === "win32" ? { timeout: 30000 } : {};
-const test = (name, fn) => nodeTest(name, limit, fn);
+const test = (name, fn) => {
+  void nodeTest(name, limit, fn);
+};
 const python = (args, input) =>
   spawnSync("python3", ["-I", ...args], {
     encoding: "utf8",
@@ -82,7 +84,9 @@ test("lists FTS5 virtual tables and keeps a similarly named application table", 
     "-c",
     "import sqlite3; sqlite3.connect(':memory:').execute('CREATE VIRTUAL TABLE t USING fts5(x)')",
   ]);
-  if (probe.status !== 0) return t.skip("this Python's SQLite has no FTS5");
+  if (probe.status !== 0) {
+    return t.skip("this Python's SQLite has no FTS5");
+  }
   const dir = fixture(t);
   const database = createDatabase(
     dir,

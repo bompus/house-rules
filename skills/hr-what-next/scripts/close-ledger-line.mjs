@@ -15,34 +15,60 @@ const usage =
   "usage: close-ledger-line.mjs <plan.md> (--line <n> | --match <text>) (--evidence <text> | --drop --by <who>) [--time <text>]";
 
 function parseArguments(argv) {
-  const options = { plan: null, line: null, match: null, evidence: null, drop: false, by: null };
+  const options = {
+    plan: /** @type {string | null} */ (null),
+    line: /** @type {string | null} */ (null),
+    match: /** @type {string | null} */ (null),
+    evidence: /** @type {string | null} */ (null),
+    drop: false,
+    by: /** @type {string | null} */ (null),
+  };
   for (let index = 0; index < argv.length; index++) {
     const argument = argv[index];
-    if (argument === "--drop") options.drop = true;
-    else if (["--line", "--match", "--evidence", "--by", "--time"].includes(argument)) {
+    if (argument === "--drop") {
+      options.drop = true;
+    } else if (["--line", "--match", "--evidence", "--by", "--time"].includes(argument)) {
       const value = argv[++index];
-      if (value === undefined) throw new Error(`${argument} needs a value\n${usage}`);
+      if (value === undefined) {
+        throw new Error(`${argument} needs a value\n${usage}`);
+      }
       // A line break would end the ledger item early and leave the rest of the note outside it.
-      if (/[\r\n]/.test(value)) throw new Error(`${argument} must be one line\n${usage}`);
+      if (/[\r\n]/.test(value)) {
+        throw new Error(`${argument} must be one line\n${usage}`);
+      }
       options[argument.slice(2)] = value.trim();
-    } else if (argument.startsWith("--") || options.plan) throw new Error(usage);
-    else options.plan = argument;
+    } else if (argument.startsWith("--") || options.plan) {
+      throw new Error(usage);
+    } else {
+      options.plan = argument;
+    }
   }
-  if (!options.plan) throw new Error(usage);
-  if ((options.line === null) === (options.match === null))
+  if (!options.plan) {
+    throw new Error(usage);
+  }
+  if ((options.line === null) === (options.match === null)) {
     throw new Error(`give exactly one of --line and --match\n${usage}`);
-  if (options.line !== null && !/^[1-9]\d*$/.test(options.line))
+  }
+  if (options.line !== null && !/^[1-9]\d*$/.test(options.line)) {
     throw new Error(`--line needs a line number\n${usage}`);
-  if (options.match === "") throw new Error(`--match needs text\n${usage}`);
+  }
+  if (options.match === "") {
+    throw new Error(`--match needs text\n${usage}`);
+  }
   if (options.drop) {
-    if (options.evidence !== null)
+    if (options.evidence !== null) {
       throw new Error(`a dropped line takes --by, not --evidence\n${usage}`);
-    if (!options.by)
+    }
+    if (!options.by) {
       throw new Error(`refused: dropping a line needs --by <who dropped it>\n${usage}`);
+    }
   } else {
-    if (options.by !== null) throw new Error(`--by goes with --drop\n${usage}`);
-    if (!options.evidence)
+    if (options.by !== null) {
+      throw new Error(`--by goes with --drop\n${usage}`);
+    }
+    if (!options.evidence) {
       throw new Error(`refused: closing a line needs --evidence <what shows it is done>\n${usage}`);
+    }
   }
   return options;
 }
@@ -70,35 +96,44 @@ function close(options) {
   let item;
   if (options.line !== null) {
     item = items.find((candidate) => candidate.line === Number(options.line));
-    if (!item) throw new Error(`L${options.line} is not a ledger item`);
+    if (!item) {
+      throw new Error(`L${options.line} is not a ledger item`);
+    }
   } else {
     const open = items.filter(
       (candidate) =>
         (candidate.mark === " " || candidate.mark === "~") &&
         candidate.text.includes(options.match),
     );
-    if (open.length > 1)
+    if (open.length > 1) {
       throw new Error(
         `${open.length} open or deferred ledger lines match: ${open.map((candidate) => `L${candidate.line}`).join(", ")}; use --line`,
       );
+    }
     item =
       open[0] ??
       items.find((candidate) => candidate.text.includes(options.match) && closedHere(candidate));
-    if (!item) throw new Error(`no open or deferred ledger line contains "${options.match}"`);
+    if (!item) {
+      throw new Error(`no open or deferred ledger line contains "${options.match}"`);
+    }
   }
-  if (closedHere(item)) return `L${item.line} is already done: nothing changed`;
-  if (item.mark !== " " && item.mark !== "~")
+  if (closedHere(item)) {
+    return `L${item.line} is already done: nothing changed`;
+  }
+  if (item.mark !== " " && item.mark !== "~") {
     throw new Error(
       `L${item.line} is already done (marked [${item.mark}]) with a different note; edit it by hand`,
     );
+  }
   // The item's last physical line: the indented continuation lines parsePlan joined onto it.
   let last = item.line - 1;
   while (
     last + 1 < lines.length &&
     /^\s{2,}\S/.test(lines[last + 1]) &&
     !/^\s*[-*]\s/.test(lines[last + 1])
-  )
+  ) {
     last++;
+  }
   lines[item.line - 1] = lines[item.line - 1].replace(/\[[ ~]\]/, `[${mark}]`);
   const stamp = `${options.drop ? "dropped" : "closed"} ${options.time ?? localTime()}`;
   lines[last] = `${lines[last].trimEnd()} … ${label}: ${note} (${stamp})`;

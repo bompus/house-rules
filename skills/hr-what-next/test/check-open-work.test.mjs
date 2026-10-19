@@ -17,7 +17,9 @@ const script = join(import.meta.dirname, "..", "scripts", "check-open-work.mjs")
 const roots = [];
 
 afterEach(() => {
-  for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true });
+  for (const root of roots.splice(0)) {
+    rmSync(root, { recursive: true, force: true });
+  }
 });
 
 // notes/plans/<topic>/plan.md with notes/tmp beside it, the layout the plan-files rule describes.
@@ -59,7 +61,9 @@ function repository(directory, commits = 1) {
   const git = (...args) =>
     spawnSync("git", ["-C", directory, "-c", "user.name=t", "-c", "user.email=t@t", ...args]);
   git("init", "-q", "-b", "main");
-  for (let i = 0; i < commits; i++) git("commit", "-q", "--allow-empty", "-m", `c${i}`);
+  for (let i = 0; i < commits; i++) {
+    git("commit", "-q", "--allow-empty", "-m", `c${i}`);
+  }
 }
 
 test("open and deferred items are listed and make the exit code 2", () => {
@@ -228,14 +232,14 @@ test("owned scratch must be named by an item that is still open", () => {
     plan,
     `Owner: Alice\nStatus: completed\n\n## Ledger\n- [x] clean: big-copy removed - evidence: rm\n`,
   );
-  ({ code, report } = check(plan));
+  ({ report } = check(plan));
   expect(report.findings[0]).toContain("still exists but its ledger item is done");
 
   writeFileSync(
     plan,
     `Owner: Alice\nStatus: active\n\n## Ledger\n- [~] keep: big-copy kept - trigger: 2026-10-16\n`,
   );
-  ({ code, report } = check(plan));
+  ({ report } = check(plan));
   expect(report.findings).toEqual([]);
   expect(report.open).toHaveLength(1);
 
@@ -297,7 +301,7 @@ test("a dirty or unpushed checkout must be named by an open item", () => {
     plan,
     `Owner: Alice\nStatus: active\n\n## Ledger\n- [ ] land: ${checkout} commits - next: open a PR\n`,
   );
-  ({ code, report } = check(plan, "--checkout", checkout));
+  ({ report } = check(plan, "--checkout", checkout));
   expect(report.findings).toEqual([]);
   expect(report.open).toHaveLength(1);
 });

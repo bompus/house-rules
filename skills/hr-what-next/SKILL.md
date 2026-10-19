@@ -39,7 +39,7 @@ completed state before the completion message; a report alone does not do so.
    likely logged as a new line instead of closing the old one.
    Look at each before reporting it as done or still waiting. Close a
    finished line in place with `scripts/close-ledger-line.mjs <plan>
---line <n> --evidence "<what shows it is done>"`, or drop it with
+   --line <n> --evidence "<what shows it is done>"`, or drop it with
    `--drop --by "<who>"`; `--match <text>` picks the line by its text. It
    refuses without evidence and changes nothing when run again. The checker
    warns when a ledger has more than 100 open or deferred lines or the plan

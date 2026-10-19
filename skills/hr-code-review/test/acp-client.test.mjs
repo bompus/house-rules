@@ -54,7 +54,8 @@ readline.createInterface({input:process.stdin}).on('line',async line=>{
 function run(
   config = {},
   flags = [],
-  prepare = () => {},
+  // Returns the directory to launch from when a test needs one other than the repo.
+  prepare = /** @type {(root: string, dir: string) => string | void} */ (() => {}),
   runtime = process.execPath,
   clientPath = client,
 ) {
@@ -65,8 +66,11 @@ function run(
   writeFileSync(join(dir, "prompt.md"), "Review the supplied scope.");
   writeFileSync(join(root, "inside.txt"), "inside");
   const launchRoot = prepare(root, dir) || root;
-  for (const request of config.requests || [])
-    if (request.params?.path === "OUTSIDE_ABSOLUTE") request.params.path = join(dir, "outside.txt");
+  for (const request of config.requests || []) {
+    if (request.params?.path === "OUTSIDE_ABSOLUTE") {
+      request.params.path = join(dir, "outside.txt");
+    }
+  }
   try {
     const out = config.outInRoot ? join(root, "answer.txt") : join(dir, "out.txt"),
       log = join(dir, "log.jsonl");
@@ -133,9 +137,12 @@ test("rejects hostile terminals, writes and every permission kind while allowing
   assert.equal(r.log[0].params.clientCapabilities.terminal, false);
   const result = JSON.parse(r.text.split("\n")[0]).results;
   assert.equal(result[0].result.content, "inside");
-  for (const response of result.slice(1, 4)) assert.ok(response.error);
-  for (const response of result.slice(4, 8))
+  for (const response of result.slice(1, 4)) {
+    assert.ok(response.error);
+  }
+  for (const response of result.slice(4, 8)) {
     assert.equal(response.result.outcome.optionId, "reject");
+  }
   assert.equal(result[8].result.outcome.outcome, "cancelled");
 });
 test("rejects traversal, outside absolute paths and escaped file/parent symlinks", (t) => {
@@ -163,17 +170,21 @@ test("rejects traversal, outside absolute paths and escaped file/parent symlinks
     results.slice(0, 4).forEach((row) => assert.ok(row.error));
     assert.equal(results[4].result.content, "inside");
   } catch (e) {
-    if (e.code === "EPERM") t.skip("Native symlink creation unavailable");
-    else throw e;
+    if (e.code === "EPERM") {
+      t.skip("Native symlink creation unavailable");
+    } else {
+      throw e;
+    }
   }
 });
-for (const effortId of ["effort", "reasoning_effort"])
+for (const effortId of ["effort", "reasoning_effort"]) {
   test("confirms requested model and " + effortId + " plus Codex read-only mode", () => {
     const r = run({ codex: true, effortId }, ["--model", "chosen", "--effort", "high"]);
     assert.equal(r.code, 0);
     assert.match(r.text, /"currentValue":"read-only"/);
     assert.match(r.text, /"currentValue":"chosen"/);
   });
+}
 for (const config of [
   { noMode: true, codex: true },
   { noEffort: true },
@@ -181,7 +192,7 @@ for (const config of [
   ...["missing", "wrong", "malformed"].map((echo) => ({ echo })),
   { resetModel: true },
   { protocol: 2 },
-])
+]) {
   test("refuses unverifiable setup " + JSON.stringify(config), () => {
     const r = run(config, ["--model", "chosen", "--effort", "high"]);
     assert.equal(r.code, 1);
@@ -191,6 +202,7 @@ for (const config of [
     );
     assert.equal(r.text, "");
   });
+}
 test("max-turns bounds incomplete verdicts and permission-cancelled continuation", () => {
   const r = run(
     {
@@ -276,7 +288,10 @@ test("canonicalizes a caller root alias before reading", (t) => {
     assert.equal(r.code, 0);
     assert.equal(JSON.parse(r.text.split("\n")[0]).results[0].result.content, "inside");
   } catch (e) {
-    if (e.code === "EPERM") t.skip("Native symlink creation unavailable");
-    else throw e;
+    if (e.code === "EPERM") {
+      t.skip("Native symlink creation unavailable");
+    } else {
+      throw e;
+    }
   }
 });

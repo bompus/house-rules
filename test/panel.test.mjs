@@ -3,9 +3,11 @@ import { test } from "node:test";
 import {
   changePanelPreferences,
   validatePanelPreferences,
+  formatPanelPlan,
+  resolvePanel,
 } from "../skills/hr-code-review/scripts/panel-preferences.mjs";
 
-import { panelPreferences as preferences } from "./fixture.mjs";
+import { panelPreferences as preferences, scratch } from "./fixture.mjs";
 
 test("portable preferences replace ordered roles without mutating config or input", () => {
   const config = { custom: { retain: true }, panel: { unrelated: true } };
@@ -40,18 +42,15 @@ test("invalid panel versions, fields, aliases and policies refuse", () => {
     { ...preferences, policy: { ...preferences.policy, secret: "unsupported" } },
     { ...preferences, policy: {} },
   ];
-  for (const input of invalid) assert.throws(() => validatePanelPreferences(input));
+  for (const input of invalid) {
+    assert.throws(() => validatePanelPreferences(input));
+  }
   assert.doesNotThrow(() => validatePanelPreferences(preferences));
 });
 
 import { spawnSync } from "node:child_process";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
-import {
-  formatPanelPlan,
-  resolvePanel,
-} from "../skills/hr-code-review/scripts/panel-preferences.mjs";
-import { scratch } from "./fixture.mjs";
 
 const bindings = {
   version: 1,

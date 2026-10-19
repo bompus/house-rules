@@ -29,72 +29,129 @@ import {
 import { renderConfig, renderHelp } from "./config-view.mjs";
 import { changePanelPreferences } from "./skills/hr-code-review/scripts/panel-preferences.mjs";
 
+/**
+ * @typedef {ReturnType<typeof selectionReport> & {
+ *   command: string, configPath: string, exists: boolean, revision: string,
+ *   changes: ReturnType<typeof selectionChanges>,
+ *   applied: { changed: boolean, revision: string } | null,
+ *   panel?: {
+ *     state: string, revision: string | undefined, before: unknown, after: unknown,
+ *     changed: boolean, readiness: string,
+ *   },
+ * }} ConfigReport what config commands print, as JSON or through renderConfig
+ * @typedef {import("./composition.mjs").Config & {
+ *   skills?: { include?: string[] }, panel?: unknown,
+ * }} Configuration a house-rules.json whose structure has been validated
+ * @typedef {{ path: string, text: string | null, revision: string, config: Configuration }} Snapshot
+ * @typedef {{ questions?: string } & Record<string, unknown>} SelectionOptions
+ */
+
 const COMMANDS = ["catalog", "status", "validate", "preview", "set"];
 const TOGGLES = ["enable-modifier", "disable-modifier", "enable-skill", "disable-skill"];
-const revisionOf = (text) =>
+const revisionOf = (/** @type {string | null} */ text) =>
   text === null ? "missing" : createHash("sha256").update(text).digest("hex");
+/**
+ * @param {unknown} v
+ * @returns {v is Record<string, unknown>}
+ */
 const object = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
 
+/**
+ * @param {unknown} value
+ * @param {string} key
+ */
 function stringList(value, key) {
-  if (value === undefined) return;
-  if (!Array.isArray(value) || value.some((v) => typeof v !== "string" || !v.trim()))
+  if (value === undefined) {
+    return;
+  }
+  if (!Array.isArray(value) || value.some((v) => typeof v !== "string" || !v.trim())) {
     throw new Error(`${key} must be an array of non-empty strings`);
-  if (new Set(value).size !== value.length) throw new Error(`${key} contains duplicates`);
+  }
+  if (new Set(value).size !== value.length) {
+    throw new Error(`${key} contains duplicates`);
+  }
 }
 
 export const QUESTION_PRESETS = ["default", "plain", "coded", "cards"];
 export const QUESTION_MODIFIERS = ["model-default-questions", "coded-offers", "question-cards"];
 const BACKLOG_VIEWS = ["backlog-visual", "backlog-outline"];
 
+/**
+ * @param {unknown} config
+ * @returns {asserts config is Configuration}
+ */
 function validateStructure(config) {
-  if (!object(config)) throw new Error("configuration must be a JSON object");
-  for (const key of ["modifiers", "layers"]) stringList(config[key], key);
-  if (config.skills !== undefined && !object(config.skills))
+  if (!object(config)) {
+    throw new Error("configuration must be a JSON object");
+  }
+  for (const key of ["modifiers", "layers"]) {
+    stringList(config[key], key);
+  }
+  const { skills } = config;
+  if (skills !== undefined && !object(skills)) {
     throw new Error("skills must be an object");
-  for (const key of ["include", "exclude", "independent"])
-    stringList(config.skills?.[key], `skills.${key}`);
+  }
+  for (const key of ["include", "exclude", "independent"]) {
+    stringList(skills?.[key], `skills.${key}`);
+  }
 }
 
+/** @param {Configuration} config */
 function validateSelection(config) {
   validateStructure(config);
   const known = new Set(modifierList().map((m) => m.name));
   for (const name of config.modifiers ?? []) {
-    if (!known.has(name))
+    if (!known.has(name)) {
       throw new Error(
         `unknown modifier "${name}" (see config catalog); preview its removal with config set --disable-modifier <name>, then save it with config set --disable-modifier <name> --apply --expect <revision>`,
       );
+    }
   }
-  if (BACKLOG_VIEWS.every((name) => config.modifiers?.includes(name)))
+  if (BACKLOG_VIEWS.every((name) => config.modifiers?.includes(name))) {
     throw new Error(
       `${BACKLOG_VIEWS.join(" and ")} cannot be combined; enable one, or neither for the table alone`,
     );
-  if (config.modifiers?.includes("question-cards") && !config.modifiers.includes("coded-offers"))
+  }
+  if (config.modifiers?.includes("question-cards") && !config.modifiers.includes("coded-offers")) {
     throw new Error(
       "question-cards requires coded-offers; use --questions cards or disable question-cards",
     );
+  }
   if (
     config.modifiers?.includes("model-default-questions") &&
     config.modifiers.some((name) => ["coded-offers", "question-cards"].includes(name))
-  )
+  ) {
     throw new Error(
       "model-default-questions cannot combine with coded-offers or question-cards; use --questions",
     );
+  }
 }
 
+/**
+ * @param {string} path
+ * @returns {Snapshot}
+ */
 export function readConfiguration(path) {
   // Preserve the caller's config directory: relative layers use the same base as composition.
   path = resolve(path);
+  /** @type {string | null} */
   let text = null;
   try {
-    if (!lstatSync(path).isFile())
+    if (!lstatSync(path).isFile()) {
       throw new Error("config must be a regular file, not a symlink or directory");
+    }
     text = readFileSync(path, "utf8");
   } catch (e) {
-    if (e.code !== "ENOENT") throw e;
+    if (/** @type {NodeJS.ErrnoException} */ (e).code !== "ENOENT") {
+      throw e;
+    }
   }
+  /** @type {unknown} */
   let config = {};
   try {
-    if (text !== null) config = JSON.parse(text.replace(/^\uFEFF/, ""));
+    if (text !== null) {
+      config = JSON.parse(text.replace(/^\uFEFF/, ""));
+    }
   } catch {
     throw new Error(`invalid JSON in ${path}`);
   }
@@ -102,6 +159,10 @@ export function readConfiguration(path) {
   return { path, text, revision: revisionOf(text), config };
 }
 
+/**
+ * @param {Configuration} config
+ * @param {string} path
+ */
 export function selectionReport(config, path) {
   validateSelection(config);
   const result = composeConfiguration(config, dirname(path));
@@ -127,10 +188,13 @@ export function selectionReport(config, path) {
   const rules = splitSections(result.rules).sections.map((s) => ({
     heading: s.heading,
     source: "core",
+    origin: "core",
   }));
   const origins = new Map();
   for (const f of result.fragments) {
-    for (const section of splitSections(f.body).sections) origins.set(section.heading, f.source);
+    for (const section of splitSections(f.body).sections) {
+      origins.set(section.heading, f.source);
+    }
   }
   for (const rule of rules) {
     rule.source = origins.get(rule.heading) ?? "core";
@@ -159,6 +223,11 @@ export function selectionReport(config, path) {
   };
 }
 
+/**
+ * @param {Configuration} config
+ * @param {SelectionOptions} options
+ * @param {string} path
+ */
 export function changeSelection(config, options, path) {
   const next = structuredClone(config);
   const modifiers = new Set(next.modifiers ?? []);
@@ -172,60 +241,92 @@ export function changeSelection(config, options, path) {
       dirname(path),
     ).keys(),
   );
-  for (const [kind, known, choices] of [
+  for (const [kind, known, choices] of /** @type {[string, Set<string>, Set<string>][]} */ ([
     ["modifier", knownModifiers, modifiers],
     ["skill", knownSkills, excluded],
-  ]) {
-    const enable = options[`enable-${kind}`] ?? [];
-    const disable = options[`disable-${kind}`] ?? [];
+  ])) {
+    const enable = /** @type {string[] | undefined} */ (options[`enable-${kind}`]) ?? [];
+    const disable = /** @type {string[] | undefined} */ (options[`disable-${kind}`]) ?? [];
     for (const name of [...enable, ...disable]) {
-      if (!known.has(name) && !(kind === "modifier" && disable.includes(name) && choices.has(name)))
+      if (
+        !known.has(name) &&
+        !(kind === "modifier" && disable.includes(name) && choices.has(name))
+      ) {
         throw new Error(`unknown ${kind} "${name}" (see config catalog)`);
-      if (enable.includes(name) && disable.includes(name))
+      }
+      if (enable.includes(name) && disable.includes(name)) {
         throw new Error(`cannot enable and disable "${name}" together`);
+      }
       if (
         kind === "modifier" &&
         options.questions !== undefined &&
         QUESTION_MODIFIERS.includes(name)
-      )
+      ) {
         throw new Error("use --questions or explicit question modifiers, not both");
+      }
     }
     for (const name of enable) {
-      if (kind === "modifier") choices.add(name);
-      else {
+      if (kind === "modifier") {
+        choices.add(name);
+      } else {
         choices.delete(name);
-        if (included && existsSync(join(SHIPPED_SKILLS, name, "SKILL.md"))) included.add(name);
+        if (included && existsSync(join(SHIPPED_SKILLS, name, "SKILL.md"))) {
+          included.add(name);
+        }
       }
     }
     for (const name of disable) {
-      if (kind === "modifier") choices.delete(name);
-      else choices.add(name);
+      if (kind === "modifier") {
+        choices.delete(name);
+      } else {
+        choices.add(name);
+      }
     }
   }
   if (options.questions !== undefined) {
-    if (!QUESTION_PRESETS.includes(options.questions))
+    if (!QUESTION_PRESETS.includes(options.questions)) {
       throw new Error("--questions must be default, plain, coded or cards");
-    if (options.questions === "plain" || options.questions === "default")
+    }
+    if (options.questions === "plain" || options.questions === "default") {
       modifiers.delete("coded-offers");
-    else modifiers.add("coded-offers");
-    if (options.questions === "cards") modifiers.add("question-cards");
-    else modifiers.delete("question-cards");
-    if (options.questions === "default") modifiers.add("model-default-questions");
-    else modifiers.delete("model-default-questions");
+    } else {
+      modifiers.add("coded-offers");
+    }
+    if (options.questions === "cards") {
+      modifiers.add("question-cards");
+    } else {
+      modifiers.delete("question-cards");
+    }
+    if (options.questions === "default") {
+      modifiers.add("model-default-questions");
+    } else {
+      modifiers.delete("model-default-questions");
+    }
   }
-  if (JSON.stringify([...modifiers]) !== JSON.stringify(next.modifiers ?? []))
+  if (JSON.stringify([...modifiers]) !== JSON.stringify(next.modifiers ?? [])) {
     next.modifiers = [...modifiers];
-  if (JSON.stringify([...excluded]) !== JSON.stringify(next.skills?.exclude ?? []))
+  }
+  if (JSON.stringify([...excluded]) !== JSON.stringify(next.skills?.exclude ?? [])) {
     next.skills = { ...next.skills, exclude: [...excluded] };
-  if (included) next.skills.include = [...included];
+  }
+  if (included) {
+    next.skills = { ...next.skills, include: [...included] };
+  }
   selectionReport(next, path); // Composition and legacy-name errors precede every write.
   return next;
 }
 
 // Cooperating CLI writers share an exclusive lock; expected revision guards stale previews.
 // Manual editors do not share this lock. Recheck before rename, but they can still race that rename.
+/**
+ * @param {Snapshot} snapshot
+ * @param {Configuration} next
+ * @param {string | undefined} expected
+ */
 export function writeConfiguration(snapshot, next, expected) {
-  if (!expected) throw new Error("--apply requires --expect <revision> from status or a preview");
+  if (!expected) {
+    throw new Error("--apply requires --expect <revision> from status or a preview");
+  }
   selectionReport(next, snapshot.path);
   mkdirSync(dirname(snapshot.path), { recursive: true });
   // Lock aliases of the same parent together without changing relative layer discovery.
@@ -234,20 +335,24 @@ export function writeConfiguration(snapshot, next, expected) {
   try {
     lockFd = openSync(lock, "wx", 0o600);
   } catch (e) {
-    if (e.code === "EEXIST")
+    if (/** @type {NodeJS.ErrnoException} */ (e).code === "EEXIST") {
       throw new Error(
         `configuration is locked: ${lock}; inspect the owner before removing an abandoned lock`,
+        { cause: e },
       );
+    }
     throw e;
   }
   const temporary = `${snapshot.path}.${randomUUID()}.tmp`;
   try {
     writeFileSync(lockFd, JSON.stringify({ pid: process.pid }));
     const current = readConfiguration(snapshot.path);
-    if (current.revision !== expected || current.revision !== snapshot.revision)
+    if (current.revision !== expected || current.revision !== snapshot.revision) {
       throw new Error("configuration changed since preview; read status and preview again");
-    if (current.text !== null && JSON.stringify(current.config) === JSON.stringify(next))
+    }
+    if (current.text !== null && JSON.stringify(current.config) === JSON.stringify(next)) {
       return { changed: false, revision: current.revision };
+    }
     const text = `${JSON.stringify(next, null, 2)}\n`;
     const fd = openSync(
       temporary,
@@ -260,13 +365,16 @@ export function writeConfiguration(snapshot, next, expected) {
     } finally {
       closeSync(fd);
     }
-    if (readConfiguration(snapshot.path).revision !== current.revision)
+    if (readConfiguration(snapshot.path).revision !== current.revision) {
       throw new Error("configuration changed during validation; preview again");
+    }
     renameSync(temporary, snapshot.path);
     return { changed: true, revision: revisionOf(text) };
   } finally {
     try {
-      if (existsSync(temporary)) unlinkSync(temporary);
+      if (existsSync(temporary)) {
+        unlinkSync(temporary);
+      }
     } finally {
       try {
         closeSync(lockFd);
@@ -277,6 +385,10 @@ export function writeConfiguration(snapshot, next, expected) {
   }
 }
 
+/**
+ * @param {Configuration} beforeConfig
+ * @param {Configuration} afterConfig
+ */
 export function selectionChanges(beforeConfig, afterConfig) {
   return [
     { key: "modifiers", before: beforeConfig.modifiers ?? [], after: afterConfig.modifiers ?? [] },
@@ -293,11 +405,15 @@ export function selectionChanges(beforeConfig, afterConfig) {
   ].filter(({ before, after }) => JSON.stringify(before) !== JSON.stringify(after));
 }
 
+/** @param {string[]} argv */
 export function configCommand(argv) {
   const command = argv[0] ?? "help";
-  if (command === "help" || command === "--help") return console.log(renderHelp());
-  if (!COMMANDS.includes(command))
+  if (command === "help" || command === "--help") {
+    return console.log(renderHelp());
+  }
+  if (!COMMANDS.includes(command)) {
     throw new Error(`unknown config command "${command}" (see config help)`);
+  }
   const { values } = parseArgs({
     args: argv.slice(1),
     options: {
@@ -313,36 +429,56 @@ export function configCommand(argv) {
       ...Object.fromEntries(TOGGLES.map((key) => [key, { type: "string", multiple: true }])),
     },
   });
-  if (values.help) return console.log(renderHelp());
+  if (values.help) {
+    return console.log(renderHelp());
+  }
   const changing = Boolean(
     values.questions !== undefined ||
     values["panel-file"] !== undefined ||
-    TOGGLES.some((key) => values[key]?.length),
+    TOGGLES.some(
+      (key) => /** @type {Record<string, string[] | undefined>} */ (values)[key]?.length,
+    ),
   );
   if (
     (changing || values.apply || values.expect !== undefined) &&
     !["set", "preview"].includes(command)
-  )
+  ) {
     throw new Error("selection flags belong to config set or preview");
-  if (values.apply && command !== "set") throw new Error("--apply belongs to config set");
-  if (values.expect !== undefined && !values.apply) throw new Error("--expect requires --apply");
-  if (values["expect-panel"] !== undefined && (!values.apply || values["panel-file"] === undefined))
+  }
+  if (values.apply && command !== "set") {
+    throw new Error("--apply belongs to config set");
+  }
+  if (values.expect !== undefined && !values.apply) {
+    throw new Error("--expect requires --apply");
+  }
+  if (
+    values["expect-panel"] !== undefined &&
+    (!values.apply || values["panel-file"] === undefined)
+  ) {
     throw new Error("--expect-panel requires --apply and --panel-file");
-  if (values.rules && values.json) throw new Error("choose --rules or --json, not both");
-  if (values.rules && command !== "preview") throw new Error("--rules belongs to config preview");
-  if (values.rules && values["panel-file"] !== undefined)
+  }
+  if (values.rules && values.json) {
+    throw new Error("choose --rules or --json, not both");
+  }
+  if (values.rules && command !== "preview") {
+    throw new Error("--rules belongs to config preview");
+  }
+  if (values.rules && values["panel-file"] !== undefined) {
     throw new Error("--panel-file requires a change report; omit --rules");
+  }
   const snapshot = readConfiguration(configurationPath(values.config));
   let next = changing ? changeSelection(snapshot.config, values, snapshot.path) : snapshot.config;
   let panelRevision;
   if (values["panel-file"] !== undefined) {
     const path = resolve(values["panel-file"]);
-    if (!lstatSync(path).isFile())
+    if (!lstatSync(path).isFile()) {
       throw new Error("panel input must be a regular file, not a symlink or directory");
+    }
     const text = readFileSync(path, "utf8");
     panelRevision = revisionOf(text);
-    if (values.apply && values["expect-panel"] !== panelRevision)
+    if (values.apply && values["expect-panel"] !== panelRevision) {
       throw new Error("panel input changed or --expect-panel missing; preview again");
+    }
     let preferences;
     try {
       preferences = JSON.parse(text.replace(/^\uFEFF/, ""));
@@ -375,7 +511,12 @@ export function configCommand(argv) {
         }),
     ...report,
   };
-  if (values.rules) return process.stdout.write(report.composedRules);
-  if (values.json) console.log(JSON.stringify(output, null, 2));
-  else console.log(renderConfig(output));
+  if (values.rules) {
+    return process.stdout.write(report.composedRules);
+  }
+  if (values.json) {
+    console.log(JSON.stringify(output, null, 2));
+  } else {
+    console.log(renderConfig(output));
+  }
 }

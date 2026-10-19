@@ -15,4 +15,4 @@ cd "$eor_work"
 env ${unsetargs[@]+"${unsetargs[@]}"} CLAUDE_CODE_DISABLE_AUTO_MEMORY=1 nice -n 10 timeout 900 \
   claude -p --model "${EOR_MODEL:-claude-opus-5-5}" --effort "${EOR_EFFORT:-high}" --tools '' \
   --max-turns 1 --no-session-persistence --setting-sources "" --disable-slash-commands \
-  --strict-mcp-config < "$eor_tmp/prompt.txt"
+  --strict-mcp-config <"$eor_tmp/prompt.txt"

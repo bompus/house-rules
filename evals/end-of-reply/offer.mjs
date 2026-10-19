@@ -39,8 +39,9 @@ export function parseOffer(reply) {
       options.push(label(line.replace(ITEM, "")));
       optionLines.add(i);
       chosen++;
-    } else if (open && (ACCEPT.test(line) || (chosen && line && raws[i] === raws[i].trimStart())))
+    } else if (open && (ACCEPT.test(line) || (chosen && line && raws[i] === raws[i].trimStart()))) {
       open = false;
+    }
   });
   return { questions, options, optionLines };
 }
@@ -62,7 +63,9 @@ const TABLE_DELIMITER = /^\s*\|?\s*:?-+:?\s*(?:\|\s*:?-+:?\s*)*\|?\s*$/;
 export function layoutProblems(reply) {
   const lines = reply.split(/\r?\n/);
   const accepted = lines.findIndex((line) => ACCEPTANCE.test(line.trim()));
-  if (accepted < 0) return [];
+  if (accepted < 0) {
+    return [];
+  }
   const problems = [];
   for (const paragraph of reply.split(/\r?\n[ \t]*\r?\n/)) {
     const rows = paragraph.split(/\r?\n/);
@@ -71,18 +74,21 @@ export function layoutProblems(reply) {
     const bare = (delimiter < 0 ? rows : rows.slice(0, Math.max(delimiter - 1, 0))).filter((row) =>
       BARE_OPTION.test(row),
     );
-    if (bare.length > 1)
+    if (bare.length > 1) {
       problems.push(
         `${bare.length} options share one paragraph: ${bare.map((row) => row.trim().slice(0, 4)).join(" ")}`,
       );
+    }
   }
-  if (!ACCEPTANCE_ONLY.test(lines[accepted].trim()))
+  if (!ACCEPTANCE_ONLY.test(lines[accepted].trim())) {
     problems.push(
       `the acceptance line has text besides its reply codes: "${lines[accepted].trim().slice(0, 60)}"`,
     );
+  }
   const after = lines.slice(accepted + 1).find((line) => line.trim());
-  if (after !== undefined)
+  if (after !== undefined) {
     problems.push(`text follows the acceptance line: "${after.trim().slice(0, 40)}"`);
+  }
   return problems;
 }
 
@@ -100,17 +106,25 @@ export function closeOutOffer(reply) {
   const lines = reply.split("\n");
   const unmarked = (line) => line.trim().replace(ITEM, "");
   const q = lines.findIndex((line) => QUESTION.test(line.trim()));
-  if (q < 0 || !CLOSING_QUESTION.test(unmarked(lines[q]))) return null;
-  const accept = lines.findIndex((line, i) => i > q && ACCEPT.test(line.trim()));
-  if (accept < 0) return null;
-  const block = lines.slice(q, accept + 1);
-  if (block.some((line, i) => /^TOOL_CALL\b/i.test(unmarked(line)) || (i && line.includes("?"))))
+  if (q < 0 || !CLOSING_QUESTION.test(unmarked(lines[q]))) {
     return null;
-  if (!/\ball done\b/i.test(lines[accept]) || /\bpause\b/i.test(lines[accept])) return null;
+  }
+  const accept = lines.findIndex((line, i) => i > q && ACCEPT.test(line.trim()));
+  if (accept < 0) {
+    return null;
+  }
+  const block = lines.slice(q, accept + 1);
+  if (block.some((line, i) => /^TOOL_CALL\b/i.test(unmarked(line)) || (i && line.includes("?")))) {
+    return null;
+  }
+  if (!/\ball done\b/i.test(lines[accept]) || /\bpause\b/i.test(lines[accept])) {
+    return null;
+  }
   const options = lines.slice(q + 1, accept).filter((line) => line.trim());
   const labels = options.map((line) => label(unmarked(line)));
-  if (!optionsMatch(labels, ["All done", "Pause"]) || !/\(Recommended/i.test(options[0]))
+  if (!optionsMatch(labels, ["All done", "Pause"]) || !/\(Recommended/i.test(options[0])) {
     return null;
+  }
   const rest = [...lines.slice(0, q), ...lines.slice(accept + 1)].join("\n");
   // Any other question is about something besides closing.
   return rest.includes("?") ? null : rest;

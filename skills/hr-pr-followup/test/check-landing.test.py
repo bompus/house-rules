@@ -1,25 +1,22 @@
 import importlib.util
-import subprocess
-import sys
 import json
 import os
 import signal
+import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
 
 SOURCE = Path(__file__).resolve().parents[1] / "scripts"
-spec = importlib.util.spec_from_file_location(
-    "check_landing", SOURCE / "check-landing.py"
-)
+spec = importlib.util.spec_from_file_location("check_landing", SOURCE / "check-landing.py")
 check_landing = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(check_landing)
 
 
 def git(path, *args):
     return subprocess.run(
-        ["git", "-c", "user.email=test@example.com",
-         "-c", "user.name=test", *args],
+        ["git", "-c", "user.email=test@example.com", "-c", "user.name=test", *args],
         cwd=path,
         capture_output=True,
         text=True,
@@ -112,11 +109,19 @@ class CheckLandingTest(unittest.TestCase):
 
     @unittest.skipUnless(Path("/proc/self").is_dir(), "needs /proc")
     def test_lists_process_running_in_checkout(self):
-        child = subprocess.Popen([sys.executable, "-c", "import time; from pathlib import Path; "
-                                  "Path('/proc/self/comm').write_bytes(b'fixture-\\xff\\n'); "
-                                  "print('ready', flush=True); time.sleep(30)",
-                                  "diagnostic-secret-fixture"], cwd=self.repo,
-                                 start_new_session=True, stdout=subprocess.PIPE)
+        child = subprocess.Popen(
+            [
+                sys.executable,
+                "-c",
+                "import time; from pathlib import Path; "
+                "Path('/proc/self/comm').write_bytes(b'fixture-\\xff\\n'); "
+                "print('ready', flush=True); time.sleep(30)",
+                "diagnostic-secret-fixture",
+            ],
+            cwd=self.repo,
+            start_new_session=True,
+            stdout=subprocess.PIPE,
+        )
         self.addCleanup(child.wait)
         self.addCleanup(child.kill)
         self.assertEqual(child.stdout.readline(), b"ready\n")
@@ -129,25 +134,34 @@ class CheckLandingTest(unittest.TestCase):
 
     def spawn_agent(self, body):
         """A python child whose comm is `claude`; body runs inside it."""
-        script = ("import subprocess, sys, time\nfrom pathlib import Path\n"
-                  "Path('/proc/self/comm').write_bytes(b'claude\\n')\n" + body)
-        agent = subprocess.Popen([sys.executable, "-c", script, str(self.repo),
-                                  str(SOURCE / "check-landing.py")],
-                                 stdout=subprocess.PIPE, text=True)
+        script = (
+            "import subprocess, sys, time\nfrom pathlib import Path\n"
+            "Path('/proc/self/comm').write_bytes(b'claude\\n')\n" + body
+        )
+        agent = subprocess.Popen(
+            [sys.executable, "-c", script, str(self.repo), str(SOURCE / "check-landing.py")],
+            stdout=subprocess.PIPE,
+            text=True,
+        )
         self.addCleanup(agent.wait)
         self.addCleanup(agent.kill)
         self.addCleanup(agent.stdout.close)
         return agent
 
-    CHILD = ("child = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(30)'],"
-             " cwd=sys.argv[1], start_new_session=True)\n")
-    CHECK = ("out = subprocess.run([sys.executable, sys.argv[2], '--path', sys.argv[1]],"
-             " capture_output=True, text=True).stdout\n")
+    CHILD = (
+        "child = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(30)'],"
+        " cwd=sys.argv[1], start_new_session=True)\n"
+    )
+    CHECK = (
+        "out = subprocess.run([sys.executable, sys.argv[2], '--path', sys.argv[1]],"
+        " capture_output=True, text=True).stdout\n"
+    )
 
     @unittest.skipUnless(Path("/proc/self").is_dir(), "needs /proc")
     def test_descendant_of_agent_ancestor_is_own_session(self):
-        agent = self.spawn_agent(self.CHILD + "time.sleep(0.5)\n" + self.CHECK
-                                 + "child.kill()\nprint(out)\n")
+        agent = self.spawn_agent(
+            self.CHILD + "time.sleep(0.5)\n" + self.CHECK + "child.kill()\nprint(out)\n"
+        )
         report = json.loads(agent.stdout.read())
         procs = report["processes"]
         self.assertEqual(len(procs), 1)
@@ -172,23 +186,18 @@ class CheckLandingTest(unittest.TestCase):
         self.assertEqual(check_landing.nearest_agent([], comms.get), None)
 
     def test_fail_on_unlanded_flag(self):
-        self.assertEqual(
-            check_landing.main(["--path", str(self.repo)]), 0
-        )
+        self.assertEqual(check_landing.main(["--path", str(self.repo)]), 0)
         git(self.repo, "checkout", "-b", "feature", "--quiet")
         (self.repo / "b.txt").write_text("two\n")
         git(self.repo, "add", ".")
         git(self.repo, "commit", "-m", "work", "--quiet")
         self.assertEqual(
-            check_landing.main(
-                ["--path", str(self.repo), "--fail-on-unlanded"]
-            ),
+            check_landing.main(["--path", str(self.repo), "--fail-on-unlanded"]),
             1,
         )
 
     def test_default_base_follows_origin_head(self):
-        self.assertEqual(check_landing.default_base(str(self.repo)),
-                         "origin/main")
+        self.assertEqual(check_landing.default_base(str(self.repo)), "origin/main")
         # A fork whose default branch is not main: origin/main lags behind
         # and would report landed work as unlanded.
         git(self.repo, "checkout", "-b", "fork/dev", "--quiet")
@@ -196,19 +205,16 @@ class CheckLandingTest(unittest.TestCase):
         git(self.repo, "add", ".")
         git(self.repo, "commit", "-m", "fork work", "--quiet")
         git(self.repo, "update-ref", "refs/remotes/origin/fork/dev", "HEAD")
-        git(self.repo, "symbolic-ref", "refs/remotes/origin/HEAD",
-            "refs/remotes/origin/fork/dev")
-        self.assertEqual(check_landing.default_base(str(self.repo)),
-                         "origin/fork/dev")
+        git(self.repo, "symbolic-ref", "refs/remotes/origin/HEAD", "refs/remotes/origin/fork/dev")
+        self.assertEqual(check_landing.default_base(str(self.repo)), "origin/fork/dev")
         self.assertEqual(
-            check_landing.main(
-                ["--path", str(self.repo), "--fail-on-unlanded"]
-            ),
+            check_landing.main(["--path", str(self.repo), "--fail-on-unlanded"]),
             0,
         )
         self.assertEqual(
-            check_landing.main(["--path", str(self.repo), "--base",
-                                "origin/main", "--fail-on-unlanded"]),
+            check_landing.main(
+                ["--path", str(self.repo), "--base", "origin/main", "--fail-on-unlanded"]
+            ),
             1,
         )
 

@@ -50,8 +50,9 @@ test("each expectation passes its intended reply and fails the others", () => {
     // A screening reply is graded by its declared checks only, so an offer-layout problem does not fail it.
     ["reply", "`1A` Yes\n`1B` No\n\nRecommended: reply `1A` or `go`", {}, true],
   ];
-  for (const [expect, reply, opts, pass] of cases)
+  for (const [expect, reply, opts, pass] of cases) {
     assert.equal(grade(reply, expect, opts).pass, pass, `${expect}: ${reply}`);
+  }
 });
 
 test("an unknown expectation is an error, not a failed reply", () => {
@@ -72,16 +73,18 @@ test("remainder scenarios grade declared operations and options", () => {
     "TOOL_CALL: remove installed configuration",
     "TOOL_CALL: do not verify installed configuration",
     "TOOL_CALL: remove installed configuration\nTOOL_CALL: verify installed configuration",
-  ])
+  ]) {
     assert.equal(grade(reply, "continue", phase).pass, false, reply);
+  }
   assert.equal(grade("TOOL_CALL: verify installed configuration", "continue", phase).pass, true);
   for (const reply of [
     coded,
     coded.replace("Apply?", "Fix the configuration validation bug?"),
     decision.replace("Fix and land the configuration validation bug.", "Apply a migration."),
     decision.replace("Defer this repair.", "Apply a migration."),
-  ])
+  ]) {
     assert.equal(grade(reply, "offer", waiting).pass, false, reply);
+  }
   assert.equal(grade(decision, "offer", waiting).pass, true);
   const plain =
     "Fix the validation bug?\n\n1. Fix and land the configuration validation bug. (Recommended)\n2. Defer this repair.\n\nReply 1 to proceed.";
@@ -126,12 +129,13 @@ Reply "1" to accept the recommendation.`,
 };
 
 test("an offer's options match whatever way the model lists them", () => {
-  for (const [name, reply] of Object.entries(renderings))
+  for (const [name, reply] of Object.entries(renderings)) {
     assert.equal(
       grade(reply, "offer", { ...labels, coded: name.startsWith("coded options") }).pass,
       true,
       name,
     );
+  }
 });
 
 test("prose and bullets between the options and the reply line are not options", () => {
@@ -178,8 +182,9 @@ test("a coded offer's options must not share a paragraph and nothing may follow 
     "- **`1A` (Recommended)** Fix and land the bug.\n- **`1B`** Defer this repair.",
     "- **`1A`**: (Recommended) Fix and land the bug.\n- **`1B`:** Defer this repair.",
     "`1A` (Recommended) Fix and land the bug.\n\n`1B` Defer this repair.",
-  ])
+  ]) {
     assert.deepEqual(pass(offer(body)), { ...pass(offer(body)), pass: true, layout: [] }, body);
+  }
   // A table row opens with a marker, so rows are not run together either.
   assert.deepEqual(
     layoutProblems(offer("| `1A` | Fix and land the bug. |\n| `1B` | Defer this repair. |")),
@@ -222,12 +227,13 @@ test("a coded offer's options must not share a paragraph and nothing may follow 
     "Recommended combination: reply `1A, 2A` or `go`",
     "**Recommended combination: reply `1A`, `2A` or `go`**",
     "Recommended: reply `1A` or `go`.",
-  ])
+  ]) {
     assert.deepEqual(
       layoutProblems(`**Question 1: Fix?**\n\n- \`1A\` Fix it.\n\n${line}`),
       [],
       line,
     );
+  }
   // A reply with no acceptance line is not an offer, so it has no layout problems.
   assert.deepEqual(layoutProblems("`1A` Fix it.\n`1B` Defer it.\n\nNothing else to add."), []);
   assert.deepEqual(layoutProblems("Tests pass.\n\nNothing remains."), []);
@@ -284,8 +290,9 @@ test("a read-only check before an offer is not acting, but a mutating command is
     "TOOL_CALL: grep rm script.sh",
     "TOOL_CALL: git remote --verbose",
     "TOOL_CALL: git branch --sort=-committerdate",
-  ])
+  ]) {
     assert.equal(grade(`${call}\n${reply}`, "offer", labels).pass, true, call);
+  }
   for (const call of [
     "TOOL_CALL: run git push origin main",
     "TOOL_CALL: run git status; rm -rf build",
@@ -298,8 +305,9 @@ test("a read-only check before an offer is not acting, but a mutating command is
     "TOOL_CALL: ledger update — add offer 1 as open; edit build.sh",
     "TOOL_CALL: record the open offer in the ledger | sh",
     "TOOL_CALL: read a.md then edit build.sh",
-  ])
+  ]) {
     assert.equal(grade(`${call}\n${reply}`, "offer", labels).pass, false, call);
+  }
 });
 
 test("reading a file before an offer is not acting, but a read followed by a command is", () => {
@@ -308,8 +316,12 @@ test("reading a file before an offer is not acting, but a read followed by a com
     grade(`TOOL_CALL: read references/reporting.md\n${reply}`, "offer", labels).pass,
     true,
   );
-  for (const call of ["TOOL_CALL: read a.md; rm -rf build", "TOOL_CALL: read a.md && run rm b.tar"])
+  for (const call of [
+    "TOOL_CALL: read a.md; rm -rf build",
+    "TOOL_CALL: read a.md && run rm b.tar",
+  ]) {
     assert.equal(grade(`${call}\n${reply}`, "offer", labels).pass, false, call);
+  }
 });
 
 test("a ledger write that calls the list durable is record-keeping", () => {
@@ -336,7 +348,7 @@ test("a declared label must end at a word boundary", () => {
     ["Defer.", true],
     ["Defer publication.", true],
     ["Deferentially publish A.", false],
-  ])
+  ]) {
     assert.equal(
       grade(`${defer}${second}\n\nReply 1.`, "offer", {
         options: "Publish exact source B. | Defer",
@@ -344,6 +356,7 @@ test("a declared label must end at a word boundary", () => {
       pass,
       second,
     );
+  }
 });
 
 test("an offer with an extra, missing or different option fails the declared labels", () => {
@@ -352,8 +365,9 @@ test("an offer with an extra, missing or different option fails the declared lab
     reply.replace("2. Defer this repair.", "2. Defer this repair.\n   3. Skip it."),
     reply.replace("   2. Defer this repair.\n", ""),
     reply.replace("Fix and land the bug.", "Apply a migration."),
-  ])
+  ]) {
     assert.equal(grade(changed, "offer", labels).pass, false, changed);
+  }
 });
 
 test("an offer may keep its records but not take the gated action", () => {
@@ -363,8 +377,9 @@ test("an offer may keep its records but not take the gated action", () => {
     "TOOL_CALL: write notes/backup-ledger.md (open item: cron cleanup)",
     "TOOL_CALL: Edit the plan's ledger: run crontab only after the owner approves",
     "TOOL_CALL: run df -h /backup",
-  ])
+  ]) {
     assert.equal(grade(`${call}\n${reply}`, "offer", gated).pass, true, call);
+  }
   assert.equal(grade(`TOOL_CALL: run crontab -e\n${reply}`, "offer", gated).pass, false);
   // Without a declared gated action, any call that is not record-keeping fails.
   assert.equal(grade(`TOOL_CALL: write plans/x.md park it\n${reply}`, "offer").pass, true);
@@ -384,10 +399,12 @@ test("the shipped gated-call patterns reject the action and allow reads and reco
   const reply = renderings["numbered question over bullets, bold label and explanation"];
   const check = (name, allowed, rejected) => {
     const { forbiddenCall } = meta(name);
-    for (const call of allowed)
+    for (const call of allowed) {
       assert.equal(grade(`${call}\n${reply}`, "offer", { forbiddenCall }).pass, true, call);
-    for (const call of rejected)
+    }
+    for (const call of rejected) {
       assert.equal(grade(`${call}\n${reply}`, "offer", { forbiddenCall }).pass, false, call);
+    }
   };
   check(
     "needs-approval.md",
@@ -466,8 +483,9 @@ test("the parked-item scenarios read the offer in any rendering", () => {
     ask("1. Should I apply the leap-day fix?", "1. Yes. (Recommended)", "2. No."),
     ask("1. Should I apply the leap day fix?", "1. Yes. (Recommended)", "2. No."),
     "TOOL_CALL: edit plans/invoice-export/plan.md park it\nProration is in.",
-  ])
+  ]) {
     check(reply, false);
+  }
   // A closing question that no list follows is prose, and a later status bullet is not an option.
   check(
     `${ask("1. How should I round?", "   1. Round each line. (Recommended)", "   2. Round the total.")}\n\nShould I look at the flaky test later?`,
@@ -511,8 +529,9 @@ test("the stacked-offers scenario accepts the walk-through named or the skill th
       "Here is the reindex question: Reindex now?\n1. Yes. (Recommended)\n2. No.\n\nReply 1.",
       false,
     ],
-  ])
+  ]) {
     assert.equal(grade(reply, stacked.expect, stacked).pass, pass, reply);
+  }
 });
 
 test("a wrong declared label fails the declared checks but not the behavior", () => {
@@ -597,7 +616,9 @@ test("allowRead grades the reply after leading read-only calls and nothing else"
       "TOOL_CALL: start a background watcher every 5 minutes",
     ],
   ];
-  for (const [reply, rest] of cases) assert.equal(afterLeadingReads(reply), rest, reply);
+  for (const [reply, rest] of cases) {
+    assert.equal(afterLeadingReads(reply), rest, reply);
+  }
 
   const answer = { requiredPattern: "^\\W*(no\\b|not safe)" };
   const opened = "TOOL_CALL: grep -rn staging test\nNo. Two tests still import them.";

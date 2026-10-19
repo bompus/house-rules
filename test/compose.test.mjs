@@ -36,12 +36,16 @@ test("every version of the Offers section carries the sentences core's Offers se
   const versions = [{ source: "core", text: core }];
   for (const file of readdirSync(dir).filter((f) => f.endsWith(".md"))) {
     const { meta, body } = parseFragment(readFileSync(join(dir, file), "utf8"), file);
-    if (meta.replaces === "Offers") versions.push({ source: file, text: body });
+    if (meta.replaces === "Offers") {
+      versions.push({ source: file, text: body });
+    }
   }
   assert.ok(versions.length > 1, "expected a modifier that replaces Offers");
-  for (const { source, text } of versions)
-    for (const sentence of OFFERS_SENTENCES_EVERY_VERSION_CARRIES)
+  for (const { source, text } of versions) {
+    for (const sentence of OFFERS_SENTENCES_EVERY_VERSION_CARRIES) {
       assert.match(text.replace(/\s+/g, " "), sentence, source);
+    }
+  }
 });
 
 test("several fragments after one section keep their configured order", () => {
@@ -197,7 +201,9 @@ test("every shipped modifier composes, alone and all together", () => {
   const all = modifierList().map((m) =>
     parseFragment(readFileSync(join(root, "rules/modifiers", `${m.name}.md`), "utf8"), m.name),
   );
-  for (const f of all) compose(core, [f]);
+  for (const f of all) {
+    compose(core, [f]);
+  }
   // Modifiers that offer alternative versions of one section cannot be combined; keep the first of each.
   const exclusive = [["backlog-outline", "backlog-visual"]];
   const dropped = new Set(exclusive.flatMap((names) => names.slice(1)));
@@ -226,11 +232,12 @@ test("the example person layer composes with its skills", (t) => {
     readdirSync(join(dir, "skills")).sort(),
     [...readdirSync(join(root, "skills")), "LICENSE", "THIRD_PARTY_NOTICES.md"].sort(),
   );
-  for (const notice of ["LICENSE", "THIRD_PARTY_NOTICES.md"])
+  for (const notice of ["LICENSE", "THIRD_PARTY_NOTICES.md"]) {
     assert.equal(
       readFileSync(join(dir, "skills", notice), "utf8"),
       readFileSync(join(root, notice), "utf8"),
     );
+  }
   const standalone = [
     "hr-benchmarking",
     "hr-better-accessibility",
@@ -252,12 +259,13 @@ test("the example person layer composes with its skills", (t) => {
       `${name} keeps the full MIT notice`,
     );
     assert.match(notice, /Source: https:\/\/github\.com\//, `${name} keeps source provenance`);
-    if (existsSync(join(root, "skills", name, "LICENSE")))
+    if (existsSync(join(root, "skills", name, "LICENSE"))) {
       assert.equal(
         readFileSync(join(dir, "skills", name, "LICENSE"), "utf8"),
         readFileSync(join(root, "skills", name, "LICENSE"), "utf8"),
         name,
       );
+    }
   }
 });
 
@@ -292,8 +300,9 @@ test("the README lists every modifier with its description, and every skill", ()
     const row = readme.split("\n").find((l) => l.split("|")[1]?.trim() === "`" + m.name + "`");
     assert.equal(plain(row?.split("|")[2].trim() ?? ""), plain(m.description), m.name);
   }
-  for (const s of readdirSync(join(root, "skills")))
+  for (const s of readdirSync(join(root, "skills"))) {
     assert.match(readme, new RegExp("`" + s + "`"), s);
+  }
 });
 
 for (const kind of ["exclusion", "override", "frontmatter"]) {
@@ -349,11 +358,12 @@ for (const excludeIndependent of [false, true]) {
       join(dir, "out"),
     ]);
     assert.equal(existsSync(join(dir, "out", "handoff")), !excludeIndependent);
-    if (!excludeIndependent)
+    if (!excludeIndependent) {
       assert.equal(
         readFileSync(join(dir, "out", "handoff", "SKILL.md"), "utf8"),
         "personal handoff",
       );
+    }
     assert.equal(
       readFileSync(join(dir, "out", "vendor-helper", "SKILL.md"), "utf8"),
       "personal vendor-helper",
@@ -377,8 +387,9 @@ test("the skills the core rules name are declared, shipped and selected by defau
   );
   const dir = scratch(t);
   const sample = JSON.parse(readFileSync(join(root, "examples/person/house-rules.json"), "utf8"));
-  for (const skill of named)
+  for (const skill of named) {
     assert.ok(sample.skills.include.includes(skill), `${skill} is in the fresh-install skill set`);
+  }
   assert.deepEqual(composeConfiguration(sample, dir).warnings, []);
 });
 

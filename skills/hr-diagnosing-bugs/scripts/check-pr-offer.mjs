@@ -34,7 +34,10 @@ export const offersPullRequest = (draft) =>
       .join("\n"),
   );
 
-if (import.meta.main ?? import.meta.url === `file://${process.argv[1]}`) {
+if (
+  /** @type {boolean | undefined} */ (import.meta.main) ??
+  import.meta.url === `file://${process.argv[1]}`
+) {
   const draft = readFileSync(process.argv[2] ?? 0, "utf8");
   if (offersPullRequest(draft)) {
     process.exit(0);

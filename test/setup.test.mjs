@@ -21,7 +21,9 @@ const shellQuote = (value) => `'${value.replaceAll("'", "'\\''")}'`;
 function fixture(t, config) {
   const dir = scratch(t, "house-rules-setup-");
   const path = join(dir, "house-rules.json");
-  if (config !== undefined) writeFileSync(path, JSON.stringify(config));
+  if (config !== undefined) {
+    writeFileSync(path, JSON.stringify(config));
+  }
   return { dir, path };
 }
 
@@ -58,7 +60,9 @@ function terminal(t, path, runtimeArgs = []) {
     });
   });
   const check = () => {
-    if (!pending) return;
+    if (!pending) {
+      return;
+    }
     const index = output.indexOf(pending.text, cursor);
     if (index !== -1) {
       cursor = index + pending.text.length;
@@ -80,7 +84,9 @@ function terminal(t, path, runtimeArgs = []) {
   child.stdout.on("data", collect);
   child.stderr.on("data", collect);
   t.after(() => {
-    if (!exit) child.kill("SIGTERM");
+    if (!exit) {
+      child.kill("SIGTERM");
+    }
   });
   return {
     wait(text = "setup> ") {
@@ -148,13 +154,17 @@ test(
       const before = existsSync(path) ? statSync(path).mtimeMs : null;
       const session = terminal(t, path);
       await session.wait();
-      if (mode === "cancel") await session.command("toggle shared-host-load");
+      if (mode === "cancel") {
+        await session.command("toggle shared-host-load");
+      }
       await session.command("next");
       await session.command("next");
       const result = await session.finish(mode === "cancel" ? "cancel" : "save");
       assert.equal(result.code, 0);
       assert.equal(existsSync(path), mode === "existing");
-      if (before !== null) assert.equal(statSync(path).mtimeMs, before);
+      if (before !== null) {
+        assert.equal(statSync(path).mtimeMs, before);
+      }
     }
   },
 );
@@ -353,10 +363,13 @@ test(
             assert.equal(readFileSync(path, "utf8"), before, sequence.join(" -> "));
           }
         }
-        if (edited)
+        if (edited) {
           assert.equal(JSON.parse(readFileSync(path, "utf8")).custom, "new", sequence.join(" -> "));
+        }
       }
-      if (!ended) await session.finish();
+      if (!ended) {
+        await session.finish();
+      }
     }
   },
 );

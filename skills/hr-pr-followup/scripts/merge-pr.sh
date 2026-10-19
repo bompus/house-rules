@@ -51,16 +51,28 @@ STRATEGY=--squash
 SYNC_ARGS=(--ff)
 while [ $# -gt 0 ]; do
   case "$1" in
-    --merge) STRATEGY=--merge; shift;;
-    --remote) REMOTE="${2:?}"; shift 2;;
-    *) echo "unknown argument: $1" >&2; exit 2;;
+    --merge)
+      STRATEGY=--merge
+      shift
+      ;;
+    --remote)
+      REMOTE="${2:?}"
+      shift 2
+      ;;
+    *)
+      echo "unknown argument: $1" >&2
+      exit 2
+      ;;
   esac
 done
 
 IFS=$'\t' read -r HEAD OID BASE STATE FORK < <(gh pr view "$PR" \
   --json headRefName,headRefOid,baseRefName,state,isCrossRepository \
   --jq '[.headRefName, .headRefOid, .baseRefName, .state, .isCrossRepository] | @tsv')
-[ "$STATE" = OPEN ] || { echo "PR $PR is $STATE, not OPEN" >&2; exit 1; }
+[ "$STATE" = OPEN ] || {
+  echo "PR $PR is $STATE, not OPEN" >&2
+  exit 1
+}
 
 DEPENDENTS="$(gh pr list --state open --base "$HEAD" --json number --jq '.[].number' | tr '\n' ' ')"
 if [ -n "${DEPENDENTS// /}" ]; then
@@ -82,7 +94,10 @@ remove_check_dir() {
 trap remove_check_dir EXIT
 git fetch --quiet --no-tags "$REMOTE" "+refs/pull/$PR/head:$CHECK_REF"
 FETCHED="$(git rev-parse "$CHECK_REF")"
-[ "$FETCHED" = "$OID" ] || { echo "PR $PR head moved to $FETCHED after it was read as $OID; rerun" >&2; exit 1; }
+[ "$FETCHED" = "$OID" ] || {
+  echo "PR $PR head moved to $FETCHED after it was read as $OID; rerun" >&2
+  exit 1
+}
 # One line from the head's package.json: the named package manager (or -), its major version (or
 # -), 1 when scripts.check is a string, and 1 when it declares dependencies or workspaces. An
 # unreadable package.json refuses.
@@ -108,11 +123,14 @@ elif [ "$HAS_CHECK" != 1 ]; then
 else
   in_head() { git cat-file -e "$OID:$1" 2>/dev/null; }
   case "$NAMED" in
-    bun | pnpm | yarn | npm) PM="$NAMED";;
-    *) if in_head bun.lock || in_head bun.lockb; then PM=bun
-      elif in_head pnpm-lock.yaml; then PM=pnpm
-      elif in_head yarn.lock; then PM=yarn
-      else PM=npm; fi;;
+    bun | pnpm | yarn | npm) PM="$NAMED" ;;
+    *) if in_head bun.lock || in_head bun.lockb; then
+      PM=bun
+    elif in_head pnpm-lock.yaml; then
+      PM=pnpm
+    elif in_head yarn.lock; then
+      PM=yarn
+    else PM=npm; fi ;;
   esac
   # A lockfile also means an install, which covers workspaces declared outside package.json.
   for lock in bun.lock bun.lockb pnpm-lock.yaml yarn.lock package-lock.json npm-shrinkwrap.json; do
@@ -125,19 +143,21 @@ else
   git worktree add --quiet --detach "$CHECK_DIR" "$OID"
   # No lifecycle scripts. Yarn 2 and later reject --ignore-scripts and skip them with skip-build.
   case "$PM" in
-    bun) INSTALL=(bun install --frozen-lockfile --ignore-scripts);;
-    pnpm) INSTALL=(pnpm install --frozen-lockfile --ignore-scripts);;
+    bun) INSTALL=(bun install --frozen-lockfile --ignore-scripts) ;;
+    pnpm) INSTALL=(pnpm install --frozen-lockfile --ignore-scripts) ;;
     yarn) if [ "$NAMED" = yarn ] && [ "$MAJOR" != - ] && [ "$MAJOR" -ge 2 ] || in_head .yarnrc.yml; then
-        INSTALL=(yarn install --immutable --mode=skip-build)
-      else
-        INSTALL=(yarn install --frozen-lockfile --ignore-scripts)
-      fi;;
-    *) if in_head package-lock.json || in_head npm-shrinkwrap.json; then INSTALL=(npm ci --ignore-scripts)
-      else INSTALL=(npm install --ignore-scripts); fi;;
+      INSTALL=(yarn install --immutable --mode=skip-build)
+    else
+      INSTALL=(yarn install --frozen-lockfile --ignore-scripts)
+    fi ;;
+    *) if in_head package-lock.json || in_head npm-shrinkwrap.json; then
+      INSTALL=(npm ci --ignore-scripts)
+    else INSTALL=(npm install --ignore-scripts); fi ;;
   esac
   CPUS="$(nproc --all 2>/dev/null || getconf _NPROCESSORS_ONLN 2>/dev/null || echo 2)"
-  HALF=$(( CPUS / 2 > 0 ? CPUS / 2 : 1 ))
-  NICE=(); command -v nice >/dev/null && NICE=(nice -n 10)
+  HALF=$((CPUS / 2 > 0 ? CPUS / 2 : 1))
+  NICE=()
+  command -v nice >/dev/null && NICE=(nice -n 10)
   run_step() {
     local code=0
     (cd "$CHECK_DIR" && RAYON_NUM_THREADS="${RAYON_NUM_THREADS:-$HALF}" \

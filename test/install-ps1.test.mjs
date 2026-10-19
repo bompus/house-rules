@@ -13,18 +13,20 @@ import { scratch } from "./fixture.mjs";
 import { basename, dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
+import { stripVTControlCharacters } from "node:util";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const script = join(root, "install.ps1");
 const windows = process.platform === "win32";
-const it = windows ? test : test.skip;
 
 const system32 = join(process.env.SystemRoot ?? "C:\\Windows", "System32");
 // Windows PowerShell 5.1 ships with Windows 11; PowerShell 7 is tested too when present.
 const shells = [join(system32, "WindowsPowerShell", "v1.0", "powershell.exe")];
 if (windows) {
   const pwsh = spawnSync("where.exe", ["pwsh.exe"], { encoding: "utf8" });
-  if (pwsh.status === 0) shells.push(pwsh.stdout.split(/\r?\n/)[0].trim());
+  if (pwsh.status === 0) {
+    shells.push(pwsh.stdout.split(/\r?\n/)[0].trim());
+  }
 }
 
 // Variables that would point the search at this machine's real runtimes.
@@ -67,8 +69,7 @@ function stub(home, rel, version) {
 
 // PowerShell 7 colors and wraps error text to the console width.
 const plain = (r) =>
-  (r.stderr + r.stdout)
-    .replace(/\x1b\[[0-9;]*m/g, "")
+  stripVTControlCharacters(r.stderr + r.stdout)
     .replace(/\s*\|\s*/g, " ")
     .replace(/\s+/g, " ");
 
@@ -95,7 +96,7 @@ function run(shell, home, pathDirs, args = [], env = {}) {
 
 // Each test starts PowerShell at least once, and a cold start on a CI runner can take
 // seconds. Bun's default per-test timeout is 5 s; node --test has none.
-const slow = { timeout: 30_000 };
+const slow = { timeout: 30_000, skip: !windows };
 
 for (const shell of shells) {
   const name = basename(shell);
@@ -105,14 +106,14 @@ for (const shell of shells) {
     return r.stdout.trim();
   };
 
-  it(`${name}: prefers Bun 1.4 or newer over any Node`, slow, (t) => {
+  test(`${name}: prefers Bun 1.4 or newer over any Node`, slow, (t) => {
     const home = homeFixture(t);
     const bun = stub(home, "a\\bun.cmd", "1.4.2");
     const node = stub(home, "b\\node.cmd", "v24.1.0");
     assert.equal(picked(home, [node, bun]), join(bun, "bun.cmd"));
   });
 
-  it(`${name}: picks the newest Bun across PATH and version managers`, slow, (t) => {
+  test(`${name}: picks the newest Bun across PATH and version managers`, slow, (t) => {
     const home = homeFixture(t);
     const onPath = stub(home, "a\\bun.cmd", "1.4.2");
     stub(home, ".bun\\bin\\bun.cmd", "1.5.0-canary.3");
@@ -120,26 +121,30 @@ for (const shell of shells) {
     assert.equal(picked(home, [onPath]), join(home, ".bun", "bin", "bun.cmd"));
   });
 
-  it(`${name}: falls back to the newest Node 22 or newer when Bun is older than 1.4`, slow, (t) => {
-    const home = homeFixture(t);
-    const bun = stub(home, "a\\bun.cmd", "1.3.9");
-    const node = stub(home, "b\\node.cmd", "v22.11.0");
-    stub(home, "AppData\\Roaming\\nvm\\v24.2.0\\node.cmd", "v24.2.0");
-    stub(home, "AppData\\Roaming\\nvm\\v20.9.0\\node.cmd", "v20.9.0");
-    assert.equal(
-      picked(home, [bun, node]),
-      join(home, "AppData", "Roaming", "nvm", "v24.2.0", "node.cmd"),
-    );
-  });
+  test(
+    `${name}: falls back to the newest Node 22 or newer when Bun is older than 1.4`,
+    slow,
+    (t) => {
+      const home = homeFixture(t);
+      const bun = stub(home, "a\\bun.cmd", "1.3.9");
+      const node = stub(home, "b\\node.cmd", "v22.11.0");
+      stub(home, "AppData\\Roaming\\nvm\\v24.2.0\\node.cmd", "v24.2.0");
+      stub(home, "AppData\\Roaming\\nvm\\v20.9.0\\node.cmd", "v20.9.0");
+      assert.equal(
+        picked(home, [bun, node]),
+        join(home, "AppData", "Roaming", "nvm", "v24.2.0", "node.cmd"),
+      );
+    },
+  );
 
-  it(`${name}: compares version fields as numbers`, slow, (t) => {
+  test(`${name}: compares version fields as numbers`, slow, (t) => {
     const home = homeFixture(t);
     const nine = stub(home, "a\\node.cmd", "v22.9.0");
     const ten = stub(home, "b\\node.cmd", "v22.10.0");
     assert.equal(picked(home, [nine, ten]), join(ten, "node.cmd"));
   });
 
-  it(`${name}: fails with install pointers when no runtime is new enough`, slow, (t) => {
+  test(`${name}: fails with install pointers when no runtime is new enough`, slow, (t) => {
     const home = homeFixture(t);
     const node = stub(home, "a\\node.cmd", "v20.18.0");
     const r = run(shell, home, [node], ["-PrintRuntime"]);
@@ -147,7 +152,7 @@ for (const shell of shells) {
     assert.match(plain(r), /Bun 1\.4 or newer .* Node\.js 22 or newer/);
   });
 
-  it(`${name}: refuses a non-empty directory that is not a checkout`, slow, (t) => {
+  test(`${name}: refuses a non-empty directory that is not a checkout`, slow, (t) => {
     const home = homeFixture(t);
     const dir = join(home, "stuff");
     mkdirSync(dir);
@@ -161,13 +166,16 @@ for (const shell of shells) {
     assert.deepEqual(readdirSync(dir), ["notes.txt"]);
   });
 
-  it(
+  test(
     `${name}: installs from a checkout, then recomposes without deleting the old skills`,
     slow,
     (t) => {
       const home = homeFixture(t);
       const checkout = join(home, "house-rules");
-      cpSync(root, checkout, { recursive: true, filter: (src) => basename(src) !== ".git" });
+      cpSync(root, checkout, {
+        recursive: true,
+        filter: (src) => ![".git", "node_modules"].includes(basename(src)),
+      });
       const env = { HOUSE_RULES_DIR: checkout, HOUSE_RULES_RUNTIME: process.execPath };
       const config = join(home, ".config", "house-rules");
 
@@ -235,7 +243,9 @@ for (const shell of shells) {
         readdirSync(config).filter((f) => f.startsWith("composed-skills.new-")),
         [],
       );
-      for (const b of backups) assert.ok(!existsSync(join(config, b, "composed-skills")));
+      for (const b of backups) {
+        assert.ok(!existsSync(join(config, b, "composed-skills")));
+      }
     },
   );
 }

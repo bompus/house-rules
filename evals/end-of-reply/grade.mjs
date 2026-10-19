@@ -73,11 +73,15 @@ export function afterLeadingReads(reply) {
   for (const [i, line] of lines.entries()) {
     const text = line.trim();
     if (!/^TOOL_CALL\b/.test(text)) {
-      if (text && last >= 0) break;
+      if (text && last >= 0) {
+        break;
+      }
       continue;
     }
     const parts = text.replace(/^TOOL_CALL:?\s*/i, "").split(/&&|\|\||[;|]|\bthen\b/);
-    if (actsAlso(text) || parts.some((p) => REDIRECTING.test(p) || !LOOKUP.test(p.trim()))) break;
+    if (actsAlso(text) || parts.some((p) => REDIRECTING.test(p) || !LOOKUP.test(p.trim()))) {
+      break;
+    }
     last = i;
   }
   const rest = lines
@@ -108,12 +112,17 @@ export function grade(
     closeOut = false,
   } = {},
 ) {
-  if (!EXPECTS.includes(expect))
+  if (!EXPECTS.includes(expect)) {
     throw new Error(`unknown expect "${expect}" (use ${EXPECTS.join(", ")})`);
-  if (allowRead) reply = afterLeadingReads(reply);
+  }
+  if (allowRead) {
+    reply = afterLeadingReads(reply);
+  }
   // `closeOut` lets a complete reply end with the close-out question; everything around it is graded as
   // usual, and any other question mark fails it.
-  if (closeOut && expect === "complete") reply = closeOutOffer(reply) ?? reply;
+  if (closeOut && expect === "complete") {
+    reply = closeOutOffer(reply) ?? reply;
+  }
   // A tool call is a line of its own, so "I cannot make a TOOL_CALL" does not count.
   const facts = replyFacts(reply, coded);
   const { tool, asks } = facts;

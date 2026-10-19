@@ -40,7 +40,7 @@ Fetch first, then:
   clean, move the checkout onto the fetched base: `git switch <base>` once the
   local base is current, never merge, reset or stash. When another worktree
   has the base checked out, detach at the fetched base (`git switch --detach
-<remote>/<base>`) and create or switch to a branch before any further
+  <remote>/<base>`) and create or switch to a branch before any further
   commits.
 - When an app manages the checkout, leave it for the app to retire. Report it;
   it is not a blocker.

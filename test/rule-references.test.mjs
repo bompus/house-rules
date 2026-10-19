@@ -54,8 +54,9 @@ test("copied rules retain the full procedure with no skills or source checkout",
     "setup.mjs",
     "rules",
     "skills",
-  ])
+  ]) {
     cpSync(join(root, name), join(source, name), { recursive: true });
+  }
   const config = join(dir, "config.json");
   writeFileSync(
     config,
@@ -330,8 +331,9 @@ test("core reference lists retain scalar compatibility and reject malformed inpu
     "references: references/landing.md, references/landing.md",
     "references: missing.md",
     "references: ../../outside.md",
-  ])
+  ]) {
     assert.throws(() => compose(`---\n${metadata}\n---\n${body}`, []), /core: /);
+  }
 });
 
 test("progress reporting survives reference exports while effort forecasts stay optional", (t) => {
@@ -411,8 +413,9 @@ test("duplicate core reference headings fail before changing existing output", (
     "setup.mjs",
     "rules",
     "skills",
-  ])
+  ]) {
     cpSync(join(root, name), join(source, name), { recursive: true });
+  }
   const corePath = join(source, "rules/core.md");
   const core = readFileSync(corePath, "utf8")
     .replace(

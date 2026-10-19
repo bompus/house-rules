@@ -134,24 +134,27 @@ function validDate(value) {
 
 function parseArguments(argv) {
   const options = {
-    plan: null,
+    plan: /** @type {string | null} */ (null),
     checkouts: [],
     appManaged: [],
-    scratch: null,
-    repo: null,
+    scratch: /** @type {string | null} */ (null),
+    repo: /** @type {string | null} */ (null),
     offline: false,
     today: new Date().toLocaleDateString("sv"),
     archive: false,
     json: false,
-    sessionId: null,
-    turnId: null,
+    sessionId: /** @type {string | null} */ (null),
+    turnId: /** @type {string | null} */ (null),
   };
   for (let index = 0; index < argv.length; index++) {
     const argument = argv[index];
-    if (argument === "--archive") options.archive = true;
-    else if (argument === "--json") options.json = true;
-    else if (argument === "--offline") options.offline = true;
-    else if (
+    if (argument === "--archive") {
+      options.archive = true;
+    } else if (argument === "--json") {
+      options.json = true;
+    } else if (argument === "--offline") {
+      options.offline = true;
+    } else if (
       [
         "--checkout",
         "--app-managed",
@@ -163,26 +166,45 @@ function parseArguments(argv) {
       ].includes(argument)
     ) {
       const value = argv[++index];
-      if (!value) throw new Error(`${argument} needs a value\n${usage}`);
-      if (argument === "--session") options.sessionId = value;
-      else if (argument === "--turn") options.turnId = value;
-      else if (argument === "--checkout") options.checkouts.push(value);
-      else if (argument === "--app-managed") options.appManaged.push(value);
-      else if (argument === "--repo") {
-        if (!/^[\w.-]+\/[\w.-]+$/.test(value)) throw new Error(`--repo needs owner/repo\n${usage}`);
+      if (!value) {
+        throw new Error(`${argument} needs a value\n${usage}`);
+      }
+      if (argument === "--session") {
+        options.sessionId = value;
+      } else if (argument === "--turn") {
+        options.turnId = value;
+      } else if (argument === "--checkout") {
+        options.checkouts.push(value);
+      } else if (argument === "--app-managed") {
+        options.appManaged.push(value);
+      } else if (argument === "--repo") {
+        if (!/^[\w.-]+\/[\w.-]+$/.test(value)) {
+          throw new Error(`--repo needs owner/repo\n${usage}`);
+        }
         options.repo = value;
       } else if (argument === "--today") {
-        if (!validDate(value)) throw new Error(`--today needs YYYY-MM-DD\n${usage}`);
+        if (!validDate(value)) {
+          throw new Error(`--today needs YYYY-MM-DD\n${usage}`);
+        }
         options.today = value;
-      } else options.scratch = value;
-    } else if (argument.startsWith("--") || options.plan) throw new Error(usage);
-    else options.plan = argument;
+      } else {
+        options.scratch = value;
+      }
+    } else if (argument.startsWith("--") || options.plan) {
+      throw new Error(usage);
+    } else {
+      options.plan = argument;
+    }
   }
-  if (!options.plan) throw new Error(usage);
-  if (Boolean(options.sessionId) !== Boolean(options.turnId))
+  if (!options.plan) {
+    throw new Error(usage);
+  }
+  if (Boolean(options.sessionId) !== Boolean(options.turnId)) {
     throw new Error("--session and --turn must be supplied together");
-  if (options.sessionId && options.archive)
+  }
+  if (options.sessionId && options.archive) {
     throw new Error("a reconciliation receipt cannot archive its plan");
+  }
   return options;
 }
 
@@ -205,17 +227,25 @@ export function parsePlan(text) {
     .map((line) => line.match(/^\s*(?:\*\*)?Project(?:\*\*)?:(?:\*\*)?\s*(.+)$/i))
     .find(Boolean)?.[1]
     .trim();
-  if (!status) errors.push("no `Status:` line in the first 40 lines");
-  if (!owner) errors.push("no `Owner:` line in the first 40 lines");
+  if (!status) {
+    errors.push("no `Status:` line in the first 40 lines");
+  }
+  if (!owner) {
+    errors.push("no `Owner:` line in the first 40 lines");
+  }
   const start = lines.findIndex((line) => /^#{1,6}\s+Ledger\s*$/i.test(line));
-  if (start < 0) errors.push("no `## Ledger` section");
+  if (start < 0) {
+    errors.push("no `## Ledger` section");
+  }
   let end = lines.length;
   if (start >= 0) {
     const level = lines[start].match(/^#+/)[0].length;
     const next = lines.findIndex(
       (line, i) => i > start && new RegExp(`^#{1,${level}}\\s`).test(line),
     );
-    if (next >= 0) end = next;
+    if (next >= 0) {
+      end = next;
+    }
   }
   const items = [];
   for (let i = start + 1; start >= 0 && i < end; i++) {
@@ -223,17 +253,19 @@ export function parsePlan(text) {
     if (match) {
       items.push({ line: i + 1, mark: match[1].toLowerCase(), text: match[2] });
     } else if (items.length && /^\s{2,}\S/.test(lines[i]) && !/^\s*[-*]\s/.test(lines[i])) {
-      items[items.length - 1].text += ` ${lines[i].trim()}`;
+      items.at(-1).text += ` ${lines[i].trim()}`;
     }
   }
-  if (start >= 0 && !items.length)
+  if (start >= 0 && !items.length) {
     errors.push("the ledger has no items (`- [ ] ...`, `- [~] ...`, `- [x] ...`, `- [-] ...`)");
+  }
   for (const item of items) {
     const required = REQUIRED[item.mark];
-    if (required && !new RegExp(`\\b${required[0]}:\\s*\\S`, "i").test(item.text))
+    if (required && !new RegExp(`\\b${required[0]}:\\s*\\S`, "i").test(item.text)) {
       errors.push(
         `L${item.line}: a ${MARKS[item.mark]} item needs \`${required[0]}:\` (${required[1]})`,
       );
+    }
   }
   const narrative = [];
   lines.forEach((line, i) => {
@@ -242,12 +274,13 @@ export function parsePlan(text) {
       !inLedger &&
       i > 0 &&
       (NARRATIVE.test(line) || PROSE_MARKER.test(line) || /^\s*[-*]\s+\[[ ~]\]/.test(line))
-    )
+    ) {
       narrative.push({
         line: i + 1,
         text: line.trim(),
         box: /^\s*[-*]\s+\[[ ~]\]/.test(line),
       });
+    }
   });
   return { status, owner, purpose, project, items, errors, narrative };
 }
@@ -283,15 +316,23 @@ function notesRoot(planPath) {
 // cannot be read, or has no owner, could be the plan's, so it is reported instead of skipped.
 function ownedScratch(directory, owner) {
   const result = { owned: [], unreadable: [] };
-  if (!existsSync(directory)) return result;
+  if (!existsSync(directory)) {
+    return result;
+  }
   const identities = [owner, ...owner.split(/[,;]/)].map((part) => part.trim().toLowerCase());
   for (const name of readdirSync(directory)) {
     const manifest = join(directory, name, "manifest.json");
-    if (!existsSync(manifest)) continue;
+    if (!existsSync(manifest)) {
+      continue;
+    }
     try {
       const parsed = JSON.parse(readFileSync(manifest, "utf8"));
-      if (typeof parsed.owner !== "string") throw new Error("no owner");
-      if (identities.includes(parsed.owner.trim().toLowerCase())) result.owned.push(name);
+      if (typeof parsed.owner !== "string") {
+        throw new Error("no owner");
+      }
+      if (identities.includes(parsed.owner.trim().toLowerCase())) {
+        result.owned.push(name);
+      }
     } catch {
       result.unreadable.push(manifest);
     }
@@ -306,7 +347,9 @@ function git(path, ...args) {
 
 function checkoutState(path) {
   const status = git(path, "status", "--porcelain=v1", "--branch");
-  if (status === null) return { error: `cannot read git state of ${path}` };
+  if (status === null) {
+    return { error: `cannot read git state of ${path}` };
+  }
   const [branchLine, ...changes] = status.split("\n").filter(Boolean);
   const unpushed = (git(path, "log", "--oneline", "HEAD", "--not", "--remotes") ?? "")
     .split("\n")
@@ -323,18 +366,22 @@ function mentions(text, name) {
 }
 
 function awaitsUser(item) {
-  if (item.mark !== "~") return false;
+  if (item.mark !== "~") {
+    return false;
+  }
   const trigger = item.text.match(/\btrigger:\s*(.+)$/i)?.[1];
   return USER_ONLY_TRIGGER.test(trigger?.trim().replace(/[.)\s]+$/, "") ?? "");
 }
 
 function accountFor(resource, names, items, findings) {
   const naming = items.filter((item) => names.some((name) => mentions(item.text, name)));
-  if (!naming.length) findings.push(`${resource} is not named in any ledger item`);
-  else if (!naming.some((item) => item.mark === " " || item.mark === "~"))
+  if (!naming.length) {
+    findings.push(`${resource} is not named in any ledger item`);
+  } else if (!naming.some((item) => item.mark === " " || item.mark === "~")) {
     findings.push(
       `${resource} still exists but its ledger item is ${MARKS[naming[0].mark]} (L${naming[0].line})`,
     );
+  }
 }
 
 // The pull requests, issues and commits an item names. A bare number is looked up in `repo` only.
@@ -354,15 +401,23 @@ function references(text, repo) {
     return REPORTED.test(`${before} ${after}`);
   };
   let rest = text;
-  for (const pattern of [GITHUB_URL, GITHUB_REF])
+  for (const pattern of [GITHUB_URL, GITHUB_REF]) {
     rest = rest.replace(pattern, (match, owner, name, number, offset) => {
-      if (!reported(offset, match.length)) github.add(`${owner}/${name}#${number}`);
+      if (!reported(offset, match.length)) {
+        github.add(`${owner}/${name}#${number}`);
+      }
       return " ".repeat(match.length);
     });
+  }
   for (const match of rest.matchAll(BARE_REF)) {
-    if (reported(match.index, match[0].length)) continue;
-    if (repo) github.add(`${repo}#${match[1]}`);
-    else bare++;
+    if (reported(match.index, match[0].length)) {
+      continue;
+    }
+    if (repo) {
+      github.add(`${repo}#${match[1]}`);
+    } else {
+      bare++;
+    }
   }
   return { github: [...github], bare, commits: [...new Set(rest.match(COMMIT) ?? [])] };
 }
@@ -386,14 +441,19 @@ function gh(...args) {
 // "merged", "closed", "open" or "unknown" (not found) per reference; null when GitHub cannot be asked.
 async function githubStates(refs, offline) {
   const states = new Map();
-  if (!refs.length) return { states };
-  if (offline) return { states, skipped: "GitHub check skipped: --offline" };
+  if (!refs.length) {
+    return { states };
+  }
+  if (offline) {
+    return { states, skipped: "GitHub check skipped: --offline" };
+  }
   const lookup = async (ref) => {
     const [, owner, name, number] = ref.match(/^(.+)\/(.+)#(\d+)$/);
     const result = await gh("api", `repos/${owner}/${name}/issues/${number}`);
     if (result.error) {
-      if (/\b404\b|not found/i.test(result.error) && result.error !== "gh not found")
+      if (/\b404\b|not found/i.test(result.error) && result.error !== "gh not found") {
         return states.set(ref, "unknown");
+      }
       throw new Error(result.error.split("\n")[0]);
     }
     const issue = JSON.parse(result.stdout);
@@ -405,7 +465,9 @@ async function githubStates(refs, offline) {
     const queue = refs.slice(1);
     await Promise.all(
       Array.from({ length: 8 }, async () => {
-        while (queue.length) await lookup(queue.shift());
+        while (queue.length) {
+          await lookup(queue.shift());
+        }
       }),
     );
   } catch (error) {
@@ -416,7 +478,9 @@ async function githubStates(refs, offline) {
 
 function defaultBranch(path) {
   const head = git(path, "rev-parse", "--abbrev-ref", "origin/HEAD")?.trim();
-  if (head && head !== "origin/HEAD") return head;
+  if (head && head !== "origin/HEAD") {
+    return head;
+  }
   return ["origin/main", "origin/master"].find((ref) =>
     git(path, "rev-parse", "--verify", "--quiet", ref),
   );
@@ -429,12 +493,15 @@ function defaultBranch(path) {
 function commitState(sha, checkouts) {
   let state;
   for (const { path, base } of checkouts) {
-    if (git(path, "rev-parse", "--verify", "--quiet", `${sha}^{commit}`) === null) continue;
+    if (git(path, "rev-parse", "--verify", "--quiet", `${sha}^{commit}`) === null) {
+      continue;
+    }
     if (
       base &&
       spawnSync("git", ["-C", path, "merge-base", "--is-ancestor", sha, base]).status === 0
-    )
+    ) {
       return { state: "landed", label: `${sha} in ${base}` };
+    }
     state = { state: "not landed", label: sha };
   }
   return state;
@@ -443,32 +510,40 @@ function commitState(sha, checkouts) {
 async function possiblyFinished(open, options, report) {
   const named = open.map((item) => ({ item, ...references(item.text, options.repo) }));
   const bare = named.reduce((total, entry) => total + entry.bare, 0);
-  if (bare)
+  if (bare) {
     report.skipped.push(
       `${bare} bare pull request or issue number(s) not checked: pass --repo <owner/repo>`,
     );
+  }
   const { states, skipped } = await githubStates(
     [...new Set(named.flatMap((entry) => entry.github))],
     options.offline,
   );
-  if (skipped) report.skipped.push(skipped);
+  if (skipped) {
+    report.skipped.push(skipped);
+  }
   const checkouts = options.checkouts.map((path) => ({ path, base: defaultBranch(path) }));
   const finished = [];
   for (const { item, github, bare, commits } of named) {
-    if (bare) continue;
+    if (bare) {
+      continue;
+    }
     const refs = github.map((ref) => ({
       state: states.get(ref) ?? "unknown",
       label: `${ref} ${states.get(ref) ?? "unchecked"}`,
     }));
     for (const sha of commits) {
       const commit = commitState(sha, checkouts);
-      if (commit) refs.push(commit);
+      if (commit) {
+        refs.push(commit);
+      }
     }
     if (
       refs.some((ref) => ref.state !== "landed") &&
       refs.every((ref) => ["merged", "closed", "landed"].includes(ref.state))
-    )
+    ) {
       finished.push(`${row(item)} — ${refs.map((ref) => ref.label).join(", ")}`);
+    }
   }
   return finished;
 }
@@ -483,13 +558,16 @@ function addDays(date, days) {
 
 // The project's last forgotten-work audit: missing, unreadable or older than AUDIT_DAYS is a warning.
 function auditWarning(project, roots, today) {
-  if (!PROJECT_NAME.test(project))
+  if (!PROJECT_NAME.test(project)) {
     return `\`Project: ${clip(project, 40)}\` is not a plain project name, so its audit record was not checked`;
-  if (!roots)
+  }
+  if (!roots) {
     return `cannot locate the audit record for ${project}: the plan is not under a plans/ directory`;
+  }
   const path = join(roots.notes, "audits", project, "last-audit.json");
-  if (!existsSync(path))
+  if (!existsSync(path)) {
     return `no forgotten-work audit recorded for ${project} (expected ${path}); run hr-forgotten-work-audit`;
+  }
   let record;
   try {
     record = JSON.parse(readFileSync(path, "utf8"));
@@ -497,23 +575,28 @@ function auditWarning(project, roots, today) {
       !validDate(record?.date) ||
       typeof record.scope !== "string" ||
       typeof record.result !== "string"
-    )
+    ) {
       throw new Error();
+    }
   } catch {
     return `cannot read the audit record ${path} (needs a JSON object with date YYYY-MM-DD, scope and result)`;
   }
-  if (record.date > today)
+  if (record.date > today) {
     return `the audit record ${path} is dated after today (${record.date}), so it was not counted`;
+  }
   const age = Math.round((Date.parse(today) - Date.parse(record.date)) / 86_400_000);
-  if (age > AUDIT_DAYS)
+  if (age > AUDIT_DAYS) {
     return `last forgotten-work audit for ${project} was ${record.date}, ${age} days ago (over ${AUDIT_DAYS}); run hr-forgotten-work-audit`;
+  }
   return null;
 }
 
 // Long plans can carry dozens of one kind of warning; show five and count the rest.
 function capped(warnings, entries, kind) {
   warnings.push(...entries.slice(0, 5));
-  if (entries.length > 5) warnings.push(`${entries.length - 5} more ${kind}`);
+  if (entries.length > 5) {
+    warnings.push(`${entries.length - 5} more ${kind}`);
+  }
 }
 
 function rechecks(open, today, warnings) {
@@ -527,15 +610,18 @@ function rechecks(open, today, warnings) {
       continue;
     }
     const date = written;
-    if (date && date < today) due.push(`${row(item)} — overdue since ${date}`);
-    else if (date && date <= soon) due.push(`${row(item)} — due ${date}`);
-    else if (
+    if (date && date < today) {
+      due.push(`${row(item)} — overdue since ${date}`);
+    } else if (date && date <= soon) {
+      due.push(`${row(item)} — due ${date}`);
+    } else if (
       !date &&
       ((item.mark === "~" && EXTERNAL.test(item.text)) || SENT_QUESTION.test(item.text))
-    )
+    ) {
       undated.push(
         `L${item.line} waits on another thread but has no \`recheck: YYYY-MM-DD\` date: ${clip(item.text, 60)}`,
       );
+    }
   }
   capped(warnings, undated, "item(s) waiting on another thread without a recheck: date");
   return due;
@@ -555,7 +641,9 @@ function namedThings(text, repo) {
     return " ";
   });
   rest = rest.replace(LONG_OFFER_ID, (id) => {
-    if (/\d/.test(id)) found.add(`offer:${id}`);
+    if (/\d/.test(id)) {
+      found.add(`offer:${id}`);
+    }
     return " ";
   });
   rest = rest.replace(WORK_ID, (id) => {
@@ -565,12 +653,17 @@ function namedThings(text, repo) {
     }
     return id;
   });
-  for (const match of rest.matchAll(BARE_REF))
+  for (const match of rest.matchAll(BARE_REF)) {
     found.add(repo ? `${repo}#${match[1]}`.toLowerCase() : `#${match[1]}`);
-  for (const [, sha] of rest.matchAll(NAMED_COMMIT))
+  }
+  for (const [, sha] of rest.matchAll(NAMED_COMMIT)) {
     found.add(`commit:${sha.slice(0, 7).toLowerCase()}`);
-  for (const [sha] of rest.matchAll(COMMIT))
-    if (/\d/.test(sha) && /[a-f]/.test(sha)) found.add(`commit:${sha.slice(0, 7)}`);
+  }
+  for (const [sha] of rest.matchAll(COMMIT)) {
+    if (/\d/.test(sha) && /[a-f]/.test(sha)) {
+      found.add(`commit:${sha.slice(0, 7)}`);
+    }
+  }
   return [...found];
 }
 
@@ -579,11 +672,16 @@ function namedThings(text, repo) {
 function resolvedLater(items, repo) {
   const named = new Map(items.map((item) => [item, namedThings(item.text, repo)]));
   const lines = new Map();
-  for (const tokens of named.values())
-    for (const token of tokens) lines.set(token, (lines.get(token) ?? 0) + 1);
+  for (const tokens of named.values()) {
+    for (const token of tokens) {
+      lines.set(token, (lines.get(token) ?? 0) + 1);
+    }
+  }
   const resolved = [];
   for (const item of items) {
-    if (item.mark !== " " && item.mark !== "~") continue;
+    if (item.mark !== " " && item.mark !== "~") {
+      continue;
+    }
     const mine = named.get(item).filter((token) => lines.get(token) <= SHARED_TOKEN_LINES);
     const later = items.filter(
       (other) =>
@@ -591,7 +689,9 @@ function resolvedLater(items, repo) {
         other.line > item.line &&
         mine.some((token) => named.get(other).includes(token)),
     );
-    if (!later.length) continue;
+    if (!later.length) {
+      continue;
+    }
     const shared = [
       ...new Set(
         later.flatMap((other) => mine.filter((token) => named.get(other).includes(token))),
@@ -609,7 +709,9 @@ function resolvedLater(items, repo) {
 function offerWarnings(items, warnings) {
   const missing = [];
   for (const item of items) {
-    if (!ANSWERED_OFFER.test(item.text) || DISPOSITION.test(item.text)) continue;
+    if (!ANSWERED_OFFER.test(item.text) || DISPOSITION.test(item.text)) {
+      continue;
+    }
     const ids = new Set(item.text.match(OFFER_ID) ?? []);
     const recorded = items.some(
       (other) =>
@@ -617,10 +719,11 @@ function offerWarnings(items, warnings) {
         DISPOSITION.test(other.text) &&
         (other.text.match(OFFER_ID) ?? []).some((id) => ids.has(id)),
     );
-    if (!recorded)
+    if (!recorded) {
       missing.push(
         `L${item.line} answered offer without the other options' outcome (not selected, deferred): ${clip(item.text, 60)}`,
       );
+    }
   }
   capped(warnings, missing, "answered offer(s) without the other options' outcome");
 }
@@ -629,8 +732,9 @@ function offerWarnings(items, warnings) {
 function offersNamed(text) {
   const ids = [];
   for (const match of text.matchAll(OFFER_SUBJECT)) {
-    if (OFFER_ID_ONLY.test(match[1]) && !REPLACEMENT_OF.test(text.slice(0, match.index)))
+    if (OFFER_ID_ONLY.test(match[1]) && !REPLACEMENT_OF.test(text.slice(0, match.index))) {
       ids.push(match[1]);
+    }
   }
   return ids;
 }
@@ -638,21 +742,31 @@ function offersNamed(text) {
 // One entry per offer ID that has an open line and no line recording an answer, a drop or a supersession.
 function unansweredOffers(items) {
   const closed = new Set();
-  for (const item of items)
-    if (item.mark === "-" || ANSWERED_OFFER.test(item.text) || DISPOSITION.test(item.text))
-      for (const id of offersNamed(item.text)) closed.add(id);
+  for (const item of items) {
+    if (item.mark === "-" || ANSWERED_OFFER.test(item.text) || DISPOSITION.test(item.text)) {
+      for (const id of offersNamed(item.text)) {
+        closed.add(id);
+      }
+    }
+  }
   const unanswered = new Map();
-  for (const item of items)
-    if (item.mark === " ")
-      for (const id of offersNamed(item.text))
-        if (!closed.has(id) && !unanswered.has(id)) unanswered.set(id, row(item));
+  for (const item of items) {
+    if (item.mark === " ") {
+      for (const id of offersNamed(item.text)) {
+        if (!closed.has(id) && !unanswered.has(id)) {
+          unanswered.set(id, row(item));
+        }
+      }
+    }
+  }
   return [...unanswered.values()];
 }
 
 async function run(options) {
   const planPath = resolve(options.plan);
-  if (!existsSync(planPath) || !statSync(planPath).isFile())
+  if (!existsSync(planPath) || !statSync(planPath).isFile()) {
     throw new Error(`cannot read ${options.plan}`);
+  }
   const planText = readFileSync(planPath, "utf8");
   const plan = parsePlan(planText);
   const report = {
@@ -692,18 +806,20 @@ async function run(options) {
     );
   }
   report.awaitingUser = open.filter(awaitsUser).map(row);
-  if (TERMINAL_STATUS.test(plan.status) && open.length)
+  if (TERMINAL_STATUS.test(plan.status) && open.length) {
     report.findings.push(
       `Status says "${plan.status}" but ${open.length} ledger item(s) are open or deferred`,
     );
+  }
   // Pausing is the user's choice. A plan marked paused needs a done line that records it.
   const pauseRecorded = plan.items.some(
     (item) => item.mark === "x" && PAUSE_CHOICE.test(item.text),
   );
-  if (PAUSED_STATUS.test(plan.status ?? "") && !pauseRecorded)
+  if (PAUSED_STATUS.test(plan.status ?? "") && !pauseRecorded) {
     report.findings.push(
       'Status is "paused" but no done ledger item records the user choosing Pause; reopen the plan and offer the close-out',
     );
+  }
   // A pause the user chose stands: it is not asked again.
   report.closeOutDue =
     open.length > 0 &&
@@ -714,76 +830,96 @@ async function run(options) {
   const scratch = options.scratch ?? (roots ? join(roots.notes, "tmp") : null);
   if (scratch && !invalid) {
     const { owned, unreadable } = ownedScratch(scratch, plan.owner);
-    for (const manifest of unreadable)
+    for (const manifest of unreadable) {
       report.errors.push(
         `cannot read the scratch manifest ${manifest} (needs a JSON object with a string owner)`,
       );
-    for (const name of owned) accountFor(`scratch ${name}`, [name], plan.items, report.findings);
+    }
+    for (const name of owned) {
+      accountFor(`scratch ${name}`, [name], plan.items, report.findings);
+    }
   }
   for (const path of invalid ? [] : options.checkouts) {
     const state = checkoutState(path);
-    if (state.error) report.errors.push(state.error);
-    else if (state.dirty || state.unpushed)
+    if (state.error) {
+      report.errors.push(state.error);
+    } else if (state.dirty || state.unpushed) {
       accountFor(
         `checkout ${path} (${state.dirty} changed file(s), ${state.unpushed} unpushed commit(s))`,
         [path, ...(GENERIC_BRANCHES.includes(state.branch) ? [] : [state.branch])],
         plan.items,
         report.findings,
       );
+    }
   }
   // An app retires its own checkouts, so their state is reported but is not a finding.
   for (const path of invalid ? [] : options.appManaged) {
     const state = checkoutState(path);
-    if (state.error) report.errors.push(state.error);
-    else if (state.dirty || state.unpushed)
+    if (state.error) {
+      report.errors.push(state.error);
+    } else if (state.dirty || state.unpushed) {
       report.warnings.push(
         `app-managed checkout ${path} (${state.dirty} changed file(s), ${state.unpushed} unpushed commit(s)) is left for the app to retire`,
       );
+    }
   }
-  if (!plan.purpose)
+  if (!plan.purpose) {
     report.warnings.push(
       "no `Purpose:` line in the first 40 lines (the session's purpose, one sentence)",
     );
+  }
   // Every unchecked box outside the ledger is a possible lost item, so each is listed. Prose labels such
   // as "Deferred:" are listed up to five, with a count of the rest. Lines stay in file order.
   let prose = 0;
-  for (const entry of plan.narrative)
-    if (entry.box || ++prose <= 5)
+  for (const entry of plan.narrative) {
+    if (entry.box || ++prose <= 5) {
       report.warnings.push(`L${entry.line} outside the ledger: ${clip(entry.text, 70)}`);
-  if (prose > 5) report.warnings.push(`${prose - 5} more narrative marker line(s)`);
+    }
+  }
+  if (prose > 5) {
+    report.warnings.push(`${prose - 5} more narrative marker line(s)`);
+  }
   offerWarnings(plan.items, report.warnings);
   report.unansweredOffers = unansweredOffers(plan.items);
-  if (report.unansweredOffers.length >= OFFER_LIMIT)
+  if (report.unansweredOffers.length >= OFFER_LIMIT) {
     report.warnings.push(
       `${report.unansweredOffers.length} offers are open and unanswered; the offers rule says to present no further offer at ${OFFER_LIMIT} or more. Queue the new decision in a walk-through (hr-what-next, Walk-through) instead`,
     );
+  }
   const audit = !invalid && plan.project && auditWarning(plan.project, roots, options.today);
-  if (audit) report.warnings.push(audit);
+  if (audit) {
+    report.warnings.push(audit);
+  }
   report.recheckDue = rechecks(open, options.today, report.warnings);
   report.resolvedLater = resolvedLater(plan.items, options.repo);
-  if (open.length > LEDGER_BUDGET.open)
+  if (open.length > LEDGER_BUDGET.open) {
     report.warnings.push(
       `${open.length} open or deferred ledger lines, over the budget of ${LEDGER_BUDGET.open}: close finished lines in place with close-ledger-line.mjs and move parked ones to a backlog`,
     );
+  }
   const kib = Math.floor(Buffer.byteLength(planText) / 1024);
-  if (kib >= LEDGER_BUDGET.kib)
+  if (kib >= LEDGER_BUDGET.kib) {
     report.warnings.push(
       `the plan is ${kib} KiB, at or over the budget of ${LEDGER_BUDGET.kib} KiB: archive closed history (the plan's own completed sections and done lines) before it grows further`,
     );
-  if (!invalid) report.stale = await possiblyFinished(open, options, report);
+  }
+  if (!invalid) {
+    report.stale = await possiblyFinished(open, options, report);
+  }
   if (options.archive && !report.errors.length) {
-    if (!COMPLETED_STATUS.test(plan.status))
+    if (!COMPLETED_STATUS.test(plan.status)) {
       report.findings.push(`archiving refused: Status is "${plan.status}", not completed`);
-    else if (roots?.parts.at(-3) !== "plans")
+    } else if (roots?.parts.at(-3) !== "plans") {
       report.errors.push("the plan is not at plans/<topic>/plan.md (already archived?)");
-    else if (open.length === 0 && !report.findings.length) {
+    } else if (open.length === 0 && !report.findings.length) {
       const target = join(
         roots.plans,
         "archive",
         `${basename(dirname(planPath))}-${new Date().toLocaleDateString("sv")}`,
       );
-      if (existsSync(target)) report.errors.push(`${target} already exists`);
-      else {
+      if (existsSync(target)) {
+        report.errors.push(`${target} already exists`);
+      } else {
         mkdirSync(dirname(target), { recursive: true });
         renameSync(dirname(planPath), target);
         report.archived = target;
@@ -804,14 +940,16 @@ async function main() {
     process.exit(1);
   }
   const code = report.errors.length ? 1 : report.findings.length || report.open.length ? 2 : 0;
-  if (report.reconciliation)
+  if (report.reconciliation) {
     Object.assign(report.reconciliation, {
       exit: code,
       errors: report.errors,
       findings: report.findings,
     });
-  if (options.json) console.log(JSON.stringify({ exit: code, ...report }, null, 2));
-  else {
+  }
+  if (options.json) {
+    console.log(JSON.stringify({ exit: code, ...report }, null, 2));
+  } else {
     console.log(
       `plan: ${report.plan}\nstatus: ${report.status ?? "?"} | owner: ${report.owner ?? "?"}`,
     );
@@ -827,13 +965,19 @@ async function main() {
       ["skipped", report.skipped],
       ["finding", report.findings],
       ["warning", report.warnings],
-    ])
-      for (const row of rows) console.log(`${label}: ${row}`);
-    if (report.archived) console.log(`archived: ${report.archived}`);
-    if (report.closeOutDue)
+    ]) {
+      for (const row of rows) {
+        console.log(`${label}: ${row}`);
+      }
+    }
+    if (report.archived) {
+      console.log(`archived: ${report.archived}`);
+    }
+    if (report.closeOutDue) {
       console.log(
         "close-out due: every remaining item is deferred. Ask the user to decide each one (do it now, hand it to an owner, or drop it) and offer All done or Pause; do not mark the plan paused yourself",
       );
+    }
     console.log(
       code === 0
         ? "result: nothing open"
@@ -849,5 +993,6 @@ if (
   process.argv[1] &&
   existsSync(process.argv[1]) &&
   import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href
-)
+) {
   await main();
+}

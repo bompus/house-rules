@@ -31,7 +31,8 @@ test("npm release guard requires the exact version and a complete valid date", (
     "## 0.10.0 - 2026-10-06 trailing",
     "text ## 0.10.0 - 2026-10-06",
     "## 0.11.0 - 2026-10-06",
-  ])
+  ]) {
     assert.throws(() => check(heading), `Accepted ${heading}`);
+  }
   assert.throws(() => check("## 0.10.0 - 2026-10-06", "v0.11.0"));
 });

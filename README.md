@@ -342,12 +342,14 @@ node --test test/*.test.mjs   # composer and eval grader
 bun test test/                # the same under Bun
 bun test skills/              # skill scripts
 npm run check:package -- --bun   # npm tarball: packs, installs, runs the CLI
-npx --yes oxlint@1.85.0 . && npx --yes oxfmt@0.70.0 --check .
+bun install && npm run check     # format, lint and type check
 ```
 
-These versions match the pins in `.github/workflows/check.yml`; an unpinned `npx`
-fetches the latest release, whose formatting can differ from CI's. Change both
-together.
+`npm run check` runs oxfmt, oxlint, tsc, ruff, shfmt and shellcheck. The
+JavaScript tools are pinned dev dependencies. Ruff 0.17.1, shellcheck 0.11.0
+and shfmt 3.14.1 come from your `PATH`; `scripts/install-check-tools.sh DIR`
+installs those versions on Linux x86_64, as CI does. The type check covers the
+root modules; `tsconfig.check.json` lists the folders not yet type-checked.
 
 Oxfmt checks authored Markdown, HTML, JSON, JSONC, YAML, TOML and CSS as well
 as JavaScript and TypeScript. Test fixtures stay excluded because scanner

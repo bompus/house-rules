@@ -46,10 +46,11 @@ const child = spawn(serverCmd[0], serverCmd.slice(1), {
   stdio: ["pipe", "pipe", "inherit"],
 });
 let nextId = 1;
-let isCodex = false;
 const pending = new Map();
 function rejectPending(error) {
-  for (const p of pending.values()) p.reject(error);
+  for (const p of pending.values()) {
+    p.reject(error);
+  }
   pending.clear();
 }
 child.on("error", rejectPending);
@@ -75,17 +76,23 @@ function replyErr(id, code, message) {
 }
 // Resolve physical targets; the client is not an OS sandbox for agent-owned tools.
 async function underCwd(path) {
-  if (typeof path !== "string" || !path) return null;
+  if (typeof path !== "string" || !path) {
+    return null;
+  }
   const lexical = resolve(cwd, path);
   const inside = (target) => {
     const rel = relative(cwd, target);
     return rel !== ".." && !rel.startsWith(".." + sep) && !isAbsolute(rel);
   };
-  if (!inside(lexical)) return null;
+  if (!inside(lexical)) {
+    return null;
+  }
   // Same resolver as the root, so a runtime whose async and sync realpath spell a path
   // differently cannot make an inside file look outside.
   const physical = realpathSync(lexical);
-  if (!inside(physical) || !(await stat(physical)).isFile()) return null;
+  if (!inside(physical) || !(await stat(physical)).isFile()) {
+    return null;
+  }
   return physical;
 }
 async function handleServerRequest(msg) {
@@ -142,13 +149,17 @@ rl.on("line", (line) => {
     const p = pending.get(msg.id);
     if (p) {
       pending.delete(msg.id);
-      if (msg.error) p.reject(new Error(JSON.stringify(msg.error)));
-      else p.resolve(msg.result);
+      if (msg.error) {
+        p.reject(new Error(JSON.stringify(msg.error)));
+      } else {
+        p.resolve(msg.result);
+      }
     }
     return;
   }
   if (msg.id !== undefined && msg.method) {
-    handleServerRequest(msg);
+    // A reply that cannot be sent fails the run, like a server that exits.
+    handleServerRequest(msg).catch(rejectPending);
     return;
   }
   if (msg.method === "session/update") {
@@ -175,12 +186,15 @@ function noteActivity() {
   lastActivity = now;
 }
 const gapNote = () => `longest silent gap ${Math.round(longestGapMs / 1000)}s`;
-let deadlineHit = false;
+// Set by abort(), which timers and stream handlers call.
+let deadlineHit = /** @type {boolean} */ (false);
 function abort(reason) {
   deadlineHit = true;
   console.error(`[client] ${reason} (${gapNote()}), killing server`);
   try {
-    if (sessionId) send({ jsonrpc: "2.0", method: "session/cancel", params: { sessionId } });
+    if (sessionId) {
+      send({ jsonrpc: "2.0", method: "session/cancel", params: { sessionId } });
+    }
   } catch {}
   setTimeout(() => {
     child.kill("SIGKILL");
@@ -204,14 +218,18 @@ try {
     clientCapabilities: { fs: { readTextFile: true, writeTextFile: false }, terminal: false },
     clientInfo: { name: "acp-panel-client", version: "0.2.0" },
   });
-  if (init.protocolVersion !== 1) throw new Error("ACP protocol version 1 required");
+  if (init.protocolVersion !== 1) {
+    throw new Error("ACP protocol version 1 required");
+  }
   const agentName = (init.agentInfo && (init.agentInfo.name || init.agentInfo.title)) || "unknown";
-  isCodex = /codex/i.test(agentName);
+  const isCodex = /codex/i.test(agentName);
   console.error(`[client] initialized, protocol=${init.protocolVersion}, agent=${agentName}`);
   send({ jsonrpc: "2.0", method: "initialized", params: {} });
   const s = await request("session/new", { cwd, mcpServers: [] });
   sessionId = s.sessionId;
-  if (typeof sessionId !== "string" || !sessionId) throw new Error("Missing session identity");
+  if (typeof sessionId !== "string" || !sessionId) {
+    throw new Error("Missing session identity");
+  }
   let options = s.configOptions || [];
   const modeRequired = isCodex || options.some((o) => o.id === "mode");
   const required = new Map();
@@ -219,30 +237,40 @@ try {
   async function bind(ids, value, optional = false) {
     const matches = options.filter((o) => ids.includes(o.id));
     if (matches.length !== 1) {
-      if (optional && !matches.length) return;
+      if (optional && !matches.length) {
+        return;
+      }
       throw new Error(`agent exposes no unique ${ids.join("/")} option; cannot bind ${value}`);
     }
     const option = matches[0];
     const values = (option.options || []).flatMap((o) => o.options || [o]);
-    if (!values.some((o) => o.value === value))
+    if (!values.some((o) => o.value === value)) {
       throw new Error(`Unsupported ${option.id} value: ${value}`);
+    }
     required.set(option.id, value);
     const res = await request("session/set_config_option", {
       sessionId,
       configId: option.id,
       value,
     });
-    if (!Array.isArray(res?.configOptions)) throw new Error(`Missing ${option.id} confirmation`);
+    if (!Array.isArray(res?.configOptions)) {
+      throw new Error(`Missing ${option.id} confirmation`);
+    }
     options = res.configOptions;
     for (const [id, expected] of required) {
       const echoed = options.filter((o) => o.id === id);
-      if (echoed.length !== 1 || echoed[0].currentValue !== expected)
+      if (echoed.length !== 1 || echoed[0].currentValue !== expected) {
         throw new Error(`Unverified ${id} binding`);
+      }
     }
     console.error(`[client] ${option.id} -> ${value}`);
   }
-  if (modelArg) await bind(["model"], modelArg);
-  if (effortArg) await bind(["effort", "reasoning_effort"], effortArg);
+  if (modelArg) {
+    await bind(["model"], modelArg);
+  }
+  if (effortArg) {
+    await bind(["effort", "reasoning_effort"], effortArg);
+  }
   await bind(["mode"], "read-only", !modeRequired);
   console.error(
     `[client] session ${sessionId}, maxTurns=${maxTurns}${verdictMarker ? `, verdictMarker=${JSON.stringify(verdictMarker)}` : ""}`,
@@ -260,7 +288,9 @@ try {
       prompt: [{ type: "text", text }],
     });
     stopReason = res?.stopReason;
-    if (deadlineHit) break;
+    if (deadlineHit) {
+      break;
+    }
     const hit = verdictMarker ? collected.includes(verdictMarker) : true;
     console.error(
       `[client] turn ${turn} finished, stopReason=${JSON.stringify(stopReason)} collected=${collected.length} chars hasVerdict=${hit}`,

@@ -10,8 +10,9 @@ const directories = [];
 const fixture = (name) => JSON.parse(readFileSync(join(skill, "assets", name), "utf8"));
 
 afterEach(() => {
-  for (const directory of directories.splice(0))
+  for (const directory of directories.splice(0)) {
     rmSync(directory, { recursive: true, force: true });
+  }
 });
 
 function setup(change = () => {}) {
@@ -25,8 +26,9 @@ function setup(change = () => {}) {
     ["receipt.json", receipt],
     ["source.example.json", source],
     ["ledger.example.json", ledger],
-  ])
+  ]) {
     writeFileSync(join(directory, name), JSON.stringify(data));
+  }
   return { directory, file: join(directory, "receipt.json") };
 }
 
@@ -378,7 +380,7 @@ function withPlan(change = () => {}, plan = previousPlan) {
     for (const [id, record, state] of [
       ["docs", "L6", "open"],
       ["cache", "L7", "deferred"],
-    ])
+    ]) {
       receipt.items.push({
         id,
         owner: "session-example",
@@ -386,6 +388,7 @@ function withPlan(change = () => {}, plan = previousPlan) {
         evidence: [{ source: "previous", record }],
         next: "Carried over from the predecessor plan.",
       });
+    }
     change(receipt);
   });
   writeFileSync(join(paths.directory, "previous-plan.md"), plan);
@@ -420,7 +423,9 @@ test("one item that absorbs several open predecessor lines must say why they are
     withPlan((r) => {
       r.accounting.at(-1).items = ["docs"];
       r.items.pop();
-      if (reason) r.items.at(-1).merges = reason;
+      if (reason) {
+        r.items.at(-1).merges = reason;
+      }
     }).file;
   expect(run(merged()).report.errors).toEqual([
     expect.stringContaining("item docs: absorbs 2 open or deferred ledger lines"),

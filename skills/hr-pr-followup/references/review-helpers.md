@@ -158,7 +158,7 @@ reset, switch or delete a checkout.
   processes and roster entries are never inputs. Any other checkout is left alone and
   reported on one line, `sync skipped at <path>: <reason>`, with a reason of
   `working tree dirty` (tracked changes), `diverged from <remote>/<default>`, `on branch
-<name>, not <default>`, `unfinished Git operation: <name>`, `fast-forward refused: <why>`,
+  <name>, not <default>`, `unfinished Git operation: <name>`, `fast-forward refused: <why>`,
   `cannot inspect Git state` or `cannot inspect working tree`.
   Exit 0 means landed and current; 1 is a failure; 2 is usage; 3 means landed with a local
   sync pending, which is not a failed landing and needs no question to the user: record

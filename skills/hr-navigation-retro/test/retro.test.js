@@ -16,7 +16,9 @@ import { join } from "node:path";
 const script = join(import.meta.dir, "../scripts/retro.py");
 // On the Windows CI runner a Python start sometimes stalls for 7 s or more (issue #368), while
 // these tests take 0.06 to 1.1 s there otherwise. Bun ends the test and its Python child at 5 s.
-if (process.platform === "win32") setDefaultTimeout(30000);
+if (process.platform === "win32") {
+  setDefaultTimeout(30000);
+}
 const homes = [];
 const mkdtempSync = (prefix) => realpathSync.native(makeTemporaryDirectory(prefix));
 afterEach(() => {

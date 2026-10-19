@@ -33,7 +33,7 @@ function toolDir() {
 // install.sh is for Linux, macOS and WSL; Windows uses install.ps1.
 const posix = process.platform !== "win32";
 const tools = posix ? toolDir() : "";
-const it = posix ? test : test.skip;
+const unix = { skip: !posix };
 
 // Writes a stub runtime that prints a version; returns its directory.
 function stub(home, rel, version) {
@@ -56,14 +56,14 @@ const picked = (home, pathDirs) => {
   return r.stdout.trim();
 };
 
-it("prefers Bun 1.4 or newer over any Node", (t) => {
+test("prefers Bun 1.4 or newer over any Node", unix, (t) => {
   const home = scratch(t, "house-rules-install-");
   const bun = stub(home, "a/bun", "1.4.2");
   const node = stub(home, "b/node", "v24.1.0");
   assert.equal(picked(home, [node, bun]), join(bun, "bun"));
 });
 
-it("picks the newest Bun across PATH and version managers", (t) => {
+test("picks the newest Bun across PATH and version managers", unix, (t) => {
   const home = scratch(t, "house-rules-install-");
   const onPath = stub(home, "a/bun", "1.4.2");
   stub(home, ".bun/bin/bun", "1.5.0-canary.3");
@@ -71,7 +71,7 @@ it("picks the newest Bun across PATH and version managers", (t) => {
   assert.equal(picked(home, [onPath]), join(home, ".bun/bin/bun"));
 });
 
-it("falls back to the newest Node 22 or newer when Bun is older than 1.4", (t) => {
+test("falls back to the newest Node 22 or newer when Bun is older than 1.4", unix, (t) => {
   const home = scratch(t, "house-rules-install-");
   const bun = stub(home, "a/bun", "1.3.9");
   const node = stub(home, "b/node", "v22.11.0");
@@ -80,14 +80,14 @@ it("falls back to the newest Node 22 or newer when Bun is older than 1.4", (t) =
   assert.equal(picked(home, [bun, node]), join(home, ".nvm/versions/node/v24.2.0/bin/node"));
 });
 
-it("compares version fields as numbers", (t) => {
+test("compares version fields as numbers", unix, (t) => {
   const home = scratch(t, "house-rules-install-");
   const nine = stub(home, "a/node", "v22.9.0");
   const ten = stub(home, "b/node", "v22.10.0");
   assert.equal(picked(home, [nine, ten]), join(ten, "node"));
 });
 
-it("fails with install pointers when no runtime is new enough", (t) => {
+test("fails with install pointers when no runtime is new enough", unix, (t) => {
   const home = scratch(t, "house-rules-install-");
   const node = stub(home, "a/node", "v20.18.0");
   const r = run(home, [node], ["--print-runtime"]);
@@ -95,7 +95,7 @@ it("fails with install pointers when no runtime is new enough", (t) => {
   assert.match(r.stderr, /Bun 1\.4 or newer .* Node\.js 22 or newer/);
 });
 
-it("rejects a HOUSE_RULES_RUNTIME below the minimum", (t) => {
+test("rejects a HOUSE_RULES_RUNTIME below the minimum", unix, (t) => {
   const home = scratch(t, "house-rules-install-");
   const dir = stub(home, "a/node", "v21.7.0");
   const r = run(home, [], ["--print-runtime"], { HOUSE_RULES_RUNTIME: join(dir, "node") });
@@ -103,7 +103,7 @@ it("rejects a HOUSE_RULES_RUNTIME below the minimum", (t) => {
   assert.match(r.stderr, /below 22\.0\.0/);
 });
 
-it("refuses a non-empty directory that is not a checkout", (t) => {
+test("refuses a non-empty directory that is not a checkout", unix, (t) => {
   const home = scratch(t, "house-rules-install-");
   const dir = join(home, "stuff");
   mkdirSync(dir);
@@ -114,10 +114,13 @@ it("refuses a non-empty directory that is not a checkout", (t) => {
   assert.deepEqual(readdirSync(dir), ["notes.txt"]);
 });
 
-it("installs from a checkout, then recomposes without deleting the old skills", (t) => {
+test("installs from a checkout, then recomposes without deleting the old skills", unix, (t) => {
   const home = scratch(t, "house-rules-install-");
   const checkout = join(home, "house-rules");
-  cpSync(root, checkout, { recursive: true, filter: (src) => basename(src) !== ".git" });
+  cpSync(root, checkout, {
+    recursive: true,
+    filter: (src) => ![".git", "node_modules"].includes(basename(src)),
+  });
   const env = { HOUSE_RULES_DIR: checkout, HOUSE_RULES_RUNTIME: process.execPath };
   const config = join(home, ".config/house-rules");
 
@@ -183,19 +186,24 @@ it("installs from a checkout, then recomposes without deleting the old skills", 
   );
   const backups = readdirSync(config).filter((f) => f.startsWith("composed-skills.previous-"));
   assert.equal(backups.length, 2);
-  for (const b of backups) assert.ok(!existsSync(join(config, b, "composed-skills")));
+  for (const b of backups) {
+    assert.ok(!existsSync(join(config, b, "composed-skills")));
+  }
 });
 
-it("prints the setup command with quotes when the checkout path has a space", (t) => {
+test("prints the setup command with quotes when the checkout path has a space", unix, (t) => {
   const home = scratch(t, "house-rules-install-");
   const checkout = join(home, "my house-rules");
-  cpSync(root, checkout, { recursive: true, filter: (src) => basename(src) !== ".git" });
+  cpSync(root, checkout, {
+    recursive: true,
+    filter: (src) => ![".git", "node_modules"].includes(basename(src)),
+  });
   const r = run(home, [], [], { HOUSE_RULES_DIR: checkout, HOUSE_RULES_RUNTIME: process.execPath });
   assert.equal(r.status, 0, r.stderr);
   assert(r.stdout.includes(` '${join(checkout, "compose.mjs")}' setup --config `), r.stdout);
 });
 
-it("rejects an unknown option before installing anything", (t) => {
+test("rejects an unknown option before installing anything", unix, (t) => {
   const home = scratch(t, "house-rules-install-");
   const checkout = join(home, "house-rules");
   const r = run(home, [], ["--bogus"], {
@@ -213,7 +221,7 @@ it("rejects an unknown option before installing anything", (t) => {
   assert.match(extra.stderr, /unexpected argument: --bogus/);
 });
 
-it("says what to check when the repository cannot be downloaded", (t) => {
+test("says what to check when the repository cannot be downloaded", unix, (t) => {
   const home = scratch(t, "house-rules-install-");
   const r = run(home, [], [], {
     HOUSE_RULES_DIR: join(home, "house-rules"),
@@ -224,10 +232,13 @@ it("says what to check when the repository cannot be downloaded", (t) => {
   assert.match(r.stderr, /could not download house-rules; check the network and HOUSE_RULES_REPO/);
 });
 
-it("names paths with ~ and a failed compose points at the config", (t) => {
+test("names paths with ~ and a failed compose points at the config", unix, (t) => {
   const home = scratch(t, "house-rules-install-");
   const checkout = join(home, "house-rules");
-  cpSync(root, checkout, { recursive: true, filter: (src) => basename(src) !== ".git" });
+  cpSync(root, checkout, {
+    recursive: true,
+    filter: (src) => ![".git", "node_modules"].includes(basename(src)),
+  });
   const env = { HOUSE_RULES_DIR: checkout, HOUSE_RULES_RUNTIME: process.execPath };
   const first = run(home, [], [], env);
   assert.match(

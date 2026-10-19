@@ -161,8 +161,9 @@ test("panel input errors and stale applies preserve bytes, mtime and locks", (t)
   );
   assert.equal(readFileSync(path, "utf8"), newer);
   assert.equal(existsSync(`${path}.lock`), false);
-  for (const command of ["catalog", "status", "validate"])
+  for (const command of ["catalog", "status", "validate"]) {
     assert.throws(() => cli([command, "--config", path, "--panel-file", input]), /selection flags/);
+  }
   assert.throws(
     () => cli(["preview", "--config", path, "--panel-file", input, "--rules"]),
     /change report/,
@@ -373,12 +374,12 @@ test("question presets keep unrelated selections and resolve to composed offer r
   const { path } = fixture(t, {
     modifiers: ["shared-host-load", "coded-offers", "question-cards"],
   });
-  for (const [questions, enabled] of [
+  for (const [questions, enabled] of /** @type {[string, string[]][]} */ ([
     ["default", ["model-default-questions"]],
     ["plain", []],
     ["coded", ["coded-offers"]],
     ["cards", ["coded-offers", "question-cards"]],
-  ]) {
+  ])) {
     const out = report(path, ["--questions", questions]);
     assert.deepEqual(
       out.modifiers
@@ -532,18 +533,28 @@ test(
           const fresh = readConfiguration(path).revision === snapshot.revision;
           try {
             const result = writeConfiguration(snapshot, next, snapshot.revision);
-            if (!fresh) failures.push(`stale write accepted after ${sequence.join(" -> ")}`);
-            if (fresh && result.changed) expected = next;
+            if (!fresh) {
+              failures.push(`stale write accepted after ${sequence.join(" -> ")}`);
+            }
+            if (fresh && result.changed) {
+              expected = next;
+            }
           } catch (e) {
-            if (fresh || !/changed since preview/.test(e.message))
+            if (fresh || !/changed since preview/.test(e.message)) {
               failures.push(`${e.message} after ${sequence.join(" -> ")}`);
+            }
           }
         }
-        if (JSON.stringify(JSON.parse(readFileSync(path, "utf8"))) !== JSON.stringify(expected))
+        if (JSON.stringify(JSON.parse(readFileSync(path, "utf8"))) !== JSON.stringify(expected)) {
           failures.push(`successful edit lost after ${sequence.join(" -> ")}`);
+        }
       }
       const nextState = { text: readFileSync(path, "utf8"), previews, expected };
-      if (depth) for (const event of events) walk([...sequence, event], depth - 1, nextState);
+      if (depth) {
+        for (const event of events) {
+          walk([...sequence, event], depth - 1, nextState);
+        }
+      }
     }
     walk([], 4);
     assert.deepEqual(failures, []);
@@ -601,10 +612,16 @@ test("terminal styling respects NO_COLOR and removes control characters from per
     assert.equal(renderConfig(out).includes("\u001b"), false);
   } finally {
     process.stdout.isTTY = oldTTY;
-    if (oldColor === undefined) delete process.env.NO_COLOR;
-    else process.env.NO_COLOR = oldColor;
-    if (oldTerm === undefined) delete process.env.TERM;
-    else process.env.TERM = oldTerm;
+    if (oldColor === undefined) {
+      delete process.env.NO_COLOR;
+    } else {
+      process.env.NO_COLOR = oldColor;
+    }
+    if (oldTerm === undefined) {
+      delete process.env.TERM;
+    } else {
+      process.env.TERM = oldTerm;
+    }
   }
 });
 
@@ -861,13 +878,16 @@ test("fresh sample composes exactly the selected routine skills and no modifiers
     ],
     { stdio: "pipe" },
   );
-  for (const name of expected) assert.equal(existsSync(join(dir, "out", name, "SKILL.md")), true);
+  for (const name of expected) {
+    assert.equal(existsSync(join(dir, "out", name, "SKILL.md")), true);
+  }
   assert.equal(existsSync(join(dir, "out", "hr-handoff")), false);
 });
 
 test("the two backlog views each select alone and name the conflict when combined", (t) => {
-  for (const name of ["backlog-visual", "backlog-outline"])
+  for (const name of ["backlog-visual", "backlog-outline"]) {
     assert.match(report(fixture(t, { modifiers: [name] }).path).composedRules, /## Backlog view/);
+  }
   assert.throws(
     () => report(fixture(t, { modifiers: ["backlog-visual", "backlog-outline"] }).path),
     /backlog-visual and backlog-outline cannot be combined/,

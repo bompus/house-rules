@@ -10,9 +10,14 @@ import {
 } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 
-const hash = (text) => createHash("sha256").update(text).digest("hex");
-const safeName = (name) => /^[a-z0-9][a-z0-9-]*\.md$/.test(name);
+const hash = (/** @type {string | Buffer} */ text) =>
+  createHash("sha256").update(text).digest("hex");
+const safeName = (/** @type {string} */ name) => /^[a-z0-9][a-z0-9-]*\.md$/.test(name);
 
+/**
+ * @param {string} path
+ * @param {boolean} [directory]
+ */
 export function checkOutputPath(path, directory = false) {
   path = resolve(path);
   for (let current = path; ; current = dirname(current)) {
@@ -20,26 +25,38 @@ export function checkOutputPath(path, directory = false) {
     try {
       stat = lstatSync(current);
     } catch (error) {
-      if (error.code !== "ENOENT") throw error;
+      if (/** @type {NodeJS.ErrnoException} */ (error).code !== "ENOENT") {
+        throw error;
+      }
     }
     if (stat) {
       if (
         stat.isSymbolicLink() ||
         (current === path && !directory ? !stat.isFile() : !stat.isDirectory())
-      )
+      ) {
         throw new Error(`Unsafe output path: ${current}`);
+      }
     }
-    if (dirname(current) === current) break;
+    if (dirname(current) === current) {
+      break;
+    }
   }
 }
 
+/**
+ * @param {string} directory
+ * @param {Map<string, unknown>} references
+ * @returns {{ path: string, text: string }[]}
+ */
 export function planReferenceOutput(directory, references) {
   checkOutputPath(directory, true);
   const manifestPath = join(directory, "manifest.json");
+  /** @type {Record<string, unknown>} */
   let files = {};
   if (existsSync(directory) && readdirSync(directory).length) {
-    if (!existsSync(manifestPath) || !lstatSync(manifestPath).isFile())
+    if (!existsSync(manifestPath) || !lstatSync(manifestPath).isFile()) {
       throw new Error(`Unmanaged reference directory: ${directory}`);
+    }
     const content = readFileSync(manifestPath, "utf8");
     let manifest;
     try {
@@ -52,37 +69,48 @@ export function planReferenceOutput(directory, references) {
       !manifest.files ||
       typeof manifest.files !== "object" ||
       Array.isArray(manifest.files)
-    )
+    ) {
       throw new Error(`Invalid reference manifest: ${manifestPath}`);
+    }
     files = manifest.files;
     for (const [name, sha] of Object.entries(files)) {
-      if (!safeName(name) || typeof sha !== "string" || !/^[a-f0-9]{64}$/.test(sha))
+      if (!safeName(name) || typeof sha !== "string" || !/^[a-f0-9]{64}$/.test(sha)) {
         throw new Error(`Invalid reference manifest: ${manifestPath}`);
+      }
       const path = join(directory, name);
-      if (!existsSync(path) || !lstatSync(path).isFile() || hash(readFileSync(path)) !== sha)
+      if (!existsSync(path) || !lstatSync(path).isFile() || hash(readFileSync(path)) !== sha) {
         throw new Error(`Modified or missing reference; reconcile it first: ${path}`);
+      }
     }
     for (const name of readdirSync(directory)) {
       const path = join(directory, name);
       if (
         lstatSync(path).isSymbolicLink() ||
         (name !== "manifest.json" && !Object.hasOwn(files, name))
-      )
+      ) {
         throw new Error(`Unrecognized reference file; reconcile it first: ${path}`);
+      }
     }
   }
+  /** @type {{ path: string, text: string }[]} */
   const writes = [];
   for (const [name, text] of references) {
-    if (!safeName(name) || typeof text !== "string") throw new Error("Invalid reference output");
-    if (files[name] !== hash(text)) writes.push({ path: join(directory, name), text });
+    if (!safeName(name) || typeof text !== "string") {
+      throw new Error("Invalid reference output");
+    }
+    if (files[name] !== hash(text)) {
+      writes.push({ path: join(directory, name), text });
+    }
     files[name] = hash(text);
   }
   const text = JSON.stringify({ format: 1, files }, null, 2) + "\n";
-  if (!existsSync(manifestPath) || readFileSync(manifestPath, "utf8") !== text)
+  if (!existsSync(manifestPath) || readFileSync(manifestPath, "utf8") !== text) {
     writes.push({ path: manifestPath, text });
+  }
   return writes;
 }
 
+/** @param {{ path: string, text: string }[]} writes */
 export function writeReferenceOutput(writes) {
   for (const { path, text } of writes) {
     mkdirSync(dirname(path), { recursive: true });

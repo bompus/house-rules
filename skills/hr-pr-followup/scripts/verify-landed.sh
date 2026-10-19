@@ -39,15 +39,36 @@ FF=0
 
 while [ $# -gt 0 ]; do
   case "$1" in
-    --commit) COMMIT="${2:?}"; shift 2;;
-    --default) DEFAULT="${2:?}"; shift 2;;
-    --branch) BRANCH="${2:?}"; shift 2;;
-    --remote) REMOTE="${2:?}"; shift 2;;
-    --ff) FF=1; shift;;
-    *) echo "unknown argument: $1" >&2; exit 2;;
+    --commit)
+      COMMIT="${2:?}"
+      shift 2
+      ;;
+    --default)
+      DEFAULT="${2:?}"
+      shift 2
+      ;;
+    --branch)
+      BRANCH="${2:?}"
+      shift 2
+      ;;
+    --remote)
+      REMOTE="${2:?}"
+      shift 2
+      ;;
+    --ff)
+      FF=1
+      shift
+      ;;
+    *)
+      echo "unknown argument: $1" >&2
+      exit 2
+      ;;
   esac
 done
-[ -n "$COMMIT" ] || { echo "missing --commit <sha>" >&2; exit 2; }
+[ -n "$COMMIT" ] || {
+  echo "missing --commit <sha>" >&2
+  exit 2
+}
 
 if [ -z "$DEFAULT" ]; then
   # The remote's own answer wins; the cached origin/HEAD goes stale when the default branch changes.
@@ -55,11 +76,17 @@ if [ -z "$DEFAULT" ]; then
   if [ -z "$DEFAULT" ]; then
     DEFAULT="$(git symbolic-ref "refs/remotes/$REMOTE/HEAD" 2>/dev/null | sed "s#^refs/remotes/$REMOTE/##" || true)"
   fi
-  [ -n "$DEFAULT" ] || { echo "cannot resolve remote default branch; pass --default" >&2; exit 2; }
+  [ -n "$DEFAULT" ] || {
+    echo "cannot resolve remote default branch; pass --default" >&2
+    exit 2
+  }
 fi
 
 git fetch "$REMOTE" "+refs/heads/$DEFAULT:refs/remotes/$REMOTE/$DEFAULT" >/dev/null 2>&1 \
-  || { echo "fetch failed: $REMOTE $DEFAULT" >&2; exit 1; }
+  || {
+    echo "fetch failed: $REMOTE $DEFAULT" >&2
+    exit 1
+  }
 
 WTLS="$(git worktree list --porcelain)"
 HOLDER="$(printf '%s\n' "$WTLS" | awk -v want="branch refs/heads/$DEFAULT" '
@@ -71,7 +98,7 @@ HERE="$(git rev-parse --show-toplevel)"
 # A rebase or bisect detaches HEAD while still reserving its original branch.
 if [ -z "$HOLDER" ]; then
   while IFS= read -r RECORD; do
-    case "$RECORD" in worktree\ *) CHECKOUT="${RECORD#worktree }";; *) continue;; esac
+    case "$RECORD" in worktree\ *) CHECKOUT="${RECORD#worktree }" ;; *) continue ;; esac
     [ -d "$CHECKOUT" ] || continue
     for ASSOCIATION in rebase-merge/head-name rebase-apply/head-name BISECT_START; do
       # A checkout whose state cannot be read counts as holding the branch: holder_blocker then skips it.
@@ -81,7 +108,7 @@ if [ -z "$HOLDER" ]; then
       }
       if [ -f "$ASSOCIATION_PATH" ]; then
         ASSOCIATED_BRANCH=""
-        if ! { IFS= read -r ASSOCIATED_BRANCH < "$ASSOCIATION_PATH" || [ -n "$ASSOCIATED_BRANCH" ]; } 2>/dev/null; then
+        if ! { IFS= read -r ASSOCIATED_BRANCH <"$ASSOCIATION_PATH" || [ -n "$ASSOCIATED_BRANCH" ]; } 2>/dev/null; then
           HOLDER="$CHECKOUT"
           break 2
         fi
@@ -91,7 +118,7 @@ if [ -z "$HOLDER" ]; then
         fi
       fi
     done
-  done <<< "$WTLS"
+  done <<<"$WTLS"
 fi
 
 FAIL=0
@@ -107,7 +134,10 @@ holder_blocker() {
   local path="$1" operation operation_path branch status
   for operation in MERGE_HEAD CHERRY_PICK_HEAD REVERT_HEAD rebase-merge rebase-apply sequencer BISECT_START; do
     operation_path="$(git -C "$path" rev-parse --path-format=absolute --git-path "$operation" 2>/dev/null)" \
-      || { echo "cannot inspect Git state"; return; }
+      || {
+        echo "cannot inspect Git state"
+        return
+      }
     if [ -e "$operation_path" ]; then
       echo "unfinished Git operation: $operation"
       return
@@ -123,7 +153,10 @@ holder_blocker() {
     return
   fi
   # Untracked files may stay: Git itself refuses a fast-forward that would overwrite one.
-  status="$(git -C "$path" status --porcelain --untracked-files=no 2>/dev/null)" || { echo "cannot inspect working tree"; return; }
+  status="$(git -C "$path" status --porcelain --untracked-files=no 2>/dev/null)" || {
+    echo "cannot inspect working tree"
+    return
+  }
   [ -z "$status" ] || echo "working tree dirty"
 }
 

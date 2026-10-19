@@ -1,0 +1,14 @@
+# Shared ruff settings (format and lint). Same line width as oxfmt's printWidth.
+line-length = 100
+# Local: the oldest Python the scripts support (Ubuntu 22.04's 3.10); retro.py checks for 3.11 itself.
+target-version = "py310"
+
+[format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"
+
+[lint]
+# pycodestyle errors and warnings, pyflakes, import order, bugbear, pyupgrade,
+# simplify and comprehensions.
+select = ["E", "W", "F", "I", "B", "UP", "SIM", "C4"]

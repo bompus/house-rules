@@ -27,8 +27,8 @@ die() {
 
 # "v22.1.0", "1.4.2" or "1.5.0-canary.1" -> "22.1.0", "1.4.2", "1.5.0".
 version_of() {
-  "$1" --version 2>/dev/null |
-    sed -n '1s/^v\{0,1\}\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\1.\2.\3/p'
+  "$1" --version 2>/dev/null \
+    | sed -n '1s/^v\{0,1\}\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\1.\2.\3/p'
 }
 
 # Succeeds when version $1 is at least version $2.
@@ -117,7 +117,7 @@ pick_runtime() {
 # Shows paths under the home directory as ~/... for the instructions.
 tilde() {
   case $1 in
-    "$HOME"/*) printf '~/%s\n' "${1#"$HOME"/}" ;;
+    "$HOME"/*) printf '%s/%s\n' '~' "${1#"$HOME"/}" ;;
     *) printf '%s\n' "$1" ;;
   esac
 }
@@ -137,8 +137,8 @@ fetch() {
   if [ -f "$dir/compose.mjs" ]; then
     if [ -d "$dir/.git" ]; then
       command -v git >/dev/null 2>&1 || die "git is required to update $dir"
-      git -C "$dir" pull --ff-only --quiet ||
-        die "could not fast-forward $dir; update or move it by hand, then run this again"
+      git -C "$dir" pull --ff-only --quiet \
+        || die "could not fast-forward $dir; update or move it by hand, then run this again"
       say "Updated $(tilde "$dir")"
     else
       say "Using $(tilde "$dir") as it is (not a git checkout)"
@@ -148,8 +148,8 @@ fetch() {
   else
     command -v git >/dev/null 2>&1 || die "git is required to download house-rules"
     repo=${HOUSE_RULES_REPO:-https://github.com/bompus/house-rules.git}
-    git clone --quiet --depth 1 "$repo" "$dir" ||
-      die "could not download house-rules; check the network and HOUSE_RULES_REPO, then run this again"
+    git clone --quiet --depth 1 "$repo" "$dir" \
+      || die "could not download house-rules; check the network and HOUSE_RULES_REPO, then run this again"
     say "Downloaded house-rules to $(tilde "$dir")"
   fi
 }
