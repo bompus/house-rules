@@ -72,6 +72,7 @@ const CODERABBIT_LIMIT = /^Review (?:rate limited|limit reached)/i;
 // its markers and tags are removed, is "Action failed Review failed." A failure that states a
 // reason does not match.
 const CODERABBIT_BOT = /^coderabbitai$/i;
+const CODERABBIT_FAILURE = /^(?:❌\uFE0F?\s*)?Action failed\b/;
 const CODERABBIT_BARE_FAILURE = /^(?:❌\uFE0F?\s*)?Action failed\s+Review failed\.$/;
 const CODERABBIT_RETRIGGER = /^@coderabbitai\s+(?:full\s+)?review\b/i;
 const CODERABBIT_RETRIGGER_COMMAND = "`@coderabbitai full review`";
@@ -466,17 +467,26 @@ function codeRabbitBareFailure(
       .filter(keep)
       .map((comment) => Date.parse(comment.createdAt))
       .sort((a, b) => a - b);
+  const botText = (comment: ReviewState["comments"]["nodes"][number]) =>
+    comment.body
+      .replace(/<!--[\s\S]*?-->/g, "")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  const failed = (comment: ReviewState["comments"]["nodes"][number]) =>
+    isBot(comment.author) &&
+    CODERABBIT_BOT.test(comment.author!.login) &&
+    CODERABBIT_FAILURE.test(botText(comment));
+  // The latest failure decides: one that states a reason keeps the usual refusal, whatever bare
+  // failures came before it.
+  const latest = visible
+    .filter(failed)
+    .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))[0];
+  if (latest && !CODERABBIT_BARE_FAILURE.test(botText(latest))) {
+    return undefined;
+  }
   const failures = times(
-    (comment) =>
-      isBot(comment.author) &&
-      CODERABBIT_BOT.test(comment.author!.login) &&
-      CODERABBIT_BARE_FAILURE.test(
-        comment.body
-          .replace(/<!--[\s\S]*?-->/g, "")
-          .replace(/<[^>]+>/g, " ")
-          .replace(/\s+/g, " ")
-          .trim(),
-      ),
+    (comment) => failed(comment) && CODERABBIT_BARE_FAILURE.test(botText(comment)),
   );
   const first = failures[0];
   if (first === undefined) {

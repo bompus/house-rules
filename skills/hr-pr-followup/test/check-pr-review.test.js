@@ -584,6 +584,19 @@ test("a CodeRabbit failure that states a reason keeps the usual refusal", () => 
   });
 });
 
+test("a later failure with a stated reason restores the usual refusal", () => {
+  const comments = [
+    bareFailure("2026-10-18T09:52:11Z"),
+    retrigger("2026-10-18T09:54:17Z"),
+    bareFailure("2026-10-18T10:54:17Z"),
+    bareFailure("2026-10-18T11:30:00Z", "Review failed. The pull request is too large to review."),
+  ];
+  expect(reviewFeedback(pr({ contexts: [manualOnly], comments }))).toEqual({
+    open: [skippedStatus],
+    skipped: [],
+  });
+});
+
 test("only a visible bare failure from CodeRabbit after the head commit counts", () => {
   const stale = bareFailure("2026-10-17T09:52:11Z");
   const hidden = { ...bareFailure("2026-10-18T09:52:11Z"), isMinimized: true };
