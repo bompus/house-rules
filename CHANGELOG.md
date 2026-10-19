@@ -4,6 +4,11 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- The `hr-pr-followup` review gate skips a review bot that reports it has no quota or capacity, with no
+  end date, and prints which bot it skipped and why: cubic's "AI review line limit reached" check or its
+  monthly-limit comment, and CodeRabbit's "Review rate limited" or "Review limit reached" status or its
+  rate-limit comment. Bots that did review still gate as before, and a bot that is still running is still
+  waited for.
 - `hr-maintainability-review` treats a change that takes a file from under 1,000 lines to over 1,000 as a
   finding by default, and lists it among the findings to report. `hr-lean-plan` calls a slice of more than
   about ten steps a smell to split by owner or mergeable piece, or to justify before listing its steps.

@@ -9,11 +9,18 @@
 // `.coderabbit.yaml` but no CodeRabbit check, it refuses too. A cubic check ("cubic · AI code
 // reviewer") on the head commit must also complete with SUCCESS: a running one refuses, and so does
 // any other conclusion, NEUTRAL and skipped included, because NEUTRAL means cubic did not review the
-// head ("Incremental review could not start", "AI review line limit reached"). That PR stays blocked
-// until someone comments `@cubic review` or the limit clears. A head commit with no cubic check is
+// head ("Incremental review could not start", "Automatic AI review not started after branch rewrite").
+// That PR stays blocked until someone comments `@cubic review`. A head commit with no cubic check is
 // not blocked, since cubic's `cubic.yaml` is optional and its absence does not show that cubic
 // is expected, and --wait does not wait for one to appear. Missing or incomplete reviews
 // require inspection of the review integration and the repository's selected review policy.
+// A review bot that reports it has no quota or capacity for the pull request is skipped instead,
+// with no end date, and the gate prints which bot it skipped and why: a NEUTRAL cubic check titled
+// "AI review line limit reached", or a NEUTRAL cubic check after cubic commented that the monthly
+// review limit is reached; a CodeRabbit success status saying "Review rate limited" or "Review limit
+// reached", or a missing or not-completed CodeRabbit success status after CodeRabbit commented that
+// it was rate limited. A bot that is still running is waited for even then, and a failed result,
+// an open thread or an unanswered review body still refuses.
 // Every other check on the head commit must have finished and passed too: a check run that is not
 // COMPLETED, or that concluded anything but SUCCESS, NEUTRAL or SKIPPED, and a commit status that
 // is not SUCCESS, refuse. A head commit with no checks is not blocked.
@@ -53,6 +60,12 @@ const PASSING_CONCLUSIONS = ["SUCCESS", "NEUTRAL", "SKIPPED"];
 const NO_CHECK = "no CodeRabbit check on the head commit";
 // A neutral cubic result means it did not review the head; a person has to ask again.
 const CUBIC_RETRY = "comment `@cubic review` or wait for its limit to clear";
+// Signs that a review bot has no quota or capacity for this pull request.
+const CUBIC_LIMIT_TITLE = /line limit reached/i;
+const CUBIC_LIMIT_COMMENT = /reached its (?:free )?monthly review limit/i;
+const CODERABBIT_LIMIT = /rate limited|review limit reached/i;
+const CODERABBIT_LIMIT_COMMENT =
+  /rate limited by coderabbit\.ai|Review rate limited|Review limit reached/i;
 const POLL_MS = 30_000;
 const NO_CHECK_GRACE_MS = 180_000;
 
@@ -64,6 +77,7 @@ type Context = {
   name?: string;
   status?: string;
   conclusion?: string | null;
+  title?: string | null;
 };
 export type ReviewState = {
   headRefOid: string;
@@ -102,6 +116,7 @@ export type ReviewState = {
               name?: string;
               status?: string;
               conclusion?: string | null;
+              title?: string | null;
             }[];
           };
         } | null;
@@ -115,7 +130,7 @@ const CONNECTIONS = {
   reviewThreads: `reviewThreads(first:100,after:$reviewThreadsCursor){${PAGE_INFO} nodes{isResolved comments(first:1){nodes{url}}}}`,
   reviews: `reviews(first:100,after:$reviewsCursor){${PAGE_INFO} nodes{author{__typename login} body submittedAt lastEditedAt url}}`,
   comments: `comments(first:100,after:$commentsCursor){${PAGE_INFO} nodes{author{__typename login} editor{__typename login} body createdAt lastEditedAt isMinimized}}`,
-  contexts: `statusCheckRollup{contexts(first:100,after:$contextsCursor){${PAGE_INFO} nodes{... on StatusContext{context state description} ... on CheckRun{name status conclusion}}}}`,
+  contexts: `statusCheckRollup{contexts(first:100,after:$contextsCursor){${PAGE_INFO} nodes{... on StatusContext{context state description} ... on CheckRun{name status conclusion title}}}}`,
 };
 type Connection = keyof typeof CONNECTIONS;
 type Page = { nodes: unknown[]; pageInfo: { hasNextPage: boolean; endCursor: string | null } };
@@ -369,54 +384,9 @@ function readReviewState(owner: string, name: string, n: number): ReviewState {
 
 const isBot = (author: Author) => author?.__typename === "Bot";
 
-/** Every reason the pull request is not ready to land; empty when it is. */
-export function openFeedback(pr: ReviewState): string[] {
-  const open: string[] = [];
-  for (const thread of pr.reviewThreads.nodes) {
-    if (!thread.isResolved) {
-      open.push(`unresolved thread: ${thread.comments.nodes[0]?.url ?? "(no comments)"}`);
-    }
-  }
-  const head = pr.commits.nodes[0]?.commit;
-  const contexts = head?.statusCheckRollup?.contexts.nodes ?? [];
-  const hasConfig = head?.tree.entries.some((e) => e.name === REVIEW_BOT_CONFIG) ?? false;
-  if (hasConfig && !contexts.some((ctx) => CODERABBIT.test(ctx.context ?? ctx.name ?? ""))) {
-    open.push(`${NO_CHECK}: ${FOLLOW_UP}`);
-  }
-  for (const ctx of contexts) {
-    const name = ctx.context ?? ctx.name ?? "";
-    const running =
-      ctx.state === "PENDING" || (ctx.status !== undefined && ctx.status !== "COMPLETED");
-    if (!isReviewBot(name)) {
-      if (ctx.status !== undefined) {
-        if (ctx.status !== "COMPLETED") {
-          open.push(`${CHECK_RUNNING}${name}`);
-        } else if (!PASSING_CONCLUSIONS.includes(ctx.conclusion ?? "")) {
-          open.push(`check ${name} concluded ${ctx.conclusion ?? "(missing conclusion)"}`);
-        }
-      } else if (ctx.state === "PENDING" || ctx.state === "EXPECTED") {
-        open.push(`${CHECK_RUNNING}${name}`);
-      } else if (ctx.state !== "SUCCESS") {
-        open.push(`check ${name} reported ${ctx.state ?? "(missing state)"}`);
-      }
-      continue;
-    }
-    if (running) {
-      open.push(`${RUNNING}${name}`);
-    } else if (ctx.name !== undefined && ctx.conclusion !== "SUCCESS") {
-      const retry = CUBIC.test(name) ? `; ${CUBIC_RETRY}` : "";
-      open.push(
-        `${name} review concluded ${ctx.conclusion ?? "(missing conclusion)"}: ${FOLLOW_UP}${retry}`,
-      );
-    } else if (
-      ctx.context !== undefined &&
-      (ctx.state !== "SUCCESS" || (CODERABBIT.test(name) && !REVIEWED.test(ctx.description ?? "")))
-    ) {
-      open.push(
-        `${name} did not review the head commit ("${ctx.description ?? ""}"): ${FOLLOW_UP}`,
-      );
-    }
-  }
+/** Review bodies from bots that carry findings GitHub cannot show as threads and have no acknowledgement. */
+function unansweredReviewBodies(pr: ReviewState): string[] {
+  const unanswered: string[] = [];
   for (const review of pr.reviews.nodes) {
     if (isBot(review.author) && BODY_FINDINGS.test(review.body)) {
       const reviewedAt = Math.max(
@@ -451,11 +421,108 @@ export function openFeedback(pr: ReviewState): string[] {
           return ack?.[1] === review.url && ack[2] === pr.headRefOid && Boolean(ack[3]?.trim());
         });
       if (!answered) {
-        open.push(`unanswered findings in a review body: ${review.url}`);
+        unanswered.push(`unanswered findings in a review body: ${review.url}`);
       }
     }
   }
-  return open;
+  return unanswered;
+}
+
+/** Bot comments on the pull request whose body matches `pattern`. */
+const botSaid = (pr: ReviewState, login: RegExp, pattern: RegExp) =>
+  pr.comments.nodes.some(
+    (comment) =>
+      isBot(comment.author) &&
+      login.test(comment.author!.login) &&
+      pattern.test(comment.body ?? ""),
+  );
+
+/** Every reason the pull request is not ready to land; empty when it is. */
+export function openFeedback(pr: ReviewState): string[] {
+  return reviewFeedback(pr).open;
+}
+
+/**
+ * Splits review feedback into reasons that refuse the landing and review bots skipped because
+ * they reported no quota or capacity, each with the reason.
+ */
+export function reviewFeedback(pr: ReviewState): { open: string[]; skipped: string[] } {
+  const open: string[] = [];
+  const skipped: string[] = [];
+  const cubicOutOfQuota = botSaid(pr, /cubic/i, CUBIC_LIMIT_COMMENT);
+  const coderabbitLimited = botSaid(pr, /coderabbit/i, CODERABBIT_LIMIT_COMMENT);
+  for (const thread of pr.reviewThreads.nodes) {
+    if (!thread.isResolved) {
+      open.push(`unresolved thread: ${thread.comments.nodes[0]?.url ?? "(no comments)"}`);
+    }
+  }
+  const head = pr.commits.nodes[0]?.commit;
+  const contexts = head?.statusCheckRollup?.contexts.nodes ?? [];
+  const hasConfig = head?.tree.entries.some((e) => e.name === REVIEW_BOT_CONFIG) ?? false;
+  if (hasConfig && !contexts.some((ctx) => CODERABBIT.test(ctx.context ?? ctx.name ?? ""))) {
+    if (coderabbitLimited) {
+      skipped.push(
+        "CodeRabbit: no check on the head commit and it commented that it was rate limited",
+      );
+    } else {
+      open.push(`${NO_CHECK}: ${FOLLOW_UP}`);
+    }
+  }
+  for (const ctx of contexts) {
+    const name = ctx.context ?? ctx.name ?? "";
+    const running =
+      ctx.state === "PENDING" || (ctx.status !== undefined && ctx.status !== "COMPLETED");
+    if (!isReviewBot(name)) {
+      if (ctx.status !== undefined) {
+        if (ctx.status !== "COMPLETED") {
+          open.push(`${CHECK_RUNNING}${name}`);
+        } else if (!PASSING_CONCLUSIONS.includes(ctx.conclusion ?? "")) {
+          open.push(`check ${name} concluded ${ctx.conclusion ?? "(missing conclusion)"}`);
+        }
+      } else if (ctx.state === "PENDING" || ctx.state === "EXPECTED") {
+        open.push(`${CHECK_RUNNING}${name}`);
+      } else if (ctx.state !== "SUCCESS") {
+        open.push(`check ${name} reported ${ctx.state ?? "(missing state)"}`);
+      }
+      continue;
+    }
+    if (running) {
+      open.push(`${RUNNING}${name}`);
+    } else if (ctx.name !== undefined && ctx.conclusion !== "SUCCESS") {
+      const limited =
+        CUBIC.test(name) &&
+        ctx.conclusion === "NEUTRAL" &&
+        (CUBIC_LIMIT_TITLE.test(ctx.title ?? "") || cubicOutOfQuota);
+      if (limited) {
+        skipped.push(
+          `${name}: no quota (${CUBIC_LIMIT_TITLE.test(ctx.title ?? "") ? `check title "${ctx.title}"` : "it commented that the monthly review limit is reached"})`,
+        );
+      } else {
+        const retry = CUBIC.test(name) ? `; ${CUBIC_RETRY}` : "";
+        open.push(
+          `${name} review concluded ${ctx.conclusion ?? "(missing conclusion)"}: ${FOLLOW_UP}${retry}`,
+        );
+      }
+    } else if (
+      ctx.context !== undefined &&
+      (ctx.state !== "SUCCESS" || (CODERABBIT.test(name) && !REVIEWED.test(ctx.description ?? "")))
+    ) {
+      const description = ctx.description ?? "";
+      if (
+        CODERABBIT.test(name) &&
+        ctx.state === "SUCCESS" &&
+        (CODERABBIT_LIMIT.test(description) || coderabbitLimited)
+      ) {
+        skipped.push(
+          `${name}: no capacity (${CODERABBIT_LIMIT.test(description) ? `status "${description}"` : "it commented that it was rate limited"})`,
+        );
+      } else {
+        open.push(`${name} did not review the head commit ("${description}"): ${FOLLOW_UP}`);
+      }
+    }
+  }
+  open.push(...unansweredReviewBodies(pr));
+  return { open, skipped };
 }
 
 const reviewRunning = (open: string[]) =>
@@ -513,17 +580,23 @@ if (import.meta.main) {
     process.exit(2);
   }
   const [owner, name] = values.repo ? values.repo.split("/") : ["{owner}", "{repo}"];
-  let open: string[];
+  let state: ReviewState | undefined;
   try {
-    const read = () => readReviewState(owner!, name!, pr);
-    open = values.wait
-      ? await waitForReview(read, { timeoutMs: waitMinutes * 60_000 })
-      : openFeedback(read());
+    const read = () => (state = readReviewState(owner!, name!, pr));
+    if (values.wait) {
+      await waitForReview(read, { timeoutMs: waitMinutes * 60_000 });
+    } else {
+      read();
+    }
   } catch (error) {
     console.error(
       `cannot verify PR ${pr} review feedback: ${error instanceof Error ? error.message : "API read failed"}`,
     );
     process.exit(2);
+  }
+  const { open, skipped } = reviewFeedback(state!);
+  for (const line of skipped) {
+    console.log(`skipped review bot ${line}`);
   }
   if (open.length > 0) {
     console.error(`PR ${pr} has open review feedback; fix or answer each, then resolve threads:`);
@@ -535,5 +608,7 @@ if (import.meta.main) {
     }
     process.exit(1);
   }
-  console.log(`review feedback: none open on PR ${pr}`);
+  console.log(
+    `review feedback: none open on PR ${pr}${skipped.length ? ` (${skipped.length} review bot(s) skipped)` : ""}`,
+  );
 }

@@ -229,3 +229,21 @@ test("CLI checks completed bot conclusions from later pages", () => {
       .code,
   ).toBe(0);
 });
+
+test("CLI lands past a review bot with no quota and names it", () => {
+  const limited = {
+    name: "cubic · AI code reviewer",
+    status: "COMPLETED",
+    conclusion: "NEUTRAL",
+    title: "AI review line limit reached",
+  };
+  const r = run({ contexts: [page([limited])] });
+  expect(r.code).toBe(0);
+  expect(r.out).toContain(
+    'skipped review bot cubic · AI code reviewer: no quota (check title "AI review line limit reached")',
+  );
+  expect(r.out).toContain("review feedback: none open on PR 7 (1 review bot(s) skipped)");
+  const withThread = run({ contexts: [page([limited])], reviewThreads: [page([thread(false)])] });
+  expect(withThread.code).toBe(1);
+  expect(withThread.out).toContain("skipped review bot cubic");
+});

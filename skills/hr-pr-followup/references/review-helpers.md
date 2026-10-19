@@ -34,13 +34,26 @@ The check named exactly "cubic · AI code reviewer" on the head commit is held t
 same rule: while it runs, the gate refuses, and a completed one must conclude
 SUCCESS. A NEUTRAL or skipped conclusion means cubic did not review the head
 ("Incremental review could not start", "Automatic AI review not started after
-branch rewrite", "AI review line limit reached"), so the gate refuses it too.
-That pull request stays blocked until someone comments `@cubic review` or the
-limit clears, and the refusal says so. A head commit with no cubic check is not blocked,
+branch rewrite"), so the gate refuses it too. That pull request stays blocked
+until someone comments `@cubic review`, and the refusal says so. A head commit with no cubic check is not blocked,
 because cubic's `cubic.yaml` is optional and its absence does not show that cubic is
 expected. `--wait` does not wait for a cubic check that has not posted yet.
 In a repository that uses cubic, confirm right after a push that its check has appeared
 before landing.
+
+A review bot that reports it has no quota or capacity for the pull request is skipped,
+with no end date, and the gate prints a `skipped review bot` line naming it and the reason:
+
+- a NEUTRAL cubic check titled "AI review line limit reached", or a NEUTRAL cubic check after
+  cubic commented that the workspace reached its monthly review limit;
+- a CodeRabbit success status saying "Review rate limited" or "Review limit reached";
+- a missing CodeRabbit check, or a CodeRabbit success status that is not "Review completed",
+  after CodeRabbit commented that it was rate limited.
+
+The gate then lands on the bots that did review. Record in the pull request which bot skipped
+and why; findings it posts later become follow-up pull requests. A bot that is still running
+is waited for even when it reported a limit earlier, and other "Review skipped" statuses, failed
+or cancelled results, open threads and unanswered review bodies still refuse.
 
 If a review is missing or incomplete, inspect the integration and the repository's
 review policy. The helper does not determine automatic-review enablement or
