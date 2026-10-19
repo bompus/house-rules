@@ -17,7 +17,6 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   description, the homepage link, the topics and the social preview image. The preview is remade when the
   banner or anything it shows changes, and its source sits beside the banner. The house-rules preview
   source is now `docs/assets/social-preview.png`.
-
 - `hr-test-audit` rejects three more kinds of test: one for a module the change did not touch or a harness
   added for completeness, one written to lift a coverage threshold that still passes with the covered branch
   deleted, and one that waits a fixed delay where an observable condition could be awaited. Its authoring
