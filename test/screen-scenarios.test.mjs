@@ -10,15 +10,14 @@ const screen = join(root, "evals/end-of-reply/screen");
 
 // Each screening scenario's `without:` must match its composed rules exactly once, or run.mjs
 // stops with exit 2. A rule reworded without its scenario fails here instead of in a model run.
-for (const [name, config, dir] of [
+for (const [name, config, dir] of /** @type {[string, object | string, string][]} */ ([
   ["core rules", { modifiers: [], skills: { include: [] } }, screen],
   ["modifier rules", join(screen, "modifiers/config.json"), join(screen, "modifiers")],
-]) {
+])) {
   test(`every ${name} screening scenario names exactly one rule`, (t) => {
     const tmp = scratch(t, "house-rules-screen-");
-    let configPath = config;
+    const configPath = typeof config === "string" ? config : join(tmp, "config.json");
     if (typeof config !== "string") {
-      configPath = join(tmp, "config.json");
       writeFileSync(configPath, JSON.stringify(config));
     }
     const rules = join(tmp, "rules.md");

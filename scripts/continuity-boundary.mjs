@@ -62,7 +62,7 @@ export function replyFacts(reply, coded = false) {
 /**
  * @param {string} reply
  * @param {TurnState | null | undefined} state
- * @param {BoundaryContext | null | undefined} context
+ * @param {BoundaryContext | null} [context]
  */
 export function checkBoundary(reply, state, context) {
   // Only the adapter supplies interruption signals. A producer disposition is not a stop signal.

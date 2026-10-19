@@ -8,6 +8,10 @@ import { scratch } from "./fixture.mjs";
 const wrapper = join(import.meta.dirname, "../evals/end-of-reply/models/claude.sh");
 
 // Runs claude.sh with a stub `claude` that prints the CLAUDE*/ANTHROPIC* names it can see.
+/**
+ * @param {import("node:test").TestContext} t
+ * @param {Record<string, string>} env
+ */
 const visibleVariables = (t, env) => {
   const dir = scratch(t, "house-rules-eval-");
   const bin = join(dir, "bin");

@@ -8,6 +8,10 @@ import { test } from "node:test";
 const run = join(import.meta.dirname, "../evals/end-of-reply/run.mjs");
 
 // A fake model CLI: reads the prompt on stdin and prints `reply`'s result.
+/**
+ * @param {string} dir
+ * @param {string} reply
+ */
 const fakeModel = (dir, reply) => {
   const file = join(dir, "model.mjs");
   writeFileSync(
@@ -17,6 +21,10 @@ const fakeModel = (dir, reply) => {
   return `"${process.execPath}" "${file}"`;
 };
 
+/**
+ * @param {import("node:test").TestContext} t
+ * @param {string} reply
+ */
 const baseline = (t, reply) => {
   const dir = scratch(t, "house-rules-eval-");
   const rules = join(dir, "rules.md");

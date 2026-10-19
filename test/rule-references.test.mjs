@@ -9,6 +9,7 @@ import { scratch } from "./fixture.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const selected = { modifiers: ["release-batching"], skills: { include: [] } };
+/** @param {string[]} args */
 const cli = (args) =>
   spawnSync(process.execPath, [join(root, "compose.mjs"), ...args], { encoding: "utf8" });
 
@@ -66,10 +67,10 @@ test("copied rules retain the full procedure with no skills or source checkout",
   execFileSync(process.execPath, [join(source, "compose.mjs"), "--config", config, "--out", out]);
   rmSync(source, { recursive: true });
   const rules = readFileSync(out, "utf8");
-  const link = /\[the release procedure\]\(([^)]+)\)/.exec(rules)[1];
-  const landing = /\[the landing procedure\]\(([^)]+)\)/.exec(rules)[1];
-  const agents = /\[the agent-work procedure\]\(([^)]+)\)/.exec(rules)[1];
-  const reporting = /\[the reporting procedure\]\(([^)]+)\)/.exec(rules)[1];
+  const link = /\[the release procedure\]\(([^)]+)\)/.exec(rules)?.[1] ?? "";
+  const landing = /\[the landing procedure\]\(([^)]+)\)/.exec(rules)?.[1] ?? "";
+  const agents = /\[the agent-work procedure\]\(([^)]+)\)/.exec(rules)?.[1] ?? "";
+  const reporting = /\[the reporting procedure\]\(([^)]+)\)/.exec(rules)?.[1] ?? "";
   const reportProcedure = readFileSync(join(dirname(out), decodeURI(reporting)), "utf8");
   assert.equal(
     reportProcedure,
@@ -213,9 +214,9 @@ test("core landing and selected squash references preserve inline callers and pe
   ]);
   assert.match(linked.rules, /without bypassing\s+checks/);
   assert.match(linked.rules, /During integration, never switch, reset, force-move or remove/);
-  assert.match(linked.references.get("landing.md"), /If that checkout is dirty, diverged/);
+  assert.match(linked.references.get("landing.md") ?? "", /If that checkout is dirty, diverged/);
   assert.match(
-    linked.references.get("squash-landing.md"),
+    linked.references.get("squash-landing.md") ?? "",
     /When an app manages the checkout, leave it/,
   );
   mkdirSync(join(dir, "rules"));
@@ -256,8 +257,11 @@ test("personal reference replacements can reuse a replaced resource name, but li
   const config = { modifiers: ["squash-landing"], skills: { include: [] } };
   assert.match(composeConfiguration(config, dir).rules, /Personal landing procedure/);
   const linked = composeConfiguration(config, dir, { referencesDirectory: "resources" });
-  assert.match(linked.references.get("landing.md"), /Personal landing procedure/);
-  assert.match(linked.references.get("squash-landing.md"), /Personal squash-landing procedure/);
+  assert.match(linked.references.get("landing.md") ?? "", /Personal landing procedure/);
+  assert.match(
+    linked.references.get("squash-landing.md") ?? "",
+    /Personal squash-landing procedure/,
+  );
   writeFileSync(
     join(dir, "rules", "landing.md"),
     "---\nafter: Landing\nreference: ../references/landing.md\n---\n## Other\n\nRead [other](../references/landing.md).\n",
@@ -345,7 +349,7 @@ test("progress reporting survives reference exports while effort forecasts stay 
         dir,
         linked ? { referencesDirectory: "resources" } : {},
       );
-      const reporting = linked ? result.references.get("reporting.md") : result.rules;
+      const reporting = (linked ? result.references.get("reporting.md") : result.rules) ?? "";
       assert.match(reporting, /During long work, give frequent useful progress updates/);
       assert.match(reporting, /clock-time forecasts in the user's\s+local timezone/);
       assert.match(reporting, /host clock zone \(`date \+%Z`, or `Get-TimeZone` on Windows\)/);
@@ -396,7 +400,7 @@ test("Reporting exports without its skill and replacements retain independent La
   const standalone = join(dir, "standalone");
   cpSync(join(root, "skills/hr-what-next"), standalone, { recursive: true });
   const skill = readFileSync(join(standalone, "SKILL.md"), "utf8");
-  const link = /\[reporting procedure\]\(([^)]+)\)/.exec(skill)[1];
+  const link = /\[reporting procedure\]\(([^)]+)\)/.exec(skill)?.[1] ?? "";
   assert.equal(readFileSync(join(standalone, link), "utf8"), canonical);
 });
 

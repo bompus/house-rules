@@ -19,6 +19,7 @@ test("intentional fixture failure", (t) => {
   throw new Error("intentional failure");
 });`,
   );
+  /** @type {NodeJS.ProcessEnv} */
   const env = { ...process.env, HOUSE_RULES_TEST_TMP: fixtures };
   delete env.NODE_TEST_CONTEXT;
   const result = spawnSync(process.execPath, [process.versions.bun ? "test" : "--test", child], {

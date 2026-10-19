@@ -36,6 +36,11 @@ const tools = posix ? toolDir() : "";
 const unix = { skip: !posix };
 
 // Writes a stub runtime that prints a version; returns its directory.
+/**
+ * @param {string} home
+ * @param {string} rel
+ * @param {string} version
+ */
 function stub(home, rel, version) {
   const path = join(home, rel);
   mkdirSync(dirname(path), { recursive: true });
@@ -44,12 +49,22 @@ function stub(home, rel, version) {
   return dirname(path);
 }
 
+/**
+ * @param {string} home
+ * @param {string[]} pathDirs
+ * @param {string[]} [args]
+ * @param {Record<string, string>} [env]
+ */
 function run(home, pathDirs, args = [], env = {}) {
   return spawnSync("sh", [script, ...args], {
     encoding: "utf8",
     env: { HOME: home, PATH: [...pathDirs, tools].join(":"), ...env },
   });
 }
+/**
+ * @param {string} home
+ * @param {string[]} pathDirs
+ */
 const picked = (home, pathDirs) => {
   const r = run(home, pathDirs, ["--print-runtime"]);
   assert.equal(r.status, 0, r.stderr);

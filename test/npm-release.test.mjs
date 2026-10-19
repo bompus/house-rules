@@ -8,14 +8,20 @@ const workflow = readFileSync(
   new URL("../.github/workflows/npm-publish.yml", import.meta.url),
   "utf8",
 );
-const block = workflow.split("node --input-type=module <<'JS'\n")[1].split("\n          JS")[0];
+const block =
+  workflow.split("node --input-type=module <<'JS'\n")[1]?.split("\n          JS")[0] ?? "";
 const guard = block.replace(/^          /gm, "").replace(/^import .*;\n/gm, "");
 
+/**
+ * @param {string} heading
+ * @param {string} [tag]
+ */
 function check(heading, tag = "v0.10.0") {
   runInNewContext(guard, {
     assert,
     process: { env: { RELEASE_TAG: tag } },
-    readFileSync: (file) => (file === "package.json" ? '{"version":"0.10.0"}' : heading),
+    readFileSync: (/** @type {string} */ file) =>
+      file === "package.json" ? '{"version":"0.10.0"}' : heading,
   });
 }
 

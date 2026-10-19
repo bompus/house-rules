@@ -14,7 +14,7 @@ test("portable preferences replace ordered roles without mutating config or inpu
   const input = structuredClone(preferences);
   const next = changePanelPreferences(config, input);
   assert.deepEqual(next, { custom: { retain: true }, panel: preferences });
-  next.panel.roles[0].candidates.reverse();
+  next.panel.roles[0]?.candidates.reverse();
   next.custom.retain = false;
   assert.deepEqual(input, preferences);
   assert.deepEqual(config, { custom: { retain: true }, panel: { unrelated: true } });
@@ -91,7 +91,7 @@ test("strict exclusion needs author and family evidence", () => {
   };
   const plan = resolve({ bindings: unknown });
   assert.equal(plan.ok, false);
-  assert.match(plan.blockers[0].message, /no eligible route for role "correctness"/);
+  assert.match(plan.blockers[0]?.message ?? "", /no eligible route for role "correctness"/);
 });
 
 test("a missing binding blocks, or drops the role only when reduced panels are allowed", () => {
@@ -169,7 +169,7 @@ test("included-only allows no metered route, even an approved one, and cannot be
   const approved = { metered: ["review-alternative"] };
   const plan = resolve({ user: strict, bindings: metered, approvals: approved });
   assert.equal(plan.ok, false);
-  assert.match(plan.rejected.at(-1).reason, /included-only/);
+  assert.match(plan.rejected.at(-1)?.reason ?? "", /included-only/);
   const loosened = resolve({
     user: strict,
     task: {
@@ -188,7 +188,7 @@ test("an alias that is only an Object.prototype name has no binding", () => {
   const plan = resolve({ user, bindings: { version: 1, aliases: {} }, authorFamilies: [] });
   assert.equal(plan.ok, false);
   assert.deepEqual(plan.seats, []);
-  assert.equal(plan.rejected[0].reason, "no binding for this alias");
+  assert.equal(plan.rejected[0]?.reason, "no binding for this alias");
 });
 
 test("project and task layers replace roles but cannot loosen the user's limits", () => {
@@ -206,7 +206,7 @@ test("project and task layers replace roles but cannot loosen the user's limits"
   };
   const unapproved = resolve({ project: loose });
   assert.equal(unapproved.ok, false);
-  assert.match(unapproved.blockers[0].message, /not approved/);
+  assert.match(unapproved.blockers[0]?.message ?? "", /not approved/);
   const plan = resolve({ project: loose, approvals: { project: true } });
   assert.equal(plan.roundLimit, 1);
   assert.deepEqual(plan.policy, {
@@ -230,6 +230,10 @@ test("project and task layers replace roles but cannot loosen the user's limits"
 
 test("the command prints the plan, honours the project approval revision and exits by result", (t) => {
   const dir = scratch(t, "panel-plan-");
+  /**
+   * @param {string} name
+   * @param {unknown} value
+   */
   const write = (name, value) => {
     const path = join(dir, name);
     writeFileSync(path, JSON.stringify(value));
@@ -237,7 +241,7 @@ test("the command prints the plan, honours the project approval revision and exi
   };
   const config = write("config.json", { panel: preferences });
   const bound = write("bindings.json", bindings);
-  const run = (...args) =>
+  const run = (/** @type {string[]} */ ...args) =>
     spawnSync(
       process.execPath,
       [

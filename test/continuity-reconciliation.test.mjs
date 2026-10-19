@@ -7,6 +7,7 @@ import { join } from "node:path";
 import { test } from "node:test";
 import { checkBoundary } from "../scripts/continuity-boundary.mjs";
 
+/** @param {string} text */
 const hash = (text) => createHash("sha256").update(text).digest("hex");
 const text =
   "Owner: demo\nStatus: active\nPurpose: demo\n## Ledger\n- [ ] Wait for owner; recheck: 2030-01-03\n";
@@ -32,6 +33,8 @@ const waiting = () => ({
   reference: "task-a",
   recheck: "2030-01-03",
 });
+// The cases below break this record on purpose, so it is untyped.
+/** @returns {any} */
 const state = () => ({
   version: 2,
   disposition: "blocked",
@@ -113,6 +116,7 @@ test("valid live-owner and external-trigger waits can hand back", () => {
   assert.equal(checkBoundary(reply, external, context).pass, true);
 });
 
+/** @type {Record<string, (s: any) => void>} */
 const invalidCases = {
   "absent reconciliation": (s) => {
     delete s.reconciliation;

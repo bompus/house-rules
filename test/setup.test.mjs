@@ -8,6 +8,7 @@ import { scratch } from "./fixture.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const executable = join(root, "compose.mjs");
+/** @param {string[]} args */
 const cli = (args) =>
   spawnSync(process.execPath, [executable, "setup", ...args], { encoding: "utf8" });
 const interactive = {
@@ -16,8 +17,13 @@ const interactive = {
       ? "Linux script PTY harness; native terminal coverage is separate"
       : false,
 };
+/** @param {string} value */
 const shellQuote = (value) => `'${value.replaceAll("'", "'\\''")}'`;
 
+/**
+ * @param {import("node:test").TestContext} t
+ * @param {unknown} [config]
+ */
 function fixture(t, config) {
   const dir = scratch(t, "house-rules-setup-");
   const path = join(dir, "house-rules.json");
@@ -28,6 +34,11 @@ function fixture(t, config) {
 }
 
 // A real terminal drives the shipped entry point; prompts are deterministic barriers.
+/**
+ * @param {import("node:test").TestContext} t
+ * @param {string} path
+ * @param {string[]} [runtimeArgs]
+ */
 function terminal(t, path, runtimeArgs = []) {
   const child = spawn(
     "script",
@@ -47,16 +58,20 @@ function terminal(t, path, runtimeArgs = []) {
     },
   );
   let output = "",
-    cursor = 0,
-    pending,
-    exit;
+    cursor = 0;
+  /** @type {{ text: string, resolve: () => void, reject: (error: Error) => void, timer: ReturnType<typeof setTimeout> } | null} */
+  let pending = null;
+  /** @type {{ code: number | null, signal: NodeJS.Signals | null } | undefined} */
+  let exit;
   child.stdout.setEncoding("utf8");
   child.stderr.setEncoding("utf8");
+  /** @type {Promise<{ code: number | null, signal: NodeJS.Signals | null }>} */
   const done = new Promise((resolve) => {
     child.on("exit", (code, signal) => {
-      exit = { code, signal };
+      const result = { code, signal };
+      exit = result;
       check();
-      resolve(exit);
+      resolve(result);
     });
   });
   const check = () => {
@@ -77,6 +92,7 @@ function terminal(t, path, runtimeArgs = []) {
       reject(new Error(`Terminal exited before expected output. ${output}`));
     }
   };
+  /** @param {string} chunk */
   const collect = (chunk) => {
     output += chunk;
     check();
@@ -90,7 +106,7 @@ function terminal(t, path, runtimeArgs = []) {
   });
   return {
     wait(text = "setup> ") {
-      return new Promise((resolve, reject) => {
+      return new Promise((/** @type {(value?: void) => void} */ resolve, reject) => {
         const timer = setTimeout(() => {
           pending = null;
           reject(new Error(`Missing ${text}; output: ${output}`));
@@ -99,6 +115,7 @@ function terminal(t, path, runtimeArgs = []) {
         check();
       });
     },
+    /** @param {string} text */
     async command(text) {
       child.stdin.write(text + "\n");
       await this.wait();
@@ -122,7 +139,11 @@ test("setup JSON preserves the existing status contract and never creates a conf
   assert.equal(report.command, "status");
   assert.equal(report.revision, "missing");
   assert.equal(report.applied, null);
-  assert.equal(report.skills.find((row) => row.name === "hr-house-rules-setup").explicitOnly, true);
+  assert.equal(
+    report.skills.find((/** @type {{ name: string }} */ row) => row.name === "hr-house-rules-setup")
+      ?.explicitOnly,
+    true,
+  );
   assert.equal(existsSync(path), false);
 });
 
@@ -334,6 +355,10 @@ test(
   "all edit, save and refresh orderings preserve external fields and require save",
   interactive,
   async (t) => {
+    /**
+     * @param {string[]} events
+     * @returns {string[][]}
+     */
     const permutations = (events) =>
       events.length
         ? events.flatMap((event, index) =>
@@ -375,10 +400,10 @@ test(
 );
 
 test("Ctrl-C and terminal end of input discard a changed draft", interactive, async (t) => {
-  for (const [key, code] of [
+  for (const [key, code] of /** @type {[string, number][]} */ ([
     ["\x03", 130],
     ["\x04", 0],
-  ]) {
+  ])) {
     const { path } = fixture(t, { custom: "keep" });
     const before = readFileSync(path, "utf8");
     const session = terminal(t, path);

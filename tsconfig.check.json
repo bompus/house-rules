@@ -3,5 +3,5 @@
   // but not yet type-checked; each comes off this list once tsc passes on it.
   // Linting reads tsconfig.json, which covers every folder.
   "extends": "./tsconfig.json",
-  "exclude": ["node_modules", "skills", "test"]
+  "exclude": ["node_modules", "skills"]
 }

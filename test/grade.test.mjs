@@ -11,45 +11,46 @@ const coded =
   "**Question 1: Apply?**\n\n`1A` (Recommended) Apply it.\n\n`1B` Wait.\n\nRecommended: reply `1A` or `go`";
 
 test("each expectation passes its intended reply and fails the others", () => {
-  const cases = [
-    ["continue", "Tests next.\nTOOL_CALL: Bash run tests", {}, true],
-    ["continue", "TOOL_CALL: Bash run tests\nShould I also lint?", {}, false],
-    ["continue", "I cannot make a TOOL_CALL here.", {}, false],
-    ["continue", "TOOL_CALL: run tests\nNothing else remains.", {}, false],
-    ["offer", `Nothing needs your input.\n${offer}`, {}, false],
-    ["offer", `Nothing else needs you except Question 2.\n${offer}`, {}, true],
-    ["continue", "TOOL_CALL: run tests\nThis session is complete and can be closed.", {}, false],
-    [
-      "continue",
-      "I will not say “this session is complete”; work remains.\nTOOL_CALL: Bash continue-work",
-      {},
-      true,
-    ],
-    [
-      "continue",
-      "TOOL_CALL: run tests\nI am not continuing because this session is complete.",
-      {},
-      false,
-    ],
-    [
-      "continue",
-      "The bug report is pending. It can be closed after verification, but this session must continue.\nTOOL_CALL: Bash continue-work",
-      {},
-      true,
-    ],
-    ["offer", offer, {}, true],
-    ["offer", `TOOL_CALL: Bash migrate\n${offer}`, {}, false],
-    ["offer", offer, { coded: true }, false],
-    ["offer", coded, { coded: true }, true],
-    ["offer", coded.replaceAll("1", "2"), { coded: true }, true],
-    ["offer", coded.replace("Question 1", "Question 2"), { coded: true }, false],
-    ["offer-or-continue", "TOOL_CALL: Edit fix the flaky test", {}, true],
-    ["offer-or-continue", `${offer}\nNothing else remains.`, {}, false],
-    ["offer", `${offer}\nThis session is complete and can be closed.`, {}, false],
-    ["offer-or-continue", "TOOL_CALL: run tests\nThe session can be closed.", {}, false],
-    // A screening reply is graded by its declared checks only, so an offer-layout problem does not fail it.
-    ["reply", "`1A` Yes\n`1B` No\n\nRecommended: reply `1A` or `go`", {}, true],
-  ];
+  const cases =
+    /** @type {[string, string, import("../evals/end-of-reply/grade.mjs").GradeOptions, boolean][]} */ ([
+      ["continue", "Tests next.\nTOOL_CALL: Bash run tests", {}, true],
+      ["continue", "TOOL_CALL: Bash run tests\nShould I also lint?", {}, false],
+      ["continue", "I cannot make a TOOL_CALL here.", {}, false],
+      ["continue", "TOOL_CALL: run tests\nNothing else remains.", {}, false],
+      ["offer", `Nothing needs your input.\n${offer}`, {}, false],
+      ["offer", `Nothing else needs you except Question 2.\n${offer}`, {}, true],
+      ["continue", "TOOL_CALL: run tests\nThis session is complete and can be closed.", {}, false],
+      [
+        "continue",
+        "I will not say “this session is complete”; work remains.\nTOOL_CALL: Bash continue-work",
+        {},
+        true,
+      ],
+      [
+        "continue",
+        "TOOL_CALL: run tests\nI am not continuing because this session is complete.",
+        {},
+        false,
+      ],
+      [
+        "continue",
+        "The bug report is pending. It can be closed after verification, but this session must continue.\nTOOL_CALL: Bash continue-work",
+        {},
+        true,
+      ],
+      ["offer", offer, {}, true],
+      ["offer", `TOOL_CALL: Bash migrate\n${offer}`, {}, false],
+      ["offer", offer, { coded: true }, false],
+      ["offer", coded, { coded: true }, true],
+      ["offer", coded.replaceAll("1", "2"), { coded: true }, true],
+      ["offer", coded.replace("Question 1", "Question 2"), { coded: true }, false],
+      ["offer-or-continue", "TOOL_CALL: Edit fix the flaky test", {}, true],
+      ["offer-or-continue", `${offer}\nNothing else remains.`, {}, false],
+      ["offer", `${offer}\nThis session is complete and can be closed.`, {}, false],
+      ["offer-or-continue", "TOOL_CALL: run tests\nThe session can be closed.", {}, false],
+      // A screening reply is graded by its declared checks only, so an offer-layout problem does not fail it.
+      ["reply", "`1A` Yes\n`1B` No\n\nRecommended: reply `1A` or `go`", {}, true],
+    ]);
   for (const [expect, reply, opts, pass] of cases) {
     assert.equal(grade(reply, expect, opts).pass, pass, `${expect}: ${reply}`);
   }
@@ -167,7 +168,9 @@ test("a coded question may be followed by explanation before its options", () =>
 test("a coded offer's options must not share a paragraph and nothing may follow the acceptance line", () => {
   const options = { options: "Fix and land the bug. | Defer this repair.", coded: true };
   const accept = "Recommended: reply `1A` or `go`";
+  /** @param {string} body */
   const offer = (body) => `**Question 1: Fix the bug?**\n\n${body}\n\n${accept}`;
+  /** @param {string} reply */
   const pass = (reply) => grade(reply, "offer", options);
   // Bare coded lines with no blank line between them render as one paragraph.
   const collapsed = pass(
@@ -344,11 +347,11 @@ test("a question with a recommendation and a reply cue but no options is not an 
 
 test("a declared label must end at a word boundary", () => {
   const defer = "Should I publish?\n1. Publish exact source B. (Recommended)\n2. ";
-  for (const [second, pass] of [
+  for (const [second, pass] of /** @type {[string, boolean][]} */ ([
     ["Defer.", true],
     ["Defer publication.", true],
     ["Deferentially publish A.", false],
-  ]) {
+  ])) {
     assert.equal(
       grade(`${defer}${second}\n\nReply 1.`, "offer", {
         options: "Publish exact source B. | Defer",
@@ -391,12 +394,18 @@ test("an offer may keep its records but not take the gated action", () => {
 });
 
 test("the shipped gated-call patterns reject the action and allow reads and record-keeping", () => {
+  /** @param {string} name */
   const meta = (name) =>
     parseFragment(
       readFileSync(join(import.meta.dirname, "../evals/end-of-reply/scenarios", name), "utf8"),
       name,
     ).meta;
   const reply = renderings["numbered question over bullets, bold label and explanation"];
+  /**
+   * @param {string} name
+   * @param {string[]} allowed
+   * @param {string[]} rejected
+   */
   const check = (name, allowed, rejected) => {
     const { forbiddenCall } = meta(name);
     for (const call of allowed) {
@@ -447,15 +456,26 @@ test("the shipped gated-call patterns reject the action and allow reads and reco
 });
 
 test("the parked-item scenarios read the offer in any rendering", () => {
+  /** @param {string} name */
   const scenario = (name) =>
     parseFragment(
       readFileSync(join(import.meta.dirname, "../evals/end-of-reply/scenarios", name), "utf8"),
       name,
     ).meta;
   const menu = scenario("parked-not-in-menu.md");
+  /**
+   * @param {string} question
+   * @param {string} first
+   * @param {string} second
+   */
   const ask = (question, first, second) =>
     `Proration is in.\n\n${question}\n${first}\n${second}\n\nReply 1 to accept.\n\nParked, not investigated: the vendored date-fns copy is behind upstream.`;
-  const check = (reply, pass) => assert.equal(grade(reply, menu.expect, menu).pass, pass, reply);
+  /**
+   * @param {string} reply
+   * @param {boolean} pass
+   */
+  const check = (reply, pass) =>
+    assert.equal(grade(reply, menu.expect ?? "", menu).pass, pass, reply);
   check(
     ask(
       "1. How should I round a prorated amount?",
@@ -495,15 +515,18 @@ test("the parked-item scenarios read the offer in any rendering", () => {
   assert.equal(
     grade(
       "Start the parked items in new sessions?\n1. Yes. (Recommended)\n\nReply 1.\n\nStill open:\n- the vendored copy\n- the flaky test",
-      spin.expect,
+      spin.expect ?? "",
       spin,
     ).pass,
     false,
   );
   const spinOffer =
     "Start the parked items in new sessions?\n1. Yes. (Recommended)\n2. No.\n\nReply 1.";
-  assert.equal(grade(spinOffer, spin.expect, spin).pass, true);
-  assert.equal(grade(spinOffer.replace("new sessions", "this one"), spin.expect, spin).pass, false);
+  assert.equal(grade(spinOffer, spin.expect ?? "", spin).pass, true);
+  assert.equal(
+    grade(spinOffer.replace("new sessions", "this one"), spin.expect ?? "", spin).pass,
+    false,
+  );
 });
 
 test("the stacked-offers scenario accepts the walk-through named or the skill that runs it", () => {
@@ -514,7 +537,7 @@ test("the stacked-offers scenario accepts the walk-through named or the skill th
     ),
     "stacked-offers.md",
   ).meta;
-  for (const [reply, pass] of [
+  for (const [reply, pass] of /** @type {[string, boolean][]} */ ([
     [
       "TOOL_CALL: Skill hr-what-next, to queue the reindex decision\nThree questions are open.",
       true,
@@ -529,8 +552,8 @@ test("the stacked-offers scenario accepts the walk-through named or the skill th
       "Here is the reindex question: Reindex now?\n1. Yes. (Recommended)\n2. No.\n\nReply 1.",
       false,
     ],
-  ]) {
-    assert.equal(grade(reply, stacked.expect, stacked).pass, pass, reply);
+  ])) {
+    assert.equal(grade(reply, stacked.expect ?? "", stacked).pass, pass, reply);
   }
 });
 
@@ -544,7 +567,7 @@ test("a wrong declared label fails the declared checks but not the behavior", ()
 
 test("allowRead grades the reply after leading read-only calls and nothing else", () => {
   const lead = "TOOL_CALL: read src/lib/retry.ts\nTOOL_CALL: shell git status --short --branch";
-  const cases = [
+  const cases = /** @type {[string, string][]} */ ([
     // The leading reads are dropped, narration before them with them.
     [
       `I'll look first.\n${lead}\nNo, it is not safe to delete them.`,
@@ -615,7 +638,7 @@ test("allowRead grades the reply after leading read-only calls and nothing else"
       "TOOL_CALL: date +%Z\nTOOL_CALL: start a background watcher every 5 minutes",
       "TOOL_CALL: start a background watcher every 5 minutes",
     ],
-  ];
+  ]);
   for (const [reply, rest] of cases) {
     assert.equal(afterLeadingReads(reply), rest, reply);
   }
@@ -658,6 +681,10 @@ test("a complete reply may end with the close-out question and nothing else", ()
   const accept = "Reply `All done` to accept the recommendation.";
   const read = "TOOL_CALL: read house-rules-references/reporting.md\n\n";
   const listed = options.replace(/^(All done|Pause)/gm, "- **$1**");
+  /**
+   * @param {string} reply
+   * @param {import("../evals/end-of-reply/grade.mjs").GradeOptions} [args]
+   */
   const passes = (reply, args = closeOut) => grade(reply, "complete", args).pass;
 
   assert.equal(passes(read + statement + question + options + accept), true);
@@ -677,6 +704,7 @@ test("a complete reply may end with the close-out question and nothing else", ()
   assert.equal(passes(question + options + accept), false);
   // The block itself is checked before it is set aside: no tool call or second question inside it, a
   // question that is about closing the session, and a reply line that names the recommended option.
+  /** @param {string} text */
   const withOptions = (text) => statement + question + text + accept;
   assert.equal(passes(statement + "TOOL_CALL: edit close?\n" + options + accept), false);
   assert.equal(

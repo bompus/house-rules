@@ -21,8 +21,10 @@ test("finds local guidance pointers in inline, reference and bare links", () => 
     found.map(({ line }) => line),
     [1, 2, 3],
   );
-  assert.equal(found[0].target, resolve(root, "rules/core.md"));
-  assert.equal(found[0].anchor, "writing");
+  const [first] = found;
+  assert(first);
+  assert.equal(first.target, resolve(root, "rules/core.md"));
+  assert.equal(first.anchor, "writing");
 });
 
 test("preserves sources, history, downloads, rendering and documented upstream refresh", () => {
@@ -72,10 +74,12 @@ test("malformed URL escapes report their line and leave the rest of the audit av
     repositories,
   );
   assert.equal(found.length, 2);
-  assert.equal(found[0].line, 1);
-  assert.equal(found[0].error, "Malformed percent-encoding");
-  assert.equal(found[0].target, null);
-  assert.equal(found[1].target, resolve(root, "AGENTS.md"));
+  const [malformed, valid] = found;
+  assert(malformed && valid);
+  assert.equal(malformed.line, 1);
+  assert.equal(malformed.error, "Malformed percent-encoding");
+  assert.equal(malformed.target, null);
+  assert.equal(valid.target, resolve(root, "AGENTS.md"));
 });
 
 test("all remote exceptions need a stated reason", () => {
@@ -98,6 +102,7 @@ test("all remote exceptions need a stated reason", () => {
 test("audit CLI separates URL queries from paths without stripping encoded filename characters", (t) => {
   const dir = scratch(t, "house-rules-link-queries-");
   execFileSync("git", ["init", "--quiet", dir]);
+  /** @type {[url: string, path: string, anchor: string | undefined][]} */
   const cases = [
     ["https://github.com/example/project/blob/main/README.md?plain=1#intro", "README.md", "intro"],
     [

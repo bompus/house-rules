@@ -18,14 +18,32 @@ import { changeSelection, readConfiguration, writeConfiguration } from "../confi
 import { renderConfig } from "../config-view.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
+/**
+ * @param {string[]} args
+ * @param {Record<string, string>} [env]
+ */
 const cli = (args, env = {}) =>
   execFileSync(process.execPath, [join(root, "compose.mjs"), "config", ...args], {
     encoding: "utf8",
     env: { ...process.env, ...env },
     stdio: "pipe",
   });
+/** @typedef {{ name: string, enabled: boolean, source?: string, [key: string]: any }} Entry */
+/**
+ * The JSON `config preview` prints, loosely: the tests read only some of its fields.
+ * @typedef {{ modifiers: Entry[], skills: Entry[], rules: { heading: string, source?: string }[], [key: string]: any }} Report
+ */
+/**
+ * @param {string} path
+ * @param {string[]} [args]
+ * @returns {Report}
+ */
 const report = (path, args = []) =>
   JSON.parse(cli(["preview", "--config", path, "--json", ...args]));
+/**
+ * @param {import("node:test").TestContext} t
+ * @param {unknown} [config]
+ */
 function fixture(t, config = {}) {
   const dir = scratch(t, "house-rules-config-");
   const path = join(dir, "house-rules.json");
@@ -87,7 +105,7 @@ test("panel preview and apply preserve selections, custom fields and ordered alt
   );
   assert.equal(statSync(path).mtimeMs, mtime);
   const reversed = structuredClone(preferences);
-  reversed.roles[0].candidates.reverse();
+  reversed.roles[0]?.candidates.reverse();
   writeFileSync(input, JSON.stringify(reversed));
   const reorder = report(path, args);
   assert.equal(reorder.panel.changed, true);
@@ -216,7 +234,7 @@ test("selection preview, apply and repeated apply preserve custom configuration 
   const preview = report(path, args);
   assert.equal(readFileSync(path, "utf8"), JSON.stringify(original));
   assert.equal(preview.questions, "coded");
-  assert.equal(preview.skills.find((s) => s.name === "handoff").enabled, true);
+  assert.equal(preview.skills.find((s) => s.name === "handoff")?.enabled, true);
   assert.deepEqual(preview.unavailable, ["unavailable-helper"]);
   const applied = JSON.parse(
     cli(["set", "--config", path, "--json", ...args, "--apply", "--expect", preview.revision]),
@@ -305,7 +323,7 @@ test("invalid requests and invalid composition never write config", (t) => {
 });
 
 test("stored invalid modifier selections can be repaired through preview and apply", (t) => {
-  for (const [modifiers, args, expected] of [
+  for (const [modifiers, args, expected] of /** @type {[string[], string[], string[]][]} */ ([
     [["question-cards"], ["--questions", "cards"], ["coded-offers", "question-cards"]],
     [["question-cards"], ["--disable-modifier", "question-cards"], []],
     [
@@ -313,7 +331,7 @@ test("stored invalid modifier selections can be repaired through preview and app
       ["--disable-modifier", "removed-modifier"],
       ["shared-host-load"],
     ],
-  ]) {
+  ])) {
     const original = { modifiers, custom: { keep: true }, skills: { exclude: ["hr-handoff"] } };
     const { path } = fixture(t, original);
     assert.throws(() => report(path), /requires coded-offers|unknown modifier/);
@@ -340,12 +358,12 @@ test("stored invalid modifier selections can be repaired through preview and app
 });
 
 test("selection repairs refuse malformed stored config before any write", (t) => {
-  for (const [config, error] of [
+  for (const [config, error] of /** @type {[unknown, RegExp][]} */ ([
     [null, /configuration must be a JSON object/],
     [{ modifiers: "shared-host-load" }, /modifiers must be an array/],
     [{ modifiers: ["shared-host-load", "shared-host-load"] }, /modifiers contains duplicates/],
     [{ skills: [] }, /skills must be an object/],
-  ]) {
+  ])) {
     const { path } = fixture(t, config);
     assert.throws(
       () => cli(["set", "--config", path, "--questions", "plain", "--apply", "--expect", "unused"]),
@@ -412,11 +430,14 @@ test("status shows effective personal origins including excluded overrides witho
   );
   const out = report(path);
   assert.equal(
-    out.skills.find((s) => s.name === "hr-handoff").source,
+    out.skills.find((s) => s.name === "hr-handoff")?.source,
     join(dir, "skills", "hr-handoff"),
   );
-  assert.equal(out.skills.find((s) => s.name === "hr-handoff").enabled, false);
-  assert.equal(out.rules.find((s) => s.heading === "Offers").source, join(dir, "rules", "mine.md"));
+  assert.equal(out.skills.find((s) => s.name === "hr-handoff")?.enabled, false);
+  assert.equal(
+    out.rules.find((s) => s.heading === "Offers")?.source,
+    join(dir, "rules", "mine.md"),
+  );
   assert.equal(
     JSON.stringify(report(path, ["--enable-skill", "hr-handoff"])).includes("DO_NOT_PRINT"),
     false,
@@ -509,15 +530,21 @@ test(
   { timeout: 30_000 },
   (t) => {
     const { path } = fixture(t);
+    /** @type {string[]} */
     const failures = [];
     const events = ["preview A", "preview B", "apply A", "apply B", "external edit"];
+    /**
+     * @param {string[]} sequence
+     * @param {number} depth
+     * @param {{ text: string, previews: Record<string, any>, expected: any }} [state]
+     */
     function walk(sequence, depth, state = { text: "{}", previews: {}, expected: {} }) {
       writeFileSync(path, state.text);
       const previews = { ...state.previews };
       let expected = state.expected;
       const event = sequence.at(-1);
       if (event) {
-        const [operation, actor] = event.split(" ");
+        const [operation, actor = ""] = event.split(" ");
         if (operation === "preview") {
           const snapshot = readConfiguration(path);
           const options =
@@ -540,8 +567,9 @@ test(
               expected = next;
             }
           } catch (e) {
-            if (fresh || !/changed since preview/.test(e.message)) {
-              failures.push(`${e.message} after ${sequence.join(" -> ")}`);
+            const message = e instanceof Error ? e.message : String(e);
+            if (fresh || !message.includes("changed since preview")) {
+              failures.push(`${message} after ${sequence.join(" -> ")}`);
             }
           }
         }
@@ -589,7 +617,7 @@ test("human output is grouped; JSON and NO_COLOR output contain no terminal esca
   const old = process.stdout.columns;
   try {
     process.stdout.columns = 40;
-    const narrow = renderConfig(report(path));
+    const narrow = renderConfig(/** @type {any} */ (report(path)));
     assert.ok(narrow.split("\n").every((line) => line.length <= 40));
   } finally {
     process.stdout.columns = old;
@@ -607,9 +635,9 @@ test("terminal styling respects NO_COLOR and removes control characters from per
     process.stdout.isTTY = true;
     process.env.TERM = "xterm";
     delete process.env.NO_COLOR;
-    assert.equal(renderConfig(out).includes("\u001b["), true);
+    assert.equal(renderConfig(/** @type {any} */ (out)).includes("\u001b["), true);
     process.env.NO_COLOR = "1";
-    assert.equal(renderConfig(out).includes("\u001b"), false);
+    assert.equal(renderConfig(/** @type {any} */ (out)).includes("\u001b"), false);
   } finally {
     process.stdout.isTTY = oldTTY;
     if (oldColor === undefined) {
@@ -733,14 +761,14 @@ test("explicit shipped selection preserves personal layers and excludes future a
     ["hr-code-review", "hr-explain-code", "handoff", "my-helper"].sort(),
   );
   assert.equal(
-    out.skills.find((s) => s.name === "hr-code-review").source,
+    out.skills.find((s) => s.name === "hr-code-review")?.source,
     join(dir, "skills", "hr-code-review"),
   );
-  assert.equal(out.skills.find((s) => s.name === "hr-handoff").enabled, false);
-  assert.equal(out.skills.find((s) => s.name === "hr-read-reddit").enabled, false);
+  assert.equal(out.skills.find((s) => s.name === "hr-handoff")?.enabled, false);
+  assert.equal(out.skills.find((s) => s.name === "hr-read-reddit")?.enabled, false);
   assert.equal(
     report(path, ["--enable-skill", "hr-handoff"]).skills.find((s) => s.name === "hr-handoff")
-      .enabled,
+      ?.enabled,
     true,
   );
 });
@@ -898,7 +926,8 @@ test("the model default choice names no question format and keeps the rest of Of
   const { path } = fixture(t, { modifiers: ["model-default-questions"] });
   const out = report(path);
   assert.equal(out.questions, "default");
-  const section = (text) => text.split("## Offers")[1].split(/\n## /)[0];
+  /** @param {string} text */
+  const section = (text) => text.split("## Offers")[1]?.split(/\n## /)[0] ?? "";
   const offers = section(out.composedRules);
   assert.doesNotMatch(
     offers,
@@ -906,6 +935,7 @@ test("the model default choice names no question format and keeps the rest of Of
   );
   // Everything after the format steps is shared with core, so the two cannot drift apart.
   const coreOffers = section(readFileSync(join(root, "rules/core.md"), "utf8"));
+  /** @param {string} text */
   const shared = (text) => {
     const flat = text.replace(/\s+/g, " ");
     return flat.slice(flat.indexOf("When an option produces"));

@@ -7,16 +7,26 @@ import { grade } from "../evals/end-of-reply/grade.mjs";
 
 import { planSnapshot } from "../skills/hr-what-next/scripts/plan-ledger.mjs";
 
+/** @param {boolean} complete */
 const plan = (complete) =>
   `Owner: test\nStatus: active\n## Ledger\n${complete ? "- [x] Done; evidence: checked" : "- [ ] Open"}\n`;
+/** @param {boolean} complete */
 const context = (complete) => ({
   planText: plan(complete),
   sessionId: "test",
   turnId: "turn",
   today: "2030-01-01",
 });
+/**
+ * @param {string} reply
+ * @param {any} state
+ */
 const checkBoundary = (reply, state) =>
   boundary(reply, state, context(state?.disposition === "complete"));
+/**
+ * @param {string} disposition
+ * @param {Record<string, unknown>} [extra]
+ */
 const state = (disposition, extra = {}) => {
   const snapshot = planSnapshot(plan(disposition === "complete"));
   const id = snapshot.openItems[0]?.id;
@@ -114,11 +124,11 @@ test("phase handbacks include goal, result and remaining work", () => {
 });
 
 test("final dispositions reject declared tool calls", () => {
-  for (const [disposition, reply] of [
+  for (const [disposition, reply] of /** @type {[string, string][]} */ ([
     ["offer", offer],
     ["complete", "Nothing remains."],
     ["blocked", "Blocked. The integration slot is occupied."],
-  ]) {
+  ])) {
     assert.equal(checkBoundary(reply, state(disposition)).pass, true);
     assert.equal(
       checkBoundary(reply + "\nTOOL_CALL: publish source B", state(disposition)).pass,
@@ -153,7 +163,7 @@ test("the parked-finding scenario allows the ledger capture and rejects edits to
     join(import.meta.dirname, "..", "evals/end-of-reply/scenarios/parked-finding.md"),
     "utf8",
   );
-  const forbiddenPattern = scenario.match(/^forbiddenPattern: (.+)$/m)[1];
+  const forbiddenPattern = scenario.match(/^forbiddenPattern: (.+)$/m)?.[1];
   const options = { requiredPattern: "park|defer", forbiddenPattern };
   const ledger = "TOOL_CALL: edit plans/invoice-export/plan.md park the date-fns finding";
   assert.equal(grade(ledger, "continue", options).pass, true);

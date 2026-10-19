@@ -10,8 +10,15 @@ import { composeConfiguration } from "../composition.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const core = readFileSync(join(root, "rules/core.md"), "utf8");
+/**
+ * @param {import("../composition.mjs").Meta} meta
+ * @param {string} body
+ * @param {string} [source]
+ */
 const frag = (meta, body, source = "t") => ({ meta, body, source });
+/** @param {string} text */
 const headings = (text) => [...text.matchAll(/^## (.+)$/gm)].map((m) => m[1]);
+/** @param {string[]} args */
 const composeCli = (args) =>
   execFileSync(process.execPath, [join(root, "compose.mjs"), ...args], { stdio: "pipe" });
 
@@ -19,7 +26,7 @@ test("a replacement keeps the section's position and drops the old text", () => 
   const out = compose(core, [frag({ replaces: "Offers" }, "## Offers\n\nNew offer rules.")]);
   assert.deepEqual(headings(out), headings(core));
   assert.match(out, /New offer rules\./);
-  const original = splitSections(core).sections.find((s) => s.heading === "Offers").text;
+  const original = splitSections(core).sections.find((s) => s.heading === "Offers")?.text ?? "";
   assert.equal(out.includes(original.split("\n").slice(2).join("\n")), false);
 });
 
@@ -101,6 +108,7 @@ test("frontmatter typos fail instead of composing somewhere else", () => {
 
 test("each backlog view modifier composes alone, and the two cannot be combined", (t) => {
   const dir = scratch(t);
+  /** @param {string[]} modifiers */
   const select = (modifiers) => ({ modifiers, skills: { include: ["hr-what-next"] } });
   for (const name of ["backlog-visual", "backlog-outline"]) {
     const { rules } = composeConfiguration(select([name]), dir);
@@ -295,10 +303,11 @@ test("a config's own directory is its layer, and layer skills replace base skill
 
 test("the README lists every modifier with its description, and every skill", () => {
   const readme = readFileSync(join(root, "README.md"), "utf8");
+  /** @param {string} s */
   const plain = (s) => s.replace(/`/g, "");
   for (const m of modifierList()) {
     const row = readme.split("\n").find((l) => l.split("|")[1]?.trim() === "`" + m.name + "`");
-    assert.equal(plain(row?.split("|")[2].trim() ?? ""), plain(m.description), m.name);
+    assert.equal(plain(row?.split("|")[2]?.trim() ?? ""), plain(m.description ?? ""), m.name);
   }
   for (const s of readdirSync(join(root, "skills"))) {
     assert.match(readme, new RegExp("`" + s + "`"), s);
@@ -376,7 +385,7 @@ for (const excludeIndependent of [false, true]) {
 test("the skills the core rules name are declared, shipped and selected by default", (t) => {
   const named = [...new Set(core.match(/hr-[a-z][a-z-]*/g))].sort();
   const { meta } = parseFragment(core, "core");
-  const declared = meta.requires
+  const declared = (meta.requires ?? "")
     .split(",")
     .map((s) => s.trim())
     .sort();
@@ -426,16 +435,15 @@ test("excluding a skill the core rules rely on warns instead of composing silent
 // With --out, core keeps a short section and links its reference; without it, the reference
 // replaces the whole section. A sentence that only the short section carries is lost there.
 test("each core section with a reference text carries every sentence of the short section", () => {
-  const paths = parseFragment(core, "core")
-    .meta.references.split(",")
-    .map((p) => p.trim());
+  const paths = (parseFragment(core, "core").meta.references ?? "").split(",").map((p) => p.trim());
+  /** @param {string} text */
   const flat = (text) => text.replace(/\s+/g, " ").trim();
   assert(paths.length > 0);
   for (const path of paths) {
     const reference = flat(readFileSync(join(root, "rules", path), "utf8"));
     const heading = /^## (.+)$/m.exec(
       reference.length ? readFileSync(join(root, "rules", path), "utf8") : "",
-    )[1];
+    )?.[1];
     const section = splitSections(core).sections.find((s) => s.heading === heading);
     assert(section, `core has no section "${heading}"`);
     // The paragraph holding the link only points at the reference; every other paragraph must be in it.

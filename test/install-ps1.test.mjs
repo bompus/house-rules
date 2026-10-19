@@ -25,7 +25,7 @@ const shells = [join(system32, "WindowsPowerShell", "v1.0", "powershell.exe")];
 if (windows) {
   const pwsh = spawnSync("where.exe", ["pwsh.exe"], { encoding: "utf8" });
   if (pwsh.status === 0) {
-    shells.push(pwsh.stdout.split(/\r?\n/)[0].trim());
+    shells.push(pwsh.stdout.split(/\r?\n/)[0]?.trim() ?? "");
   }
 }
 
@@ -50,6 +50,7 @@ const DROP = new Set(
     ]),
 );
 
+/** @param {import("node:test").TestContext} t */
 function homeFixture(t) {
   // The long form of the path: TEMP can be an 8.3 short name (C:\Users\RUNNER~1),
   // while the script reports the long names Get-ChildItem returns.
@@ -60,6 +61,11 @@ function homeFixture(t) {
 }
 
 // Writes a stub runtime that prints a version; returns its directory.
+/**
+ * @param {string} home
+ * @param {string} rel
+ * @param {string} version
+ */
 function stub(home, rel, version) {
   const path = join(home, rel);
   mkdirSync(dirname(path), { recursive: true });
@@ -68,11 +74,19 @@ function stub(home, rel, version) {
 }
 
 // PowerShell 7 colors and wraps error text to the console width.
+/** @param {{ stdout: string, stderr: string }} r */
 const plain = (r) =>
   stripVTControlCharacters(r.stderr + r.stdout)
     .replace(/\s*\|\s*/g, " ")
     .replace(/\s+/g, " ");
 
+/**
+ * @param {string} shell
+ * @param {string} home
+ * @param {string[]} pathDirs
+ * @param {string[]} [args]
+ * @param {Record<string, string>} [env]
+ */
 function run(shell, home, pathDirs, args = [], env = {}) {
   const base = Object.fromEntries(
     Object.entries(process.env).filter(([k]) => !DROP.has(k.toUpperCase())),
@@ -100,6 +114,10 @@ const slow = { timeout: 30_000, skip: !windows };
 
 for (const shell of shells) {
   const name = basename(shell);
+  /**
+   * @param {string} home
+   * @param {string[]} pathDirs
+   */
   const picked = (home, pathDirs) => {
     const r = run(shell, home, pathDirs, ["-PrintRuntime"]);
     assert.equal(r.status, 0, r.stderr);
@@ -219,12 +237,13 @@ for (const shell of shells) {
       assert.ok(readdirSync(join(config, "composed-skills")).length > 0);
 
       // A run that produces the same skills keeps the installed ones and adds no backup.
+      /** @param {string} dir */
       const snapshot = (dir) =>
         readdirSync(dir, { recursive: true, withFileTypes: true })
           .filter((entry) => entry.isFile())
           .map((entry) => {
             const file = join(entry.parentPath, entry.name);
-            return [file, readFileSync(file, "utf8")];
+            return /** @type {[string, string]} */ ([file, readFileSync(file, "utf8")]);
           })
           .sort(([a], [b]) => (a < b ? -1 : 1));
       const installed = snapshot(join(config, "composed-skills"));
