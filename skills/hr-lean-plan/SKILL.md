@@ -100,6 +100,8 @@ steps for the chosen branch only.
 - Check whether feature-specific behavior leaks into shared runtime paths.
   Keep unrelated callers' behavior intact and name the boundary that does so;
   isolation does not automatically require a new service or wrapper.
+- A slice with more than about ten steps is a smell. Split it by owner or by
+  mergeable piece, or justify its size before listing its steps.
 - Mark steps with no dependency between them as parallel.
 - Make each cutover atomic. When it cannot be, name the intermediate state the
   system will sit in, how long it may stay there, and how to roll back from it.

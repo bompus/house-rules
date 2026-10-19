@@ -55,7 +55,10 @@ not reviewed. Report gaps rather than claiming a complete audit from a sample.
   caller, in data, or in a separate path.
 - **Files past what a reader can hold.** When a file grows large enough that
   nobody can keep its whole shape in mind, ask whether it should be split
-  before this change lands, and where the seam is.
+  before this change lands, and where the seam is. A change that takes a
+  file from under 1,000 lines to over 1,000 is a finding by default. Keeping
+  the larger file is acceptable only when the author gives a structural reason
+  and the file is still easy to find your way around.
 - **Pass-through layers.** Wrappers, adapters and services that forward calls
   with renamed arguments. Indirection must buy clarity, isolation or a real
   second implementation. Test a suspect module by imagining it deleted: if its
@@ -153,6 +156,7 @@ goes under "Before merge" unless the author gives a clear reason to keep it:
 
 - a visible restructure that would delete much of the change's incidental
   complexity, left untaken;
+- a file pushed from under 1,000 lines to over 1,000;
 - new special-case branches that tangle a shared flow;
 - feature checks spread across shared code to solve a local problem;
 - a new wrapper, cast or loosely typed contract that adds indirection

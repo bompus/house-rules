@@ -4,6 +4,10 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- `hr-maintainability-review` treats a change that takes a file from under 1,000 lines to over 1,000 as a
+  finding by default, and lists it among the findings to report. `hr-lean-plan` calls a slice of more than
+  about ten steps a smell to split by owner or mergeable piece, or to justify before listing its steps.
+  The 1,000-line and ten-step figures are judgment numbers, not measured ones.
 - The `hr-benchmarking` tools reference now says how to count CPUs and how to trace off-CPU time under WSL2.
   `nproc --all` ignores a cgroup CPU quota, while some other counters follow it and round a fractional quota
   differently (measured: a 1.5 CPU quota read 1 from Node and Bun, 2 from uutils `nproc`, 16 from GNU `nproc`).
