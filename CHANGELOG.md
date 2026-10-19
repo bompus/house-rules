@@ -4,6 +4,13 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- `merge-pr.sh` in `hr-pr-followup` runs the repository's own `check` command at the pull request head
+  before it merges, or before it prints the push for a repository that lands by fast-forward. The check is
+  package.json `scripts.check`. It runs in a throwaway detached worktree of the head, so a dirty local tree
+  cannot pass or fail it. It uses the repository's package manager, runs under `nice -n 10` and caps tool
+  threads at half the CPUs. A failing install or check refuses the merge and prints the command and its exit
+  code. A head without `scripts.check` gets a warning and still merges, while each repository gains a check
+  command; a later release will refuse it instead.
 - The cleanup rule now has agents remove their own scratch directories, task worktrees and local branches
   without being asked, once the work is merged or saved elsewhere and the release checks pass. A worktree an
   app session is bound to, such as a T3 thread's, stays for the app's own cleanup. The scratch modifier and

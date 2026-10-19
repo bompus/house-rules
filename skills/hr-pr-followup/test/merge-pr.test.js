@@ -51,6 +51,10 @@ function fixture({
   fromTask = false,
   queued = false,
   history = 0,
+  // The head's package.json check script; null leaves package.json out of the head.
+  check = "exit 0",
+  // Raw package.json text for the head, in place of the one built from `check`.
+  packageJson = null,
 } = {}) {
   const root = mkdtempSync(join(tmpdir(), "merge-pr-"));
   roots.push(root);
@@ -65,8 +69,15 @@ function fixture({
   sh(work, "git", "push", "origin", "main");
   const wt = join(root, "feature-wt");
   sh(work, "git", "worktree", "add", "-b", "feature", wt);
+  if (check !== null || packageJson !== null) {
+    writeFileSync(
+      join(wt, "package.json"),
+      packageJson ?? JSON.stringify({ name: "app", packageManager: "bun@1", scripts: { check } }),
+    );
+    sh(wt, "git", "add", "package.json");
+  }
   sh(wt, "git", "commit", "--allow-empty", "-m", "work");
-  sh(wt, "git", "push", "origin", "feature");
+  sh(wt, "git", "push", "origin", "feature", "feature:refs/pull/7/head");
   const oid = sh(wt, "git", "rev-parse", "HEAD");
   const writer = staleDefault ? join(root, "writer") : work;
   if (staleDefault) {
@@ -264,7 +275,8 @@ test("a primary on another branch is not switched or edited; the default ref mov
 });
 
 test("an unfinished merge in the primary is skipped even when status reports a clean tree", () => {
-  const fx = fixture({ staleDefault: true, fromTask: true });
+  // An empty head commit, so the paused merge leaves nothing staged.
+  const fx = fixture({ staleDefault: true, fromTask: true, check: null });
   sh(fx.work, "git", "merge", "--no-commit", "--no-ff", "feature");
   expect(sh(fx.work, "git", "status", "--porcelain")).toBe("");
   const before = sh(fx.work, "git", "rev-parse", "HEAD");
@@ -312,4 +324,72 @@ test("the removed --idle-primary flag is an unknown argument and merges nothing"
   expect(r.code).toBe(2);
   expect(r.err).toContain("unknown argument: --idle-primary");
   expect(existsSync(log) ? readFileSync(log, "utf8") : "").not.toContain("pr merge");
+});
+
+// The scratch worktree the check ran in, if one is still registered.
+const checkWorktrees = (work) =>
+  sh(work, "git", "worktree", "list", "--porcelain")
+    .split("\n")
+    .filter((line) => line.includes("hr-merge-check"));
+
+test("a passing check at the head merges and removes its scratch worktree", () => {
+  const { work, log, oid, run } = fixture({ check: "echo checked-at-head" });
+  const r = run();
+  expect(r.code).toBe(0);
+  expect(r.out).toContain("checked-at-head");
+  expect(r.out).toContain(`check passed: bun run check at ${oid.slice(0, 12)}`);
+  expect(readFileSync(log, "utf8")).toContain("pr merge 7");
+  expect(checkWorktrees(work)).toEqual([]);
+});
+
+test("a failing check refuses without merging, deleting the head or moving any checkout", () => {
+  const { work, wt, remote, log, oid, run } = fixture({ check: "exit 7", staleDefault: true });
+  const before = [sh(work, "git", "rev-parse", "HEAD"), sh(wt, "git", "rev-parse", "HEAD")];
+  const r = run();
+  expect(r.code).toBe(1);
+  expect(r.err).toContain(
+    `refused: \`bun run check\` exited 7 at ${oid.slice(0, 12)}; PR 7 is not merged`,
+  );
+  expect(readFileSync(log, "utf8")).not.toContain("pr merge");
+  expect(sh(remote, "git", "branch", "--list", "feature")).toContain("feature");
+  expect([sh(work, "git", "rev-parse", "HEAD"), sh(wt, "git", "rev-parse", "HEAD")]).toEqual(
+    before,
+  );
+  expect(checkWorktrees(work)).toEqual([]);
+});
+
+test("a head with no check command warns and merges", () => {
+  const { log, run } = fixture({ check: null });
+  const r = run();
+  expect(r.code).toBe(0);
+  expect(r.err).toContain("warning: no check command at");
+  expect(r.err).toContain("A later release will refuse this.");
+  expect(readFileSync(log, "utf8")).toContain("pr merge 7");
+});
+
+test("the check runs at the pushed head, so a local edit cannot make it pass", () => {
+  const { wt, log, run } = fixture({ check: "exit 7", fromTask: true });
+  writeFileSync(join(wt, "package.json"), JSON.stringify({ scripts: { check: "exit 0" } }));
+  const r = run();
+  expect(r.code).toBe(1);
+  expect(r.err).toContain("exited 7");
+  expect(readFileSync(log, "utf8")).not.toContain("pr merge");
+});
+
+test("an invalid package.json at the head refuses the merge", () => {
+  const { log, run } = fixture({ check: null, packageJson: "{ not json" });
+  const r = run();
+  expect(r.code).toBe(1);
+  expect(r.err).toContain("is not valid JSON; PR 7 is not merged");
+  expect(readFileSync(log, "utf8")).not.toContain("pr merge");
+});
+
+test("a head pushed after the review was read refuses instead of checking the new commit", () => {
+  const { wt, log, run } = fixture();
+  sh(wt, "git", "commit", "--allow-empty", "-m", "pushed after review");
+  sh(wt, "git", "push", "--force", "origin", "+feature:refs/pull/7/head");
+  const r = run();
+  expect(r.code).toBe(1);
+  expect(r.err).toContain("head moved to");
+  expect(readFileSync(log, "utf8")).not.toContain("pr merge");
 });

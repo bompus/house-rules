@@ -133,7 +133,16 @@ reset, switch or delete a checkout.
   `gh pr merge --delete-branch`, which removes other sessions' linked worktrees. It
   refuses while review feedback is open (`check-pr-review.ts`), while another open pull
   request targets the head, and for a repository listed in `HR_PUSH_LANDED`
-  (space-separated `owner/repo`; those land by fast-forward push, which it prints). The
+  (space-separated `owner/repo`; those land by fast-forward push, which it prints).
+  Before merging or printing that push, it runs the repository's `check` command
+  (package.json `scripts.check`) at the pull request head, in a throwaway detached
+  worktree under the repository's Git directory, so a local edit cannot change the result.
+  It uses the package manager that `packageManager` or the lockfile names (else npm),
+  installs first with a frozen lockfile when the package has dependencies, and runs
+  under `nice -n 10` with `RAYON_NUM_THREADS` and `UV_THREADPOOL_SIZE` at half the
+  CPUs unless already set. A failing install or check, an invalid package.json, or a
+  head pushed after the review refuses the merge and names the failing command and its
+  exit code. A head with no `scripts.check` gets a warning and merges for now. The
   merge passes `--match-head-commit`. It lists worktrees still on the merged branch so
   their owners clean up. The merge never waits on a local checkout; the local default is
   synchronized afterwards as `verify-landed.sh` describes.
