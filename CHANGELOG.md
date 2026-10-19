@@ -4,6 +4,11 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- `hr-benchmarking` describes a replay check for a change that should keep a query tool's answers. It
+  replays real queries from past session transcripts, limited to an allowlist of public repositories
+  matched by exact host, against the old and new builds with each call's own options. It compares the
+  answer text, treats a changed answer as an item to inspect, and first shows the replay catches an
+  injected fault.
 - `hr-benchmarking` asks each run to print counts of the work it did and a hash of its output, and to
   compare them on the first pair of runs before the rest. A deterministic counter, such as instructions or
   rows read, may screen in one run whether to run the full measurement, but never replaces it. The skill

@@ -60,6 +60,15 @@ or operations completed, and a hash of its output. Compare them on the first
 pair of runs, before the remaining runs. A mismatch means the arms did different
 work; find the cause before timing anything else.
 
+When a change should leave a query tool's answers unchanged, replay real
+queries. Harvest queries or tool calls from past session transcripts, and keep
+only those whose target is on an allowlist of public repositories. Match each
+host exactly; a suffix pattern lets a lookalike such as `notgithub.com` pass.
+Replay each against the old and new builds with that call's own options.
+Compare the answer text, not only its size or a count. Treat each changed answer
+as an item to inspect, not as a failure. Before relying on the replay, inject a
+known fault into the new build and show that the replay flags it.
+
 Identify the limiting resource from CPU versus wall time, resource counters or
 a separate profile. Check that throughput is possible given the machine and
 input. When the generator limits the result, report that limit.
