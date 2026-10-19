@@ -30,7 +30,17 @@ material against the intended revision or artifact and current verified state:
 the README and package READMEs, comparisons, performance metrics, graphics and
 visuals (banners, charts, diagrams, screenshots and demo recordings, with their
 alt text), relevant documentation, registry and marketplace listing text,
-announcement plans and drafts, release notes and the release announcement.
+the hosted repository's settings, announcement plans and drafts, release notes
+and the release announcement.
+
+The repository settings are the description, the homepage link, the topics and
+the social preview image that link previews show. Check that the homepage link
+opens this project, not a similarly named one. Remake the social preview when
+the banner, or any wording or figure the preview shows, changes, and keep its
+source beside the banner so it can be remade. On GitHub, a script can read
+`description`, `homepageUrl`, the topics and `usesCustomOpenGraphImage` through
+the API, but the image itself needs a look. A repository that is never promoted
+needs no custom preview.
 
 Check each for old version numbers, figures and behavior. Regenerate or replace
 a visual that shows them; where that is not possible, remove it or label the

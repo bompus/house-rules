@@ -13,6 +13,11 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   differently (measured: a 1.5 CPU quota read 1 from Node and Bun, 2 from uutils `nproc`, 16 from GNU `nproc`).
   A new subsection gives the `bpftrace` recipe that tracks a target and its children when the distro's PID
   namespace differs from the kernel's.
+- The release-batching audit of public materials now covers the hosted repository's settings: the
+  description, the homepage link, the topics and the social preview image. The preview is remade when the
+  banner or anything it shows changes, and its source sits beside the banner. The house-rules preview
+  source is now `docs/assets/social-preview.png`.
+
 - `hr-test-audit` rejects three more kinds of test: one for a module the change did not touch or a harness
   added for completeness, one written to lift a coverage threshold that still passes with the covered branch
   deleted, and one that waits a fixed delay where an observable condition could be awaited. Its authoring
