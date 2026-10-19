@@ -101,7 +101,8 @@ changed priority only for representative deployment settings, an explicit resour
 agreement or a stated sensitivity question. Record the reason and effective values.
 Preserve frozen protocols and report constrained results within their tested scope.
 Read [scheduling controls](references/tools.md#scheduling-controls) before
-choosing them.
+choosing them; [shared-host controls](references/shared-host.md) covers pinning
+a measurement to whole cores.
 
 Apply worker limits to requested processing concurrency. Report sampled OS-thread
 counts separately; runtime background threads are not processing workers. A
@@ -129,8 +130,9 @@ post-run observations diagnostic and let the machine settle before the next arm.
 Before claiming negligible observer impact or a small decisive gain, test
 sensitivity to observation separately with balanced controls and a preset
 precision criterion. Retain inconclusive controls; do not subtract observer CPU
-from workload wall time. For remote agent or model evaluations, record the
-timing regime and concurrent local work.
+from workload wall time. Provisional observer cost budgets are in
+[shared-host controls](references/shared-host.md#observer-budgets). For remote
+agent or model evaluations, record the timing regime and concurrent local work.
 
 Screen correctness and quality first, then use one run per selected arm to
 explore timing and resource behavior. Preserve screened-out results and their

@@ -4,6 +4,10 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- The `hr-benchmarking` skill gains a shared-host controls reference. It gives the steps for pinning a
+  measurement to whole cores (move other threads off, gate on foreign CPU, restore after the phase) and a
+  provisional observer cost table: 3% of workload CPU, 512 MiB combined peak memory and 1 MiB/s of logged
+  writes. The reference calls these engineering budgets, not calibrated interference thresholds.
 - **Breaking for saved landing commands:** `verify-landed.sh` and `merge-pr.sh` in `hr-pr-followup` no
   longer accept the deprecated `--idle-primary` and `--preflight` flags, which had done nothing since
   landing stopped waiting on local checkouts. Either flag is now an unknown argument and exits 2, so drop
