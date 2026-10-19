@@ -4,6 +4,10 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- `merge-pr.sh` in `hr-pr-followup` installs dependencies before the check with package lifecycle scripts
+  off: `--ignore-scripts` for bun, npm, pnpm and Yarn 1, and `--mode=skip-build` for Yarn 2 and later. A
+  repository's `postinstall` can be production setup, and merging must not run it. A `check` command that
+  needs such a script runs it itself.
 - `hr-benchmarking` asks each reported result to name the runtime versions it was measured on, and to be
   rerun when a new runtime release is likely to change it.
 - `merge-pr.sh` in `hr-pr-followup` runs the repository's own `check` command at the pull request head

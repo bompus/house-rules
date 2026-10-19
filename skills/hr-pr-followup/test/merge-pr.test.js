@@ -131,6 +131,7 @@ esac
     `echo "$*" >> "${pmLog}"\n[ "$1" = install ] && exit ${pnpmInstallExit}\nexit 0\n`,
   );
   stub(bin, "npm", `echo "$*" >> "${pmLog}"\n`);
+  stub(bin, "yarn", `echo "$*" >> "${pmLog}"\n`);
   if (racingFetch) {
     const git = Bun.which("git");
     const base = sh(work, "git", "rev-parse", "main~1");
@@ -444,14 +445,18 @@ test("a package with dependencies installs with a frozen lockfile before the che
   });
   const r = run();
   expect(r.code).toBe(0);
-  expect(readFileSync(pmLog, "utf8")).toBe("install --frozen-lockfile\nrun check\n");
+  expect(readFileSync(pmLog, "utf8")).toBe(
+    "install --frozen-lockfile --ignore-scripts\nrun check\n",
+  );
   expect(readFileSync(log, "utf8")).toContain("pr merge 7");
 });
 
 test("a workspace root with no dependencies of its own still installs", () => {
   const { pmLog, run } = fixture({ packageJson: pnpmPackage({ workspaces: ["packages/*"] }) });
   expect(run().code).toBe(0);
-  expect(readFileSync(pmLog, "utf8")).toBe("install --frozen-lockfile\nrun check\n");
+  expect(readFileSync(pmLog, "utf8")).toBe(
+    "install --frozen-lockfile --ignore-scripts\nrun check\n",
+  );
 });
 
 test("a failing install refuses before the check, without merging, and removes its worktree", () => {
@@ -461,8 +466,8 @@ test("a failing install refuses before the check, without merging, and removes i
   });
   const r = run();
   expect(r.code).toBe(1);
-  expect(r.err).toContain("`pnpm install --frozen-lockfile` exited 5");
-  expect(readFileSync(pmLog, "utf8")).toBe("install --frozen-lockfile\n");
+  expect(r.err).toContain("`pnpm install --frozen-lockfile --ignore-scripts` exited 5");
+  expect(readFileSync(pmLog, "utf8")).toBe("install --frozen-lockfile --ignore-scripts\n");
   expect(readFileSync(log, "utf8")).not.toContain("pr merge");
   expect(checkWorktrees(work)).toEqual([]);
 });
@@ -482,7 +487,7 @@ test("npm-shrinkwrap.json counts as a lockfile, so npm installs with npm ci", ()
     files: { "npm-shrinkwrap.json": "{}\n" },
   });
   expect(run().code).toBe(0);
-  expect(readFileSync(pmLog, "utf8")).toBe("ci\nrun check\n");
+  expect(readFileSync(pmLog, "utf8")).toBe("ci --ignore-scripts\nrun check\n");
 });
 
 test("another fetch rewriting FETCH_HEAD does not read as a moved head", () => {
@@ -492,4 +497,52 @@ test("another fetch rewriting FETCH_HEAD does not read as a moved head", () => {
   expect(r.code).toBe(0);
   expect(readFileSync(log, "utf8")).toContain(`pr merge 7 --squash --match-head-commit ${oid}`);
   expect(sh(work, "git", "for-each-ref", "refs/hr-merge-check")).toBe("");
+});
+
+// The check is static analysis. A repository's install scripts can be production setup, so the
+// install before it must not run them.
+test("the install before the check runs no package lifecycle scripts", () => {
+  const outside = mkdtempSync(join(tmpdir(), "merge-pr-marker-"));
+  roots.push(outside);
+  const marker = join(outside, "postinstall-ran");
+  const { log, run } = fixture({
+    packageJson: JSON.stringify({
+      name: "app",
+      packageManager: "bun@1",
+      workspaces: [],
+      scripts: { check: "exit 0", postinstall: `echo ran > "${marker}"` },
+    }),
+  });
+  const r = run();
+  expect(r.code).toBe(0);
+  expect(existsSync(marker)).toBe(false);
+  expect(readFileSync(log, "utf8")).toContain("pr merge 7");
+});
+
+test("Yarn 1 installs with --ignore-scripts and Yarn 2 or later skips builds", () => {
+  const yarn = (version) =>
+    JSON.stringify({
+      name: "app",
+      packageManager: `yarn@${version}`,
+      scripts: { check: "lint" },
+      devDependencies: { x: "1" },
+    });
+  const classic = fixture({ packageJson: yarn("1.22.22") });
+  expect(classic.run().code).toBe(0);
+  expect(readFileSync(classic.pmLog, "utf8")).toBe(
+    "install --frozen-lockfile --ignore-scripts\nrun check\n",
+  );
+  const berry = fixture({ packageJson: yarn("4.5.0") });
+  expect(berry.run().code).toBe(0);
+  expect(readFileSync(berry.pmLog, "utf8")).toBe(
+    "install --immutable --mode=skip-build\nrun check\n",
+  );
+  const unnamed = fixture({
+    packageJson: JSON.stringify({ name: "app", scripts: { check: "lint" } }),
+    files: { "yarn.lock": "", ".yarnrc.yml": "nodeLinker: node-modules\n" },
+  });
+  expect(unnamed.run().code).toBe(0);
+  expect(readFileSync(unnamed.pmLog, "utf8")).toBe(
+    "install --immutable --mode=skip-build\nrun check\n",
+  );
 });

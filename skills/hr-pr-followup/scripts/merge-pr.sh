@@ -16,7 +16,9 @@
 # under the repository's Git directory, so local edits can neither pass nor fail it. The check is
 # package.json `scripts.check`, run with the package manager named by `packageManager` or the
 # lockfile (bun, pnpm, yarn, else npm), after a frozen install when the head has a lockfile or the
-# package declares dependencies or workspaces. Each run uses its own directory. It runs under
+# package declares dependencies or workspaces. The install runs no lifecycle scripts (postinstall
+# and the like can be a repository's production setup); a check that needs one runs it itself.
+# Each run uses its own directory. It runs under
 # `nice -n 10` with RAYON_NUM_THREADS and UV_THREADPOOL_SIZE capped at half the CPUs unless set. A failing install or check refuses the merge and names the
 # command and its exit code. A head with no `scripts.check` prints a warning and merges anyway.
 #
@@ -81,18 +83,21 @@ trap remove_check_dir EXIT
 git fetch --quiet --no-tags "$REMOTE" "+refs/pull/$PR/head:$CHECK_REF"
 FETCHED="$(git rev-parse "$CHECK_REF")"
 [ "$FETCHED" = "$OID" ] || { echo "PR $PR head moved to $FETCHED after it was read as $OID; rerun" >&2; exit 1; }
-# One line from the head's package.json: the named package manager (or -), 1 when scripts.check is
-# a string, and 1 when it declares dependencies or workspaces. An unreadable package.json refuses.
-read -r NAMED HAS_CHECK NEEDS_INSTALL < <(
+# One line from the head's package.json: the named package manager (or -), its major version (or
+# -), 1 when scripts.check is a string, and 1 when it declares dependencies or workspaces. An
+# unreadable package.json refuses.
+read -r NAMED MAJOR HAS_CHECK NEEDS_INSTALL < <(
   if git cat-file -e "$OID:package.json" 2>/dev/null; then
     git show "$OID:package.json" | bun -e '
       const p = JSON.parse(await Bun.stdin.text());
       const deps = Object.keys({ ...p.dependencies, ...p.devDependencies, ...p.optionalDependencies });
       const install = deps.length > 0 || p.workspaces !== undefined;
-      console.log((p.packageManager ?? "-").split("@")[0] || "-", typeof p.scripts?.check === "string" ? 1 : 0, install ? 1 : 0);
+      const [name, version] = String(p.packageManager ?? "-").split("@");
+      const major = /^\d+/.exec(version ?? "")?.[0] ?? "-";
+      console.log(name || "-", major, typeof p.scripts?.check === "string" ? 1 : 0, install ? 1 : 0);
     ' || echo "invalid"
   else
-    echo "- 0 0"
+    echo "- - 0 0"
   fi
 )
 if [ "$NAMED" = invalid ]; then
@@ -118,11 +123,17 @@ else
   mkdir -p "$CHECK_ROOT"
   CHECK_DIR="$(mktemp -d "$CHECK_ROOT/pr-$PR.XXXXXX")"
   git worktree add --quiet --detach "$CHECK_DIR" "$OID"
+  # No lifecycle scripts. Yarn 2 and later reject --ignore-scripts and skip them with skip-build.
   case "$PM" in
-    bun) INSTALL=(bun install --frozen-lockfile);;
-    pnpm) INSTALL=(pnpm install --frozen-lockfile);;
-    yarn) INSTALL=(yarn install --frozen-lockfile);;
-    *) if in_head package-lock.json || in_head npm-shrinkwrap.json; then INSTALL=(npm ci); else INSTALL=(npm install); fi;;
+    bun) INSTALL=(bun install --frozen-lockfile --ignore-scripts);;
+    pnpm) INSTALL=(pnpm install --frozen-lockfile --ignore-scripts);;
+    yarn) if [ "$NAMED" = yarn ] && [ "$MAJOR" != - ] && [ "$MAJOR" -ge 2 ] || in_head .yarnrc.yml; then
+        INSTALL=(yarn install --immutable --mode=skip-build)
+      else
+        INSTALL=(yarn install --frozen-lockfile --ignore-scripts)
+      fi;;
+    *) if in_head package-lock.json || in_head npm-shrinkwrap.json; then INSTALL=(npm ci --ignore-scripts)
+      else INSTALL=(npm install --ignore-scripts); fi;;
   esac
   CPUS="$(nproc --all 2>/dev/null || getconf _NPROCESSORS_ONLN 2>/dev/null || echo 2)"
   HALF=$(( CPUS / 2 > 0 ? CPUS / 2 : 1 ))
