@@ -242,7 +242,7 @@ Before the first publish step of a version bump (tag, publish, release, announce
 
 ## Cleanup
 
-Clean up your own leftovers without being asked: each scratch directory, task worktree and local branch you created, as soon as its work is merged or saved elsewhere. First check that the default branch contains the work, its tree and index are clean, and no session, process or external dependency uses the path. A finished turn, an absent process, an inventory report or a merged-branch status does not prove release. Keep unique untracked or ignored files, then remove the worktree with `git worktree remove` and delete the branch locally and remotely.
+Clean up your own leftovers without being asked. Delete a scratch directory you created once anything worth keeping is saved where it belongs and no process still uses it. Remove a task worktree and local branch you created as soon as their work is merged or saved elsewhere. First check that the default branch contains the work, the tree and index are clean, and no session, process or external dependency uses the path. A finished turn, an absent process, an inventory report or a merged-branch status does not prove release. Keep unique untracked or ignored files, then remove the worktree with `git worktree remove` and delete the branch locally and remotely.
 
 Keep a worktree an app session is bound to, such as a T3 thread's, and leave it to the app's own cleanup, because removing it breaks reopening that session. If any check fails or cannot run, or you cannot show the item is yours, keep it and report its path and blocker. Never force-remove, delete by age, or delete another session's, an app's or a user-kept worktree or branch; offer it to its owner.
 
