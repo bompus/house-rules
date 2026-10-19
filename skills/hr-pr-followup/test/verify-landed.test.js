@@ -369,29 +369,13 @@ test("a fast-forward that would overwrite an untracked file is refused by Git an
   expect(sh(work, "git", "status", "--porcelain")).toBe("?? added.txt");
 });
 
-test("deprecated --idle-primary is accepted and ignored with a note", () => {
-  const { work, wt, sha } = primaryBehind();
-  const r = runScript(wt, "--commit", sha, "--ff", "--idle-primary", "/nonexistent");
-  expect(r.code).toBe(0);
-  expect(r.err).toContain("--idle-primary is ignored");
-  expect(sh(work, "git", "rev-parse", "HEAD")).toBe(sha);
-});
-
-test("deprecated --idle-primary without a path does not swallow the next option", () => {
-  const { work, wt, sha } = primaryBehind();
-  const r = runScript(wt, "--commit", sha, "--idle-primary", "--ff");
-  expect(r.code).toBe(0);
-  expect(r.err).toContain("--idle-primary is ignored");
-  expect(sh(work, "git", "rev-parse", "HEAD")).toBe(sha);
-});
-
-test("deprecated --preflight exits 0 without moving anything", () => {
-  const { work, wt } = primaryBehind();
-  const before = sh(work, "git", "rev-parse", "HEAD");
-  writeFileSync(join(work, "notes.txt"), "work in progress\n");
-  const r = runScript(wt, "--preflight", "--ff", "--idle-primary", work);
-  expect(r.code).toBe(0);
-  expect(r.err).toContain("--preflight is ignored");
-  expect(r.out).toContain("preflight skipped");
-  expect(sh(work, "git", "rev-parse", "HEAD")).toBe(before);
-});
+for (const flag of ["--idle-primary", "--preflight"]) {
+  test(`the removed ${flag} flag is an unknown argument and moves nothing`, () => {
+    const { work, wt, sha } = primaryBehind();
+    const before = sh(work, "git", "rev-parse", "HEAD");
+    const r = runScript(wt, "--commit", sha, "--ff", flag);
+    expect(r.code).toBe(2);
+    expect(r.err).toContain(`unknown argument: ${flag}`);
+    expect(sh(work, "git", "rev-parse", "HEAD")).toBe(before);
+  });
+}

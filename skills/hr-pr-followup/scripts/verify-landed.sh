@@ -26,11 +26,6 @@
 # verified, but a local checkout was skipped (local sync pending). After a failure, rerun this
 # script, not merge-pr.sh: the PR is already merged.
 #
-# Deprecated, removed in a later release; landing no longer waits on any local checkout.
-# --idle-primary <path> is accepted and ignored with a note on stderr. It takes the next argument as its
-# path unless that argument is missing or starts with "-".
-# --preflight prints a note and "preflight skipped: it no longer gates landing" and exits 0 without
-# checking anything; with --commit or --branch it exits 2.
 # Usage:
 #   bash scripts/verify-landed.sh --commit <sha> [--default <branch>]
 #     [--branch <merged-head>] [--remote <name>] [--ff]
@@ -41,7 +36,6 @@ DEFAULT=""
 COMMIT=""
 BRANCH=""
 FF=0
-LEGACY_PREFLIGHT=0
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -50,21 +44,9 @@ while [ $# -gt 0 ]; do
     --branch) BRANCH="${2:?}"; shift 2;;
     --remote) REMOTE="${2:?}"; shift 2;;
     --ff) FF=1; shift;;
-    --idle-primary)
-      echo "note: --idle-primary is ignored; the checkout holding the default branch is fast-forwarded when it is clean and strictly behind. The flag will be removed in a later release." >&2
-      shift; case "${1:-}" in ''|-*) ;; *) shift;; esac;;
-    --preflight)
-      LEGACY_PREFLIGHT=1
-      echo "note: --preflight is ignored; landing no longer waits on local checkouts. The flag will be removed in a later release." >&2
-      shift;;
     *) echo "unknown argument: $1" >&2; exit 2;;
   esac
 done
-if [ "$LEGACY_PREFLIGHT" = 1 ]; then
-  [ -z "$COMMIT$BRANCH" ] || { echo "--preflight excludes --commit/--branch" >&2; exit 2; }
-  echo "preflight skipped: it no longer gates landing"
-  exit 0
-fi
 [ -n "$COMMIT" ] || { echo "missing --commit <sha>" >&2; exit 2; }
 
 if [ -z "$DEFAULT" ]; then

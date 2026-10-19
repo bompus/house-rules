@@ -4,6 +4,10 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- **Breaking for saved landing commands:** `verify-landed.sh` and `merge-pr.sh` in `hr-pr-followup` no
+  longer accept the deprecated `--idle-primary` and `--preflight` flags, which had done nothing since
+  landing stopped waiting on local checkouts. Either flag is now an unknown argument and exits 2, so drop
+  it from any saved landing command.
 - The core rule and the landing reference now list the repository description and social preview among
   the public materials to check before the first publish step of a version bump.
 - The `hr-pr-followup` review gate skips a review bot that reports it has no quota or capacity, with no

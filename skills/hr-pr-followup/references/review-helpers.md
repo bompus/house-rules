@@ -152,12 +152,8 @@ reset, switch or delete a checkout.
   Exit 0 means landed and current; 1 is a failure; 2 is usage; 3 means landed with a local
   sync pending, which is not a failed landing and needs no question to the user: record
   the path and reason in the task plan. Both scripts use these exit codes. After a
-  failure, rerun this script, not `merge-pr.sh`. Both scripts accept the old
-  `--idle-primary <path>` flag and ignore it with a note. It takes the next argument as its path unless that
-  argument is missing or starts with `-`. `verify-landed.sh` also accepts `--preflight`. Without
-  `--commit` and `--branch`, it prints a note and `preflight skipped: it no longer gates landing`, checks
-  nothing and exits 0. With either one it exits 2. `merge-pr.sh` rejects `--preflight` with exit 2. Both
-  flags will be removed.
+  failure, rerun this script, not `merge-pr.sh`. Neither script accepts the removed
+  `--idle-primary` or `--preflight` flags; either one is an unknown argument (exit 2).
 - `check-landing.py [--path <checkout>] [--base <ref>]` reports whether a checkout's
   work is in the base branch by content, so squash-merged branches count as landed, and
   lists live processes whose working directory is inside the checkout (Linux only). That

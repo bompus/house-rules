@@ -306,18 +306,10 @@ test("a bisect of the default in the primary is skipped while HEAD is detached",
   expect(sh(fx.work, "git", "rev-parse", "HEAD")).toBe(before);
 });
 
-test("deprecated --idle-primary without a path does not swallow --merge", () => {
+test("the removed --idle-primary flag is an unknown argument and merges nothing", () => {
   const { log, run } = fixture({ staleDefault: true, fromTask: true });
-  const r = run("--idle-primary", "--merge");
-  expect(r.err).toContain("--idle-primary is ignored");
-  expect(readFileSync(log, "utf8")).toMatch(/pr merge 7.*--merge/);
-});
-
-test("deprecated --idle-primary is accepted and ignored, even for a path that is not the primary", () => {
-  const { work, wt, log, squash, run } = fixture({ staleDefault: true, fromTask: true });
-  const r = run("--idle-primary", wt);
-  expect(r.code).toBe(0);
-  expect(r.err).toContain("--idle-primary is ignored");
-  expect(readFileSync(log, "utf8")).toContain("pr merge 7");
-  expect(sh(work, "git", "rev-parse", "HEAD")).toBe(squash);
+  const r = run("--idle-primary", "/nonexistent");
+  expect(r.code).toBe(2);
+  expect(r.err).toContain("unknown argument: --idle-primary");
+  expect(existsSync(log) ? readFileSync(log, "utf8") : "").not.toContain("pr merge");
 });

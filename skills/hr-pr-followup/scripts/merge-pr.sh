@@ -28,9 +28,6 @@
 # would drop that parent. Every other PR is squashed.
 #
 # Exit status: 0 landed and every local default current; 1 refused or failed; 2 usage; 3 landed, local sync pending.
-# --idle-primary <path> is deprecated: accepted and ignored with a note on stderr, removed in a later release.
-# It takes the next argument as its path unless that argument is missing or starts with "-".
-# --preflight is not accepted here (unknown argument, exit 2); only verify-landed.sh still takes it.
 #
 # Usage: bash scripts/merge-pr.sh <pr> [--merge] [--remote <name>]
 set -euo pipefail
@@ -46,9 +43,6 @@ while [ $# -gt 0 ]; do
   case "$1" in
     --merge) STRATEGY=--merge; shift;;
     --remote) REMOTE="${2:?}"; shift 2;;
-    --idle-primary)
-      echo "note: --idle-primary is ignored; the checkout holding the default branch is fast-forwarded when it is clean and strictly behind. The flag will be removed in a later release." >&2
-      shift; case "${1:-}" in ''|-*) ;; *) shift;; esac;;
     *) echo "unknown argument: $1" >&2; exit 2;;
   esac
 done
