@@ -4,7 +4,7 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
-- `npm run check` type-checks with Bun's `bun check` instead of `tsc`, so contributors need Bun 1.4.3 or later (CI moves
+- `npm run check` type-checks with Bun's type checker (`bun --check`) instead of `tsc`, so contributors need Bun 1.4.3 or later (CI moves
   from 1.4.2). On this repository both report the same errors when the unused-code and index-signature
   strict flags are added.
 - The pull-request review gate now treats a CodeRabbit reply that says only "Review failed." (no reason)

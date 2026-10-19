@@ -345,8 +345,8 @@ npm run check:package -- --bun   # npm tarball: packs, installs, runs the CLI
 bun install && npm run check     # format, lint and type check
 ```
 
-`npm run check` runs oxfmt, oxlint, `bun check` (Bun 1.4.3 or later), ruff, shfmt and
-shellcheck. Apart from `bun check`, the JavaScript tools are pinned dev dependencies. Ruff 0.17.1, shellcheck 0.11.0
+`npm run check` runs oxfmt, oxlint, `bun --check` (Bun 1.4.3 or later), ruff, shfmt and
+shellcheck. Apart from `bun --check`, the JavaScript tools are pinned dev dependencies. Ruff 0.17.1, shellcheck 0.11.0
 and shfmt 3.14.1 come from your `PATH`; `scripts/install-check-tools.sh DIR`
 installs those versions on Linux x86_64, as CI does. The type check covers every
 folder except `node_modules` and the skill test fixtures (`tsconfig.check.json`).

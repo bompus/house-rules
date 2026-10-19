@@ -1,6 +1,6 @@
 {
   // The type check in `npm run check`. Linting reads tsconfig.json, which
-  // covers every folder; this file only narrows what `bun check` checks.
+  // covers every folder; this file only narrows what `bun --check` checks.
   "extends": "./tsconfig.json",
   "exclude": [
     "node_modules",
