@@ -50,6 +50,30 @@ import {
 } from "node:fs";
 import { basename, dirname, join, resolve, sep } from "node:path";
 
+/** @typedef {import("./plan-ledger.mjs").LedgerItem} LedgerItem */
+/** @typedef {ReturnType<typeof parseArguments>} Options */
+/** @typedef {{ state: string, label: string }} RefState */
+/**
+ * @typedef {object} Report
+ * @property {string} plan
+ * @property {string | null} status
+ * @property {string | null} owner
+ * @property {string[]} open
+ * @property {string[]} awaitingUser
+ * @property {string[]} unansweredOffers
+ * @property {string[]} stale
+ * @property {string[]} recheckDue
+ * @property {string[]} resolvedLater
+ * @property {string[]} skipped
+ * @property {string[]} findings
+ * @property {string[]} warnings
+ * @property {string[]} errors
+ * @property {boolean} [invalidPlan]
+ * @property {boolean} [closeOutDue]
+ * @property {string} [archived]
+ * @property {{ version: number, sessionId: string, turnId: string | null } & ReturnType<typeof planSnapshot>} [reconciliation]
+ */
+
 const usage =
   "usage: check-open-work.mjs <plan.md> [--checkout <path>]... [--app-managed <path>]... [--scratch <dir>] [--repo <owner/repo>] [--offline] [--today <YYYY-MM-DD>] [--archive] [--json] [--session <id> --turn <id>]\n" +
   'The output lists deferred items whose trigger is only the user\'s own action ("user selects", "user asks for the backlog") as "awaiting your yes/no"; this is a text match, see the header.';
@@ -111,6 +135,7 @@ const LEDGER_BUDGET = { open: 100, kib: 256 };
 const AUDIT_DAYS = 30;
 const PROJECT_NAME = /^\w[\w.-]*$/;
 // A real calendar date: "2026-02-31" has the shape but not the round trip.
+/** @param {string} value */
 function validDate(value) {
   const date = new Date(`${value}T00:00:00Z`);
   return (
@@ -120,11 +145,12 @@ function validDate(value) {
   );
 }
 
+/** @param {string[]} argv */
 function parseArguments(argv) {
   const options = {
     plan: /** @type {string | null} */ (null),
-    checkouts: [],
-    appManaged: [],
+    checkouts: /** @type {string[]} */ ([]),
+    appManaged: /** @type {string[]} */ ([]),
     scratch: /** @type {string | null} */ (null),
     repo: /** @type {string | null} */ (null),
     offline: false,
@@ -135,7 +161,7 @@ function parseArguments(argv) {
     turnId: /** @type {string | null} */ (null),
   };
   for (let index = 0; index < argv.length; index++) {
-    const argument = argv[index];
+    const argument = argv[index] ?? "";
     if (argument === "--archive") {
       options.archive = true;
     } else if (argument === "--json") {
@@ -196,8 +222,10 @@ function parseArguments(argv) {
   return options;
 }
 
+/** @param {string} text */
 const clip = (text, length = 90) => (text.length > length ? `${text.slice(0, length - 1)}…` : text);
 
+/** @param {string} planPath */
 function notesRoot(planPath) {
   const parts = resolve(planPath).split(sep);
   const at = parts.lastIndexOf("plans");
@@ -209,8 +237,9 @@ function notesRoot(planPath) {
 // An owner line can name several identities ("Alice, session 7"); a manifest is the plan's only when
 // its whole owner equals one of them, so a manifest owned by "session" is not claimed. A manifest that
 // cannot be read, or has no owner, could be the plan's, so it is reported instead of skipped.
+/** @param {string} directory @param {string} owner */
 function ownedScratch(directory, owner) {
-  const result = { owned: [], unreadable: [] };
+  const result = { owned: /** @type {string[]} */ ([]), unreadable: /** @type {string[]} */ ([]) };
   if (!existsSync(directory)) {
     return result;
   }
@@ -235,11 +264,16 @@ function ownedScratch(directory, owner) {
   return result;
 }
 
+/** @param {string} path @param {...string} args */
 function git(path, ...args) {
   const run = spawnSync("git", ["-C", path, ...args], { encoding: "utf8" });
   return run.status === 0 ? run.stdout : null;
 }
 
+/**
+ * @param {string} path
+ * @returns {{ error: string } | { branch: string, dirty: number, unpushed: number }}
+ */
 function checkoutState(path) {
   const status = git(path, "status", "--porcelain=v1", "--branch");
   if (status === null) {
@@ -249,17 +283,19 @@ function checkoutState(path) {
   const unpushed = (git(path, "log", "--oneline", "HEAD", "--not", "--remotes") ?? "")
     .split("\n")
     .filter(Boolean);
-  const branch = branchLine.replace(/^## /, "").split(/\.\.\.| /)[0];
+  const branch = (branchLine ?? "").replace(/^## /, "").split(/\.\.\.| /)[0] ?? "";
   return { branch, dirty: changes.length, unpushed: unpushed.length };
 }
 
 // A name counts only as a whole token, so "main" inside "update main docs" or "/a/b" inside "/a/bc" does not.
 const GENERIC_BRANCHES = ["main", "master", "HEAD", "No"];
+/** @param {string} text @param {string} name */
 function mentions(text, name) {
   const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   return new RegExp(`(^|[^\\w./-])${escaped}($|[^\\w./-])`).test(text);
 }
 
+/** @param {LedgerItem} item */
 function awaitsUser(item) {
   if (item.mark !== "~") {
     return false;
@@ -268,13 +304,15 @@ function awaitsUser(item) {
   return USER_ONLY_TRIGGER.test(trigger?.trim().replace(/[.)\s]+$/, "") ?? "");
 }
 
+/** @param {string} resource @param {string[]} names @param {LedgerItem[]} items @param {string[]} findings */
 function accountFor(resource, names, items, findings) {
   const naming = items.filter((item) => names.some((name) => mentions(item.text, name)));
   if (!naming.length) {
     findings.push(`${resource} is not named in any ledger item`);
   } else if (!naming.some((item) => item.mark === " " || item.mark === "~")) {
+    const first = /** @type {LedgerItem} */ (naming[0]);
     findings.push(
-      `${resource} still exists but its ledger item is ${MARKS[naming[0].mark]} (L${naming[0].line})`,
+      `${resource} still exists but its ledger item is ${MARKS[first.mark]} (L${first.line})`,
     );
   }
 }
@@ -283,10 +321,13 @@ function accountFor(resource, names, items, findings) {
 // A reference the line already reports as merged, landed or superseded ("fix landed in #120",
 // "left out of #182") is context for a remaining part, not the item's subject, so it is skipped.
 const REPORTED = /\b(?:merged?|landed|closed|superseded|left out of|squash\w*)\b/i;
+/** @param {string} text @param {string | null} repo */
 function references(text, repo) {
+  /** @type {Set<string>} */
   const github = new Set();
   let bare = 0;
   // Only the clause around the reference counts: in "#1 merged; cleanup #2" the word belongs to #1.
+  /** @param {number} offset @param {number} length */
   const reported = (offset, length) => {
     const before = text
       .slice(Math.max(0, offset - 25), offset)
@@ -297,12 +338,16 @@ function references(text, repo) {
   };
   let rest = text;
   for (const pattern of [GITHUB_URL, GITHUB_REF]) {
-    rest = rest.replace(pattern, (match, owner, name, number, offset) => {
-      if (!reported(offset, match.length)) {
-        github.add(`${owner}/${name}#${number}`);
-      }
-      return " ".repeat(match.length);
-    });
+    rest = rest.replace(
+      pattern,
+      /** @param {string} match @param {string} owner @param {string} name @param {string} number @param {number} offset */
+      (match, owner, name, number, offset) => {
+        if (!reported(offset, match.length)) {
+          github.add(`${owner}/${name}#${number}`);
+        }
+        return " ".repeat(match.length);
+      },
+    );
   }
   for (const match of rest.matchAll(BARE_REF)) {
     if (reported(match.index, match[0].length)) {
@@ -317,6 +362,10 @@ function references(text, repo) {
   return { github: [...github], bare, commits: [...new Set(rest.match(COMMIT) ?? [])] };
 }
 
+/**
+ * @param {...string} args
+ * @returns {Promise<{ stdout?: string, error?: string }>}
+ */
 function gh(...args) {
   return new Promise((done) => {
     let stdout = "";
@@ -325,7 +374,12 @@ function gh(...args) {
     child.stdout.on("data", (chunk) => (stdout += chunk));
     child.stderr.on("data", (chunk) => (stderr += chunk));
     child.on("error", (error) =>
-      done({ error: error.code === "ENOENT" ? "gh not found" : error.message }),
+      done({
+        error:
+          /** @type {NodeJS.ErrnoException} */ (error).code === "ENOENT"
+            ? "gh not found"
+            : error.message,
+      }),
     );
     child.on("close", (code) =>
       done(code === 0 ? { stdout } : { error: stderr.trim() || `gh exit ${code}` }),
@@ -334,7 +388,13 @@ function gh(...args) {
 }
 
 // "merged", "closed", "open" or "unknown" (not found) per reference; null when GitHub cannot be asked.
+/**
+ * @param {string[]} refs
+ * @param {boolean} offline
+ * @returns {Promise<{ states: Map<string, string>, skipped?: string }>}
+ */
 async function githubStates(refs, offline) {
+  /** @type {Map<string, string>} */
   const states = new Map();
   if (!refs.length) {
     return { states };
@@ -342,8 +402,11 @@ async function githubStates(refs, offline) {
   if (offline) {
     return { states, skipped: "GitHub check skipped: --offline" };
   }
+  /** @param {string} ref */
   const lookup = async (ref) => {
-    const [, owner, name, number] = ref.match(/^(.+)\/(.+)#(\d+)$/);
+    const [, owner, name, number] = /** @type {RegExpMatchArray} */ (
+      ref.match(/^(.+)\/(.+)#(\d+)$/)
+    );
     const result = await gh("api", `repos/${owner}/${name}/issues/${number}`);
     if (result.error) {
       if (/\b404\b|not found/i.test(result.error) && result.error !== "gh not found") {
@@ -351,26 +414,30 @@ async function githubStates(refs, offline) {
       }
       throw new Error(result.error.split("\n")[0]);
     }
-    const issue = JSON.parse(result.stdout);
+    const issue = JSON.parse(/** @type {string} */ (result.stdout));
     states.set(ref, issue.pull_request?.merged_at ? "merged" : issue.state);
   };
   try {
     // The first lookup runs alone, so an offline host or a missing gh costs one call, not one per item.
-    await lookup(refs[0]);
+    await lookup(/** @type {string} */ (refs[0]));
     const queue = refs.slice(1);
     await Promise.all(
       Array.from({ length: 8 }, async () => {
         while (queue.length) {
-          await lookup(queue.shift());
+          await lookup(/** @type {string} */ (queue.shift()));
         }
       }),
     );
   } catch (error) {
-    return { states: new Map(), skipped: `GitHub check skipped: ${error.message}` };
+    return {
+      states: new Map(),
+      skipped: `GitHub check skipped: ${/** @type {Error} */ (error).message}`,
+    };
   }
   return { states };
 }
 
+/** @param {string} path */
 function defaultBranch(path) {
   const head = git(path, "rev-parse", "--abbrev-ref", "origin/HEAD")?.trim();
   if (head && head !== "origin/HEAD") {
@@ -385,6 +452,11 @@ function defaultBranch(path) {
 // elsewhere, and undefined when no checkout knows it (a session id or other hex text, not a commit).
 // Open items name landed commits mostly as context ("pin is still 6b5c7aef"), so a landed commit never
 // marks an item finished by itself; an unlanded one keeps it off the list.
+/**
+ * @param {string} sha
+ * @param {{ path: string, base: string | undefined }[]} checkouts
+ * @returns {RefState | undefined}
+ */
 function commitState(sha, checkouts) {
   let state;
   for (const { path, base } of checkouts) {
@@ -402,6 +474,7 @@ function commitState(sha, checkouts) {
   return state;
 }
 
+/** @param {LedgerItem[]} open @param {Options} options @param {Report} report */
 async function possiblyFinished(open, options, report) {
   const named = open.map((item) => ({ item, ...references(item.text, options.repo) }));
   const bare = named.reduce((total, entry) => total + entry.bare, 0);
@@ -418,11 +491,13 @@ async function possiblyFinished(open, options, report) {
     report.skipped.push(skipped);
   }
   const checkouts = options.checkouts.map((path) => ({ path, base: defaultBranch(path) }));
+  /** @type {string[]} */
   const finished = [];
   for (const { item, github, bare, commits } of named) {
     if (bare) {
       continue;
     }
+    /** @type {RefState[]} */
     const refs = github.map((ref) => ({
       state: states.get(ref) ?? "unknown",
       label: `${ref} ${states.get(ref) ?? "unchecked"}`,
@@ -443,8 +518,10 @@ async function possiblyFinished(open, options, report) {
   return finished;
 }
 
+/** @param {LedgerItem} item */
 const row = (item) => `L${item.line} [${item.mark}] ${clip(item.text)}`;
 
+/** @param {string} date @param {number} days */
 function addDays(date, days) {
   const next = new Date(`${date}T00:00:00Z`);
   next.setUTCDate(next.getUTCDate() + days);
@@ -452,6 +529,7 @@ function addDays(date, days) {
 }
 
 // The project's last forgotten-work audit: missing, unreadable or older than AUDIT_DAYS is a warning.
+/** @param {string} project @param {ReturnType<typeof notesRoot>} roots @param {string} today */
 function auditWarning(project, roots, today) {
   if (!PROJECT_NAME.test(project)) {
     return `\`Project: ${clip(project, 40)}\` is not a plain project name, so its audit record was not checked`;
@@ -487,6 +565,7 @@ function auditWarning(project, roots, today) {
 }
 
 // Long plans can carry dozens of one kind of warning; show five and count the rest.
+/** @param {string[]} warnings @param {string[]} entries @param {string} kind */
 function capped(warnings, entries, kind) {
   warnings.push(...entries.slice(0, 5));
   if (entries.length > 5) {
@@ -494,8 +573,11 @@ function capped(warnings, entries, kind) {
   }
 }
 
+/** @param {LedgerItem[]} open @param {string} today @param {string[]} warnings */
 function rechecks(open, today, warnings) {
+  /** @type {string[]} */
   const due = [];
+  /** @type {string[]} */
   const undated = [];
   const soon = addDays(today, 7);
   for (const item of open) {
@@ -524,14 +606,17 @@ function rechecks(open, today, warnings) {
 
 // What a line names that a later line can answer: pull requests, issues, threads, offers and commits,
 // compared by equality. A bare pull request number is `repo`'s when one is given.
+/** @param {string} text @param {string | null} repo */
 function namedThings(text, repo) {
+  /** @type {Set<string>} */
   const found = new Set();
+  /** @param {string} _ @param {string} owner @param {string} name @param {string} number */
   const github = (_, owner, name, number) => {
     found.add(`${owner}/${name}#${number}`.toLowerCase());
     return " ";
   };
   let rest = text.replace(GITHUB_URL, github).replace(GITHUB_REF, github);
-  rest = rest.replace(THREAD_ID, (_, id) => {
+  rest = rest.replace(THREAD_ID, (/** @type {string} */ _, /** @type {string} */ id) => {
     found.add(`thread:${id}`);
     return " ";
   });
@@ -551,10 +636,10 @@ function namedThings(text, repo) {
   for (const match of rest.matchAll(BARE_REF)) {
     found.add(repo ? `${repo}#${match[1]}`.toLowerCase() : `#${match[1]}`);
   }
-  for (const [, sha] of rest.matchAll(NAMED_COMMIT)) {
+  for (const [, sha = ""] of rest.matchAll(NAMED_COMMIT)) {
     found.add(`commit:${sha.slice(0, 7).toLowerCase()}`);
   }
-  for (const [sha] of rest.matchAll(COMMIT)) {
+  for (const [sha = ""] of rest.matchAll(COMMIT)) {
     if (/\d/.test(sha) && /[a-f]/.test(sha)) {
       found.add(`commit:${sha.slice(0, 7)}`);
     }
@@ -564,33 +649,39 @@ function namedThings(text, repo) {
 
 // An open or deferred line that names the same thing as a later done line: the result was probably logged
 // as a new line and the old one left open. Its re-check date does not matter; a result can arrive early.
+/** @param {LedgerItem[]} items @param {string | null} repo */
 function resolvedLater(items, repo) {
+  /** @type {Map<LedgerItem, string[]>} */
   const named = new Map(items.map((item) => [item, namedThings(item.text, repo)]));
+  /** @param {LedgerItem} item */
+  const tokensOf = (item) => /** @type {string[]} */ (named.get(item));
+  /** @type {Map<string, number>} */
   const lines = new Map();
   for (const tokens of named.values()) {
     for (const token of tokens) {
       lines.set(token, (lines.get(token) ?? 0) + 1);
     }
   }
+  /** @type {string[]} */
   const resolved = [];
   for (const item of items) {
     if (item.mark !== " " && item.mark !== "~") {
       continue;
     }
-    const mine = named.get(item).filter((token) => lines.get(token) <= SHARED_TOKEN_LINES);
+    const mine = tokensOf(item).filter(
+      (token) => /** @type {number} */ (lines.get(token)) <= SHARED_TOKEN_LINES,
+    );
     const later = items.filter(
       (other) =>
         other.mark === "x" &&
         other.line > item.line &&
-        mine.some((token) => named.get(other).includes(token)),
+        mine.some((token) => tokensOf(other).includes(token)),
     );
     if (!later.length) {
       continue;
     }
     const shared = [
-      ...new Set(
-        later.flatMap((other) => mine.filter((token) => named.get(other).includes(token))),
-      ),
+      ...new Set(later.flatMap((other) => mine.filter((token) => tokensOf(other).includes(token)))),
     ].sort();
     resolved.push(
       `${row(item)} — ${shared.join(", ")} is named by later done line(s) ${later.map((other) => `L${other.line}`).join(", ")}`,
@@ -601,7 +692,9 @@ function resolvedLater(items, repo) {
 
 // An answered offer must say what happened to the options the user did not pick, on its own line or on
 // another ledger line that names the same offer ID.
+/** @param {LedgerItem[]} items @param {string[]} warnings */
 function offerWarnings(items, warnings) {
+  /** @type {string[]} */
   const missing = [];
   for (const item of items) {
     if (!ANSWERED_OFFER.test(item.text) || DISPOSITION.test(item.text)) {
@@ -624,18 +717,23 @@ function offerWarnings(items, warnings) {
 }
 
 // The offer IDs a line is about, leaving out one it only names as a replacement ("superseded by offer X").
+/** @param {string} text */
 function offersNamed(text) {
+  /** @type {string[]} */
   const ids = [];
   for (const match of text.matchAll(OFFER_SUBJECT)) {
-    if (OFFER_ID_ONLY.test(match[1]) && !REPLACEMENT_OF.test(text.slice(0, match.index))) {
-      ids.push(match[1]);
+    const id = match[1] ?? "";
+    if (OFFER_ID_ONLY.test(id) && !REPLACEMENT_OF.test(text.slice(0, match.index))) {
+      ids.push(id);
     }
   }
   return ids;
 }
 
 // One entry per offer ID that has an open line and no line recording an answer, a drop or a supersession.
+/** @param {LedgerItem[]} items */
 function unansweredOffers(items) {
+  /** @type {Set<string>} */
   const closed = new Set();
   for (const item of items) {
     if (item.mark === "-" || ANSWERED_OFFER.test(item.text) || DISPOSITION.test(item.text)) {
@@ -644,6 +742,7 @@ function unansweredOffers(items) {
       }
     }
   }
+  /** @type {Map<string, string>} */
   const unanswered = new Map();
   for (const item of items) {
     if (item.mark === " ") {
@@ -657,13 +756,15 @@ function unansweredOffers(items) {
   return [...unanswered.values()];
 }
 
+/** @param {Options} options */
 async function run(options) {
-  const planPath = resolve(options.plan);
+  const planPath = resolve(/** @type {string} */ (options.plan));
   if (!existsSync(planPath) || !statSync(planPath).isFile()) {
     throw new Error(`cannot read ${options.plan}`);
   }
   const planText = readFileSync(planPath, "utf8");
   const plan = parsePlan(planText);
+  /** @type {Report} */
   const report = {
     plan: planPath,
     status: plan.status ?? null,
@@ -701,7 +802,7 @@ async function run(options) {
     );
   }
   report.awaitingUser = open.filter(awaitsUser).map(row);
-  if (TERMINAL_STATUS.test(plan.status) && open.length) {
+  if (TERMINAL_STATUS.test(plan.status ?? "") && open.length) {
     report.findings.push(
       `Status says "${plan.status}" but ${open.length} ledger item(s) are open or deferred`,
     );
@@ -724,7 +825,7 @@ async function run(options) {
   const roots = notesRoot(planPath);
   const scratch = options.scratch ?? (roots ? join(roots.notes, "tmp") : null);
   if (scratch && !invalid) {
-    const { owned, unreadable } = ownedScratch(scratch, plan.owner);
+    const { owned, unreadable } = ownedScratch(scratch, plan.owner ?? "");
     for (const manifest of unreadable) {
       report.errors.push(
         `cannot read the scratch manifest ${manifest} (needs a JSON object with a string owner)`,
@@ -736,7 +837,7 @@ async function run(options) {
   }
   for (const path of invalid ? [] : options.checkouts) {
     const state = checkoutState(path);
-    if (state.error) {
+    if ("error" in state) {
       report.errors.push(state.error);
     } else if (state.dirty || state.unpushed) {
       accountFor(
@@ -750,7 +851,7 @@ async function run(options) {
   // An app retires its own checkouts, so their state is reported but is not a finding.
   for (const path of invalid ? [] : options.appManaged) {
     const state = checkoutState(path);
-    if (state.error) {
+    if ("error" in state) {
       report.errors.push(state.error);
     } else if (state.dirty || state.unpushed) {
       report.warnings.push(
@@ -802,7 +903,7 @@ async function run(options) {
     report.stale = await possiblyFinished(open, options, report);
   }
   if (options.archive && !report.errors.length) {
-    if (!COMPLETED_STATUS.test(plan.status)) {
+    if (!COMPLETED_STATUS.test(plan.status ?? "")) {
       report.findings.push(`archiving refused: Status is "${plan.status}", not completed`);
     } else if (roots?.parts.at(-3) !== "plans") {
       report.errors.push("the plan is not at plans/<topic>/plan.md (already archived?)");
@@ -831,7 +932,7 @@ async function main() {
     options = parseArguments(process.argv.slice(2));
     report = await run(options);
   } catch (error) {
-    console.error(error.message);
+    console.error(/** @type {Error} */ (error).message);
     process.exit(1);
   }
   const code = report.errors.length ? 1 : report.findings.length || report.open.length ? 2 : 0;
@@ -849,7 +950,7 @@ async function main() {
       `plan: ${report.plan}\nstatus: ${report.status ?? "?"} | owner: ${report.owner ?? "?"}`,
     );
     console.log(`unanswered offers: ${report.unansweredOffers.length}`);
-    for (const [label, rows] of [
+    for (const [label, rows] of /** @type {[string, string[]][]} */ ([
       ["error", report.errors],
       ["open", report.open],
       ["awaiting your yes/no", report.awaitingUser],
@@ -860,7 +961,7 @@ async function main() {
       ["skipped", report.skipped],
       ["finding", report.findings],
       ["warning", report.warnings],
-    ]) {
+    ])) {
       for (const row of rows) {
         console.log(`${label}: ${row}`);
       }

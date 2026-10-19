@@ -6,6 +6,7 @@ import { join } from "node:path";
 
 const script = join(import.meta.dirname, "..", "scripts", "close-ledger-line.mjs");
 const checker = join(import.meta.dirname, "..", "scripts", "check-open-work.mjs");
+/** @type {string[]} */
 const roots = [];
 
 afterEach(() => {
@@ -15,6 +16,7 @@ afterEach(() => {
 });
 
 // Ledger lines start at L6, as in check-open-work.test.mjs.
+/** @param {string[]} ledger @param {{ eol?: string, after?: string[] }} [options] */
 function setup(ledger, { eol = "\n", after = [] } = {}) {
   const root = mkdtempSync(join(process.env.HOUSE_RULES_TEST_TMP ?? tmpdir(), "close-line-"));
   roots.push(root);
@@ -33,10 +35,12 @@ function setup(ledger, { eol = "\n", after = [] } = {}) {
   return plan;
 }
 
+/** @param {string} plan @param {...string} args */
 const close = (plan, ...args) =>
   spawnSync("node", [script, plan, "--time", "2026-10-18 17:05 -06:00", ...args], {
     encoding: "utf8",
   });
+/** @param {string} plan */
 const lines = (plan) => readFileSync(plan, "utf8").split(/\r?\n/);
 
 test("closing a line by number marks it done in place with the evidence and the time", () => {
@@ -123,6 +127,7 @@ test("it refuses a line outside the ledger, a closed line with other evidence, a
     { after: ["## Notes", "- [ ] stray box outside the ledger"] },
   );
   const before = readFileSync(plan, "utf8");
+  /** @type {[string[], RegExp][]} */
   const cases = [
     [["--line", "3", "--evidence", "x"], /not a ledger item/],
     [["--line", "11", "--evidence", "x"], /not a ledger item/],

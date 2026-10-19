@@ -8,7 +8,6 @@
     // Sample pages the stock-UI scanner reads as input; they are not run.
     "skills/*/test/fixtures",
     "skills/hr-handoff",
-    "skills/hr-pr-followup",
-    "skills/hr-what-next"
+    "skills/hr-pr-followup"
   ]
 }

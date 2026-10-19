@@ -13,7 +13,10 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
+/** @typedef {import("../scripts/check-open-work.mjs").Report} Report */
+
 const script = join(import.meta.dirname, "..", "scripts", "check-open-work.mjs");
+/** @type {string[]} */
 const roots = [];
 
 afterEach(() => {
@@ -23,6 +26,7 @@ afterEach(() => {
 });
 
 // notes/plans/<topic>/plan.md with notes/tmp beside it, the layout the plan-files rule describes.
+/** @param {{ status?: string, ledger?: string[], extra?: string, owner?: string }} [options] */
 function setup({ status = "active", ledger = [], extra = "", owner = "Alice, session 7" } = {}) {
   const notes = mkdtempSync(join(process.env.HOUSE_RULES_TEST_TMP ?? tmpdir(), "open-work-"));
   roots.push(notes);
@@ -42,22 +46,26 @@ function setup({ status = "active", ledger = [], extra = "", owner = "Alice, ses
   return { notes, topic, plan: join(topic, "plan.md") };
 }
 
+/** @param {string} plan @param {...string} args */
 function check(plan, ...args) {
   const run = spawnSync("node", [script, plan, "--json", ...args], { encoding: "utf8" });
   return {
     code: run.status,
-    report: run.stdout ? JSON.parse(run.stdout) : null,
+    report: /** @type {Report} */ (run.stdout ? JSON.parse(run.stdout) : null),
     stderr: run.stderr,
   };
 }
 
+/** @param {string} notes @param {string} name @param {unknown} owner */
 function scratch(notes, name, owner) {
   mkdirSync(join(notes, "tmp", name), { recursive: true });
   writeFileSync(join(notes, "tmp", name, "manifest.json"), JSON.stringify({ owner }));
 }
 
+/** @param {string} directory */
 function repository(directory, commits = 1) {
   mkdirSync(directory, { recursive: true });
+  /** @param {...string} args */
   const git = (...args) =>
     spawnSync("git", ["-C", directory, "-c", "user.name=t", "-c", "user.email=t@t", ...args]);
   git("init", "-q", "-b", "main");
@@ -199,7 +207,7 @@ test("items need the field their state implies", () => {
   const { plan } = setup({ ledger: ["- [~] a: later", "- [x] b: said done", "- [-] c: dropped"] });
   const { code, report } = check(plan);
   expect(code).toBe(1);
-  expect(report.errors.map((e) => e.match(/needs `(\w+):`/)[1]).sort()).toEqual([
+  expect(report.errors.map((e) => e.match(/needs `(\w+):`/)?.[1]).sort()).toEqual([
     "by",
     "evidence",
     "trigger",
@@ -438,6 +446,7 @@ const posixOnly = test.skipIf(process.platform === "win32");
 
 // A stand-in `gh` on PATH: answers `gh api repos/<o>/<r>/issues/<n>` from a JSON map of
 // "o/r#n" to "open", "closed" or "merged", logs each call, and fails like an offline host on "fail".
+/** @param {Record<string, string | boolean>} states */
 function fakeGh(states) {
   const bin = mkdtempSync(join(process.env.HOUSE_RULES_TEST_TMP ?? tmpdir(), "open-work-bin-"));
   roots.push(bin);
@@ -467,12 +476,16 @@ function fakeGh(states) {
   return { env: { ...process.env, PATH: bin }, calls };
 }
 
+/** @param {NodeJS.ProcessEnv} env @param {string} plan @param {...string} args */
 function checkWith(env, plan, ...args) {
   const run = spawnSync(process.execPath, [script, plan, "--json", ...args], {
     encoding: "utf8",
     env,
   });
-  return { code: run.status, report: run.stdout ? JSON.parse(run.stdout) : null };
+  return {
+    code: run.status,
+    report: /** @type {Report} */ (run.stdout ? JSON.parse(run.stdout) : null),
+  };
 }
 
 posixOnly(
@@ -521,11 +534,11 @@ posixOnly("without gh, offline or with --offline the GitHub check is skipped and
   rmSync(join(missing.env.PATH, "gh"));
   const offline = fakeGh({ fail: true });
   const flag = fakeGh({ "acme/tool#1": "merged" });
-  for (const [env, args, reason] of [
+  for (const [env, args, reason] of /** @type {[NodeJS.ProcessEnv, string[], RegExp][]} */ ([
     [missing.env, [], /gh not found/],
     [offline.env, [], /error connecting/],
     [flag.env, ["--offline"], /--offline/],
-  ]) {
+  ])) {
     const { code, report } = checkWith(env, plan, ...args);
     expect(code).toBe(2);
     expect(report.stale).toEqual([]);
@@ -541,6 +554,7 @@ posixOnly(
     const { notes, plan } = setup();
     const checkout = join(notes, "repo");
     repository(checkout, 2);
+    /** @param {...string} args */
     const git = (...args) =>
       spawnSync("git", ["-C", checkout, ...args], { encoding: "utf8" }).stdout.trim();
     const landed = git("rev-parse", "HEAD~1").slice(0, 9);
@@ -635,9 +649,12 @@ test("an answered offer line that does not say what happened to the other option
   ]);
 });
 
+/** @param {string} id */
 const offerLine = (id, rest = "(presented 2026-10-12): Q1 pick one; 1A recommended") =>
   `- [ ] Offer ${id} ${rest}`;
-const offerWarning = (report) => report.warnings.filter((warning) => /unanswered/.test(warning));
+/** @param {Report} report */
+const offerWarning = (report) =>
+  report.warnings.filter((warning) => warning.includes("unanswered"));
 
 test("a plan with no offers counts none and prints the count line", () => {
   const { plan } = setup({
@@ -867,8 +884,10 @@ test("an open line is listed without waiting for its re-check date, and a work i
 });
 
 test("an open ledger of more than 100 lines or a plan over 256 KiB warns", () => {
+  /** @param {number} count */
   const items = (count) => Array.from({ length: count }, (_, i) => `- [ ] item ${i}`);
-  const budget = (report) => report.warnings.filter((warning) => /budget/.test(warning));
+  /** @param {Report} report */
+  const budget = (report) => report.warnings.filter((warning) => warning.includes("budget"));
   expect(budget(check(setup({ ledger: items(100) }).plan, "--offline").report)).toEqual([]);
   expect(budget(check(setup({ ledger: items(101) }).plan, "--offline").report)).toEqual([
     expect.stringMatching(/101 open or deferred ledger lines.*over the budget of 100/),
@@ -913,12 +932,14 @@ test("the later-done-line group still runs on a plan that fails its lint", () =>
 });
 
 // notes/audits/<project>/last-audit.json, the record hr-forgotten-work-audit writes.
+/** @param {string} notes @param {string} project @param {unknown} record */
 function auditRecord(notes, project, record) {
   mkdirSync(join(notes, "audits", project), { recursive: true });
   const text = typeof record === "string" ? record : JSON.stringify(record);
   writeFileSync(join(notes, "audits", project, "last-audit.json"), text);
 }
 
+/** @param {string} plan @param {string} project */
 function withProject(plan, project) {
   writeFileSync(
     plan,
@@ -926,6 +947,7 @@ function withProject(plan, project) {
   );
 }
 
+/** @param {Report} report */
 const auditWarnings = (report) => report.warnings.filter((warning) => /audit/i.test(warning));
 
 test("a plan without a Project line gets no audit warning", () => {

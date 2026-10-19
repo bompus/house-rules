@@ -11,9 +11,13 @@ import { readFileSync, renameSync, writeFileSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import { parsePlan } from "./plan-ledger.mjs";
 
+/** @typedef {import("./plan-ledger.mjs").LedgerItem} LedgerItem */
+/** @typedef {ReturnType<typeof parseArguments>} Options */
+
 const usage =
   "usage: close-ledger-line.mjs <plan.md> (--line <n> | --match <text>) (--evidence <text> | --drop --by <who>) [--time <text>]";
 
+/** @param {string[]} argv */
 function parseArguments(argv) {
   const options = {
     plan: /** @type {string | null} */ (null),
@@ -22,9 +26,10 @@ function parseArguments(argv) {
     evidence: /** @type {string | null} */ (null),
     drop: false,
     by: /** @type {string | null} */ (null),
+    time: /** @type {string | null} */ (null),
   };
   for (let index = 0; index < argv.length; index++) {
-    const argument = argv[index];
+    const argument = argv[index] ?? "";
     if (argument === "--drop") {
       options.drop = true;
     } else if (["--line", "--match", "--evidence", "--by", "--time"].includes(argument)) {
@@ -36,7 +41,8 @@ function parseArguments(argv) {
       if (/[\r\n]/.test(value)) {
         throw new Error(`${argument} must be one line\n${usage}`);
       }
-      options[argument.slice(2)] = value.trim();
+      const key = /** @type {"line" | "match" | "evidence" | "by" | "time"} */ (argument.slice(2));
+      options[key] = value.trim();
     } else if (argument.startsWith("--") || options.plan) {
       throw new Error(usage);
     } else {
@@ -81,18 +87,22 @@ function localTime(date = new Date()) {
   return `${date.toLocaleString("sv").slice(0, 16)} ${offset < 0 ? "-" : "+"}${hours}:${minutes}`;
 }
 
+/** @param {Options} options */
 function close(options) {
-  const text = readFileSync(options.plan, "utf8");
+  const plan = /** @type {string} */ (options.plan);
+  const text = readFileSync(plan, "utf8");
   const eol = text.includes("\r\n") ? "\r\n" : "\n";
   const lines = text.split(/\r?\n/);
   const { items } = parsePlan(text);
-  const [mark, label, note] = options.drop
-    ? ["-", "by", options.by]
-    : ["x", "evidence", options.evidence];
+  const [mark, label, note] = /** @type {[string, string, string]} */ (
+    options.drop ? ["-", "by", options.by] : ["x", "evidence", options.evidence]
+  );
   // The whole recorded note, up to the stamp this script writes, so "Bob" does not match "by: Bobby".
   const escaped = note.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const recorded = new RegExp(`… ${label}: ${escaped} \\((?:closed|dropped) [^()]*\\)$`);
+  /** @param {LedgerItem} item */
   const closedHere = (item) => item.mark === mark && recorded.test(item.text);
+  /** @type {LedgerItem | undefined} */
   let item;
   if (options.line !== null) {
     item = items.find((candidate) => candidate.line === Number(options.line));
@@ -100,10 +110,10 @@ function close(options) {
       throw new Error(`L${options.line} is not a ledger item`);
     }
   } else {
+    const match = /** @type {string} */ (options.match);
     const open = items.filter(
       (candidate) =>
-        (candidate.mark === " " || candidate.mark === "~") &&
-        candidate.text.includes(options.match),
+        (candidate.mark === " " || candidate.mark === "~") && candidate.text.includes(match),
     );
     if (open.length > 1) {
       throw new Error(
@@ -111,8 +121,7 @@ function close(options) {
       );
     }
     item =
-      open[0] ??
-      items.find((candidate) => candidate.text.includes(options.match) && closedHere(candidate));
+      open[0] ?? items.find((candidate) => candidate.text.includes(match) && closedHere(candidate));
     if (!item) {
       throw new Error(`no open or deferred ledger line contains "${options.match}"`);
     }
@@ -129,24 +138,24 @@ function close(options) {
   let last = item.line - 1;
   while (
     last + 1 < lines.length &&
-    /^\s{2,}\S/.test(lines[last + 1]) &&
-    !/^\s*[-*]\s/.test(lines[last + 1])
+    /^\s{2,}\S/.test(lines[last + 1] ?? "") &&
+    !/^\s*[-*]\s/.test(lines[last + 1] ?? "")
   ) {
     last++;
   }
-  lines[item.line - 1] = lines[item.line - 1].replace(/\[[ ~]\]/, `[${mark}]`);
+  lines[item.line - 1] = (lines[item.line - 1] ?? "").replace(/\[[ ~]\]/, `[${mark}]`);
   const stamp = `${options.drop ? "dropped" : "closed"} ${options.time ?? localTime()}`;
-  lines[last] = `${lines[last].trimEnd()} … ${label}: ${note} (${stamp})`;
+  lines[last] = `${(lines[last] ?? "").trimEnd()} … ${label}: ${note} (${stamp})`;
   // Write beside the plan and rename, so an interrupted run leaves the old plan whole.
-  const temporary = join(dirname(options.plan), `.${basename(options.plan)}.${process.pid}.tmp`);
+  const temporary = join(dirname(plan), `.${basename(plan)}.${process.pid}.tmp`);
   writeFileSync(temporary, lines.join(eol));
-  renameSync(temporary, options.plan);
+  renameSync(temporary, plan);
   return `L${item.line} marked ${options.drop ? "dropped" : "done"}`;
 }
 
 try {
   console.log(close(parseArguments(process.argv.slice(2))));
 } catch (error) {
-  console.error(error.message);
+  console.error(/** @type {Error} */ (error).message);
   process.exit(1);
 }
