@@ -59,6 +59,8 @@ function fixture({
   pnpmInstallExit = 0,
   // More files to commit in the head, by name.
   files = {},
+  // Another fetch in the checkout rewrites FETCH_HEAD right after this script fetches the head.
+  racingFetch = false,
 } = {}) {
   const root = mkdtempSync(join(tmpdir(), "merge-pr-"));
   roots.push(root);
@@ -123,6 +125,18 @@ exit 0
   chmodSync(join(bin, "pnpm"), 0o755);
   writeFileSync(join(bin, "npm"), `#!/usr/bin/env bash\necho "$*" >> "${pmLog}"\n`);
   chmodSync(join(bin, "npm"), 0o755);
+  if (racingFetch) {
+    const base = sh(work, "git", "rev-parse", "main~1");
+    writeFileSync(
+      join(bin, "git"),
+      `#!/usr/bin/env bash
+"${Bun.which("git")}" "$@"; code=$?
+case "$*" in *refs/pull/*) printf '%s\\t\\tbranch main of other\\n' "${base}" > "$("${Bun.which("git")}" rev-parse --git-dir)/FETCH_HEAD";; esac
+exit $code
+`,
+    );
+    chmodSync(join(bin, "git"), 0o755);
+  }
   const run = (...args) => {
     const r = Bun.spawnSync(["bash", script, "7", ...args], {
       cwd: fromTask ? wt : work,
@@ -462,4 +476,13 @@ test("npm-shrinkwrap.json counts as a lockfile, so npm installs with npm ci", ()
   });
   expect(run().code).toBe(0);
   expect(readFileSync(pmLog, "utf8")).toBe("ci\nrun check\n");
+});
+
+test("another fetch rewriting FETCH_HEAD does not read as a moved head", () => {
+  const { work, log, oid, run } = fixture({ racingFetch: true });
+  const r = run();
+  expect(r.err).not.toContain("head moved");
+  expect(r.code).toBe(0);
+  expect(readFileSync(log, "utf8")).toContain(`pr merge 7 --squash --match-head-commit ${oid}`);
+  expect(sh(work, "git", "for-each-ref", "refs/hr-merge-check")).toBe("");
 });

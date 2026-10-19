@@ -69,15 +69,18 @@ fi
 bun "$(dirname "${BASH_SOURCE[0]}")/check-pr-review.ts" "$PR"
 
 # The repository's own check, at the reviewed head. refs/pull/<n>/head also covers a fork's head.
-git fetch --quiet --no-tags "$REMOTE" "refs/pull/$PR/head"
-FETCHED="$(git rev-parse FETCH_HEAD)"
-[ "$FETCHED" = "$OID" ] || { echo "PR $PR head moved to $FETCHED after it was read as $OID; rerun" >&2; exit 1; }
+# It is fetched into a ref of this run's own, since another fetch in the checkout rewrites FETCH_HEAD.
 CHECK_DIR=""
+CHECK_REF="refs/hr-merge-check/pr-$PR-$$"
 remove_check_dir() {
   [ -z "$CHECK_DIR" ] || git worktree remove --force "$CHECK_DIR" 2>/dev/null || rm -rf "$CHECK_DIR"
   CHECK_DIR=""
+  git update-ref -d "$CHECK_REF" 2>/dev/null || true
 }
 trap remove_check_dir EXIT
+git fetch --quiet --no-tags "$REMOTE" "+refs/pull/$PR/head:$CHECK_REF"
+FETCHED="$(git rev-parse "$CHECK_REF")"
+[ "$FETCHED" = "$OID" ] || { echo "PR $PR head moved to $FETCHED after it was read as $OID; rerun" >&2; exit 1; }
 # One line from the head's package.json: the named package manager (or -), 1 when scripts.check is
 # a string, and 1 when it declares dependencies or workspaces. An unreadable package.json refuses.
 read -r NAMED HAS_CHECK NEEDS_INSTALL < <(
