@@ -324,9 +324,9 @@ test("a bare pull request number is refused before gh is asked about any pull re
 test("a pull request of another repository is refused from this checkout", () => {
   const { log, remote, runTarget } = fixture({ repo: "bompus/house-rules" });
   const before = sh(remote, "git", "rev-parse", "main");
-  const r = runTarget("bompus/chief-of-staff#7");
+  const r = runTarget("owner/other#7");
   expect(r.code).toBe(1);
-  expect(r.err).toContain("run this from a checkout of bompus/chief-of-staff");
+  expect(r.err).toContain("run this from a checkout of owner/other");
   expect(readFileSync(log, "utf8")).not.toContain("pr ");
   expect(sh(remote, "git", "rev-parse", "main")).toBe(before);
 });
