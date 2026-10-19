@@ -206,8 +206,9 @@ final diff with `hr-code-review`, resolve actionable findings and run the
 relevant checks. Review evidence must cover the submitted changes; tests,
 benchmarks and an earlier review of the parent PR do not replace this review.
 
-Before opening a pull request in a repository the user owns, review the changes
-this task made once locally. Use `hr-code-review`, or the host's reviewer
+Before opening a pull request in a repository the user owns, or before pushing
+this task's changes straight into its default branch, review the changes this task
+made once locally. Use `hr-code-review`, or the host's reviewer
 subagent when the host runs reviews through one. Fix or answer each finding. A
 trivially mechanical change, one a formatter or generator produced with no
 hand-written edits, is exempt. Review bots and the repository's own review

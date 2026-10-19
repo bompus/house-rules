@@ -9,8 +9,10 @@ The maintainer lands pull requests; contributors' commits keep their author
 (see CONTRIBUTING.md). When you land for the maintainer, open a pull request
 for the record, then land it with
 `HR_PUSH_LANDED=bompus/house-rules bash skills/hr-pr-followup/scripts/merge-pr.sh bompus/house-rules#<n>`.
-After the review and `check` gates pass, it fast-forwards `main` to the
-reviewed head with a push, deletes the branch and verifies the landing. Do not
+After the pull request review gate and the `check` gate pass, it fast-forwards `main` to the
+reviewed head with a push, deletes the branch and verifies the landing. That
+push puts the task's changes straight into `main`, so the core rules' local
+review of those changes comes first, before the pull request opens. Do not
 push to `main` by hand. A hand-written check-then-push sequence can push past a
 refusal in a shell that ignores `set -e`. GitHub's merge buttons and
 `gh pr merge` are off limits, because they write the account's profile name into

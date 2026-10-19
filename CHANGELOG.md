@@ -4,6 +4,10 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- The core rules' local review now also comes before pushing a task's changes straight into the
+  default branch of a repository the user owns. Before, it covered only opening a pull request there.
+  The formatter-or-generator exemption is unchanged. This repository's guidance places that review
+  before its own landing push.
 - `hr-benchmarking` asks, for a slow test suite, to total the startup time each test file pays before
   splitting or tuning slow files, since that startup often sets the suite's wall time.
 - `hr-benchmarking` asks, before reproducing a CI timeout locally, to read the per-test durations from
