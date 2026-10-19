@@ -4,6 +4,10 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- `hr-benchmarking` asks each run to print counts of the work it did and a hash of its output, and to
+  compare them on the first pair of runs before the rest. A deterministic counter, such as instructions or
+  rows read, may screen in one run whether to run the full measurement, but never replaces it. The skill
+  also gives measured examples of feedback shortcuts that saved little.
 - `hr-audit-choices` now credits its source, dzhng/jevgrep's `audit-choices` skill, in
   `THIRD_PARTY_NOTICES.md` and a bundle `NOTICE.md`. It also treats an empty list of choices on
   work the user left open as a red flag rather than a pass.

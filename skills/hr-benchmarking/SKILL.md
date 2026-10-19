@@ -55,6 +55,10 @@ Validate outputs, consumed results and error counts outside the timed region
 where practical. Confirm requests arrived and asynchronous work was awaited.
 Include failures, timeouts and unresolved attempts in both arms' denominators.
 A faster wrong result or skipped operation is not a performance improvement.
+Have each run print counts of the work it did, such as files read, rows written
+or operations completed, and a hash of its output. Compare them on the first
+pair of runs, before the remaining runs. A mismatch means the arms did different
+work; find the cause before timing anything else.
 
 Identify the limiting resource from CPU versus wall time, resource counters or
 a separate profile. Check that throughput is possible given the machine and
@@ -65,6 +69,10 @@ component in the real workload with a profile or a counter. For fast feedback,
 benchmark each changed piece through its actual production entry point with
 representative fixed inputs and equivalent consumed outputs. Do not benchmark a
 copied implementation or stub out work material to the comparison.
+Time a shortcut to faster feedback before relying on it. In one project,
+related-test selection still chose 589 to 599 of 754 test files. A shared build
+directory cut a 139 s build only to 120 s, and the recorded suite time was more
+than twice out of date.
 
 Compare each piece before and after against its immediate predecessor. Before
 running, declare integration milestones when changed pieces enter the consuming
@@ -135,7 +143,12 @@ timing regime and concurrent local work.
 Screen correctness and quality first, then use one run per selected arm to
 explore timing and resource behavior. Preserve screened-out results and their
 reasons. Label screening exploratory; one run does not support a performance
-claim. A correctness-only check can use one candidate run; report its coverage.
+claim. A deterministic counter, such as user-space instructions or rows read,
+varies less than wall time or peak memory. One run of it can screen whether to
+run the full measurement, but it never replaces that measurement. In one study
+such counters did not reliably predict changes of about 5%, and allocation
+counts did not predict peak memory. A correctness-only check can use one
+candidate run; report its coverage.
 
 Before exploratory runs, define the decision-relevant signal for selecting
 comparisons for confirmation. Choose comparisons that meet that signal, plus
