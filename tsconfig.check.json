@@ -3,5 +3,12 @@
   // but not yet type-checked; each comes off this list once tsc passes on it.
   // Linting reads tsconfig.json, which covers every folder.
   "extends": "./tsconfig.json",
-  "exclude": ["node_modules", "skills"]
+  "exclude": [
+    "node_modules",
+    // Sample pages the stock-UI scanner reads as input; they are not run.
+    "skills/*/test/fixtures",
+    "skills/hr-handoff",
+    "skills/hr-pr-followup",
+    "skills/hr-what-next"
+  ]
 }

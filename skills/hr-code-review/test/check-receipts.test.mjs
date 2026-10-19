@@ -11,7 +11,14 @@ import {
   findCitations,
 } from "../scripts/check-receipts.mjs";
 
+/** @type {string[]} */
 const roots = [];
+/** @param {string} text */
+const cite = (text) => {
+  const [first] = findCitations(text);
+  assert.ok(first);
+  return first;
+};
 const dir = () => {
   const path = mkdtempSync(join(tmpdir(), "check-receipts-"));
   roots.push(path);
@@ -32,13 +39,13 @@ function seedRepo() {
 describe("check-receipts", () => {
   test("strict citation passes when the cited line holds the identifier", () => {
     const root = seedRepo();
-    const [row] = findCitations("calls `buildTotals` (engine.ts:1) here");
+    const row = cite("calls `buildTotals` (engine.ts:1) here");
     assert.equal(checkCitation(row, root).status, "pass");
   });
 
   test("strict citation fails when the cited line lacks the identifier", () => {
     const root = seedRepo();
-    const [row] = findCitations("calls `buildTotals` (engine.ts:2) here");
+    const row = cite("calls `buildTotals` (engine.ts:2) here");
     const result = checkCitation(row, root);
     assert.equal(result.status, "fail");
     assert.ok(result.reason.includes("lacks"));
@@ -46,23 +53,25 @@ describe("check-receipts", () => {
 
   test("bare citation checks existence only", () => {
     const root = seedRepo();
-    const [row] = findCitations("see engine.ts:2 for context");
+    const row = cite("see engine.ts:2 for context");
     assert.equal(row.strict, false);
     assert.equal(checkCitation(row, root).status, "pass");
   });
 
   test("missing file and past-EOF lines fail", () => {
     const root = seedRepo();
-    assert.equal(checkCitation(findCitations("`x` (nope.ts:1)")[0], root).status, "fail");
-    assert.equal(checkCitation(findCitations("`x` (engine.ts:99)")[0], root).status, "fail");
+    assert.equal(checkCitation(cite("`x` (nope.ts:1)"), root).status, "fail");
+    assert.equal(checkCitation(cite("`x` (engine.ts:99)"), root).status, "fail");
   });
 
   test("ranges span lines and strict spans shadow bare matches", () => {
     const root = seedRepo();
     const rows = findCitations("`buildTotals` (engine.ts:1-2)");
     assert.equal(rows.length, 1);
-    assert.equal(rows[0].end, 2);
-    assert.equal(checkCitation(rows[0], root).status, "pass");
+    const [first] = rows;
+    assert.ok(first);
+    assert.equal(first.end, 2);
+    assert.equal(checkCitation(first, root).status, "pass");
   });
 
   test("extracts text deltas from opencode json logs, raw text otherwise", () => {
@@ -99,7 +108,7 @@ describe("check-receipts basename fallback", () => {
     const root = dir();
     mkdirSync(join(root, "sub"));
     writeFileSync(join(root, "sub", "util.ts"), "const a = 1;\n");
-    const [row] = findCitations("see util.ts:1");
+    const row = cite("see util.ts:1");
     const result = checkCitation(row, root);
     assert.equal(result.status, "pass");
     assert.equal(result.path.endsWith(join("sub", "util.ts")), true);
@@ -111,7 +120,7 @@ describe("check-receipts basename fallback", () => {
     mkdirSync(join(root, "b"));
     writeFileSync(join(root, "a", "dup.ts"), "x\n");
     writeFileSync(join(root, "b", "dup.ts"), "x\n");
-    const result = checkCitation(findCitations("see dup.ts:1")[0], root);
+    const result = checkCitation(cite("see dup.ts:1"), root);
     assert.equal(result.status, "fail");
     assert.ok(result.reason.includes("ambiguous"));
   });
@@ -122,6 +131,7 @@ describe("check-receipts command line", () => {
 
   test("exits 0 when every citation holds, 1 when one fails, 2 when none are found", () => {
     const root = seedRepo();
+    /** @param {string} text */
     const run = (text) => {
       const log = join(root, "panel.txt");
       writeFileSync(log, text);
@@ -141,8 +151,8 @@ describe("check-receipts edge cases", () => {
 
   test("a final newline does not add a line to cite", () => {
     const root = seedRepo();
-    assert.equal(checkCitation(findCitations("engine.ts:2")[0], root).status, "pass");
-    const past = checkCitation(findCitations("engine.ts:3")[0], root);
+    assert.equal(checkCitation(cite("engine.ts:2"), root).status, "pass");
+    const past = checkCitation(cite("engine.ts:3"), root);
     assert.equal(past.status, "fail");
     assert.ok(past.reason.includes("past EOF"));
   });
@@ -152,7 +162,7 @@ describe("check-receipts edge cases", () => {
     const other = dir();
     writeFileSync(join(other, "secret.ts"), "x\n");
     const cited = relative(root, join(other, "secret.ts")).split(sep).join("/");
-    const result = checkCitation(findCitations(`${cited}:1`)[0], root);
+    const result = checkCitation(cite(`${cited}:1`), root);
     assert.equal(result.status, "fail");
     assert.ok(result.reason.includes("outside"));
   });
@@ -180,7 +190,7 @@ describe("check-receipts edge cases", () => {
     mkdirSync(join(root, "b"));
     writeFileSync(join(root, "a", "dup.ts"), "x\ny\n");
     writeFileSync(join(root, "b", "dup.ts"), "x\n");
-    const [row] = findCitations("see a\\dup.ts:2");
+    const row = cite("see a\\dup.ts:2");
     assert.equal(row.file, "a\\dup.ts");
     assert.equal(checkCitation(row, root).status, "pass");
   });
@@ -193,7 +203,7 @@ describe("check-receipts edge cases", () => {
       const other = dir();
       writeFileSync(join(other, "secret.ts"), "export const hidden = 1;\n");
       symlinkSync(join(other, "secret.ts"), join(root, "link.ts"));
-      const result = checkCitation(findCitations("`hidden` (link.ts:1)")[0], root);
+      const result = checkCitation(cite("`hidden` (link.ts:1)"), root);
       assert.equal(result.status, "fail");
       assert.ok(result.reason.includes("outside"));
     },

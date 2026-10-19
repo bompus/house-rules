@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { check, parseWordTables } from "../scripts/check.mjs";
 
 const SCRIPT = join(import.meta.dir, "../scripts/check.mjs");
+/** @param {string} text */
 const rules = (text) => check(text).map((f) => `${f.line} ${f.rule} ${f.text}`);
 
 test("joined counts, units and surrounding prose are flagged before sending", () => {
@@ -147,6 +148,10 @@ test("the same cues outside those shapes are still flagged", () => {
 });
 
 test("the CLI reads standard input and exits 1 on findings, 0 when clean", () => {
+  /**
+   * @param {string} input
+   * @param {string[]} args
+   */
   const run = (input, ...args) =>
     spawnSync(process.execPath, [SCRIPT, ...args], { input, encoding: "utf8" });
   const dirty = run("A robust plan.\n");
@@ -181,6 +186,7 @@ test("front matter is not read as a sentence", () => {
 });
 
 test("initialisms and version numbers do not end a sentence", () => {
+  /** @param {number} n */
   const words = (n) => Array.from({ length: n }, (_, i) => `w${i}`).join(" ");
   expect(rules(`${words(20)}, e.g. ${words(5)} in v0.5.19 ${words(5)}.`)).toEqual([
     "1 long-sentence w0 w1 w2 w3 w4",
@@ -189,6 +195,7 @@ test("initialisms and version numbers do not end a sentence", () => {
 });
 
 test("a final initialism ends a sentence, while internal abbreviations stay together", () => {
+  /** @param {number} n */
   const words = (n) => Array.from({ length: n }, (_, i) => `w${i}`).join(" ");
   const draft = `${words(28)} U.S. We agree.`;
   expect(rules(draft)).toEqual([]);

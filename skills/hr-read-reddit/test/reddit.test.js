@@ -73,14 +73,20 @@ describe("reddit parseArgs", () => {
     });
   });
 
+  /** @param {string[]} args */
+  const errorOf = (args) => {
+    const parsed = parseArgs(args);
+    return "error" in parsed ? parsed.error : undefined;
+  };
+
   test("rejects missing values, bad values, unknown options and wrong arity", () => {
-    expect(parseArgs(["search", "a", "q", "--pages"]).error).toContain("--pages");
-    expect(parseArgs(["search", "a", "q", "--pages", "0"]).error).toContain("--pages");
-    expect(parseArgs(["search", "a", "q", "--pages", "2.5"]).error).toContain("--pages");
-    expect(parseArgs(["search", "a", "q", "--since", "soon"]).error).toContain("--since");
-    expect(parseArgs(["search", "a", "q", "--sort", "hot"]).error).toContain("--sort");
-    expect(parseArgs(["thread", "u", "--media"]).error).toContain("--media");
-    expect(parseArgs(["search", "a"]).error).toContain("search");
-    expect(parseArgs([]).error).toBe("missing command");
+    expect(errorOf(["search", "a", "q", "--pages"])).toContain("--pages");
+    expect(errorOf(["search", "a", "q", "--pages", "0"])).toContain("--pages");
+    expect(errorOf(["search", "a", "q", "--pages", "2.5"])).toContain("--pages");
+    expect(errorOf(["search", "a", "q", "--since", "soon"])).toContain("--since");
+    expect(errorOf(["search", "a", "q", "--sort", "hot"])).toContain("--sort");
+    expect(errorOf(["thread", "u", "--media"])).toContain("--media");
+    expect(errorOf(["search", "a"])).toContain("search");
+    expect(errorOf([])).toBe("missing command");
   });
 });

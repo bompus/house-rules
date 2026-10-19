@@ -13,6 +13,7 @@ const OFFER = /pull request|github\.com\/[^\s/]+\/[^\s/]+\/(?:pull\/\d+|tree\/\S
 const DENIAL = /\b(?:cannot|can't|can not|won't|will not|unable|never|no|not)\b[^.]*pull request/i;
 
 // The field's text: from its heading or label to the next heading, or null when the draft has none.
+/** @param {string} draft */
 export function offerText(draft) {
   const lines = draft.split("\n");
   const start = lines.findIndex((l) => FIELD.test(l.trim()));
@@ -26,6 +27,7 @@ export function offerText(draft) {
     .join("\n");
 }
 
+/** @param {string} draft */
 export const offersPullRequest = (draft) =>
   OFFER.test(
     offerText(draft)

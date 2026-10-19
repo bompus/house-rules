@@ -45,6 +45,7 @@ const SKIP_DIRS = new Set([
   "storybook-static",
 ]);
 const SEVERITY_RANK = { low: 1, medium: 2, high: 3 };
+/** @typedef {keyof typeof SEVERITY_RANK} Severity */
 
 const HINTS = {
   "purple-blue-gradient":
@@ -66,6 +67,11 @@ const HINTS = {
   "tracked-caps":
     "Wide-tracked all-caps label. Check it is used sparingly and that the text stays readable at small sizes.",
 };
+/** @typedef {keyof typeof HINTS} Rule */
+/** @typedef {{ h: number, s: number, l: number }} Hsl */
+/** @typedef {{ family: string, index: number, file: string, line: number, text: string }} FontDeclaration */
+/** @typedef {{ rule: Rule, severity: Severity, file: string, line: number, match: string, hint: string }} Finding */
+/** @type {Record<Rule, Severity>} */
 const SEVERITY = {
   "purple-blue-gradient": "high",
   "violet-accent": "medium",
@@ -80,6 +86,11 @@ const SEVERITY = {
 
 // ---------- color parsing ----------
 
+/**
+ * @param {number} r
+ * @param {number} g
+ * @param {number} b
+ */
 function rgbToHsl(r, g, b) {
   const max = Math.max(r, g, b);
   const min = Math.min(r, g, b);
@@ -104,6 +115,11 @@ function rgbToHsl(r, g, b) {
   return { h, s: Math.min(1, s), l };
 }
 
+/**
+ * @param {number} L
+ * @param {number} C
+ * @param {number} H
+ */
 function oklchToHsl(L, C, H) {
   const hr = (H * Math.PI) / 180;
   const a = C * Math.cos(hr);
@@ -116,55 +132,76 @@ function oklchToHsl(L, C, H) {
     -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
     -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s,
   ];
-  const [r, g, bl] = lin.map((x) => {
+  const [r = 0, g = 0, bl = 0] = lin.map((x) => {
     const v = x <= 0.0031308 ? 12.92 * x : 1.055 * Math.sign(x) * Math.abs(x) ** (1 / 2.4) - 0.055;
     return Math.min(1, Math.max(0, v));
   });
   return rgbToHsl(r, g, bl);
 }
 
+/** @param {string} v */
 const channel = (v) => (v.endsWith("%") ? parseFloat(v) / 100 : parseFloat(v) / 255);
+/**
+ * @param {number} v
+ * @param {string | undefined} unit
+ */
 const hueUnits = (v, unit) =>
   unit === "turn" ? v * 360 : unit === "rad" ? (v * 180) / Math.PI : v;
 
 // Returns every color literal on a line as { h, s, l, index }.
+/** @param {string} line */
 function colorsIn(line) {
+  /** @type {(Hsl & { index: number })[]} */
   const out = [];
   for (const m of line.matchAll(/#([0-9a-f]{8}|[0-9a-f]{6}|[0-9a-f]{3,4})(?![0-9a-z_-])/gi)) {
-    let hex = m[1];
+    let hex = m[1] ?? "";
     if (hex.length <= 4) {
-      hex = [...hex].map((c) => c + c).join("");
+      hex = hex
+        .split("")
+        .map((c) => c + c)
+        .join("");
     }
-    const [r, g, b] = [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
+    const [r = 0, g = 0, b = 0] = [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
     out.push({ ...rgbToHsl(r, g, b), index: m.index });
   }
   for (const m of line.matchAll(/rgba?\(\s*([\d.]+%?)[\s,]+([\d.]+%?)[\s,]+([\d.]+%?)/gi)) {
-    out.push({ ...rgbToHsl(channel(m[1]), channel(m[2]), channel(m[3])), index: m.index });
+    out.push({
+      ...rgbToHsl(channel(m[1] ?? ""), channel(m[2] ?? ""), channel(m[3] ?? "")),
+      index: m.index,
+    });
   }
   for (const m of line.matchAll(
     /hsla?\(\s*([\d.]+)(deg|turn|rad)?[\s,]+([\d.]+)%?[\s,]+([\d.]+)%?/gi,
   )) {
     out.push({
-      h: hueUnits(parseFloat(m[1]), m[2]) % 360,
-      s: m[3] / 100,
-      l: m[4] / 100,
+      h: hueUnits(parseFloat(m[1] ?? ""), m[2]) % 360,
+      s: Number(m[3]) / 100,
+      l: Number(m[4]) / 100,
       index: m.index,
     });
   }
   // Bare HSL triplets in custom properties, as theme generators emit them.
   for (const m of line.matchAll(/--[\w-]+\s*:\s*([\d.]+)\s+([\d.]+)%\s+([\d.]+)%/g)) {
-    out.push({ h: parseFloat(m[1]) % 360, s: m[2] / 100, l: m[3] / 100, index: m.index });
+    out.push({
+      h: parseFloat(m[1] ?? "") % 360,
+      s: Number(m[2]) / 100,
+      l: Number(m[3]) / 100,
+      index: m.index,
+    });
   }
   for (const m of line.matchAll(/oklch\(\s*([\d.]+)(%?)\s+([\d.]+)(%?)\s+([\d.]+)/gi)) {
-    const L = m[2] ? m[1] / 100 : parseFloat(m[1]);
-    const C = m[4] ? (m[3] / 100) * 0.4 : parseFloat(m[3]);
-    out.push({ ...oklchToHsl(L, C, parseFloat(m[5])), index: m.index });
+    const L = m[2] ? Number(m[1]) / 100 : parseFloat(m[1] ?? "");
+    const C = m[4] ? (Number(m[3]) / 100) * 0.4 : parseFloat(m[3] ?? "");
+    out.push({ ...oklchToHsl(L, C, parseFloat(m[5] ?? "")), index: m.index });
   }
   return out;
 }
 
+/** @param {Hsl} c */
 const chromatic = (c) => c.s >= 0.35 && c.l >= 0.15 && c.l <= 0.9;
+/** @param {Hsl} c */
 const isViolet = (c) => chromatic(c) && c.l >= 0.2 && c.l <= 0.85 && c.h >= 235 && c.h <= 290;
+/** @param {Hsl} c */
 const isCool = (c) => c.h >= 185 && c.h <= 320;
 
 // ---------- line rules ----------
@@ -183,6 +220,10 @@ const MAX_GRADIENT = 2000;
 
 // Offset of the parenthesis closing the one at `open`, skipping /* */ comments,
 // or -1 when none closes within MAX_GRADIENT characters.
+/**
+ * @param {string} text
+ * @param {number} open
+ */
 function closingParen(text, open) {
   const limit = Math.min(text.length, open + MAX_GRADIENT);
   let depth = 0;
@@ -208,6 +249,7 @@ function closingParen(text, open) {
 // CSS gradient functions often span several lines, so these are read from the
 // whole file: each purple-to-blue one as its start and end offsets. An unclosed
 // one is read to the end of its line.
+/** @param {string} text */
 function cssGradients(text) {
   const out = [];
   for (const m of text.matchAll(/(?:linear|radial|conic)-gradient\(/gi)) {
@@ -227,49 +269,54 @@ function cssGradients(text) {
   return out;
 }
 
+/** @param {string} line */
 function twGradientHit(line) {
   const names = [...line.matchAll(TW_GRADIENT_STOP)];
   if (names.length >= 2) {
-    const colors = names.map((m) => m[1]);
+    const colors = names.map((m) => m[1] ?? "");
     if (colors.every((c) => TW_COOL.has(c)) && colors.some((c) => TW_VIOLET_NAMES.has(c))) {
-      return names[0].index;
+      return names[0]?.index ?? -1;
     }
   }
   return -1;
 }
 
+/** @param {string} line */
 function violetHit(line) {
   const c = colorsIn(line).find(isViolet);
   if (c) {
     return c.index;
   }
   const m = line.match(TW_VIOLET);
-  return m ? m.index : -1;
+  return m?.index ?? -1;
 }
 
+/** @param {string} line */
 function gradientTextHit(line) {
   return line.search(
     /(?:-webkit-)?background-clip\s*:\s*text|(?:Webkit)?[bB]ackgroundClip\s*:\s*['"]text|\bbg-clip-text\b/,
   );
 }
 
+/** @param {string} line */
 function frostedHit(line) {
   return line.search(
     /backdrop-filter\s*:[^;]*blur\(|backdropFilter\s*:\s*['"`][^'"`]*blur\(|\bbackdrop-blur\b/,
   );
 }
 
+/** @param {string} line */
 function glowHit(line) {
   const tw = line.match(new RegExp(`\\bshadow-(?:${TW_CHROMA})-\\d{2,3}\\b`));
   if (tw) {
-    return tw.index;
+    return tw.index ?? -1;
   }
   const prop = line.search(/box-shadow|text-shadow|boxShadow|textShadow|drop-shadow|shadow-\[/);
   if (prop === -1) {
     return -1;
   }
   const off = line.match(/(?:^|[\s:,'"(_[])0(?:px)?[\s_]+0(?:px)?[\s_]+(\d+(?:\.\d+)?)px/);
-  if (!off || parseFloat(off[1]) < 10) {
+  if (!off || parseFloat(off[1] ?? "") < 10) {
     return -1;
   }
   const saturated = colorsIn(line).some((c) => c.s >= 0.5 && c.l >= 0.25 && c.l <= 0.8);
@@ -279,10 +326,14 @@ function glowHit(line) {
 const EMOJI_CONTEXT =
   /<(?:h[1-6]|button|a|nav|li|summary|label|Button|Link|NavLink|MenuItem|Tab|Badge)\b|\b(?:icon|emoji|label|title)\s*[:=]/;
 
+/**
+ * @param {string} line
+ * @param {string} prev
+ */
 function emojiHit(line, prev) {
   for (const m of line.matchAll(/\p{Extended_Pictographic}/gu)) {
     // Below U+2600 sit (c), (R), TM, arrows and other text symbols, not icons.
-    if (m[0].codePointAt(0) < 0x2600) {
+    if ((m[0].codePointAt(0) ?? 0) < 0x2600) {
       continue;
     }
     if (EMOJI_CONTEXT.test(line) || EMOJI_CONTEXT.test(prev)) {
@@ -292,6 +343,7 @@ function emojiHit(line, prev) {
   return -1;
 }
 
+/** @type {[RegExp, string][]} */
 const LIBRARY_DEFAULTS = [
   [/#0d6efd(?![0-9a-f])/i, "Bootstrap 5 primary"],
   [/#007bff(?![0-9a-f])/i, "Bootstrap 4 primary"],
@@ -306,16 +358,18 @@ const LIBRARY_DEFAULTS = [
   [/oklch\(0\.205 0 0\)/, "shadcn/ui neutral theme primary"],
 ];
 
+/** @param {string} line */
 function libraryHit(line) {
   for (const [re, source] of LIBRARY_DEFAULTS) {
     const m = line.match(re);
     if (m) {
-      return { index: m.index, source };
+      return { index: m.index ?? 0, source };
     }
   }
   return null;
 }
 
+/** @param {string} line */
 function twTrackedCapsHit(line) {
   if (!/(?:^|[\s"'`])uppercase(?=[\s"'`]|$)/.test(line)) {
     return -1;
@@ -324,12 +378,16 @@ function twTrackedCapsHit(line) {
   if (!m) {
     return -1;
   }
-  if (m[1] && !wideSpacing(parseFloat(m[1]), m[2])) {
+  if (m[1] && !wideSpacing(parseFloat(m[1]), m[2] ?? "")) {
     return -1;
   }
-  return m.index;
+  return m.index ?? -1;
 }
 
+/**
+ * @param {number} value
+ * @param {string} unit
+ */
 function wideSpacing(value, unit) {
   if (unit === "em" || unit === "rem") {
     return value >= 0.08;
@@ -338,6 +396,7 @@ function wideSpacing(value, unit) {
 }
 
 // Rule blocks: innermost { ... } in CSS, SCSS or JS style objects.
+/** @param {string} text */
 function trackedCapsBlocks(text) {
   const hits = [];
   for (const m of text.matchAll(/\{[^{}]*\}/g)) {
@@ -353,8 +412,8 @@ function trackedCapsBlocks(text) {
       continue;
     }
     const ok = sp[1]
-      ? wideSpacing(parseFloat(sp[1]), sp[2])
-      : wideSpacing(parseFloat(sp[3]), sp[4] ?? "px");
+      ? wideSpacing(parseFloat(sp[1]), sp[2] ?? "")
+      : wideSpacing(parseFloat(sp[3] ?? ""), sp[4] ?? "px");
     if (ok) {
       hits.push(m.index + caps);
     }
@@ -406,6 +465,7 @@ const STOCK_SANS = new Set([
   "outfit",
 ]);
 
+/** @param {string} raw */
 function normalizeFamily(raw) {
   return raw
     .replace(/["'`[\]]/g, "")
@@ -416,6 +476,7 @@ function normalizeFamily(raw) {
     .replace(/^intervariable$/, "inter");
 }
 
+/** @param {string} list */
 function primaryFamily(list) {
   const first = list.split(",")[0]?.trim() ?? "";
   if (!first || first.startsWith("var(") || first.startsWith("$")) {
@@ -431,42 +492,49 @@ function primaryFamily(list) {
   return name;
 }
 
+/** @param {string} line */
 function fontDeclarations(line) {
+  /** @type {[string, number][]} */
   const lists = [];
   for (const m of line.matchAll(/font-family\s*:\s*([^;{}]+)/gi)) {
-    lists.push([m[1], m.index]);
+    lists.push([m[1] ?? "", m.index]);
   }
   for (const m of line.matchAll(/fontFamily\s*:\s*(.+)/g)) {
-    lists.push([m[1], m.index]);
+    lists.push([m[1] ?? "", m.index]);
   }
   for (const m of line.matchAll(/\b(?:sans|display|heading|body|brand)\s*:\s*\[([^\]]*)/g)) {
-    lists.push([m[1], m.index]);
+    lists.push([m[1] ?? "", m.index]);
   }
   for (const m of line.matchAll(/\bfont\s*:[^;]*?\d(?:px|rem|em|%)(?:\/[\d.]+\w*)?\s+([^;]+)/g)) {
-    lists.push([m[1], m.index]);
+    lists.push([m[1] ?? "", m.index]);
   }
   const gf = line.match(/fonts\.googleapis\.com\/css2?\?[^"'\s)]*/);
   if (gf) {
     for (const m of gf[0].matchAll(/family=([^&:;"')]+)/g)) {
-      lists.push([decodeURIComponent(m[1].replace(/\+/g, " ")), gf.index]);
+      lists.push([decodeURIComponent((m[1] ?? "").replace(/\+/g, " ")), gf.index ?? 0]);
     }
   }
   const nf = line.match(/import\s*\{([^}]+)\}\s*from\s*['"]next\/font\/google['"]/);
   if (nf) {
-    for (const name of nf[1].split(",")) {
-      lists.push([name.split(/\s+as\s+/)[0], nf.index]);
+    for (const name of (nf[1] ?? "").split(",")) {
+      lists.push([name.split(/\s+as\s+/)[0] ?? "", nf.index ?? 0]);
     }
   }
   for (const m of line.matchAll(/@fontsource(?:-variable)?\/([\w-]+)/g)) {
-    lists.push([m[1], m.index]);
+    lists.push([m[1] ?? "", m.index]);
   }
-  return lists
-    .map(([list, index]) => ({ family: primaryFamily(list), index }))
-    .filter((d) => d.family);
+  return lists.flatMap(([list, index]) => {
+    const family = primaryFamily(list);
+    return family ? [{ family, index }] : [];
+  });
 }
 
 // ---------- scanning ----------
 
+/**
+ * @param {string} line
+ * @param {number} index
+ */
 function excerpt(line, index) {
   const at = Math.max(0, index);
   if (line.trim().length <= 120) {
@@ -477,11 +545,22 @@ function excerpt(line, index) {
   return `${start > 0 ? "..." : ""}${piece}${start + 120 < line.length ? "..." : ""}`;
 }
 
+/**
+ * @param {string} path
+ * @param {string} display
+ * @param {FontDeclaration[]} fonts
+ */
 function scanFile(path, display, fonts) {
   const text = readFileSync(path, "utf8");
   const lines = text.split(/\r?\n/);
+  /** @type {Finding[]} */
   const findings = [];
   const seen = new Set();
+  /**
+   * @param {Rule} rule
+   * @param {number} lineNo
+   * @param {number} index
+   */
   const add = (rule, lineNo, index, hint = HINTS[rule]) => {
     const key = `${rule}:${lineNo}`;
     if (seen.has(key)) {
@@ -493,7 +572,7 @@ function scanFile(path, display, fonts) {
       severity: SEVERITY[rule],
       file: display,
       line: lineNo,
-      match: excerpt(lines[lineNo - 1], index),
+      match: excerpt(lines[lineNo - 1] ?? "", index),
       hint,
     });
   };
@@ -504,12 +583,13 @@ function scanFile(path, display, fonts) {
       starts.push(i + 1);
     }
   }
+  /** @param {number} offset */
   const lineAt = (offset) => {
     let lo = 0;
     let hi = starts.length - 1;
     while (lo < hi) {
       const mid = (lo + hi + 1) >> 1;
-      if (starts[mid] <= offset) {
+      if ((starts[mid] ?? 0) <= offset) {
         lo = mid;
       } else {
         hi = mid - 1;
@@ -525,7 +605,7 @@ function scanFile(path, display, fonts) {
   let from = 0;
   for (const { start, end } of cssGradients(text)) {
     const first = lineAt(start);
-    add("purple-blue-gradient", first + 1, start - starts[first]);
+    add("purple-blue-gradient", first + 1, start - (starts[first] ?? 0));
     const at = Math.max(from, start);
     blanked += text.slice(from, at) + text.slice(at, end + 1).replaceAll(/[^\r\n]/g, " ");
     from = Math.max(from, end + 1);
@@ -537,7 +617,7 @@ function scanFile(path, display, fonts) {
     let at = twGradientHit(line);
     if (at !== -1) {
       add("purple-blue-gradient", n, at);
-    } else if ((at = violetHit(violetLines[i])) !== -1) {
+    } else if ((at = violetHit(violetLines[i] ?? "")) !== -1) {
       add("violet-accent", n, at);
     }
     if ((at = gradientTextHit(line)) !== -1) {
@@ -571,21 +651,28 @@ function scanFile(path, display, fonts) {
 
   for (const offset of trackedCapsBlocks(text)) {
     const lo = lineAt(offset);
-    add("tracked-caps", lo + 1, offset - starts[lo]);
+    add("tracked-caps", lo + 1, offset - (starts[lo] ?? 0));
   }
   return findings;
 }
 
+/**
+ * @param {FontDeclaration[]} fonts
+ * @returns {Finding | null}
+ */
 function fontFinding(fonts) {
   const families = new Set(fonts.map((d) => d.family));
   if (families.size !== 1 || fonts.length < 2) {
     return null;
   }
-  const [family] = families;
+  const [family = ""] = families;
   if (!STOCK_SANS.has(family)) {
     return null;
   }
-  const first = fonts[0];
+  const [first] = fonts;
+  if (!first) {
+    return null;
+  }
   return {
     rule: "single-stock-font",
     severity: SEVERITY["single-stock-font"],
@@ -596,8 +683,10 @@ function fontFinding(fonts) {
   };
 }
 
+/** @param {string[]} paths */
 function collect(paths) {
   const files = new Set();
+  /** @param {string} dir */
   const walk = (dir) => {
     for (const entry of readdirSync(dir, { withFileTypes: true })) {
       const full = join(dir, entry.name);
@@ -622,6 +711,7 @@ function collect(paths) {
   return [...files].sort();
 }
 
+/** @param {string} name */
 function wanted(name) {
   return EXTENSIONS.has(extname(name).toLowerCase()) && !/\.min\.(?:js|css)$/i.test(name);
 }
@@ -633,17 +723,23 @@ const USAGE = `Usage: scan.mjs [--json] [--fail-on high|medium|low] <file-or-dir
 Flags template-default styling for triage. Exit 0 when nothing reaches the
 failing severity (default high), 1 when something does, 2 on bad usage.`;
 
+/**
+ * @param {string} message
+ * @returns {never}
+ */
 function usageError(message) {
   process.stderr.write(`scan: ${message}\n\n${USAGE}\n`);
   process.exit(2);
 }
 
+/** @param {string[]} argv */
 function main(argv) {
   let json = false;
+  /** @type {Severity} */
   let failOn = "high";
   const paths = [];
   for (let i = 0; i < argv.length; i++) {
-    const arg = argv[i];
+    const arg = argv[i] ?? "";
     if (arg === "--") {
       paths.push(...argv.slice(i + 1));
       break;
@@ -654,10 +750,10 @@ function main(argv) {
       json = true;
     } else if (arg === "--fail-on" || arg.startsWith("--fail-on=")) {
       const value = arg.includes("=") ? arg.slice(arg.indexOf("=") + 1) : argv[++i];
-      if (!(value in SEVERITY_RANK)) {
+      if (value === undefined || !(value in SEVERITY_RANK)) {
         usageError(`--fail-on needs high, medium or low, got ${value ?? "nothing"}`);
       }
-      failOn = value;
+      failOn = /** @type {Severity} */ (value);
     } else if (arg.startsWith("-")) {
       usageError(`unknown flag ${arg}`);
     } else {
@@ -680,6 +776,7 @@ function main(argv) {
     usageError(`no scannable files (${[...EXTENSIONS].join(" ")}) under the given paths`);
   }
 
+  /** @type {FontDeclaration[]} */
   const fonts = [];
   const findings = files.flatMap((f) =>
     scanFile(f, (relative(process.cwd(), f) || f).split(sep).join("/"), fonts),

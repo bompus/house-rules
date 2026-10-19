@@ -51,6 +51,10 @@ readline.createInterface({input:process.stdin}).on('line',async line=>{
  }
 });
 `;
+/**
+ * @param {any} config
+ * @param {string[]} flags
+ */
 function run(
   config = {},
   flags = [],
@@ -97,7 +101,12 @@ function run(
       code: result.status,
       text: existsSync(out) ? readFileSync(out, "utf8") : "",
       error: result.stderr,
-      log: existsSync(log) ? readFileSync(log, "utf8").trim().split("\n").map(JSON.parse) : [],
+      log: existsSync(log)
+        ? readFileSync(log, "utf8")
+            .trim()
+            .split("\n")
+            .map((line) => JSON.parse(line))
+        : [],
       unexpected: existsSync(join(root, "terminal-ran")),
     };
   } finally {
@@ -135,7 +144,7 @@ test("rejects hostile terminals, writes and every permission kind while allowing
   assert.equal(r.code, 0);
   assert.equal(r.unexpected, false);
   assert.equal(r.log[0].params.clientCapabilities.terminal, false);
-  const result = JSON.parse(r.text.split("\n")[0]).results;
+  const result = JSON.parse(r.text.split("\n")[0] ?? "").results;
   assert.equal(result[0].result.content, "inside");
   for (const response of result.slice(1, 4)) {
     assert.ok(response.error);
@@ -166,11 +175,11 @@ test("rejects traversal, outside absolute paths and escaped file/parent symlinks
       },
     );
     assert.equal(r.code, 0);
-    const results = JSON.parse(r.text.split("\n")[0]).results;
-    results.slice(0, 4).forEach((row) => assert.ok(row.error));
+    const results = JSON.parse(r.text.split("\n")[0] ?? "").results;
+    results.slice(0, 4).forEach((/** @type {any} */ row) => assert.ok(row.error));
     assert.equal(results[4].result.content, "inside");
   } catch (e) {
-    if (e.code === "EPERM") {
+    if (/** @type {NodeJS.ErrnoException} */ (e).code === "EPERM") {
       t.skip("Native symlink creation unavailable");
     } else {
       throw e;
@@ -286,9 +295,9 @@ test("canonicalizes a caller root alias before reading", (t) => {
       },
     );
     assert.equal(r.code, 0);
-    assert.equal(JSON.parse(r.text.split("\n")[0]).results[0].result.content, "inside");
+    assert.equal(JSON.parse(r.text.split("\n")[0] ?? "").results[0].result.content, "inside");
   } catch (e) {
-    if (e.code === "EPERM") {
+    if (/** @type {NodeJS.ErrnoException} */ (e).code === "EPERM") {
       t.skip("Native symlink creation unavailable");
     } else {
       throw e;

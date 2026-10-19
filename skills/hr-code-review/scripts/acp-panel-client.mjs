@@ -5,10 +5,16 @@ import { readFile, stat } from "node:fs/promises";
 import { isAbsolute, relative, resolve, sep } from "node:path";
 import * as readline from "node:readline";
 const rawArgs = process.argv.slice(2);
+// JSON-RPC messages are whatever the ACP server sends; fields are checked where they are read.
+/** @typedef {any} RpcMessage */
+/**
+ * @param {string} name
+ * @param {string} def
+ */
 function takeFlag(name, def) {
   const i = rawArgs.indexOf(name);
   if (i >= 0 && i + 1 < rawArgs.length) {
-    const v = rawArgs[i + 1];
+    const v = rawArgs[i + 1] ?? def;
     rawArgs.splice(i, 2);
     return v;
   }
@@ -46,7 +52,9 @@ const child = spawn(serverCmd[0], serverCmd.slice(1), {
   stdio: ["pipe", "pipe", "inherit"],
 });
 let nextId = 1;
+/** @type {Map<number, { resolve: (result: RpcMessage) => void, reject: (error: Error) => void }>} */
 const pending = new Map();
+/** @param {Error} error */
 function rejectPending(error) {
   for (const p of pending.values()) {
     p.reject(error);
@@ -58,9 +66,15 @@ child.on("exit", (code, signal) =>
   rejectPending(new Error(`ACP server exited (${code ?? signal})`)),
 );
 const rl = readline.createInterface({ input: child.stdout, crlfDelay: Infinity });
+/** @param {RpcMessage} msg */
 function send(msg) {
   child.stdin.write(JSON.stringify(msg) + "\n");
 }
+/**
+ * @param {string} method
+ * @param {RpcMessage} params
+ * @returns {Promise<RpcMessage>}
+ */
 function request(method, params) {
   const id = nextId++;
   return new Promise((resolve, reject) => {
@@ -68,18 +82,29 @@ function request(method, params) {
     send({ jsonrpc: "2.0", id, method, params });
   });
 }
+/**
+ * @param {RpcMessage} id
+ * @param {RpcMessage} result
+ */
 function replyOk(id, result) {
   send({ jsonrpc: "2.0", id, result });
 }
+/**
+ * @param {RpcMessage} id
+ * @param {number} code
+ * @param {string} message
+ */
 function replyErr(id, code, message) {
   send({ jsonrpc: "2.0", id, error: { code, message } });
 }
 // Resolve physical targets; the client is not an OS sandbox for agent-owned tools.
+/** @param {unknown} path */
 async function underCwd(path) {
   if (typeof path !== "string" || !path) {
     return null;
   }
   const lexical = resolve(cwd, path);
+  /** @param {string} target */
   const inside = (target) => {
     const rel = relative(cwd, target);
     return rel !== ".." && !rel.startsWith(".." + sep) && !isAbsolute(rel);
@@ -95,6 +120,7 @@ async function underCwd(path) {
   }
   return physical;
 }
+/** @param {RpcMessage} msg */
 async function handleServerRequest(msg) {
   const { id, method } = msg;
   const params = msg.params ?? {};
@@ -116,7 +142,9 @@ async function handleServerRequest(msg) {
     if (method === "session/request_permission") {
       const opts = params.options || [];
       const kind = params.toolCall?.kind;
-      const reject = opts.find((o) => String(o.kind || "").startsWith("reject"));
+      const reject = opts.find((/** @type {RpcMessage} */ o) =>
+        String(o.kind || "").startsWith("reject"),
+      );
       console.error(`[client] rejected ${kind || "unknown"} permission request`);
       rejections++;
       return replyOk(
@@ -188,6 +216,7 @@ function noteActivity() {
 const gapNote = () => `longest silent gap ${Math.round(longestGapMs / 1000)}s`;
 // Set by abort(), which timers and stream handlers call.
 let deadlineHit = /** @type {boolean} */ (false);
+/** @param {string} reason */
 function abort(reason) {
   deadlineHit = true;
   console.error(`[client] ${reason} (${gapNote()}), killing server`);
@@ -211,6 +240,7 @@ const idleCheck = setInterval(
   },
   Math.min(IDLE_MS / 4, 15000),
 ).unref();
+/** @type {string | undefined} */
 let sessionId;
 try {
   const init = await request("initialize", {
@@ -230,10 +260,15 @@ try {
   if (typeof sessionId !== "string" || !sessionId) {
     throw new Error("Missing session identity");
   }
+  /** @type {RpcMessage[]} */
   let options = s.configOptions || [];
   const modeRequired = isCodex || options.some((o) => o.id === "mode");
   const required = new Map();
   // Set responses are complete snapshots; later changes must preserve earlier bindings.
+  /**
+   * @param {string[]} ids
+   * @param {string} value
+   */
   async function bind(ids, value, optional = false) {
     const matches = options.filter((o) => ids.includes(o.id));
     if (matches.length !== 1) {
@@ -243,7 +278,9 @@ try {
       throw new Error(`agent exposes no unique ${ids.join("/")} option; cannot bind ${value}`);
     }
     const option = matches[0];
-    const values = (option.options || []).flatMap((o) => o.options || [o]);
+    const values = /** @type {RpcMessage[]} */ (option.options || []).flatMap(
+      (/** @type {RpcMessage} */ o) => o.options || [o],
+    );
     if (!values.some((o) => o.value === value)) {
       throw new Error(`Unsupported ${option.id} value: ${value}`);
     }

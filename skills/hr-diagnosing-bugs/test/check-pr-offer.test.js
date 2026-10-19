@@ -2,6 +2,7 @@ import { expect, test } from "bun:test";
 import { join } from "node:path";
 import { offersPullRequest } from "../scripts/check-pr-offer.mjs";
 
+/** @param {string} fix */
 const form = (fix) =>
   `### What happened\n\nIt is slow.\n\n### Fix applied or workaround\n\n${fix}\n\n### Related issues\n\nNone.`;
 
@@ -47,6 +48,7 @@ test("a free-form draft is judged by its closing lines", () => {
 
 test("the command exits 1 on a missing offer and 0 on an offer", () => {
   const script = join(import.meta.dir, "../scripts/check-pr-offer.mjs");
+  /** @param {string} text */
   const run = (text) =>
     Bun.spawnSync(["node", script], { stdin: new TextEncoder().encode(text), stderr: "pipe" });
   expect(run(form("None applied.")).exitCode).toBe(1);

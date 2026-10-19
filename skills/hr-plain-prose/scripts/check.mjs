@@ -23,23 +23,37 @@ const SKILL = join(dirname(fileURLToPath(import.meta.url)), "..", "SKILL.md");
 // A term matches its inflections: the first word keeps its stem without a
 // final "e" or "s" ("elevate" matches "elevating", "pillars" matches
 // "pillar"); later words match exactly.
+/** @param {string} term */
 function termPattern(term) {
-  const [first, ...rest] = term.toLowerCase().split(/\s+/);
+  const [first = "", ...rest] = term.toLowerCase().split(/\s+/);
   const stem = first.length > 4 ? first.replace(/[es]$/, "") : first;
   return [`${stem}\\w*`, ...rest].join("\\s+");
 }
 
 // A word-table row has a plain term in its first cell and a replacement in its
 // second: "| delve into | look at, read, test |". Returns the two cells.
+/**
+ * @param {string} line
+ * @returns {[term: string, hint: string] | null}
+ */
 function wordTableRow(line) {
   const cells = line.split("|").map((c) => c.trim());
   if (cells.length !== 4 || cells[0] !== "" || cells[3] !== "") {
     return null;
   }
-  return /^[a-z][a-z ,]*$/.test(cells[1]) ? cells.slice(1, 3) : null;
+  const [, words = "", hint = ""] = cells;
+  return /^[a-z][a-z ,]*$/.test(words) ? [words, hint] : null;
 }
 
+/** @typedef {{ term: string, hint: string, re: RegExp }} Term */
+/** @typedef {{ line: number, col: number, rule: string, text: string, hint?: string }} Finding */
+
+/**
+ * @param {string} markdown
+ * @returns {Term[]}
+ */
 export function parseWordTables(markdown) {
+  /** @type {Term[]} */
   const terms = [];
   for (const line of markdown.split("\n")) {
     const row = wordTableRow(line);
@@ -96,9 +110,12 @@ const JOINED_PROSE = [
 // line but never cross a blank line. A code span becomes KEPT characters,
 // neither space nor word, so `50`–`950` does not read as a spaced dash.
 const KEPT = "\u2063";
+/** @param {string} s */
 const blank = (s) => s.replace(/[^\n]/g, " ");
+/** @param {string} s */
 const keptCode = (s) => s.replace(/[^\n]/g, KEPT);
 const WRAP = String.raw`(?:[^"\n]|\n(?![ \t]*\n))`;
+/** @param {string} doc */
 function prose(doc) {
   return doc
     .replace(new RegExp(String.raw`(\`+)(?:[^\`\n]|\n(?![ \t]*\n))*?\1`, "g"), keptCode)
@@ -113,6 +130,7 @@ function prose(doc) {
 // verb: "- Weekly backup (task): a shadow copy", "2. Tests for what changed:
 // the files". "- Semantic risk is the larger tax: ..." stays a reveal.
 const LINKING = /\b(is|are|was|were|be|been|has|have|had|do|does|did|can|will|should|must)\b/i;
+/** @param {string} head */
 function listLabel(head) {
   if (/[.!?]\s|: /.test(head)) {
     return false;
@@ -125,7 +143,9 @@ function listLabel(head) {
 
 // A colon between two clauses in a sentence: at least four words before it,
 // a sentence after it, and no comma there that would make it a list.
+/** @param {string} text */
 function colonReveals(text) {
+  /** @type {{ index: number, text: string }[]} */
   const found = [];
   const marker = text.match(/^\s*([-*+]|\d+\.)\s+/)?.[0].length;
   for (const m of text.matchAll(/: +(?=[A-Za-z])/g)) {
@@ -133,8 +153,8 @@ function colonReveals(text) {
     if (marker && listLabel(head)) {
       continue;
     }
-    const before = head.split(/[.!?]\s+/).pop();
-    const after = text.slice(m.index + m[0].length).split(/[.!?](\s|$)/)[0];
+    const before = head.split(/[.!?]\s+/).pop() ?? "";
+    const after = text.slice(m.index + m[0].length).split(/[.!?](\s|$)/)[0] ?? "";
     if (before.trim().split(/\s+/).length < 4 || /\*\*|__/.test(before)) {
       continue;
     }
@@ -148,19 +168,21 @@ function colonReveals(text) {
 
 // Marks the lines that hold no prose to check: fenced code, block quotes, and
 // the keep comment with the paragraph after it.
+/** @param {string[]} lines */
 function skippedLines(lines) {
+  /** @type {string | null} */
   let fence = null;
   let keep = false;
   return lines.map((raw) => {
-    const fenceMark = raw.match(/^\s*(`{3,}|~{3,})/);
+    const fenceMark = raw.match(/^\s*(`{3,}|~{3,})/)?.[1];
     if (fence) {
-      if (fenceMark && fenceMark[1][0] === fence[0] && fenceMark[1].length >= fence.length) {
+      if (fenceMark && fenceMark[0] === fence[0] && fenceMark.length >= fence.length) {
         fence = null;
       }
       return true;
     }
     if (fenceMark) {
-      fence = fenceMark[1];
+      fence = fenceMark;
       return true;
     }
     if (/plain-prose:\s*keep/.test(raw)) {
@@ -176,12 +198,20 @@ function skippedLines(lines) {
 // Sentences over LONG words. A paragraph or list item is read as one run, so
 // a sentence that wraps across lines counts once. Kept spans count as no words.
 const LONG = 30;
+/**
+ * @param {string} doc
+ * @param {string[]} raws
+ * @param {boolean[]} skipped
+ */
 function longSentences(doc, raws, skipped) {
+  /** @type {Finding[]} */
   const found = [];
   const lines = doc.split("\n");
+  /** @type {{ i: number, text: string }[]} */
   let unit = [];
   const flush = () => {
     let joined = "";
+    /** @type {([number, number] | null)[]} */
     const at = [];
     for (const { i, text } of unit) {
       if (joined) {
@@ -205,7 +235,7 @@ function longSentences(doc, raws, skipped) {
         if (!initialism) {
           return true;
         }
-        return /^[A-Z.]+$/.test(initialism[1]) && /^\s+[A-Z]/.test(joined.slice(e.index + 1));
+        return /^[A-Z.]+$/.test(initialism[1] ?? "") && /^\s+[A-Z]/.test(joined.slice(e.index + 1));
       })
       .map((e) => e.index + e[0].length);
     let from = 0;
@@ -218,12 +248,17 @@ function longSentences(doc, raws, skipped) {
         continue;
       }
       const lead = start + sentence.search(/\S/);
-      const [i, col] = at[lead];
+      const position = at[lead];
+      // `lead` is a non-space character, so it always has a position; the check is for the type.
+      if (!position) {
+        continue;
+      }
+      const [i, col] = position;
       found.push({
         line: i + 1,
         col: col + 1,
         rule: "long-sentence",
-        text: raws[i].slice(col).trim().split(/\s+/).slice(0, 5).join(" "),
+        text: (raws[i] ?? "").slice(col).trim().split(/\s+/).slice(0, 5).join(" "),
         hint: `${words.length} words; split it`,
       });
     }
@@ -231,7 +266,7 @@ function longSentences(doc, raws, skipped) {
   // Front matter holds fields, not sentences.
   const front = raws[0] === "---" ? raws.indexOf("---", 1) : -1;
   lines.forEach((text, i) => {
-    const raw = raws[i];
+    const raw = raws[i] ?? "";
     if (i <= front || skipped[i] || raw.trim() === "" || /^\s*(#|\|)/.test(raw)) {
       return flush();
     }
@@ -244,29 +279,44 @@ function longSentences(doc, raws, skipped) {
   return found;
 }
 
+/**
+ * @param {string} markdown
+ * @param {Term[]} [terms]
+ * @returns {Finding[]}
+ */
 export function check(markdown, terms = parseWordTables(readFileSync(SKILL, "utf8"))) {
+  /** @type {Finding[]} */
   const findings = [];
   const raws = markdown.split("\n");
   const skipped = skippedLines(raws);
   const doc = prose(raws.map((raw, i) => (skipped[i] ? blank(raw) : raw)).join("\n"));
   const technical = TECHNICAL.flatMap((re) =>
-    [...doc.matchAll(re)].map((m) => [m.index, m.index + m[0].length]),
+    [...doc.matchAll(re)].map(
+      (m) => /** @type {[number, number]} */ ([m.index, m.index + m[0].length]),
+    ),
   );
   // A row of a word table defines its terms; the same words elsewhere are cues.
   const known = new Set(terms.map((t) => t.term));
+  /** @param {string} raw */
   const defines = (raw) =>
     wordTableRow(raw)?.[0]
       .split(/,\s*/)
       .every((t) => known.has(t));
   let offset = 0;
   doc.split("\n").forEach((text, i) => {
-    const raw = raws[i];
+    const raw = raws[i] ?? "";
     const start = offset;
     offset += text.length + 1;
     if (skipped[i] || raw.trim() === "") {
       return;
     }
     const line = i + 1;
+    /**
+     * @param {string} rule
+     * @param {number} index
+     * @param {string} match
+     * @param {string} hint
+     */
     const add = (rule, index, match, hint) =>
       findings.push({
         line,
@@ -329,7 +379,7 @@ function main() {
   try {
     parsed = parseArgs({ options: { json: { type: "boolean" } }, allowPositionals: true });
   } catch (e) {
-    console.error(e.message);
+    console.error(e instanceof Error ? e.message : String(e));
     return 2;
   }
   const files = parsed.positionals.length ? parsed.positionals : ["-"];
@@ -337,7 +387,9 @@ function main() {
   try {
     terms = parseWordTables(readFileSync(SKILL, "utf8"));
   } catch (e) {
-    console.error(`cannot read the word tables in ${SKILL}: ${e.message}`);
+    console.error(
+      `cannot read the word tables in ${SKILL}: ${e instanceof Error ? e.message : String(e)}`,
+    );
     return 2;
   }
   const all = [];
@@ -346,7 +398,7 @@ function main() {
     try {
       body = readFileSync(file === "-" ? 0 : file, "utf8");
     } catch (e) {
-      console.error(`${file}: ${e.message}`);
+      console.error(`${file}: ${e instanceof Error ? e.message : String(e)}`);
       return 2;
     }
     for (const f of check(body, terms)) {

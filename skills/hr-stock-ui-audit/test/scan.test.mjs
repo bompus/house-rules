@@ -7,6 +7,7 @@ const SKILL = join(import.meta.dirname, "..");
 const SCANNER = join(SKILL, "scripts", "scan.mjs");
 const FIX = join(SKILL, "test", "fixtures");
 
+/** @param {string[]} args */
 function run(...args) {
   const r = spawnSync(process.execPath, [SCANNER, ...args], {
     cwd: SKILL,
@@ -16,15 +17,21 @@ function run(...args) {
   return { code: r.status, stdout: r.stdout, stderr: r.stderr };
 }
 
+/**
+ * @param {string[]} paths
+ * @returns {any}
+ */
 function scanJson(...paths) {
   const r = run("--json", ...paths);
   expect(r.code === 0 || r.code === 1).toBe(true);
   return { ...JSON.parse(r.stdout), code: r.code };
 }
 
-const rulesIn = (report) => report.findings.map((f) => `${f.rule}@${f.line}`);
+/** @param {any} report */
+const rulesIn = (report) => report.findings.map((/** @type {any} */ f) => `${f.rule}@${f.line}`);
 
 describe("rules", () => {
+  /** @type {[string, string[]][]} */
   const cases = [
     ["purple-blue-gradient.css", ["purple-blue-gradient@2"]],
     ["purple-blue-gradient.tsx", ["purple-blue-gradient@2"]],
@@ -91,7 +98,7 @@ describe("rules", () => {
 });
 
 describe("walking", () => {
-  let dir;
+  let dir = "";
   beforeAll(() => {
     dir = mkdtempSync(join(SKILL, "test", "walk-"));
     for (const skipped of ["node_modules/pkg", "dist", "coverage", ".next"]) {
@@ -108,14 +115,18 @@ describe("walking", () => {
   test("skips dependency, build and coverage output, minified and unsupported files", () => {
     const report = scanJson(dir);
     expect(report.filesScanned).toBe(1);
-    expect(report.findings.map((f) => f.file)).toEqual([
+    expect(report.findings.map((/** @type {any} */ f) => f.file)).toEqual([
       expect.stringMatching(/src\/app\.svelte$/),
     ]);
   });
 });
 
 describe("gradients read across lines", () => {
-  let dir;
+  let dir = "";
+  /**
+   * @param {string} name
+   * @param {string} text
+   */
   const write = (name, text) => {
     writeFileSync(join(dir, name), text);
     return join(dir, name);

@@ -23,7 +23,9 @@ test("status URLs on x.com and mirrors parse; other URLs do not", () => {
 });
 
 test("t.co links expand in place, later links first so earlier indices stay valid", () => {
+  /** @type {import("../scripts/x-post.ts").Tweet} */
   const tweet = {
+    id: "1",
     raw_text: {
       text: "see https://t.co/AAA and https://t.co/BBB pic",
       facets: [
@@ -78,6 +80,7 @@ test("article blocks render headings, lists, quotes and image markers numbered l
 
 test("media collects post photos, article cover and inline images, and videos", () => {
   const tweet = {
+    id: "1",
     media: {
       photos: [{ url: "https://pbs.twimg.com/media/P1.jpg" }],
       videos: [

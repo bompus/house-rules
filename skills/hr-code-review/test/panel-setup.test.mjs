@@ -5,7 +5,9 @@ import { dirname, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const skill = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+/** @param {string} path */
 const read = (path) => readFileSync(resolve(skill, path), "utf8");
+/** @type {any} */
 const catalog = JSON.parse(read("references/panel-recommendations.json"));
 
 const fields = [
@@ -55,10 +57,12 @@ test("every catalog entry records the evidence the setup procedure promises", ()
 });
 
 test("a current entry was fetched from its source and defines every figure it records", () => {
-  for (const entry of catalog.entries.filter((e) => e.status === "current")) {
+  for (const entry of catalog.entries.filter((/** @type {any} */ e) => e.status === "current")) {
     assert(entry.checked <= catalog.reviewed, `${entry.id}: checked after the catalog review date`);
     assert.doesNotMatch(entry.limitations, /not fetched again/i, entry.id);
-    const numeric = (key) => entry.efforts.some((row) => Number.isFinite(row[key]));
+    /** @param {string} key */
+    const numeric = (key) =>
+      entry.efforts.some((/** @type {any} */ row) => Number.isFinite(row[key]));
     if (numeric("listCostUsd")) {
       assert.notEqual(entry.costDefinition, "unknown", entry.id);
     }
@@ -71,7 +75,7 @@ test("a current entry was fetched from its source and defines every figure it re
 test("the recommendations page names each profile that has no entry", () => {
   const page = read("references/panel-recommendations.md");
   for (const profile of ["quick", "balanced", "deep"]) {
-    const covered = catalog.entries.some((e) => e.profiles.includes(profile));
+    const covered = catalog.entries.some((/** @type {any} */ e) => e.profiles.includes(profile));
     const said = new RegExp(`\`${profile}\`[^.|]*no entry`).test(page);
     assert.equal(said, !covered, `${profile}: page and entries disagree about coverage`);
   }
@@ -101,7 +105,7 @@ test("the setup reference links resolve inside the installed skill", () => {
     "references/panel-recommendations.md",
   ]) {
     const base = dirname(resolve(skill, file));
-    for (const [, target] of read(file).matchAll(/\]\(([^)#\s]+)(?:#[^)]*)?\)/g)) {
+    for (const [, target = ""] of read(file).matchAll(/\]\(([^)#\s]+)(?:#[^)]*)?\)/g)) {
       if (/^https?:/.test(target)) {
         continue;
       }

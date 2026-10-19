@@ -19,7 +19,9 @@ const script = join(import.meta.dir, "../scripts/retro.py");
 if (process.platform === "win32") {
   setDefaultTimeout(30000);
 }
+/** @type {string[]} */
 const homes = [];
+/** @param {string} prefix */
 const mkdtempSync = (prefix) => realpathSync.native(makeTemporaryDirectory(prefix));
 afterEach(() => {
   for (const home of homes.splice(0)) {
@@ -27,6 +29,10 @@ afterEach(() => {
   }
 });
 
+/**
+ * @param {string} path
+ * @param {object[]} records
+ */
 function jsonl(path, records) {
   mkdirSync(join(path, ".."), { recursive: true });
   writeFileSync(
@@ -42,11 +48,20 @@ function fixtureHome() {
   const home = mkdtempSync(join(process.env.HOUSE_RULES_TEST_TMP ?? tmpdir(), "navigation-retro-"));
   homes.push(home);
   const cwd = join(home, "checkouts/myrepo/task");
+  /**
+   * @param {string} id
+   * @param {string} name
+   * @param {object} input
+   */
   const use = (id, name, input) => ({
     type: "assistant",
     cwd,
     message: { role: "assistant", content: [{ type: "tool_use", id, name, input }] },
   });
+  /**
+   * @param {string} id
+   * @param {string} content
+   */
   const result = (id, content, isError = false) => ({
     type: "user",
     cwd,
@@ -77,6 +92,7 @@ function fixtureHome() {
     use("6", "Edit", { file_path: join(cwd, "src/widget.ts") }),
     result("6", "ok"),
   ]);
+  /** @param {object} payload */
   const item = (payload) => ({ type: "response_item", payload });
   jsonl(join(home, ".codex/sessions/2026/10/01/rollout-codex-session.jsonl"), [
     { type: "session_meta", payload: { cwd: join(home, "myrepo") } },
@@ -108,21 +124,28 @@ function fixtureHome() {
   return home;
 }
 
+/** @param {string} home */
 function inputs(home) {
   return readdirSync(home, { recursive: true, withFileTypes: true })
     .filter((entry) => entry.isFile() && entry.name.endsWith(".jsonl"))
     .map((entry) => join(entry.parentPath, entry.name));
 }
+/** @param {string} home */
 function rootArgs(home) {
-  return [
+  return /** @type {[string, string][]} */ ([
     ["myrepo", "checkouts/myrepo/task"],
     ["myrepo", "myrepo"],
     ["alpha", "checkouts/alpha/one"],
     ["alpha", "checkouts/alpha/two"],
     ["alpha", "alpha"],
     ["beta", "beta"],
-  ].flatMap(([name, path]) => ["--repo-root", `${name}=${join(home, path)}`]);
+  ]).flatMap(([name, path]) => ["--repo-root", `${name}=${join(home, path)}`]);
 }
+/**
+ * @param {string} home
+ * @param {string} command
+ * @param {string[]} args
+ */
 const retro = (home, command, ...args) =>
   execFileSync(
     "python3",
@@ -149,7 +172,7 @@ test("rank measures misses, widening, re-reads and stale remarks in both host fo
     out,
   );
   const sessions = Object.fromEntries(
-    JSON.parse(readFileSync(out, "utf8")).map((s) => [
+    /** @type {any[]} */ (JSON.parse(readFileSync(out, "utf8"))).map((s) => [
       s.path.includes(".codex") ? "codex" : "claude",
       s,
     ]),
@@ -184,6 +207,7 @@ test("ranking ignores stale explanations and finds late diagnostics without coun
     join(process.env.HOUSE_RULES_TEST_TMP ?? tmpdir(), "retro-diagnostics-"),
   );
   homes.push(home);
+  /** @param {object} payload */
   const item = (payload) => ({ type: "response_item", payload });
   const cases = [
     "progress\n".repeat(100) + "cat: docs/absent.md: No such file or directory",
@@ -230,7 +254,7 @@ test("ranking ignores stale explanations and finds late diagnostics without coun
     stale: 2,
     score: 6,
   });
-  expect(ranked(home)[0].missExamples.map(([call]) => call)).toEqual([1, 2]);
+  expect(ranked(home)[0].missExamples.map((/** @type {any[]} */ [call]) => call)).toEqual([1, 2]);
   const timeline = retro(home, "timeline", join(home, "session.jsonl"));
   expect(timeline.match(/!!/g)).toHaveLength(2);
   expect(timeline).toContain("!! rg: docs/absent.md: No such file or directory");
@@ -299,6 +323,13 @@ test("timeline flags the empty search and the missing file", () => {
   expect(codex).toContain("!! ls: cannot access 'missing'");
 });
 
+/**
+ * @param {string} path
+ * @param {string} format
+ * @param {string} cwd
+ * @param {[string, any, any][]} calls
+ * @param {number} now
+ */
 function writeNativeTranscript(path, format, cwd, calls, now) {
   if (format === "opencode") {
     writeFileSync(
@@ -399,10 +430,18 @@ test.each(["opencode", "cursor", "acp"])(
     const cwd = join(home, "repo");
     const path = join(home, "session.json");
     const now = Date.now();
+    /** @type {[string, any, any][]} */
     const calls = [
       ["grep", { pattern: "oldName" }, "No matches found"],
       ["glob", { pattern: "**/oldName*" }, "No files found"],
-      ...[1, 2, 3].map(() => ["read", { filePath: join(cwd, "README.md") }, "content"]),
+      ...[1, 2, 3].map(
+        () =>
+          /** @type {[string, any, any]} */ ([
+            "read",
+            { filePath: join(cwd, "README.md") },
+            "content",
+          ]),
+      ),
       ["bash", { command: "cat missing.txt", workdir: cwd }, "ENOENT"],
       ["edit", { filePath: join(cwd, "README.md") }, "ok"],
     ];
@@ -442,7 +481,7 @@ test("undated ACP evidence needs an explicit cwd and warns when a date window ex
       },
       { sessionUpdate: "tool_call_update", toolCallId: "a", status: "failed", rawOutput: "ENOENT" },
     ]
-      .map(JSON.stringify)
+      .map((update) => JSON.stringify(update))
       .join("\n"),
   );
   const out = join(home, "metrics.json");
@@ -466,6 +505,7 @@ test("ACP replacement content and duplicate completions do not invent search mis
   const home = mkdtempSync(join(process.env.HOUSE_RULES_TEST_TMP ?? tmpdir(), "retro-acp-state-"));
   homes.push(home);
   const path = join(home, "session.jsonl");
+  /** @param {object} data */
   const update = (data) => ({ update: { toolCallId: "a", ...data } });
   jsonl(path, [
     update({ sessionUpdate: "tool_call", kind: "search" }),
@@ -510,6 +550,10 @@ test("ACP fragments and unresolved inputs preserve evidence without inventing re
   const home = mkdtempSync(join(process.env.HOUSE_RULES_TEST_TMP ?? tmpdir(), "retro-acp-gaps-"));
   homes.push(home);
   const path = join(home, "session.jsonl");
+  /**
+   * @param {string} sessionUpdate
+   * @param {any} value
+   */
   const chunk = (sessionUpdate, value) => ({
     update: { sessionUpdate, content: { type: "text", text: value } },
   });
@@ -553,6 +597,10 @@ test("ACP fragments and unresolved inputs preserve evidence without inventing re
   ]);
 });
 
+/**
+ * @param {string} home
+ * @returns {any[]}
+ */
 function ranked(home) {
   const out = join(home, "rank.json");
   retro(
@@ -577,6 +625,10 @@ test("rank uses event dates and exact roles while citations keep timeline call n
   homes.push(home);
   const path = join(home, ".codex/sessions/window.jsonl");
   const old = new Date(Date.now() - 3 * 86400_000).toISOString();
+  /**
+   * @param {object} payload
+   * @param {string | null} [timestamp]
+   */
   const item = (payload, timestamp) => ({
     type: "response_item",
     payload,
@@ -642,6 +694,10 @@ test("batched command directories and physical read paths stay separate across r
   const a = join(home, "checkouts/alpha/one");
   const b = join(home, "beta");
   const a2 = join(home, "checkouts/alpha/two");
+  /**
+   * @param {string} id
+   * @param {string} input
+   */
   const call = (id, input) => ({
     type: "response_item",
     payload: { type: "custom_tool_call", name: "exec", call_id: id, input },
@@ -816,6 +872,7 @@ test("rank reads only selected inputs and uses explicit roots instead of store l
       env: { ...process.env, HOME: home, USERPROFILE: home },
     },
   );
+  /** @type {any[]} */
   const rows = JSON.parse(readFileSync(output, "utf8"));
   expect(rows).toHaveLength(1);
   expect(rows[0]).toMatchObject({ repo: "selected", tools: 6, misses: 2 });
@@ -826,6 +883,10 @@ test("rank selects the most specific mapped root and leaves adjacent paths unkno
   const home = fixtureHome();
   const selected = join(home, ".claude/projects/-myrepo/claude-session.jsonl");
   const output = join(home, "roots.json");
+  /**
+   * @param {string[]} roots
+   * @returns {any[]}
+   */
   const run = (...roots) => {
     execFileSync(
       "python3",
@@ -879,6 +940,10 @@ test("a new Codex turn attributes remarks to its context instead of the precedin
   const output = join(home, "turn-metrics.json");
   const alpha = join(home, "alpha");
   const beta = join(home, "beta");
+  /**
+   * @param {string} id
+   * @param {string} [workdir]
+   */
   const call = (id, workdir) => ({
     type: "response_item",
     payload: {
@@ -914,6 +979,7 @@ test("a new Codex turn attributes remarks to its context instead of the precedin
     output,
     path,
   ]);
+  /** @type {any[]} */
   const rows = JSON.parse(readFileSync(output, "utf8"));
   expect(rows.find((row) => row.repo === "alpha").stale).toBe(1);
   expect(rows.find((row) => row.repo === "beta").stale).toBe(1);

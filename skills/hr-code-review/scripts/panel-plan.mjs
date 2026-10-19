@@ -7,6 +7,10 @@ import { join, resolve } from "node:path";
 import { parseArgs } from "node:util";
 import { formatPanelPlan, resolvePanel } from "./panel-preferences.mjs";
 
+/**
+ * @param {string} path
+ * @param {string} label
+ */
 function readJson(path, label) {
   const file = resolve(path);
   if (!lstatSync(file).isFile()) {
@@ -20,6 +24,7 @@ function readJson(path, label) {
   }
 }
 
+/** @param {string[]} argv */
 function main(argv) {
   const { values } = parseArgs({
     args: argv,
@@ -69,6 +74,6 @@ function main(argv) {
 try {
   process.exitCode = main(process.argv.slice(2));
 } catch (error) {
-  console.error(error.message);
+  console.error(error instanceof Error ? error.message : String(error));
   process.exitCode = 2;
 }

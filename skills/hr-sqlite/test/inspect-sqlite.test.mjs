@@ -10,9 +10,17 @@ const script = fileURLToPath(new URL("../scripts/inspect-sqlite.py", import.meta
 // On the Windows CI runner a Python start sometimes stalls for 7 s or more (issue #368), while
 // these tests take 0.26 to 0.9 s there otherwise. Bun ends the test and its Python child at 5 s.
 const limit = process.platform === "win32" ? { timeout: 30000 } : {};
+/**
+ * @param {string} name
+ * @param {import("node:test").TestFn} fn
+ */
 const test = (name, fn) => {
   void nodeTest(name, limit, fn);
 };
+/**
+ * @param {string[]} args
+ * @param {string} [input]
+ */
 const python = (args, input) =>
   spawnSync("python3", ["-I", ...args], {
     encoding: "utf8",
@@ -21,12 +29,14 @@ const python = (args, input) =>
     env: { ...process.env, PYTHONDONTWRITEBYTECODE: "1" },
   });
 
+/** @param {import("node:test").TestContext} t */
 function fixture(t) {
   const dir = mkdtempSync(join(process.env.HOUSE_RULES_TEST_TMP || tmpdir(), "hr-sqlite-"));
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   return dir;
 }
 
+/** @param {string} dir */
 function createDatabase(dir, extra = "", name = "app.db") {
   const made = python(
     ["-", dir],
@@ -46,6 +56,10 @@ c.close()
   return join(dir, name);
 }
 
+/**
+ * @param {string[]} args
+ * @returns {any}
+ */
 const inspect = (...args) => {
   const run = python([script, ...args, "--json"]);
   assert.equal(run.status, 0, run.stderr);
@@ -61,7 +75,7 @@ test("reports file settings and absent statistics, then present ones after ANALY
   assert.equal(before.indexes, 1);
   assert.equal(before.statistics.sqliteStat1, false);
   assert.deepEqual(before.statistics.tablesWithoutStatistics, ["notes"]);
-  assert.ok(before.notes.some((n) => n.includes("no sqlite_stat1")));
+  assert.ok(before.notes.some((/** @type {string} */ n) => n.includes("no sqlite_stat1")));
 
   const analyzed = createDatabase(fixture(t), "c.execute('ANALYZE'); c.commit()");
   const after = inspect(analyzed);
@@ -118,7 +132,7 @@ test("source scan checks each journal_mode mention against earlier busy_timeout 
   );
   writeFileSync(join(src, "unrelated.py"), "print('no sqlite here')\n");
   const result = inspect(database, "--source", src);
-  const rows = result.source.map((f) => [basename(f.file), f.line, f.ok]);
+  const rows = result.source.map((/** @type {any} */ f) => [basename(f.file), f.line, f.ok]);
   assert.deepEqual(rows.sort(), [
     ["bad.ts", 1, false],
     ["good.py", 2, true],
@@ -126,9 +140,9 @@ test("source scan checks each journal_mode mention against earlier busy_timeout 
     ["second.py", 2, true],
     ["second.py", 3, true],
   ]);
-  const bad = result.source.find((f) => basename(f.file) === "bad.ts");
+  const bad = result.source.find((/** @type {any} */ f) => basename(f.file) === "bad.ts");
   assert.match(bad.status, /comes before busy_timeout/);
-  const missing = result.source.find((f) => basename(f.file) === "missing.js");
+  const missing = result.source.find((/** @type {any} */ f) => basename(f.file) === "missing.js");
   assert.match(missing.status, /no busy_timeout/);
 });
 
@@ -160,7 +174,7 @@ test("a source path that cannot be read is reported and fails the run", (t) => {
   const result = JSON.parse(run.stdout);
   assert.equal(result.source.length, 1);
   assert.deepEqual(
-    result.sourceErrors.map((e) => basename(e.file)),
+    result.sourceErrors.map((/** @type {any} */ e) => basename(e.file)),
     ["absent.py"],
   );
 });

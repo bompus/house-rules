@@ -15,7 +15,9 @@ const STRICT_RE = new RegExp(
 const BARE_RE = new RegExp("([\\w./\\\\-]+\\." + EXT + "):(\\d+)(?:-(\\d+))?", "g");
 
 // Panel logs are either plain text or JSON lines whose text parts hold the reply.
+/** @param {string} raw */
 export function extractPanelText(raw) {
+  /** @type {string[]} */
   const texts = [];
   for (const line of raw.split("\n")) {
     const trimmed = line.trim();
@@ -32,6 +34,10 @@ export function extractPanelText(raw) {
   return texts.length === 0 ? raw : texts.join("");
 }
 
+/**
+ * @param {unknown} node
+ * @param {string[]} out
+ */
 function walk(node, out) {
   if (Array.isArray(node)) {
     for (const item of node) {
@@ -40,7 +46,7 @@ function walk(node, out) {
     return;
   }
   if (node && typeof node === "object") {
-    const { type, text } = node;
+    const { type, text } = /** @type {{ type?: unknown, text?: unknown }} */ (node);
     if ((type === "text" || type === "text-delta") && typeof text === "string") {
       out.push(text);
     }
@@ -50,14 +56,24 @@ function walk(node, out) {
   }
 }
 
+/**
+ * @typedef {{ ident: string | null, file: string, start: number, end: number, strict: boolean }} Citation
+ */
+
+/**
+ * @param {string} text
+ * @returns {Citation[]}
+ */
 export function findCitations(text) {
+  /** @type {Citation[]} */
   const found = [];
+  /** @type {[number, number][]} */
   const strictSpans = [];
   for (const match of text.matchAll(STRICT_RE)) {
     strictSpans.push([match.index, match.index + match[0].length]);
     found.push({
-      ident: match[1],
-      file: match[2],
+      ident: match[1] ?? "",
+      file: match[2] ?? "",
       start: Number(match[3]),
       end: Number(match[4] ?? match[3]),
       strict: true,
@@ -70,7 +86,7 @@ export function findCitations(text) {
     }
     found.push({
       ident: null,
-      file: match[1],
+      file: match[1] ?? "",
       start: Number(match[2]),
       end: Number(match[3] ?? match[2]),
       strict: false,
@@ -81,6 +97,7 @@ export function findCitations(text) {
 
 const SKIP_DIRS = new Set(["node_modules", ".git", "dist", "build", "coverage"]);
 
+/** @param {string} path */
 function isFile(path) {
   try {
     return statSync(path).isFile();
@@ -89,13 +106,20 @@ function isFile(path) {
   }
 }
 
+/** @type {Map<string, string[]>} */
 const indexCache = new Map();
 
 // Models cite basenames (`util.ts:97`) or subpaths (`src/util.ts:97`). Resolve those against
 // the repository tree: one match wins, none fails as unreadable, several fail as ambiguous.
+/**
+ * @param {string} cited
+ * @param {string} repoRoot
+ */
 function resolveByBasename(cited, repoRoot) {
   if (!indexCache.has(repoRoot)) {
+    /** @type {string[]} */
     const index = [];
+    /** @param {string} dir */
     const walkDir = (dir) => {
       let entries;
       try {
@@ -126,38 +150,24 @@ function resolveByBasename(cited, repoRoot) {
   }
   const normalized = cited.split(/[\\/]/).join("/");
   const suffix = `/${normalized}`;
-  const matches = indexCache
-    .get(repoRoot)
-    .filter((path) => basename(path) === normalized || path.split(sep).join("/").endsWith(suffix));
+  const matches = (indexCache.get(repoRoot) ?? []).filter(
+    (path) => basename(path) === normalized || path.split(sep).join("/").endsWith(suffix),
+  );
   if (matches.length === 1) {
-    return matches[0];
+    return matches[0] ?? null;
   }
   return matches.length > 1 ? matches : null;
 }
 
+/**
+ * @param {Citation} citation
+ * @param {string} repoRoot
+ */
 export function checkCitation(citation, repoRoot) {
   const direct = isAbsolute(citation.file) ? citation.file : resolve(repoRoot, citation.file);
   const path = isFile(direct) ? direct : resolveByBasename(citation.file, repoRoot);
   if (path === null) {
     return { ...citation, path: direct, status: "fail", reason: "unreadable: ENOENT" };
-  }
-  // Compare real paths so a symlink inside the repository cannot lead outside it.
-  let checkedPath = path;
-  if (typeof path === "string") {
-    try {
-      checkedPath = realpathSync(path);
-      const away = relative(realpathSync(repoRoot), checkedPath);
-      if (away === ".." || away.startsWith(`..${sep}`) || isAbsolute(away)) {
-        return { ...citation, path, status: "fail", reason: "outside the repository" };
-      }
-    } catch (error) {
-      return {
-        ...citation,
-        path,
-        status: "fail",
-        reason: `unreadable: ${error.code ?? String(error)}`,
-      };
-    }
   }
   if (Array.isArray(path)) {
     return {
@@ -165,6 +175,23 @@ export function checkCitation(citation, repoRoot) {
       path: direct,
       status: "fail",
       reason: `ambiguous: ${path.length} matches`,
+    };
+  }
+  // Compare real paths so a symlink inside the repository cannot lead outside it.
+  /** @type {string} */
+  let checkedPath;
+  try {
+    checkedPath = realpathSync(path);
+    const away = relative(realpathSync(repoRoot), checkedPath);
+    if (away === ".." || away.startsWith(`..${sep}`) || isAbsolute(away)) {
+      return { ...citation, path, status: "fail", reason: "outside the repository" };
+    }
+  } catch (error) {
+    return {
+      ...citation,
+      path,
+      status: "fail",
+      reason: `unreadable: ${/** @type {NodeJS.ErrnoException} */ (error).code ?? String(error)}`,
     };
   }
   let lines;
@@ -179,7 +206,7 @@ export function checkCitation(citation, repoRoot) {
       ...citation,
       path,
       status: "fail",
-      reason: `unreadable: ${error.code ?? String(error)}`,
+      reason: `unreadable: ${/** @type {NodeJS.ErrnoException} */ (error).code ?? String(error)}`,
     };
   }
   if (!(citation.start >= 1) || citation.end < citation.start) {
@@ -210,6 +237,10 @@ export function checkCitation(citation, repoRoot) {
   return { ...citation, path, status: "pass", reason: "cited" };
 }
 
+/**
+ * @param {string[]} files
+ * @param {string} repoRoot
+ */
 export function checkLogs(files, repoRoot) {
   const results = [];
   for (const file of files) {
@@ -221,6 +252,7 @@ export function checkLogs(files, repoRoot) {
   return results;
 }
 
+/** @param {string[]} argv */
 function main(argv) {
   const json = argv.includes("--json");
   const repoFlag = argv.indexOf("--repo");
@@ -236,7 +268,9 @@ function main(argv) {
   try {
     results = checkLogs(files, repoRoot);
   } catch (error) {
-    console.error(`Cannot read a panel log: ${error.message}`);
+    console.error(
+      `Cannot read a panel log: ${error instanceof Error ? error.message : String(error)}`,
+    );
     return 2;
   }
   if (results.length === 0) {

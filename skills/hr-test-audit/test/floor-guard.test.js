@@ -5,6 +5,10 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { scanDiff } from "../scripts/floor-guard.ts";
 
+/**
+ * @param {string} file
+ * @param {string[]} lines
+ */
 const diffOf = (file, lines, { deletedFile = false } = {}) =>
   [
     `diff --git a/${file} b/${file}`,
