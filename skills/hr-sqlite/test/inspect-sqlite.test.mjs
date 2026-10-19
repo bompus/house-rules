@@ -1,4 +1,4 @@
-import { test } from "node:test";
+import { test as nodeTest } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync, statSync, readFileSync } from "node:fs";
@@ -7,6 +7,10 @@ import { basename, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const script = fileURLToPath(new URL("../scripts/inspect-sqlite.py", import.meta.url));
+// On the Windows CI runner a Python start sometimes stalls for 7 s or more (issue #368), while
+// these tests take 0.26 to 0.9 s there otherwise. Bun ends the test and its Python child at 5 s.
+const limit = process.platform === "win32" ? { timeout: 30000 } : {};
+const test = (name, fn) => nodeTest(name, limit, fn);
 const python = (args, input) =>
   spawnSync("python3", ["-I", ...args], {
     encoding: "utf8",

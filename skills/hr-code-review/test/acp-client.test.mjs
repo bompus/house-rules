@@ -47,7 +47,7 @@ readline.createInterface({input:process.stdin}).on('line',async line=>{
   if(cfg.mutate)fs.writeFileSync('tracked.txt','changed');
   const chunk=text=>send({method:'session/update',params:{sessionId:'s',update:{sessionUpdate:'agent_message_chunk',content:{type:'text',text}}}});
   const finish=()=>{chunk(JSON.stringify({results,options})+(cfg.noVerdict?'':'\\nVERDICT: A'));send({id:m.id,result:{stopReason:cfg.cancelled?'cancelled':'end_turn'}});};
-  if(cfg.chatty){const timer=setInterval(()=>chunk('.'),300);setTimeout(()=>{clearInterval(timer);finish();},1800);}else finish();
+  if(cfg.chatty){const timer=setInterval(()=>chunk('.'),100);setTimeout(()=>{clearInterval(timer);finish();},1800);}else finish();
  }
 });
 `;
@@ -233,8 +233,10 @@ test("an answer file inside the review root is not a workspace change", () => {
   assert.equal(r.code, 0);
   assert.match(r.text, /VERDICT:/);
 });
+// The 1.2 s idle limit also covers starting the fake adapter, which took 0.6 s or more on the
+// Windows runner. Chunks every 0.1 s for 1.8 s still outlast the limit, so only renewal passes.
 test("streaming activity renews idle deadline", () => {
-  const r = run({ chatty: true }, ["--idle-min", "0.01"]);
+  const r = run({ chatty: true }, ["--idle-min", "0.02"]);
   assert.equal(r.code, 0);
   assert.match(r.text, /VERDICT:/);
 });
