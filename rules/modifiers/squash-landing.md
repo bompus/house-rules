@@ -10,7 +10,8 @@ Prefer squash merges unless the repository requires another strategy or the user
 picks one. Before integration, handling review feedback, or moving off a landed
 branch, read [the squash procedure](../references/squash-landing.md).
 When a review bot reviews pull requests, merge only after it finishes; fix or
-answer all findings, resolve threads, and read the full review body.
+answer all findings, resolve threads, and read the full review body. A bot that
+reports no quota or capacity is skipped; record which and why.
 
 During integration, never switch, reset, force-move or remove the session's
 checkout. Default-branch updates must meet the fast-forward

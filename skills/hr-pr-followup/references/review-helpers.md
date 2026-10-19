@@ -20,7 +20,7 @@ outside-diff, nitpick or duplicate findings. A completed CodeRabbit CheckRun
 must conclude SUCCESS; failed, cancelled, skipped or missing conclusions block
 the gate. A CodeRabbit status also requires SUCCESS and a description starting
 with "Review completed"; that is how the gate tests the general squash rule that an
-existing review check must report completion.
+existing review check must report completion, apart from the no-quota skip below.
 
 Every other check on the head commit must have finished and passed. A check run that is
 not COMPLETED, or that concluded anything but SUCCESS, NEUTRAL or SKIPPED, blocks the gate,
@@ -44,15 +44,15 @@ before landing.
 A review bot that reports it has no quota or capacity for the pull request is skipped,
 with no end date, and the gate prints a `skipped review bot` line naming it and the reason:
 
-- a NEUTRAL cubic check titled "AI review line limit reached", or a NEUTRAL cubic check after
-  cubic commented that the workspace reached its monthly review limit;
-- a CodeRabbit success status saying "Review rate limited" or "Review limit reached";
-- a missing CodeRabbit check, or a CodeRabbit success status that is not "Review completed",
-  after CodeRabbit commented that it was rate limited.
+- a NEUTRAL cubic check titled "AI review line limit reached", or a NEUTRAL cubic check
+  followed, after it completed, by a comment from cubic that the workspace reached its
+  monthly review limit (cubic's reply to `@cubic review` when it is out of quota);
+- a CodeRabbit success status saying "Review rate limited" or "Review limit reached".
 
-The gate then lands on the bots that did review. Record in the pull request which bot skipped
+The gate then judges only the bots that did review. Record in the pull request which bot skipped
 and why; findings it posts later become follow-up pull requests. A bot that is still running
-is waited for even when it reported a limit earlier, and other "Review skipped" statuses, failed
+is waited for, a missing CodeRabbit check gets its usual grace period under `--wait`, and other
+"Review skipped" statuses, failed
 or cancelled results, open threads and unanswered review bodies still refuse.
 
 If a review is missing or incomplete, inspect the integration and the repository's

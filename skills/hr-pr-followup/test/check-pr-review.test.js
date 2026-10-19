@@ -129,7 +129,7 @@ test("failed review statuses cannot pass with a completion description", () => {
 
 const CUBIC = "cubic · AI code reviewer";
 const FOLLOW_UP = "check the review integration and repository review policy";
-const CUBIC_RETRY = "comment `@cubic review` or wait for its limit to clear";
+const CUBIC_RETRY = "comment `@cubic review`";
 
 // cubic posts a CheckRun and its `cubic.yaml` is optional, so only a check that exists can block.
 test("blocks a cubic check that is still running", () => {
@@ -346,7 +346,14 @@ const lineLimit = {
   status: "COMPLETED",
   conclusion: "NEUTRAL",
   title: "AI review line limit reached",
+  completedAt: "2026-10-18T10:00:00Z",
 };
+const outOfQuota = (createdAt, author = cubicBot) => ({
+  author,
+  isMinimized: false,
+  body: "@bompus cubic can't start this review because your workspace has reached its free monthly review limit.",
+  createdAt,
+});
 const rateLimitComment = {
   author: bot,
   body: "<!-- This is an auto-generated comment: rate limited by coderabbit.ai -->\n> ## Review limit reached",
@@ -358,47 +365,59 @@ test("skips a cubic check that ran out of its line quota and names the reason", 
     open: [],
     skipped: [`${CUBIC}: no quota (check title "AI review line limit reached")`],
   });
-  // A NEUTRAL check with another title is skipped only after cubic said its monthly limit is used up.
+  // A NEUTRAL check with another title is skipped only when cubic said, after that check, that it is out of quota.
   const rewrite = { ...lineLimit, title: "Automatic AI review not started after branch rewrite" };
   expect(openFeedback(pr({ contexts: [rewrite] }))).toHaveLength(1);
-  const said = {
-    author: cubicBot,
-    body: "@bompus cubic can't start this review because your workspace has reached its free monthly review limit.",
-    createdAt: "2026-10-18T10:00:00Z",
-  };
-  expect(reviewFeedback(pr({ contexts: [rewrite], comments: [said] }))).toEqual({
-    open: [],
-    skipped: [`${CUBIC}: no quota (it commented that the monthly review limit is reached)`],
-  });
-  // The same words from a person, or a failed cubic check, still refuse.
   expect(
-    openFeedback(pr({ contexts: [rewrite], comments: [{ ...said, author: user }] })),
+    reviewFeedback(pr({ contexts: [rewrite], comments: [outOfQuota("2026-10-18T10:05:00Z")] })),
+  ).toEqual({
+    open: [],
+    skipped: [
+      `${CUBIC}: no quota (it commented after this check that the monthly review limit is reached)`,
+    ],
+  });
+  // An older limit comment, the same words from a person or another bot, a check with no completion
+  // time, or a failed cubic check still refuse.
+  for (const comment of [
+    outOfQuota("2026-09-18T10:00:00Z"),
+    { ...outOfQuota("2026-10-18T10:05:00Z"), isMinimized: true },
+    outOfQuota("2026-10-18T10:05:00Z", user),
+    outOfQuota("2026-10-18T10:05:00Z", { __typename: "Bot", login: "bicubic-bot" }),
+  ]) {
+    expect(openFeedback(pr({ contexts: [rewrite], comments: [comment] }))).toHaveLength(1);
+  }
+  const undated = { ...rewrite, completedAt: null };
+  expect(
+    openFeedback(pr({ contexts: [undated], comments: [outOfQuota("2026-10-18T10:05:00Z")] })),
   ).toHaveLength(1);
   expect(openFeedback(pr({ contexts: [{ ...lineLimit, conclusion: "FAILURE" }] }))).toHaveLength(1);
 });
 
 test("skips a rate-limited CodeRabbit and keeps every other reason to refuse", () => {
   const files = [".coderabbit.yaml"];
-  const status = { context: "CodeRabbit", state: "SUCCESS", description: "Review rate limited" };
-  expect(reviewFeedback(pr({ files, contexts: [status] }))).toEqual({
-    open: [],
-    skipped: ['CodeRabbit: no capacity (status "Review rate limited")'],
-  });
-  // No check at all, but CodeRabbit commented that it hit its limit.
-  expect(reviewFeedback(pr({ files, comments: [rateLimitComment] }))).toEqual({
-    open: [],
-    skipped: ["CodeRabbit: no check on the head commit and it commented that it was rate limited"],
-  });
-  // A failed status is not a quota sign, and other "Review skipped" statuses still refuse.
+  for (const description of ["Review rate limited", "Review limit reached"]) {
+    const status = { context: "CodeRabbit", state: "SUCCESS", description };
+    expect(reviewFeedback(pr({ files, contexts: [status] }))).toEqual({
+      open: [],
+      skipped: [`CodeRabbit: no capacity (status "${description}")`],
+    });
+  }
+  // A rate-limit comment alone skips nothing: a missing check, a failed status and other skipped
+  // statuses still refuse.
+  expect(openFeedback(pr({ files, comments: [rateLimitComment] }))).toEqual([
+    `no CodeRabbit check on the head commit: ${FOLLOW_UP}`,
+  ]);
   const failed = { context: "CodeRabbit", state: "FAILURE", description: "Review rate limited" };
   expect(openFeedback(pr({ contexts: [failed], comments: [rateLimitComment] }))).toHaveLength(1);
-  const baseSkip = {
-    context: "CodeRabbit",
-    state: "SUCCESS",
-    description: "Review skipped: reviews are disabled for this base branch",
-  };
-  expect(openFeedback(pr({ contexts: [baseSkip] }))).toHaveLength(1);
+  for (const description of [
+    "Review skipped: reviews are disabled for this base branch",
+    "Review skipped: manual review required for this OSS repository",
+  ]) {
+    const ctx = { context: "CodeRabbit", state: "SUCCESS", description };
+    expect(openFeedback(pr({ contexts: [ctx], comments: [rateLimitComment] }))).toHaveLength(1);
+  }
   // A skipped bot does not clear an open thread or a failing check from elsewhere.
+  const status = { context: "CodeRabbit", state: "SUCCESS", description: "Review rate limited" };
   const thread = { isResolved: false, comments: { nodes: [{ url: "u1" }] } };
   const ci = { name: "check", status: "COMPLETED", conclusion: "FAILURE" };
   expect(reviewFeedback(pr({ threads: [thread], contexts: [status, lineLimit, ci] }))).toEqual({
@@ -414,28 +433,27 @@ test("waitForReview still waits for a bot that is merely slow", async () => {
   let clock = 0;
   const opts = { pollMs: 30_000, sleep: async (ms) => (clock += ms), now: () => clock };
   // cubic still running, even after an earlier limit comment, is waited for until it finishes.
-  const said = { author: cubicBot, body: "reached its free monthly review limit", createdAt: "x" };
   const running = pr({
     contexts: [{ name: CUBIC, status: "IN_PROGRESS", conclusion: null }],
-    comments: [said],
+    comments: [outOfQuota("2026-10-18T10:05:00Z")],
   });
   const done = pr({ contexts: [{ name: CUBIC, status: "COMPLETED", conclusion: "SUCCESS" }] });
   const reads = [running, running, running, done];
   expect(await waitForReview(() => reads.shift(), { ...opts, timeoutMs: 1_800_000 })).toEqual([]);
   expect(clock).toBe(90_000);
-  // A CodeRabbit check that has not appeared, with no limit notice, gets the usual grace period.
+  // A CodeRabbit check that has not appeared gets the full grace period, even after a rate-limit comment.
   clock = 0;
   const files = [".coderabbit.yaml"];
-  const missing = pr({ files });
+  const missing = pr({ files, comments: [rateLimitComment] });
+  const never = await waitForReview(() => missing, { ...opts, timeoutMs: 1_800_000 });
+  expect(never).toEqual([`no CodeRabbit check on the head commit: ${FOLLOW_UP}`]);
+  expect(clock).toBe(180_000);
+  // A pending CodeRabbit status is waited for even with a rate-limit comment on the PR.
+  clock = 0;
   const reviewed = pr({
     files,
     contexts: [{ context: "CodeRabbit", state: "SUCCESS", description: "Review completed" }],
   });
-  const later = [missing, missing, reviewed];
-  expect(await waitForReview(() => later.shift(), { ...opts, timeoutMs: 1_800_000 })).toEqual([]);
-  expect(clock).toBe(60_000);
-  // A pending CodeRabbit status is waited for even with a rate-limit comment on the PR.
-  clock = 0;
   const pending = pr({
     files,
     contexts: [{ context: "CodeRabbit", state: "PENDING" }],

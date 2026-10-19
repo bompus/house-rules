@@ -39,6 +39,7 @@ const connection = key => {
   const pages = f[key] ?? [{nodes:[],pageInfo:{hasNextPage:false,endCursor:null}}];
   const page = pages[val(key + "Cursor") ? 1 : 0];
   if (key === "contexts" && !query.includes("name status conclusion")) for (const node of page.nodes) delete node.conclusion;
+  if (key === "contexts" && !query.includes("conclusion title completedAt")) for (const node of page.nodes) { delete node.title; delete node.completedAt; }
   return page;
 };
 const changed = (f.changedHead && val("reviewThreadsCursor")) ||
@@ -246,4 +247,16 @@ test("CLI lands past a review bot with no quota and names it", () => {
   const withThread = run({ contexts: [page([limited])], reviewThreads: [page([thread(false)])] });
   expect(withThread.code).toBe(1);
   expect(withThread.out).toContain("skipped review bot cubic");
+});
+
+test("CLI refuses a malformed cubic check title or completion time", () => {
+  for (const bad of [{ title: ["AI review line limit reached"] }, { completedAt: "not a date" }]) {
+    const node = {
+      name: "cubic · AI code reviewer",
+      status: "COMPLETED",
+      conclusion: "NEUTRAL",
+      ...bad,
+    };
+    expect(run({ contexts: [page([node])] }).code).toBe(2);
+  }
 });

@@ -20,7 +20,9 @@ Let an enabled automatic review start; do not comment to request one. When none
 starts, check the integration's status instead of tagging the bot again. A bot's
 config file in the repository does not show that it is enabled, and an existing
 check on the head must report completion before you merge. A skipped or
-cancelled review is not a completed one.
+cancelled review is not a completed one. The exception is a bot that reports it
+has no quota or capacity for the pull request (a used allowance, a rate limit):
+proceed on the bots that did review, and record which bot skipped and why.
 
 During integration, never switch, reset or remove the session's own checkout: no
 `checkout` or `switch` to another ref, no `reset` or branch force-move, and no
