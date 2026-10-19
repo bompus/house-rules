@@ -4,6 +4,9 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- `npm run check` type-checks with Bun's `bun check`, so contributors need Bun 1.4.3 or later (CI moves from
+  1.4.2). On this repository it reports the same errors as `tsc` 7.0.2, with the three extra strict flags
+  tried, and runs in about half the time.
 - The pull-request review gate now treats a CodeRabbit reply that says only "Review failed." (no reason)
   as one re-trigger, not an open-ended refusal. The first one refuses, with the time it happened, and
   asks for a single `@coderabbitai full review`. A second bare failure at least an hour after that

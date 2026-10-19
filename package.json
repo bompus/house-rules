@@ -37,7 +37,8 @@
     "registry": "https://registry.npmjs.org/"
   },
   "scripts": {
-    "check": "oxfmt --check && oxlint --deny-warnings . && tsc --noEmit -p tsconfig.check.json && ruff format --check . && ruff check . && bash scripts/check-shell.sh",
+    "typecheck": "D=\"$PWD\" && cd / && bun check -p \"$D/tsconfig.check.json\"",
+    "check": "oxfmt --check && oxlint --deny-warnings . && npm run typecheck && ruff format --check . && ruff check . && bash scripts/check-shell.sh",
     "check:package": "node scripts/check-package.mjs"
   },
   "devDependencies": {
