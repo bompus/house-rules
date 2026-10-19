@@ -4,6 +4,11 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- The cleanup rule now has agents remove their own scratch directories, task worktrees and local branches
+  without being asked, once the work is merged or saved elsewhere and the release checks pass. A worktree an
+  app session is bound to, such as a T3 thread's, stays for the app's own cleanup. The scratch modifier and
+  the agent-work reference say the same. The limits are unchanged: nothing of another session's or an
+  app's, no force-removal and no deleting by age.
 - **Breaking for saved landing commands:** `verify-landed.sh` and `merge-pr.sh` in `hr-pr-followup` no
   longer accept the deprecated `--idle-primary` and `--preflight` flags, which had done nothing since
   landing stopped waiting on local checkouts. Either flag is now an unknown argument and exits 2, so drop
