@@ -9,7 +9,7 @@
 // that person, is reported as already done. Exit 0: closed or already done; 1: invalid input or refused.
 import { readFileSync, renameSync, writeFileSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
-import { parsePlan } from "./check-open-work.mjs";
+import { parsePlan } from "./plan-ledger.mjs";
 
 const usage =
   "usage: close-ledger-line.mjs <plan.md> (--line <n> | --match <text>) (--evidence <text> | --drop --by <who>) [--time <text>]";

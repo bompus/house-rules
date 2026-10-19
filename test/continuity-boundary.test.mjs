@@ -5,7 +5,7 @@ import { test } from "node:test";
 import { checkBoundary as boundary } from "../scripts/continuity-boundary.mjs";
 import { grade } from "../evals/end-of-reply/grade.mjs";
 
-import { planSnapshot } from "../skills/hr-what-next/scripts/check-open-work.mjs";
+import { planSnapshot } from "../skills/hr-what-next/scripts/plan-ledger.mjs";
 
 const plan = (complete) =>
   `Owner: test\nStatus: active\n## Ledger\n${complete ? "- [x] Done; evidence: checked" : "- [ ] Open"}\n`;

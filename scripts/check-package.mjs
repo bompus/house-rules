@@ -21,8 +21,14 @@ assert(npm, "Run this check with npm run check:package");
 const scratch = mkdtempSync(
   join(process.env.HOUSE_RULES_TEST_TMP ?? tmpdir(), "house-rules-package-"),
 );
+/**
+ * @param {string} file
+ * @param {string[]} args
+ * @param {string} [cwd]
+ */
 const run = (file, args, cwd = root) => execFileSync(file, args, { cwd, encoding: "utf8" });
 try {
+  /** @type {[{ filename: string, version: string, integrity: string, files: { path: string }[] }]} */
   const [packed] = JSON.parse(
     run(process.execPath, [
       npm,
@@ -140,7 +146,9 @@ try {
     );
     assert.equal(panelPreview.panel.after.roles[0].candidates[0], "primary");
     assert.equal(panelPreview.applied, null);
-    assert(setup.skills.some((skill) => skill.explicitOnly));
+    assert(
+      setup.skills.some((/** @type {{ explicitOnly?: boolean }} */ skill) => skill.explicitOnly),
+    );
     const output = join(scratch, `skills-${index}`);
     run(
       runtime,
@@ -155,6 +163,10 @@ try {
       ],
       scratch,
     );
+    /**
+     * @param {string} source
+     * @param {string} target
+     */
     function compare(source, target) {
       for (const entry of readdirSync(source, { withFileTypes: true })) {
         if (entry.name === "test" || entry.name === "__pycache__") {
@@ -204,8 +216,9 @@ try {
   }
   const out = process.argv.indexOf("--out");
   if (out !== -1) {
-    assert(process.argv[out + 1], "--out needs a directory");
-    const destination = resolve(process.argv[out + 1]);
+    const directory = process.argv[out + 1];
+    assert(directory, "--out needs a directory");
+    const destination = resolve(directory);
     mkdirSync(destination, { recursive: true });
     cpSync(join(scratch, packed.filename), join(destination, "house-rules.tgz"));
     console.log(

@@ -1,8 +1,45 @@
 // Validates current coverage and producer attestations, not semantic readiness or permission.
 import { isDeepStrictEqual } from "node:util";
-import { planSnapshot } from "../skills/hr-what-next/scripts/check-open-work.mjs";
+import { planSnapshot } from "../skills/hr-what-next/scripts/plan-ledger.mjs";
 export const DISPOSITIONS = ["continue", "offer", "blocked", "complete", "paused"];
 
+// The shapes below are what a valid adapter input looks like. The checks still test every field, because
+// the input is JSON from another process.
+/**
+ * @typedef {object} BoundaryContext
+ * @property {string} [stopReason]
+ * @property {string} [sessionId]
+ * @property {string} [turnId]
+ * @property {string} [planText]
+ * @property {string} [today]
+ */
+/**
+ * @typedef {object} ClassifiedItem
+ * @property {string} id
+ * @property {string} kind
+ * @property {string} next
+ * @property {string} [reference]
+ * @property {string} [owner]
+ * @property {string} [trigger]
+ * @property {string} [recheck]
+ */
+/**
+ * @typedef {object} TurnState
+ * @property {number} version
+ * @property {string} disposition
+ * @property {string} goal
+ * @property {string} result
+ * @property {string} remaining
+ * @property {boolean} phaseBoundary
+ * @property {Record<string, unknown> & { version?: number, openItems?: unknown, errors?: unknown, findings?: unknown, exit?: number }} [reconciliation]
+ * @property {(ClassifiedItem | null)[]} items
+ * @property {({ id: string, text: string } | null)[]} decisions
+ */
+
+/**
+ * @param {string} reply
+ * @param {boolean} [coded]
+ */
 export function replyFacts(reply, coded = false) {
   return {
     tool: /^\s*TOOL_CALL\b/m.test(reply),
@@ -14,17 +51,22 @@ export function replyFacts(reply, coded = false) {
     ),
     offer: coded
       ? [...reply.matchAll(/Question\s*(\d+)/gi)].some(([, n]) => reply.includes(`\`${n}A\``)) &&
-        /\(Recommended/.test(reply) &&
+        reply.includes("(Recommended") &&
         /reply\s+`/i.test(reply)
-      : /\?/.test(reply) &&
+      : reply.includes("?") &&
         /\(Recommended/i.test(reply) &&
         /\b(reply|say|answer|respond|type)\b/i.test(reply),
   };
 }
 
+/**
+ * @param {string} reply
+ * @param {TurnState | null | undefined} state
+ * @param {BoundaryContext | null | undefined} context
+ */
 export function checkBoundary(reply, state, context) {
   // Only the adapter supplies interruption signals. A producer disposition is not a stop signal.
-  if (["stop", "hold", "pause", "low-quota"].includes(context?.stopReason)) {
+  if (["stop", "hold", "pause", "low-quota"].includes(context?.stopReason ?? "")) {
     return { pass: true, issues: [] };
   }
   const issues = [];
@@ -38,7 +80,7 @@ export function checkBoundary(reply, state, context) {
     return { pass: false, issues: ["Missing or invalid turn disposition."] };
   }
   issues.push(...reconciliationIssues(reply, state, context));
-  const fields = ["goal", "result", "remaining"];
+  const fields = /** @type {const} */ (["goal", "result", "remaining"]);
   if (
     fields.some(
       (key) => typeof state[key] !== "string" || !state[key].trim() || state[key].length > 1000,
@@ -92,13 +134,26 @@ export function checkBoundary(reply, state, context) {
   return { pass: issues.length === 0, issues };
 }
 
+/**
+ * @param {unknown} value
+ * @returns {value is string}
+ */
 const nonempty = (value) => typeof value === "string" && value.trim().length > 0;
+/**
+ * @param {unknown} value
+ * @returns {value is string}
+ */
 const calendarDate = (value) =>
   typeof value === "string" &&
   /^\d{4}-\d{2}-\d{2}$/.test(value) &&
   !Number.isNaN(Date.parse(value + "T00:00:00Z")) &&
   new Date(value + "T00:00:00Z").toISOString().slice(0, 10) === value;
 
+/**
+ * @param {string} reply
+ * @param {TurnState} state
+ * @param {BoundaryContext | null | undefined} context
+ */
 function reconciliationIssues(reply, state, context) {
   if (
     !context ||
@@ -120,7 +175,7 @@ function reconciliationIssues(reply, state, context) {
     receipt.sessionId !== context.sessionId ||
     receipt.turnId !== context.turnId ||
     receipt.planSHA256 !== snapshot.planSHA256 ||
-    ![0, 2].includes(receipt.exit) ||
+    ![0, 2].includes(receipt.exit ?? -1) ||
     !Array.isArray(receipt.errors) ||
     receipt.errors.length ||
     !Array.isArray(receipt.findings) ||
@@ -160,7 +215,7 @@ function reconciliationIssues(reply, state, context) {
       ) {
         issues.push("A wait needs its live owner or unmet trigger and evidence reference.");
       }
-      const planRecheck = current.get(item.id).recheck;
+      const planRecheck = current.get(item.id)?.recheck ?? null;
       if (
         !calendarDate(item.recheck) ||
         item.recheck <= today ||

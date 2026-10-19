@@ -36,8 +36,8 @@
 // A plan with a `Project: <name>` line is checked against <notes>/audits/<name>/last-audit.json, the record
 // hr-forgotten-work-audit writes: a missing, unreadable or older-than-30-days record is a warning. A plan
 // without that line gets no audit warning.
-import { createHash } from "node:crypto";
 import { pathToFileURL } from "node:url";
+import { MARKS, RECHECK, parsePlan, planSnapshot } from "./plan-ledger.mjs";
 import { spawn, spawnSync } from "node:child_process";
 import {
   existsSync,
@@ -56,12 +56,6 @@ const usage =
 const TERMINAL_STATUS = /^(completed?|done|archived)\b/i;
 const COMPLETED_STATUS = /^completed\b/i;
 const PAUSED_STATUS = /^paused\b/i;
-const MARKS = { " ": "open", "~": "deferred", x: "done", "-": "dropped" };
-const REQUIRED = {
-  "~": ["trigger", "a trigger"],
-  x: ["evidence", "evidence"],
-  "-": ["by", "who dropped it"],
-};
 // The verb may take a short object of up to four plain words ("user asks for a release"), none of them a
 // condition or time word, so "user selects after the release ships" and "user approves the release on
 // Friday" stay ordinary deferred items.
@@ -71,11 +65,6 @@ const USER_ONLY_TRIGGER =
 // mentions the word ("add pause/resume controls").
 const PAUSE_CHOICE =
   /\buser\b[^.;]{0,40}\b(?:chose|chosen|selected|picked|asked for|requested)\s+(?:the\s+|a\s+)?`?pause\b(?![/-]\w)|\bpause\b`?\s+(?:was\s+)?(?:chosen|selected|picked)\s+by\s+(?:the\s+)?user/i;
-const NARRATIVE =
-  /^\s*(?:[-*]\s+|#+\s+)?\**(pending|waiting|deferred|blocked-on-user|blocked-by|todo|follow-?ups?)\b/i;
-// A labelled follow-up inside a prose sentence ("Merged. Deferred: the listing", "Still open for later: x").
-const PROSE_MARKER =
-  /(?:^|[.;!?]\s+|\*\*)\s*(?:follow-?ups?|deferred|todo|(?:still )?open for later)\**\s*:/i;
 // An offer line that records an answer, and words that say what happened to the other options.
 // "user reply" and "user go" are not answer words: "awaiting user reply" and "user reply pending" say the offer is
 // still open, so only a line that says it was selected, chosen, picked or answered counts as an answer.
@@ -99,7 +88,6 @@ const EXTERNAL =
   /https:\/\/github\.com\/|\b[\w.-]+\/[\w.-]+#\d+|\bPR\s*#?\s*\d+|(?<![\w/#&])#\d+\b|\bupstream\b|\bmaintainers?\b|\b(?:another|other|the [\w-]+) (?:session|thread)\b/i;
 const SENT_QUESTION =
   /\b(?:asked|relayed|sent)\b.*\b(?:session|thread|owner|maintainer)s?\b|\b(?:awaiting|waiting (?:on|for)) (?:a |the )?(?:reply|answer|response)\b/i;
-const RECHECK = /\brecheck:\s*(\d{4}-\d{2}-\d{2})/i;
 const GITHUB_URL = /https:\/\/github\.com\/([\w.-]+)\/([\w.-]+)\/(?:pull|issues)\/(\d+)/g;
 const GITHUB_REF = /(?<![\w./-])([\w.-]+)\/([\w.-]+)#(\d+)\b/g;
 const BARE_REF = /(?:\bPR\s*#?\s*|(?<![\w/#&])#)(\d{1,6})\b/gi;
@@ -209,99 +197,6 @@ function parseArguments(argv) {
 }
 
 const clip = (text, length = 90) => (text.length > length ? `${text.slice(0, length - 1)}…` : text);
-
-export function parsePlan(text) {
-  const lines = text.split(/\r?\n/);
-  const header = lines.slice(0, 40);
-  const field = (name) =>
-    header
-      .map((line) => line.match(new RegExp(`^\\s*(?:\\*\\*)?${name}:?(?:\\*\\*)?:?\\s*(.+)$`, "i")))
-      .find(Boolean)?.[1]
-      .trim();
-  const errors = [];
-  const status = field("Status");
-  const owner = field("Owner");
-  const purpose = field("Purpose");
-  // Only an exact `Project:` field: "Project URL: ..." is a different header.
-  const project = header
-    .map((line) => line.match(/^\s*(?:\*\*)?Project(?:\*\*)?:(?:\*\*)?\s*(.+)$/i))
-    .find(Boolean)?.[1]
-    .trim();
-  if (!status) {
-    errors.push("no `Status:` line in the first 40 lines");
-  }
-  if (!owner) {
-    errors.push("no `Owner:` line in the first 40 lines");
-  }
-  const start = lines.findIndex((line) => /^#{1,6}\s+Ledger\s*$/i.test(line));
-  if (start < 0) {
-    errors.push("no `## Ledger` section");
-  }
-  let end = lines.length;
-  if (start >= 0) {
-    const level = lines[start].match(/^#+/)[0].length;
-    const next = lines.findIndex(
-      (line, i) => i > start && new RegExp(`^#{1,${level}}\\s`).test(line),
-    );
-    if (next >= 0) {
-      end = next;
-    }
-  }
-  const items = [];
-  for (let i = start + 1; start >= 0 && i < end; i++) {
-    const match = lines[i].match(/^\s*[-*]\s+\[([ x~-])\]\s+(.*)$/i);
-    if (match) {
-      items.push({ line: i + 1, mark: match[1].toLowerCase(), text: match[2] });
-    } else if (items.length && /^\s{2,}\S/.test(lines[i]) && !/^\s*[-*]\s/.test(lines[i])) {
-      items.at(-1).text += ` ${lines[i].trim()}`;
-    }
-  }
-  if (start >= 0 && !items.length) {
-    errors.push("the ledger has no items (`- [ ] ...`, `- [~] ...`, `- [x] ...`, `- [-] ...`)");
-  }
-  for (const item of items) {
-    const required = REQUIRED[item.mark];
-    if (required && !new RegExp(`\\b${required[0]}:\\s*\\S`, "i").test(item.text)) {
-      errors.push(
-        `L${item.line}: a ${MARKS[item.mark]} item needs \`${required[0]}:\` (${required[1]})`,
-      );
-    }
-  }
-  const narrative = [];
-  lines.forEach((line, i) => {
-    const inLedger = start >= 0 && i > start && i < end;
-    if (
-      !inLedger &&
-      i > 0 &&
-      (NARRATIVE.test(line) || PROSE_MARKER.test(line) || /^\s*[-*]\s+\[[ ~]\]/.test(line))
-    ) {
-      narrative.push({
-        line: i + 1,
-        text: line.trim(),
-        box: /^\s*[-*]\s+\[[ ~]\]/.test(line),
-      });
-    }
-  });
-  return { status, owner, purpose, project, items, errors, narrative };
-}
-
-const sha256 = (text) => createHash("sha256").update(text).digest("hex");
-
-// Identity is local to these exact UTF-8 plan bytes. No readiness is inferred here.
-export function planSnapshot(planText) {
-  const plan = parsePlan(planText);
-  return {
-    planSHA256: sha256(planText),
-    errors: plan.errors,
-    openItems: plan.items
-      .filter((item) => item.mark === " " || item.mark === "~")
-      .map((item) => ({
-        id: `L${item.line}:${sha256(item.mark + item.text)}`,
-        ...item,
-        recheck: item.text.match(RECHECK)?.[1] ?? null,
-      })),
-  };
-}
 
 function notesRoot(planPath) {
   const parts = resolve(planPath).split(sep);
