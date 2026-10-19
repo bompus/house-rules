@@ -8,7 +8,7 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
   splitting or tuning slow files, since that startup often sets the suite's wall time.
 - `hr-benchmarking` asks, before reproducing a CI timeout locally, to read the per-test durations from
   CI's own passing runs. A desktop limited to the runner's core count may still not reproduce the
-  runner's slowness. A platform's test deadlines are raised only after that comparison shows honest
+  runner's slowness. A platform's test deadlines are raised only after those durations show honest
   slowness rather than a hang.
 - Core rules now ask for one local review of a task's changes before opening a pull request in a
   repository the user owns, with `hr-code-review` or the host's reviewer subagent. Each finding is fixed

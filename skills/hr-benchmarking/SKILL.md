@@ -89,7 +89,7 @@ splitting or tuning slow files. That startup often sets the suite's wall time.
 Before reproducing a CI timeout locally, read the per-test durations from CI's
 own passing runs. A desktop, even limited to the runner's core count, may not
 reproduce the runner's slowness. Raise a platform's test deadlines only after
-that comparison shows the tests are honestly slow rather than hung.
+those durations show the tests are honestly slow rather than hung.
 
 Compare each piece before and after against its immediate predecessor. Before
 running, declare integration milestones when changed pieces enter the consuming
