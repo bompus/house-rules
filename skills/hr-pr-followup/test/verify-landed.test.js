@@ -7,14 +7,17 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 const script = new URL("../scripts/verify-landed.sh", import.meta.url).pathname;
+/** @type {string[]} */
 const roots = [];
 const dir = () => {
   const path = mkdtempSync(join(tmpdir(), "verify-landed-"));
   roots.push(path);
   return path;
 };
+/** @type {Bun.Subprocess[]} */
 const residents = [];
 // A live process whose working directory is in `cwd`, as an agent session in a primary checkout is.
+/** @param {string} cwd */
 function resident(cwd) {
   const child = Bun.spawn(["sleep", "30"], { cwd });
   residents.push(child);
@@ -29,6 +32,7 @@ afterEach(() => {
   }
 });
 
+/** @type {Record<string, string | undefined>} */
 const env = {
   ...process.env,
   GIT_AUTHOR_NAME: "test",
@@ -40,6 +44,10 @@ const env = {
   GIT_CONFIG_GLOBAL: "/dev/null",
 };
 
+/**
+ * @param {string} cwd
+ * @param {...string} args
+ */
 function sh(cwd, ...args) {
   const run = Bun.spawnSync(args, { cwd, env });
   if (run.exitCode !== 0) {
@@ -61,6 +69,10 @@ function fixture() {
   return { root, remote, work };
 }
 
+/**
+ * @param {string} cwd
+ * @param {...string} args
+ */
 function runScript(cwd, ...args) {
   const run = Bun.spawnSync(["bash", script, ...args], { cwd, env });
   return { code: run.exitCode, out: run.stdout.toString(), err: run.stderr.toString() };
@@ -134,7 +146,7 @@ exec "$VERIFY_LANDED_TEST_GIT" "$@"
         env: {
           ...env,
           PATH: `${bin}:${env.PATH}`,
-          VERIFY_LANDED_TEST_GIT: Bun.which("git"),
+          VERIFY_LANDED_TEST_GIT: /** @type {string} */ (Bun.which("git")),
           VERIFY_LANDED_TEST_OUTPUT: output,
         },
       },
@@ -147,6 +159,7 @@ exec "$VERIFY_LANDED_TEST_GIT" "$@"
 }
 
 // main one commit behind origin/main; `onMain` leaves main checked out in `work`, else `work` is on feature.
+/** @param {{ onMain: boolean }} options */
 function behind({ onMain }) {
   const { root, remote, work } = fixture();
   if (!onMain) {

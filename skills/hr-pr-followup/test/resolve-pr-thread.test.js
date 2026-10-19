@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 
 const scratch = process.env.HOUSE_RULES_TEST_TMP ?? tmpdir();
+/** @type {string[]} */
 const roots = [];
 afterEach(() => {
   for (const root of roots.splice(0)) {
@@ -16,6 +17,10 @@ const pr = "https://github.com/owner/app/pull/7";
 const head = "a".repeat(40);
 const reply = `${pr}#discussion_r2`;
 
+/**
+ * @param {any} [f] Fixture switches read by the stub `gh`.
+ * @param {string[]} [args]
+ */
 function run(f = {}, args = []) {
   const root = mkdtempSync(join(scratch, "cli-"));
   roots.push(root);
@@ -169,19 +174,27 @@ test.each(invalid)("rejects invalid identity, reply, permission or partial reads
 // Invariants: one mutation maximum, no mutation after an observed push,
 // no successful report with a changed head or unresolved final state.
 test("event sequences preserve head checks and lost-response safety", () => {
+  /** @type {{ name: string, changeAt?: number, lostResponse?: boolean, noCommit?: boolean }[]} */
   const events = [
     ...[1, 2, 3, 4].map((changeAt) => ({ name: `push-before-read-${changeAt}`, changeAt })),
     { name: "lost-committed-response", lostResponse: true },
     { name: "lost-uncommitted-response", lostResponse: true, noCommit: true },
   ];
+  /** @type {string[]} */
   const violations = [];
+  /**
+   * @param {typeof events} sequence
+   * @param {number} depth
+   */
   const walk = (sequence, depth) => {
     if (sequence.length) {
       // Two alternative response outcomes cannot happen to the single mutation.
       if (sequence.filter((e) => e.lostResponse).length > 1) {
         return;
       }
-      const pushes = sequence.filter((e) => e.changeAt).map((e) => e.changeAt);
+      const pushes = sequence
+        .filter((e) => e.changeAt)
+        .map((e) => /** @type {number} */ (e.changeAt));
       const changeAt = pushes.length ? Math.min(...pushes) : undefined;
       const f = { ...Object.assign({}, ...sequence), changeAt };
       const r = run(f, ["--apply"]);
@@ -189,7 +202,8 @@ test("event sequences preserve head checks and lost-response safety", () => {
       if (r.state.mutations > 1) {
         violations.push(`duplicate mutation: ${label}`);
       }
-      if (changeAt <= 2 && r.state.mutations) {
+      // `undefined <= 2` is false: a sequence with no push never counts here.
+      if (/** @type {number} */ (changeAt) <= 2 && r.state.mutations) {
         violations.push(`mutation after observed push: ${label}`);
       }
       if (r.code === 0 && (changeAt || !r.state.resolved)) {

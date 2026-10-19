@@ -15,9 +15,12 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
 const script = new URL("../scripts/merge-pr.sh", import.meta.url).pathname;
+/** @type {string[]} */
 const roots = [];
+/** @type {Bun.Subprocess[]} */
 const residents = [];
 // A live process whose working directory is in `cwd`, as an agent session in a primary checkout is.
+/** @param {string} cwd */
 function resident(cwd) {
   const child = Bun.spawn(["sleep", "30"], { cwd });
   residents.push(child);
@@ -41,6 +44,10 @@ const gitEnv = {
   GIT_CONFIG_GLOBAL: "/dev/null",
 };
 
+/**
+ * @param {string} cwd
+ * @param {...string} args
+ */
 function sh(cwd, ...args) {
   const run = Bun.spawnSync(args, { cwd, env: { ...process.env, ...gitEnv } });
   if (run.exitCode !== 0) {
@@ -49,7 +56,12 @@ function sh(cwd, ...args) {
   return run.stdout.toString().trim();
 }
 
-/** Writes an executable stub script named `name` into `bin`. */
+/**
+ * Writes an executable stub script named `name` into `bin`.
+ * @param {string} bin
+ * @param {string} name
+ * @param {string} body
+ */
 function stub(bin, name, body) {
   writeFileSync(join(bin, name), `#!/usr/bin/env bash\n${body}`);
   chmodSync(join(bin, name), 0o755);
@@ -188,6 +200,10 @@ exit $code
     }
     writeFileSync(target, text.replace("set -euo pipefail\n", ""));
   }
+  /**
+   * @param {string} pr
+   * @param {...string} args
+   */
   const runTarget = (pr, ...args) => {
     const r = Bun.spawnSync(["bash", target, pr, ...args], {
       cwd: fromTask ? wt : work,
@@ -200,6 +216,7 @@ exit $code
     });
     return { code: r.exitCode, out: r.stdout.toString(), err: r.stderr.toString() };
   };
+  /** @param {...string} args */
   const run = (...args) => runTarget(`${repo}#7`, ...args);
   return { remote, work, wt, oid, squash, log, pmLog, run, runTarget };
 }
@@ -378,6 +395,11 @@ test("landing from a clean primary fast-forwards it without an additional comman
 });
 
 // The remote merge always completes; a primary that cannot be fast-forwarded is skipped with exit 3.
+/**
+ * @param {ReturnType<typeof fixture>} fx
+ * @param {ReturnType<ReturnType<typeof fixture>["run"]>} r
+ * @param {string} reason
+ */
 function expectLandedSyncPending(fx, r, reason) {
   const { remote, work, log, wt } = fx;
   expect(readFileSync(log, "utf8")).toContain("pr merge 7");
@@ -491,6 +513,7 @@ test("the removed --idle-primary flag is an unknown argument and merges nothing"
 });
 
 // The scratch worktree the check ran in, if one is still registered.
+/** @param {string} work */
 const checkWorktrees = (work) =>
   sh(work, "git", "worktree", "list", "--porcelain")
     .split("\n")
@@ -558,6 +581,7 @@ test("a head pushed after the review was read refuses instead of checking the ne
   expect(readFileSync(log, "utf8")).not.toContain("pr merge");
 });
 
+/** @param {object} [extra] */
 const pnpmPackage = (extra) =>
   JSON.stringify({ name: "app", packageManager: "pnpm@9", scripts: { check: "lint" }, ...extra });
 
@@ -642,6 +666,7 @@ test("the install before the check runs no package lifecycle scripts", () => {
 });
 
 test("Yarn 1 installs with --ignore-scripts and Yarn 2 or later skips builds", () => {
+  /** @param {string} version */
   const yarn = (version) =>
     JSON.stringify({
       name: "app",

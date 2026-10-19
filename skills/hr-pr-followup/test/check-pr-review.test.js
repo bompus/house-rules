@@ -5,6 +5,11 @@ const bot = { __typename: "Bot", login: "coderabbitai" };
 const user = { __typename: "User", login: "maintainer" };
 
 // Resolved threads can coexist with an unanswered outside-diff review finding.
+// Returns `any`: tests pass partial nodes that omit fields the real query always returns.
+/**
+ * @param {{ threads?: any[], reviews?: any[], comments?: any[], contexts?: any[], files?: string[] }} [parts]
+ * @returns {any}
+ */
 function pr({ threads = [], reviews = [], comments = [], contexts = [], files = [] } = {}) {
   const tree = { entries: files.map((name) => ({ name })) };
   return {
@@ -179,7 +184,11 @@ test("waitForReview polls while cubic runs and stops on its result", async () =>
   const running = pr({ contexts: [{ name: CUBIC, status: "IN_PROGRESS", conclusion: null }] });
   const neutral = pr({ contexts: [{ name: CUBIC, status: "COMPLETED", conclusion: "NEUTRAL" }] });
   let clock = 0;
-  const opts = { pollMs: 30_000, sleep: async (ms) => (clock += ms), now: () => clock };
+  const opts = {
+    pollMs: 30_000,
+    sleep: async (/** @type {number} */ ms) => (clock += ms),
+    now: () => clock,
+  };
   const reads = [running, running, neutral];
   const open = await waitForReview(() => reads.shift(), { ...opts, timeoutMs: 600_000 });
   expect(clock).toBe(60_000);
@@ -194,7 +203,11 @@ test("waitForReview polls while the review runs and stops when it finishes or ti
     contexts: [{ context: "CodeRabbit", state: "SUCCESS", description: "Review completed" }],
   });
   let clock = 0;
-  const opts = { pollMs: 30_000, sleep: async (ms) => (clock += ms), now: () => clock };
+  const opts = {
+    pollMs: 30_000,
+    sleep: async (/** @type {number} */ ms) => (clock += ms),
+    now: () => clock,
+  };
   const reads = [running, running, done];
   expect(await waitForReview(() => reads.shift(), { ...opts, timeoutMs: 600_000 })).toEqual([]);
   expect(clock).toBe(60_000);
@@ -224,7 +237,11 @@ test("waitForReview waits a few minutes for a CodeRabbit check that has not appe
     contexts: [{ context: "CodeRabbit", state: "SUCCESS", description: "Review completed" }],
   });
   let clock = 0;
-  const opts = { pollMs: 30_000, sleep: async (ms) => (clock += ms), now: () => clock };
+  const opts = {
+    pollMs: 30_000,
+    sleep: async (/** @type {number} */ ms) => (clock += ms),
+    now: () => clock,
+  };
   const reads = [missing, missing, running, done];
   expect(await waitForReview(() => reads.shift(), { ...opts, timeoutMs: 1_800_000 })).toEqual([]);
 
@@ -238,6 +255,10 @@ test("waitForReview waits a few minutes for a CodeRabbit check that has not appe
 });
 
 test("blocks any other check that failed, was cancelled or is unfinished, and passes finished ones", () => {
+  /**
+   * @param {string | null} conclusion
+   * @param {string} [status]
+   */
   const run = (conclusion, status = "COMPLETED") => ({ name: "build", status, conclusion });
   for (const conclusion of [
     "FAILURE",
@@ -265,6 +286,7 @@ test("blocks any other check that failed, was cancelled or is unfinished, and pa
 });
 
 test("blocks a commit status that is not SUCCESS", () => {
+  /** @param {string} state */
   const status = (state) => ({ context: "ci/legacy", state, description: null });
   expect(openFeedback(pr({ contexts: [status("SUCCESS")] }))).toEqual([]);
   for (const state of ["PENDING", "EXPECTED"]) {
@@ -283,7 +305,11 @@ test("waitForReview polls while another check runs and returns its failure", asy
   const running = pr({ contexts: [{ name: "build", status: "IN_PROGRESS", conclusion: null }] });
   const failed = pr({ contexts: [{ name: "build", status: "COMPLETED", conclusion: "FAILURE" }] });
   let clock = 0;
-  const opts = { pollMs: 30_000, sleep: async (ms) => (clock += ms), now: () => clock };
+  const opts = {
+    pollMs: 30_000,
+    sleep: async (/** @type {number} */ ms) => (clock += ms),
+    now: () => clock,
+  };
   const reads = [running, running, failed];
   expect(await waitForReview(() => reads.shift(), { ...opts, timeoutMs: 600_000 })).toEqual([
     "check build concluded FAILURE",
@@ -348,6 +374,10 @@ const lineLimit = {
   title: "AI review line limit reached",
   completedAt: "2026-10-18T10:00:00Z",
 };
+/**
+ * @param {string} createdAt
+ * @param {{ __typename: string, login: string }} [author]
+ */
 const outOfQuota = (createdAt, author = cubicBot) => ({
   author,
   isMinimized: false,
@@ -431,7 +461,11 @@ test("skips a rate-limited CodeRabbit and keeps every other reason to refuse", (
 
 test("waitForReview still waits for a bot that is merely slow", async () => {
   let clock = 0;
-  const opts = { pollMs: 30_000, sleep: async (ms) => (clock += ms), now: () => clock };
+  const opts = {
+    pollMs: 30_000,
+    sleep: async (/** @type {number} */ ms) => (clock += ms),
+    now: () => clock,
+  };
   // cubic still running, even after an earlier limit comment, is waited for until it finishes.
   const running = pr({
     contexts: [{ name: CUBIC, status: "IN_PROGRESS", conclusion: null }],

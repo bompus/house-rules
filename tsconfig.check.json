@@ -1,13 +1,10 @@
 {
-  // The type check in `npm run check`. These folders are formatted and linted
-  // but not yet type-checked; each comes off this list once tsc passes on it.
-  // Linting reads tsconfig.json, which covers every folder.
+  // The type check in `npm run check`. Linting reads tsconfig.json, which
+  // covers every folder; this file only narrows what tsc checks.
   "extends": "./tsconfig.json",
   "exclude": [
     "node_modules",
     // Sample pages the stock-UI scanner reads as input; they are not run.
-    "skills/*/test/fixtures",
-    "skills/hr-handoff",
-    "skills/hr-pr-followup"
+    "skills/*/test/fixtures"
   ]
 }

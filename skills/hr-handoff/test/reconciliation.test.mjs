@@ -6,7 +6,10 @@ import { join } from "node:path";
 
 const skill = join(import.meta.dirname, "..");
 const script = join(skill, "scripts", "check-reconciliation.mjs");
+/** @type {string[]} */
 const directories = [];
+/** @typedef {(receipt: any, source: any, ledger: any) => void} Change */
+/** @type {(name: string) => any} */
 const fixture = (name) => JSON.parse(readFileSync(join(skill, "assets", name), "utf8"));
 
 afterEach(() => {
@@ -15,6 +18,7 @@ afterEach(() => {
   }
 });
 
+/** @param {Change} [change] */
 function setup(change = () => {}) {
   const receipt = fixture("receipt.example.json");
   const source = fixture("source.example.json");
@@ -32,6 +36,10 @@ function setup(change = () => {}) {
   return { directory, file: join(directory, "receipt.json") };
 }
 
+/**
+ * @param {string} file
+ * @param {string} [executable]
+ */
 function run(file, executable = process.execPath) {
   const result = spawnSync(executable, [script, file], { encoding: "utf8" });
   expect(result.error).toBeUndefined();
@@ -55,6 +63,7 @@ test("accounts for independent session and child ledger records; keeps dependenc
   expect(result.report.limits).toContain("Does not prove semantic completeness");
 });
 
+/** @type {[string, Change, string][]} */
 const invalid = [
   [
     "omitted user request",
@@ -193,6 +202,11 @@ for (const [name, change, finding] of invalid) {
   });
 }
 
+/**
+ * @param {any} receipt
+ * @param {any} source
+ * @param {boolean} explicit
+ */
 function reopen(receipt, source, explicit) {
   source.records.push({
     id: "reopen-1",
@@ -363,6 +377,10 @@ const previousPlan = [
   "- plain text outside the ledger is not a record",
 ].join("\n");
 
+/**
+ * @param {(receipt: any) => void} [change]
+ * @param {string} [plan]
+ */
 function withPlan(change = () => {}, plan = previousPlan) {
   const paths = setup((receipt) => {
     receipt.sources.push({
@@ -419,6 +437,7 @@ test("an open or deferred predecessor line cannot be set aside as context", () =
 });
 
 test("one item that absorbs several open predecessor lines must say why they are one", () => {
+  /** @param {string} [reason] */
   const merged = (reason) =>
     withPlan((r) => {
       r.accounting.at(-1).items = ["docs"];

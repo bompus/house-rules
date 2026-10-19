@@ -5,19 +5,44 @@
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 
+/** A JSON object read from the receipt or a snapshot; its fields are unchecked until validated. */
+/** @typedef {Record<string, any>} Json */
+/** @typedef {{ id: string, mark: string }} OutsideLine */
+/** @typedef {Json & { at: number }} OutcomeEvent */
+
+/** @type {string[]} */
 const errors = [];
+/** @type {string[]} */
 const gaps = [];
+/**
+ * @param {unknown} value
+ * @returns {value is Json}
+ */
 const object = (value) => value !== null && typeof value === "object" && !Array.isArray(value);
+/**
+ * @param {unknown} value
+ * @returns {value is string}
+ */
 const text = (value) => typeof value === "string" && value.trim().length > 0;
 const states = ["done", "open", "deferred"];
+/** @type {(source: unknown, record: unknown) => string} */
 const key = (source, record) => JSON.stringify([source, record]);
 
+/**
+ * @param {unknown} value
+ * @param {string} label
+ */
 function requireText(value, label) {
   if (!text(value)) {
     errors.push(`${label}: expected nonempty text`);
   }
 }
 
+/**
+ * @param {unknown} value
+ * @param {string} label
+ * @returns {any[]}
+ */
 function list(value, label) {
   if (Array.isArray(value)) {
     return value;
@@ -26,6 +51,11 @@ function list(value, label) {
   return [];
 }
 
+/**
+ * @param {unknown} value
+ * @param {string} label
+ * @returns {Json[]}
+ */
 function entries(value, label) {
   return list(value, label).filter((entry, index) => {
     if (object(entry)) {
@@ -36,6 +66,10 @@ function entries(value, label) {
   });
 }
 
+/**
+ * @param {unknown} value
+ * @param {string} label
+ */
 function timestamp(value, label) {
   if (
     !text(value) ||
@@ -49,7 +83,12 @@ function timestamp(value, label) {
   return Date.parse(value);
 }
 
+/**
+ * @param {Json[]} entries
+ * @param {string} label
+ */
 function unique(entries, label) {
+  /** @type {Map<unknown, Json>} */
   const map = new Map();
   for (const entry of entries) {
     requireText(entry.id, `${label}.id`);
@@ -65,35 +104,48 @@ function unique(entries, label) {
 // other text in the section, wrapped continuation lines included, is not read.
 // Open (`- [ ]`) and deferred (`- [~]`) lines are remembered: they must carry over as items.
 // Item lines elsewhere in the file are not records either, but they are counted and reported as a gap.
+/** @param {string} raw */
 function ledgerRecords(raw) {
   const lines = raw.split(/\r?\n/);
   const start = lines.findIndex((line) => /^#{1,6}\s+Ledger\s*$/i.test(line));
   if (start < 0) {
     return null;
   }
-  const level = lines[start].match(/^#+/)[0].length;
+  const heading = /** @type {RegExpMatchArray} */ (
+    /** @type {string} */ (lines[start]).match(/^#+/)
+  );
+  const level = heading[0].length;
+  /** @type {{ id: string, text: string, mark: string }[]} */
   const records = [];
+  /** @type {OutsideLine[]} */
   const outside = [];
   let inside = false;
   for (let i = 0; i < lines.length; i++) {
+    const line = /** @type {string} */ (lines[i]);
     if (i === start) {
       inside = true;
-    } else if (inside && new RegExp(`^#{1,${level}}\\s`).test(lines[i])) {
+    } else if (inside && new RegExp(`^#{1,${level}}\\s`).test(line)) {
       inside = false;
     }
-    const match = lines[i].match(/^\s*[-*]\s+\[([ x~-])\]\s+(.*)$/i);
+    const match = line.match(/^\s*[-*]\s+\[([ x~-])\]\s+(.*)$/i);
     if (!match) {
       continue;
     }
+    // Both groups always participate in a match.
+    const [, mark = "", body = ""] = match;
     if (inside) {
-      records.push({ id: `L${i + 1}`, text: match[2], mark: match[1] });
+      records.push({ id: `L${i + 1}`, text: body, mark });
     } else {
-      outside.push({ id: `L${i + 1}`, mark: match[1] });
+      outside.push({ id: `L${i + 1}`, mark });
     }
   }
   return { records, outside };
 }
 
+/**
+ * @param {string} label
+ * @param {OutsideLine[]} outside
+ */
 function outsideGap(label, outside) {
   const open = outside.filter((line) => /[ ~]/.test(line.mark));
   const named = open.length > 0 ? open : outside;
@@ -106,6 +158,10 @@ function outsideGap(label, outside) {
   return `${label}: ${outside.length} item line(s) outside the \`## Ledger\` section were not read${count} (${shown}${more}); move them into the ledger section`;
 }
 
+/**
+ * @param {unknown} receipt
+ * @param {string} directory
+ */
 function check(receipt, directory) {
   if (!object(receipt)) {
     throw new Error("receipt: expected an object");
@@ -119,8 +175,11 @@ function check(receipt, directory) {
   }
   const sources = unique(entries(receipt.sources, "sources"), "source");
   const items = unique(entries(receipt.items, "items"), "item");
+  /** @type {Map<string, Json>} */
   const records = new Map();
+  /** @type {Set<string>} */
   const openLines = new Set();
+  /** @type {Map<unknown, OutcomeEvent[]>} */
   const outcomes = new Map();
   if (sources.size === 0) {
     gaps.push("no source snapshots supplied");
@@ -147,10 +206,11 @@ function check(receipt, directory) {
     try {
       raw = readFileSync(resolve(directory, source.file), "utf8");
     } catch (error) {
-      if (error.code === "ENOENT" && declared.length > 0) {
+      const { code } = /** @type {NodeJS.ErrnoException} */ (error);
+      if (code === "ENOENT" && declared.length > 0) {
         gaps.push(`${label}: snapshot unavailable`);
       } else {
-        errors.push(`${label}: cannot read snapshot (${error.code ?? "error"})`);
+        errors.push(`${label}: cannot read snapshot (${code ?? "error"})`);
       }
       continue;
     }
@@ -203,6 +263,7 @@ function check(receipt, directory) {
     }
   }
 
+  /** @type {Map<string, any[]>} */
   const accounting = new Map();
   for (const row of entries(receipt.accounting, "accounting")) {
     const ref = key(row.source, row.record);
@@ -231,6 +292,7 @@ function check(receipt, directory) {
   }
   // A summary row ("the rest, reopen only if asked") that swallows many open lines loses them;
   // an item fed by more than one open line must say in `merges` how one next action and one piece of evidence satisfy them all.
+  /** @type {Map<unknown, number>} */
   const absorbed = new Map();
   for (const ref of openLines) {
     for (const item of new Set(accounting.get(ref) ?? [])) {
@@ -250,6 +312,11 @@ function check(receipt, directory) {
     }
   }
 
+  /**
+   * @param {unknown} value
+   * @param {string} label
+   * @param {unknown} [item]
+   */
   function evidence(value, label, item) {
     const refs = entries(value, `${label}.evidence`);
     if (refs.length === 0) {
@@ -276,7 +343,7 @@ function check(receipt, directory) {
     evidence(item.evidence, label, item.id);
     const events = (outcomes.get(item.id) ?? []).sort((a, b) => a.at - b.at);
     for (let i = 0; i < events.length; i++) {
-      const event = events[i];
+      const event = /** @type {OutcomeEvent} */ (events[i]);
       if (!accounting.get(key(event.source, event.record))?.includes(item.id)) {
         errors.push(`${label}: outcome ${event.source}/${event.record} is not mapped to this item`);
       }
@@ -294,7 +361,9 @@ function check(receipt, directory) {
     }
     if (
       latest &&
-      !item.evidence?.some?.((ref) => ref.source === latest.source && ref.record === latest.record)
+      !item.evidence?.some?.(
+        (/** @type {Json} */ ref) => ref.source === latest.source && ref.record === latest.record,
+      )
     ) {
       errors.push(`${label}: latest outcome must be included in its evidence`);
     }
@@ -375,16 +444,17 @@ try {
   if (process.argv.length !== 3) {
     throw new Error("usage: check-reconciliation.mjs <receipt.json>");
   }
-  const file = resolve(process.argv[2]);
+  const file = resolve(/** @type {string} */ (process.argv[2]));
   counts = check(JSON.parse(readFileSync(file, "utf8")), dirname(file));
 } catch (error) {
   // Avoid printing an input excerpt from JSON.parse or filesystem paths.
+  const failure = /** @type {NodeJS.ErrnoException} */ (error);
   errors.push(
     error instanceof SyntaxError
       ? "receipt: invalid JSON"
-      : error.code
-        ? `receipt: ${error.code}`
-        : error.message,
+      : failure.code
+        ? `receipt: ${failure.code}`
+        : failure.message,
   );
 }
 const partial = gaps.length > 0;

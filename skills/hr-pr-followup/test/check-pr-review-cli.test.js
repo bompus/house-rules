@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 
 const scratch = process.env.HOUSE_RULES_TEST_TMP ?? tmpdir();
+/** @type {string[]} */
 const roots = [];
 afterEach(() => {
   for (const root of roots.splice(0)) {
@@ -13,15 +14,22 @@ afterEach(() => {
 });
 const script = fileURLToPath(new URL("../scripts/check-pr-review.ts", import.meta.url));
 const head = "a".repeat(40);
+/**
+ * @param {any[]} [nodes]
+ * @param {boolean} [more]
+ * @param {string | null} [cursor]
+ */
 const page = (nodes = [], more = false, cursor = null) => ({
   nodes,
   pageInfo: { hasNextPage: more, endCursor: cursor },
 });
+/** @param {boolean} isResolved */
 const thread = (isResolved) => ({
   isResolved,
   comments: { nodes: [{ url: "https://example.test/thread" }] },
 });
 
+/** @param {any} [options] Fixture switches read by the stub `gh`. */
 function run(options = {}) {
   const root = mkdtempSync(join(scratch, "cli-"));
   roots.push(root);
@@ -177,6 +185,7 @@ test("CLI rejects an unknown actor discriminator instead of overlooking bot find
   expect(r.code).toBe(2);
 });
 
+/** @type {[string, any][]} */
 const malformedEnums = [
   [
     "actor",
