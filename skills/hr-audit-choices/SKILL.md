@@ -27,7 +27,8 @@ repository's standards, use `hr-code-review`.
    concurrency, performance and resource tradeoffs; scope interpretation;
    patterns later code will copy. Done when every category has been checked
    against the diff and every choice found is either listed or cited to the
-   baseline.
+   baseline. An empty list on work the baseline left open is a red flag, not
+   a pass: ask what filled each gap.
 3. **Judge each choice.** Give one verdict:
    - **sound**: general and defensible.
    - **unsound**: state the corrected decision, the property that must hold in

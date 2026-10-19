@@ -4,6 +4,15 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- `hr-audit-choices` now credits its source, dzhng/jevgrep's `audit-choices` skill, in
+  `THIRD_PARTY_NOTICES.md` and a bundle `NOTICE.md`. It also treats an empty list of choices on
+  work the user left open as a red flag rather than a pass.
+- `hr-tdd`'s guide to good tests asks tests to run against a scratch home and config directory,
+  leave the person's real desktop alone, clean up after themselves, and assert a random outcome
+  over many runs.
+- `hr-code-review` checks that a retry, poll or batch loop changes something before the next
+  attempt, and whether one failing item stops later items when the loop's contract says they
+  should continue.
 - `merge-pr.sh` in `hr-pr-followup` now lands a repository listed in `HR_PUSH_LANDED` itself. It used to
   print the push for the caller to run. After the review and `check` gates pass, it pushes the head commit to
   the base without force, deletes the head branch in the same atomic push and verifies the landing. It

@@ -158,6 +158,16 @@ Source: https://github.com/ayghri/i-have-adhd (compared at revision `723af7d9afa
 
 No source text from this repository is copied here.
 
+## dzhng/jevgrep
+
+Source: https://github.com/dzhng/jevgrep (compared at revision `81a724f9e9376f060361295b10e539df2477e32f`)
+
+- `skills/hr-audit-choices/`: adapted from `.agents/skills/audit-choices/`. The
+  same skill is now maintained in https://github.com/dzhng/skills under
+  `skills/engineering/audit-choices/`.
+
+Copyright (c) 2026 David Zhang
+
 ## MIT License text
 
 Permission is hereby granted, free of charge, to any person obtaining a copy

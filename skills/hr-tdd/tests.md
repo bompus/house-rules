@@ -22,6 +22,14 @@ Characteristics:
 - Describes WHAT, not HOW
 - Assertions establish one observable behavior; use several when the contract needs them
 
+**Isolated from the machine**: a test runs against a scratch home and config
+directory, never the person's real settings; it does not take focus from or
+move the pointer on the person's real desktop, though input inside a test
+browser or virtual display is fine; it removes what it created, including on
+failure. When an
+outcome is random by design, assert its distribution over many runs, not one
+sample.
+
 ## Bad tests
 
 **Implementation-detail tests**: Coupled to internal structure.
