@@ -57,6 +57,8 @@ function fixture({
   packageJson = null,
   // Exit status of the stub pnpm's install; its `run check` always passes.
   pnpmInstallExit = 0,
+  // More files to commit in the head, by name.
+  files = {},
 } = {}) {
   const root = mkdtempSync(join(tmpdir(), "merge-pr-"));
   roots.push(root);
@@ -77,6 +79,10 @@ function fixture({
       packageJson ?? JSON.stringify({ name: "app", packageManager: "bun@1", scripts: { check } }),
     );
     sh(wt, "git", "add", "package.json");
+  }
+  for (const [name, text] of Object.entries(files)) {
+    writeFileSync(join(wt, name), text);
+    sh(wt, "git", "add", name);
   }
   sh(wt, "git", "commit", "--allow-empty", "-m", "work");
   sh(wt, "git", "push", "origin", "feature", "feature:refs/pull/7/head");
@@ -115,6 +121,8 @@ exit 0
 `,
   );
   chmodSync(join(bin, "pnpm"), 0o755);
+  writeFileSync(join(bin, "npm"), `#!/usr/bin/env bash\necho "$*" >> "${pmLog}"\n`);
+  chmodSync(join(bin, "npm"), 0o755);
   const run = (...args) => {
     const r = Bun.spawnSync(["bash", script, "7", ...args], {
       cwd: fromTask ? wt : work,
@@ -445,4 +453,13 @@ test("a run leaves another run's check directory alone", () => {
   writeFileSync(join(other, "in-use"), "another run\n");
   expect(run().code).toBe(0);
   expect(readFileSync(join(other, "in-use"), "utf8")).toBe("another run\n");
+});
+
+test("npm-shrinkwrap.json counts as a lockfile, so npm installs with npm ci", () => {
+  const { pmLog, run } = fixture({
+    packageJson: JSON.stringify({ name: "app", scripts: { check: "lint" } }),
+    files: { "npm-shrinkwrap.json": "{}\n" },
+  });
+  expect(run().code).toBe(0);
+  expect(readFileSync(pmLog, "utf8")).toBe("ci\nrun check\n");
 });

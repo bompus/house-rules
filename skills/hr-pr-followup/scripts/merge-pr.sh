@@ -16,8 +16,8 @@
 # under the repository's Git directory, so local edits can neither pass nor fail it. The check is
 # package.json `scripts.check`, run with the package manager named by `packageManager` or the
 # lockfile (bun, pnpm, yarn, else npm), after a frozen install when the head has a lockfile or the
-# package declares dependencies or workspaces. Each run uses its own directory. It runs under `nice -n 10` with RAYON_NUM_THREADS and UV_THREADPOOL_SIZE capped at
-# half the CPUs unless already set. A failing install or check refuses the merge and names the
+# package declares dependencies or workspaces. Each run uses its own directory. It runs under
+# `nice -n 10` with RAYON_NUM_THREADS and UV_THREADPOOL_SIZE capped at half the CPUs unless set. A failing install or check refuses the merge and names the
 # command and its exit code. A head with no `scripts.check` prints a warning and merges anyway.
 #
 # Refuses, after those checks, a repository listed in HR_PUSH_LANDED (space-separated owner/repo names;
@@ -107,7 +107,7 @@ else
       else PM=npm; fi;;
   esac
   # A lockfile also means an install, which covers workspaces declared outside package.json.
-  for lock in bun.lock bun.lockb pnpm-lock.yaml yarn.lock package-lock.json; do
+  for lock in bun.lock bun.lockb pnpm-lock.yaml yarn.lock package-lock.json npm-shrinkwrap.json; do
     if in_head "$lock"; then NEEDS_INSTALL=1; fi
   done
   # Each run gets its own directory, so a second run for the same PR cannot remove this one's.
@@ -119,7 +119,7 @@ else
     bun) INSTALL=(bun install --frozen-lockfile);;
     pnpm) INSTALL=(pnpm install --frozen-lockfile);;
     yarn) INSTALL=(yarn install --frozen-lockfile);;
-    *) if in_head package-lock.json; then INSTALL=(npm ci); else INSTALL=(npm install); fi;;
+    *) if in_head package-lock.json || in_head npm-shrinkwrap.json; then INSTALL=(npm ci); else INSTALL=(npm install); fi;;
   esac
   CPUS="$(nproc --all 2>/dev/null || getconf _NPROCESSORS_ONLN 2>/dev/null || echo 2)"
   HALF=$(( CPUS / 2 > 0 ? CPUS / 2 : 1 ))
