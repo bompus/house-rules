@@ -26,7 +26,9 @@
 # fast-forwarding the base to the head, because a GitHub merge writes the account's profile name into
 # public history. After the same checks, this script pushes the head commit to the base itself, and
 # refuses when the base is not an ancestor of the head (rebase onto the base first). The push never
-# forces, so a base that moved meanwhile refuses it too.
+# forces the base, so a base that moved meanwhile refuses it too. It deletes the head branch in the
+# same atomic push, leased at the reviewed commit, so a head pushed after the review refuses the
+# whole landing, as --match-head-commit does for a merge. A fork's head is read again just before.
 #
 # Every refusal is an explicit exit-status test, not `set -e`: some agent shells run commands so
 # that `set -e` does not stop on a failing one, which once let a hand-written gate-then-push
@@ -200,10 +202,21 @@ if [[ "$PUSH_LANDED" == *" $REPO "* ]]; then
     echo "refused: $BASE is not an ancestor of ${OID:0:12}; rebase PR $PR onto $BASE and push it first" >&2
     exit 1
   fi
-  if ! git push --quiet "$REMOTE" "$OID:refs/heads/$BASE"; then
-    echo "refused: the fast-forward push of ${OID:0:12} to $BASE failed; PR $PR is not landed" >&2
+  if [ "$FORK" = true ]; then
+    LATEST="$(git ls-remote "$REMOTE" "refs/pull/$PR/head" | awk '{print $1}')"
+    if [ "$LATEST" != "$OID" ]; then
+      echo "refused: PR $PR head moved to ${LATEST:-nothing} after it was reviewed as $OID; rerun" >&2
+      exit 1
+    fi
+    PUSH=("$OID:refs/heads/$BASE")
+  else
+    PUSH=(--atomic --force-with-lease="refs/heads/$HEAD:$OID" "$OID:refs/heads/$BASE" ":refs/heads/$HEAD")
+  fi
+  if ! git push --quiet "$REMOTE" "${PUSH[@]}"; then
+    echo "refused: the fast-forward push of ${OID:0:12} to $BASE failed (a moved base or head refuses it); PR $PR is not landed" >&2
     exit 1
   fi
+  [ "$FORK" = true ] || echo "deleted: $REMOTE/$HEAD"
   SHA="$OID"
   echo "landed: PR $PR as $SHA by fast-forward push to $BASE"
 else

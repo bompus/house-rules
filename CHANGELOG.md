@@ -6,10 +6,11 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 - `merge-pr.sh` in `hr-pr-followup` now lands a repository listed in `HR_PUSH_LANDED` itself. It used to
   print the push for the caller to run. After the review and `check` gates pass, it pushes the head commit to
-  the base without force, deletes the head branch and verifies the landing. It refuses when the base is not
-  an ancestor of the head. Each gate now tests the failing command's exit status itself, because some agent
-  shells do not stop on `set -e`. A test runs the script with `set -e` removed and checks that a review
-  refusal still stops before any merge or push.
+  the base without force, deletes the head branch in the same atomic push and verifies the landing. It
+  refuses when the base is not an ancestor of the head, or when the head moved after the review. Each gate
+  now tests the failing command's exit status itself, because some agent shells do not stop on `set -e`. A
+  test runs the script with `set -e` removed and checks that a review refusal still stops before any merge
+  or push.
 - The npm package no longer ships the README images in `docs/assets/`, which cuts the packed size from
   1.9 MB to 382 KB. npmjs already loads README images from GitHub, so the page looks the same. The dark-mode
   banner now uses its full GitHub address, because npmjs does not rewrite a relative `srcset` and that

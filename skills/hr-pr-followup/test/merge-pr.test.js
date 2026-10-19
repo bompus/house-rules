@@ -61,7 +61,7 @@ function stub(bin, name, body) {
  * @param {{ dependents?: string, threads?: object[], repo?: string, staleDefault?: boolean,
  *   fromTask?: boolean, queued?: boolean, history?: number, check?: string | null,
  *   packageJson?: string | null, pnpmInstallExit?: number, files?: Record<string, string>,
- *   racingFetch?: boolean, baseCurrent?: boolean, errexitOff?: boolean }} [options]
+ *   racingFetch?: boolean, baseCurrent?: boolean, errexitOff?: boolean, advanceHead?: boolean }} [options]
  */
 function fixture({
   dependents = "",
@@ -85,6 +85,8 @@ function fixture({
   baseCurrent = false,
   // Runs a copy of the scripts with `set -euo pipefail` removed, as a shell that ignores it would.
   errexitOff = false,
+  // Someone pushes to the head branch after the checks pass, just before the landing push.
+  advanceHead = false,
 } = {}) {
   const root = mkdtempSync(join(tmpdir(), "merge-pr-"));
   roots.push(root);
@@ -146,6 +148,22 @@ esac
   );
   stub(bin, "npm", `echo "$*" >> "${pmLog}"\n`);
   stub(bin, "yarn", `echo "$*" >> "${pmLog}"\n`);
+  if (advanceHead) {
+    const git = Bun.which("git");
+    const remoteGit = `"${git}" --git-dir="${remote}"`;
+    stub(
+      bin,
+      "git",
+      `"${git}" "$@"; code=$?
+case "$*" in *"merge-base --is-ancestor"*)
+  next=$(${remoteGit} commit-tree -p ${oid} -m later "${oid}^{tree}")
+  ${remoteGit} update-ref refs/heads/feature "$next"
+  ${remoteGit} update-ref refs/pull/7/head "$next";;
+esac
+exit $code
+`,
+    );
+  }
   if (racingFetch) {
     const git = Bun.which("git");
     const base = sh(work, "git", "rev-parse", "main~1");
@@ -264,6 +282,16 @@ test("a fast-forward landing refuses when the base moved past the head's parent"
   expect(sh(remote, "git", "rev-parse", "main")).toBe(squash);
   expect(sh(remote, "git", "branch", "--list", "feature")).toContain("feature");
   expect(readFileSync(log, "utf8")).not.toContain("pr merge");
+});
+
+test("a fast-forward landing refuses when the head moved after the checks", () => {
+  const fx = fixture({ repo: "bompus/house-rules", baseCurrent: true, advanceHead: true });
+  const before = sh(fx.remote, "git", "rev-parse", "main");
+  const r = fx.run();
+  expect(r.code).toBe(1);
+  expect(r.err).toContain("fast-forward push of");
+  expect(sh(fx.remote, "git", "rev-parse", "main")).toBe(before);
+  expect(sh(fx.remote, "git", "rev-parse", "feature")).not.toBe(fx.oid);
 });
 
 // A shell that does not stop on a failing command must not carry a refusal into a merge or push.
