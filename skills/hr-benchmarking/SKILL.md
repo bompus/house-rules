@@ -82,6 +82,8 @@ Time a shortcut to faster feedback before relying on it. In one project,
 related-test selection still chose 589 to 599 of 754 test files. A shared build
 directory cut a 139 s build only to 120 s, and the recorded suite time was more
 than twice out of date.
+When a test suite is slow, total the start-up time each test file pays before
+splitting or tuning slow files. That start-up often sets the suite's wall time.
 
 Compare each piece before and after against its immediate predecessor. Before
 running, declare integration milestones when changed pieces enter the consuming
