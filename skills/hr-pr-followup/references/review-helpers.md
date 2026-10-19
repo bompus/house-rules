@@ -138,7 +138,8 @@ reset, switch or delete a checkout.
   (package.json `scripts.check`) at the pull request head, in a throwaway detached
   worktree under the repository's Git directory, so a local edit cannot change the result.
   It uses the package manager that `packageManager` or the lockfile names (else npm),
-  installs first with a frozen lockfile when the package has dependencies, and runs
+  installs first with a frozen lockfile when the head has a lockfile or declares
+  dependencies or workspaces, and runs
   under `nice -n 10` with `RAYON_NUM_THREADS` and `UV_THREADPOOL_SIZE` at half the
   CPUs unless already set. A failing install or check, an invalid package.json, or a
   head pushed after the review refuses the merge and names the failing command and its

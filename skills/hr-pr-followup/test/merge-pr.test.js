@@ -55,6 +55,8 @@ function fixture({
   check = "exit 0",
   // Raw package.json text for the head, in place of the one built from `check`.
   packageJson = null,
+  // Exit status of the stub pnpm's install; its `run check` always passes.
+  pnpmInstallExit = 0,
 } = {}) {
   const root = mkdtempSync(join(tmpdir(), "merge-pr-"));
   roots.push(root);
@@ -103,6 +105,16 @@ esac
 `,
   );
   chmodSync(join(bin, "gh"), 0o755);
+  const pmLog = join(root, "pnpm.log");
+  writeFileSync(
+    join(bin, "pnpm"),
+    `#!/usr/bin/env bash
+echo "$*" >> "${pmLog}"
+[ "$1" = install ] && exit ${pnpmInstallExit}
+exit 0
+`,
+  );
+  chmodSync(join(bin, "pnpm"), 0o755);
   const run = (...args) => {
     const r = Bun.spawnSync(["bash", script, "7", ...args], {
       cwd: fromTask ? wt : work,
@@ -115,7 +127,7 @@ esac
     });
     return { code: r.exitCode, out: r.stdout.toString(), err: r.stderr.toString() };
   };
-  return { remote, work, wt, oid, squash, log, run };
+  return { remote, work, wt, oid, squash, log, pmLog, run };
 }
 
 test("merges without --delete-branch, deletes only the remote head and names the worktree", () => {
@@ -392,4 +404,45 @@ test("a head pushed after the review was read refuses instead of checking the ne
   expect(r.code).toBe(1);
   expect(r.err).toContain("head moved to");
   expect(readFileSync(log, "utf8")).not.toContain("pr merge");
+});
+
+const pnpmPackage = (extra) =>
+  JSON.stringify({ name: "app", packageManager: "pnpm@9", scripts: { check: "lint" }, ...extra });
+
+test("a package with dependencies installs with a frozen lockfile before the check", () => {
+  const { log, pmLog, run } = fixture({
+    packageJson: pnpmPackage({ devDependencies: { x: "1" } }),
+  });
+  const r = run();
+  expect(r.code).toBe(0);
+  expect(readFileSync(pmLog, "utf8")).toBe("install --frozen-lockfile\nrun check\n");
+  expect(readFileSync(log, "utf8")).toContain("pr merge 7");
+});
+
+test("a workspace root with no dependencies of its own still installs", () => {
+  const { pmLog, run } = fixture({ packageJson: pnpmPackage({ workspaces: ["packages/*"] }) });
+  expect(run().code).toBe(0);
+  expect(readFileSync(pmLog, "utf8")).toBe("install --frozen-lockfile\nrun check\n");
+});
+
+test("a failing install refuses before the check, without merging, and removes its worktree", () => {
+  const { work, log, pmLog, run } = fixture({
+    packageJson: pnpmPackage({ dependencies: { x: "1" } }),
+    pnpmInstallExit: 5,
+  });
+  const r = run();
+  expect(r.code).toBe(1);
+  expect(r.err).toContain("`pnpm install --frozen-lockfile` exited 5");
+  expect(readFileSync(pmLog, "utf8")).toBe("install --frozen-lockfile\n");
+  expect(readFileSync(log, "utf8")).not.toContain("pr merge");
+  expect(checkWorktrees(work)).toEqual([]);
+});
+
+test("a run leaves another run's check directory alone", () => {
+  const { work, run } = fixture();
+  const other = join(work, ".git", "hr-merge-check", "pr-7");
+  sh(work, "mkdir", "-p", other);
+  writeFileSync(join(other, "in-use"), "another run\n");
+  expect(run().code).toBe(0);
+  expect(readFileSync(join(other, "in-use"), "utf8")).toBe("another run\n");
 });

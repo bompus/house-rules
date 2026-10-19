@@ -15,8 +15,8 @@
 # Then runs the repository's own check at the pull request head, in a throwaway detached worktree
 # under the repository's Git directory, so local edits can neither pass nor fail it. The check is
 # package.json `scripts.check`, run with the package manager named by `packageManager` or the
-# lockfile (bun, pnpm, yarn, else npm) after a frozen install when the package declares
-# dependencies. It runs under `nice -n 10` with RAYON_NUM_THREADS and UV_THREADPOOL_SIZE capped at
+# lockfile (bun, pnpm, yarn, else npm), after a frozen install when the head has a lockfile or the
+# package declares dependencies or workspaces. Each run uses its own directory. It runs under `nice -n 10` with RAYON_NUM_THREADS and UV_THREADPOOL_SIZE capped at
 # half the CPUs unless already set. A failing install or check refuses the merge and names the
 # command and its exit code. A head with no `scripts.check` prints a warning and merges anyway.
 #
@@ -73,16 +73,20 @@ git fetch --quiet --no-tags "$REMOTE" "refs/pull/$PR/head"
 FETCHED="$(git rev-parse FETCH_HEAD)"
 [ "$FETCHED" = "$OID" ] || { echo "PR $PR head moved to $FETCHED after it was read as $OID; rerun" >&2; exit 1; }
 CHECK_DIR=""
-remove_check_dir() { [ -z "$CHECK_DIR" ] || git worktree remove --force "$CHECK_DIR" 2>/dev/null || true; CHECK_DIR=""; }
+remove_check_dir() {
+  [ -z "$CHECK_DIR" ] || git worktree remove --force "$CHECK_DIR" 2>/dev/null || rm -rf "$CHECK_DIR"
+  CHECK_DIR=""
+}
 trap remove_check_dir EXIT
 # One line from the head's package.json: the named package manager (or -), 1 when scripts.check is
-# a string, and 1 when it declares dependencies. An unreadable package.json refuses the merge.
+# a string, and 1 when it declares dependencies or workspaces. An unreadable package.json refuses.
 read -r NAMED HAS_CHECK NEEDS_INSTALL < <(
   if git cat-file -e "$OID:package.json" 2>/dev/null; then
     git show "$OID:package.json" | bun -e '
       const p = JSON.parse(await Bun.stdin.text());
       const deps = Object.keys({ ...p.dependencies, ...p.devDependencies, ...p.optionalDependencies });
-      console.log((p.packageManager ?? "-").split("@")[0] || "-", typeof p.scripts?.check === "string" ? 1 : 0, deps.length ? 1 : 0);
+      const install = deps.length > 0 || p.workspaces !== undefined;
+      console.log((p.packageManager ?? "-").split("@")[0] || "-", typeof p.scripts?.check === "string" ? 1 : 0, install ? 1 : 0);
     ' || echo "invalid"
   else
     echo "- 0 0"
@@ -102,9 +106,14 @@ else
       elif in_head yarn.lock; then PM=yarn
       else PM=npm; fi;;
   esac
-  CHECK_DIR="$(git rev-parse --path-format=absolute --git-common-dir)/hr-merge-check/pr-$PR"
-  git worktree remove --force "$CHECK_DIR" 2>/dev/null || rm -rf "$CHECK_DIR"
-  git worktree prune
+  # A lockfile also means an install, which covers workspaces declared outside package.json.
+  for lock in bun.lock bun.lockb pnpm-lock.yaml yarn.lock package-lock.json; do
+    if in_head "$lock"; then NEEDS_INSTALL=1; fi
+  done
+  # Each run gets its own directory, so a second run for the same PR cannot remove this one's.
+  CHECK_ROOT="$(git rev-parse --path-format=absolute --git-common-dir)/hr-merge-check"
+  mkdir -p "$CHECK_ROOT"
+  CHECK_DIR="$(mktemp -d "$CHECK_ROOT/pr-$PR.XXXXXX")"
   git worktree add --quiet --detach "$CHECK_DIR" "$OID"
   case "$PM" in
     bun) INSTALL=(bun install --frozen-lockfile);;
