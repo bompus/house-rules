@@ -41,8 +41,20 @@ function sh(cwd, ...args) {
   return run.stdout.toString().trim();
 }
 
+/** Writes an executable stub script named `name` into `bin`. */
+function stub(bin, name, body) {
+  writeFileSync(join(bin, name), `#!/usr/bin/env bash\n${body}`);
+  chmodSync(join(bin, name), 0o755);
+}
+
 // A pushed `feature` head checked out in a linked worktree, and a squash commit already on main
 // standing in for the one GitHub makes; gh is a stub that answers from env and logs its calls.
+/**
+ * @param {{ dependents?: string, threads?: object[], repo?: string, staleDefault?: boolean,
+ *   fromTask?: boolean, queued?: boolean, history?: number, check?: string | null,
+ *   packageJson?: string | null, pnpmInstallExit?: number, files?: Record<string, string>,
+ *   racingFetch?: boolean }} [options]
+ */
 function fixture({
   dependents = "",
   threads = [],
@@ -99,10 +111,10 @@ function fixture({
   const log = join(root, "gh.log");
   const bin = join(root, "bin");
   sh(root, "mkdir", bin);
-  writeFileSync(
-    join(bin, "gh"),
-    `#!/usr/bin/env bash
-echo "$*" >> "${log}"
+  stub(
+    bin,
+    "gh",
+    `echo "$*" >> "${log}"
 case "$*" in
   *mergeCommit*) echo "${queued ? "" : squash}";;
   "pr view"*) printf 'feature\\t${oid}\\tmain\\tOPEN\\tfalse\\n';;
@@ -112,30 +124,25 @@ case "$*" in
 esac
 `,
   );
-  chmodSync(join(bin, "gh"), 0o755);
   const pmLog = join(root, "pnpm.log");
-  writeFileSync(
-    join(bin, "pnpm"),
-    `#!/usr/bin/env bash
-echo "$*" >> "${pmLog}"
-[ "$1" = install ] && exit ${pnpmInstallExit}
-exit 0
-`,
+  stub(
+    bin,
+    "pnpm",
+    `echo "$*" >> "${pmLog}"\n[ "$1" = install ] && exit ${pnpmInstallExit}\nexit 0\n`,
   );
-  chmodSync(join(bin, "pnpm"), 0o755);
-  writeFileSync(join(bin, "npm"), `#!/usr/bin/env bash\necho "$*" >> "${pmLog}"\n`);
-  chmodSync(join(bin, "npm"), 0o755);
+  stub(bin, "npm", `echo "$*" >> "${pmLog}"\n`);
   if (racingFetch) {
+    const git = Bun.which("git");
     const base = sh(work, "git", "rev-parse", "main~1");
-    writeFileSync(
-      join(bin, "git"),
-      `#!/usr/bin/env bash
-"${Bun.which("git")}" "$@"; code=$?
-case "$*" in *refs/pull/*) printf '%s\\t\\tbranch main of other\\n' "${base}" > "$("${Bun.which("git")}" rev-parse --git-dir)/FETCH_HEAD";; esac
+    const fetchHead = `"$("${git}" rev-parse --git-dir)/FETCH_HEAD"`;
+    stub(
+      bin,
+      "git",
+      `"${git}" "$@"; code=$?
+case "$*" in *refs/pull/*) printf '%s\\t\\tbranch main of other\\n' "${base}" > ${fetchHead};; esac
 exit $code
 `,
     );
-    chmodSync(join(bin, "git"), 0o755);
   }
   const run = (...args) => {
     const r = Bun.spawnSync(["bash", script, "7", ...args], {
