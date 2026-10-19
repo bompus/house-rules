@@ -82,8 +82,14 @@ Time a shortcut to faster feedback before relying on it. In one project,
 related-test selection still chose 589 to 599 of 754 test files. A shared build
 directory cut a 139 s build only to 120 s, and the recorded suite time was more
 than twice out of date.
-When a test suite is slow, total the start-up time each test file pays before
-splitting or tuning slow files. That start-up often sets the suite's wall time.
+
+When a test suite is slow, total the startup time each test file pays before
+splitting or tuning slow files. That startup often sets the suite's wall time.
+
+Before reproducing a CI timeout locally, read the per-test durations from CI's
+own passing runs. A desktop, even limited to the runner's core count, may not
+reproduce the runner's slowness. Raise a platform's test deadlines only after
+that comparison shows the tests are honestly slow rather than hung.
 
 Compare each piece before and after against its immediate predecessor. Before
 running, declare integration milestones when changed pieces enter the consuming
