@@ -47,13 +47,27 @@ with no end date, and the gate prints a `skipped review bot` line naming it and 
 - a NEUTRAL cubic check titled "AI review line limit reached", or a NEUTRAL cubic check
   followed, after it completed, by a comment from cubic that the workspace reached its
   monthly review limit (cubic's reply to `@cubic review` when it is out of quota);
-- a CodeRabbit success status saying "Review rate limited" or "Review limit reached".
+- a CodeRabbit success status saying "Review rate limited" or "Review limit reached";
+- a CodeRabbit that failed twice without saying why (below).
 
 The gate then judges only the bots that did review. Record in the pull request which bot skipped
 and why; findings it posts later become follow-up pull requests. A bot that is still running
 is waited for, a missing CodeRabbit check gets its usual grace period under `--wait`, and other
 "Review skipped" statuses, failed
 or cancelled results, open threads and unanswered review bodies still refuse.
+
+A CodeRabbit reply that says only "Review failed." (no reason) does not change the status, which
+stays on a "Review skipped" or other not-reviewed line. The first one refuses with the time it
+happened and asks for one re-trigger: comment `@coderabbitai full review` once, then rerun the gate.
+The gate counts only visible comments from CodeRabbit posted after the head commit's committer date,
+so a commit made locally long before it was pushed can still count older comments. It takes the
+person's first `@coderabbitai review` or `@coderabbitai full review` comment after the first failure
+as the re-trigger; a re-trigger through CodeRabbit's own checkbox leaves no such comment and is not
+seen. A second bare failure inside an hour of the re-trigger still refuses; the line names the time
+after which to comment `@coderabbitai full review` once more, since a bare failure at or after that
+time counts. A second bare failure an hour or more after the re-trigger is treated as no capacity:
+CodeRabbit is skipped with the times in the `skipped review bot` line. A failure that states a
+reason is not a bare failure and keeps the usual refusal.
 
 If a review is missing or incomplete, inspect the integration and the repository's
 review policy. The helper does not determine automatic-review enablement or

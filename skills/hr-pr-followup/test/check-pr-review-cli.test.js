@@ -53,7 +53,7 @@ const connection = key => {
 const changed = (f.changedHead && val("reviewThreadsCursor")) ||
   (f.finalHeadChange && !query.includes("reviewThreads(first:"));
 const pr = {headRefOid:changed ? "b".repeat(40) : "${head}",
-  commits:{nodes:[{commit:{oid:"${head}",tree:{entries:[]},
+  commits:{nodes:[{commit:{oid:"${head}",committedDate:"committedDate" in f ? f.committedDate : "2026-10-01T00:00:00Z",tree:{entries:[]},
     statusCheckRollup:{contexts:connection("contexts")}}}]},
   reviewThreads:connection("reviewThreads"),reviews:connection("reviews"),comments:connection("comments")};
 const response = {data:{viewer:{__typename:"User",login:"maintainer"},
@@ -267,5 +267,11 @@ test("CLI refuses a malformed cubic check title or completion time", () => {
       ...bad,
     };
     expect(run({ contexts: [page([node])] }).code).toBe(2);
+  }
+});
+
+test("CLI refuses a head commit with a missing or malformed commit date", () => {
+  for (const committedDate of [null, "not a date", 5]) {
+    expect(run({ committedDate }).code).toBe(2);
   }
 });

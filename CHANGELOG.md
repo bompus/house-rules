@@ -4,6 +4,11 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- The pull-request review gate now treats a CodeRabbit reply that says only "Review failed." (no reason)
+  as one re-trigger, not an open-ended refusal. The first one refuses, with the time it happened, and
+  asks for a single `@coderabbitai full review`. A second bare failure at least an hour after that
+  re-trigger is skipped as no capacity, like a rate-limited CodeRabbit, and the gate prints the times.
+  A failure that states a reason keeps the usual refusal.
 - `hr-navigation-retro` no longer disables model invocation, so a scheduled run or another agent's
   workflow can call it. Its description now says to use it when asked to run a navigation retro, to
   keep it from firing on ordinary conversation, and its Codex metadata allows implicit invocation to

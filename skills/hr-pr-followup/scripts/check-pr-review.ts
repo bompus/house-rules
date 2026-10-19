@@ -20,6 +20,10 @@
 // comment that the monthly review limit is reached; and a CodeRabbit success status saying "Review
 // rate limited" or "Review limit reached". A bot that is still running is waited for, and a failed
 // result, any other skipped review, an open thread or an unanswered review body still refuses.
+// A CodeRabbit reply that is only "Review failed." (no reason) on a head commit it has not reviewed
+// refuses once and names the single re-trigger, `@coderabbitai full review`; when a second bare failure
+// lands at least an hour after that re-trigger, CodeRabbit is skipped as out of capacity, like the
+// rate-limit case. A failure that states a reason keeps the usual refusal.
 // Every other check on the head commit must have finished and passed too: a check run that is not
 // COMPLETED, or that concluded anything but SUCCESS, NEUTRAL or SKIPPED, and a commit status that
 // is not SUCCESS, refuse. A head commit with no checks is not blocked.
@@ -64,6 +68,15 @@ const CUBIC_LIMIT_TITLE = /line limit reached/i;
 const CUBIC_LIMIT_COMMENT = /reached its (?:free )?monthly review limit/i;
 const CUBIC_BOT = /^cubic-dev-ai$/i;
 const CODERABBIT_LIMIT = /^Review (?:rate limited|limit reached)/i;
+// CodeRabbit's reply to a review command that failed without saying why: the whole comment, once
+// its markers and tags are removed, is "Action failed Review failed." A failure that states a
+// reason does not match.
+const CODERABBIT_BOT = /^coderabbitai$/i;
+const CODERABBIT_BARE_FAILURE = /^(?:❌\uFE0F?\s*)?Action failed\s+Review failed\.$/;
+const CODERABBIT_RETRIGGER = /^@coderabbitai\s+(?:full\s+)?review\b/i;
+const CODERABBIT_RETRIGGER_COMMAND = "`@coderabbitai full review`";
+// A second bare failure this long after the re-trigger shows CodeRabbit cannot review the pull request.
+const CODERABBIT_RETRY_WAIT_MS = 3_600_000;
 const POLL_MS = 30_000;
 const NO_CHECK_GRACE_MS = 180_000;
 
@@ -105,6 +118,7 @@ export type ReviewState = {
   commits: {
     nodes: {
       commit: {
+        committedDate: string;
         tree: { entries: { name: string }[] };
         statusCheckRollup: {
           contexts: {
@@ -241,7 +255,7 @@ function requestReviewPage(
     .filter((k) => k !== "contexts")
     .map((k) => CONNECTIONS[k])
     .join("\n");
-  const query = `query($owner:String!,$name:String!,$n:Int!${declarations ? "," + declarations : ""}){viewer{__typename login} repository(owner:$owner,name:$name){viewerPermission pullRequest(number:$n){headRefOid ${fields} commits(last:1){nodes{commit{oid tree{entries{name}} ${pending.includes("contexts") ? CONNECTIONS.contexts : ""}}}}}}}`;
+  const query = `query($owner:String!,$name:String!,$n:Int!${declarations ? "," + declarations : ""}){viewer{__typename login} repository(owner:$owner,name:$name){viewerPermission pullRequest(number:$n){headRefOid ${fields} commits(last:1){nodes{commit{oid committedDate tree{entries{name}} ${pending.includes("contexts") ? CONNECTIONS.contexts : ""}}}}}}}`;
   const variables: Record<string, string | number> = { owner, name, n };
   for (const key of pending) {
     if (cursors[key]) {
@@ -306,6 +320,7 @@ function readReviewState(owner: string, name: string, n: number): ReviewState {
   let viewer: Author = null;
   let viewerPermission: string | null = null;
   let tree: ReviewState["commits"]["nodes"][number]["commit"]["tree"];
+  let committedDate: string;
   for (;;) {
     const data = requestReviewPage(owner, name, n, pending, cursors);
     const repo = record(data.repository);
@@ -332,12 +347,14 @@ function readReviewState(owner: string, name: string, n: number): ReviewState {
     const entries = record(commit.tree).entries;
     if (
       commit.oid !== expectedHead ||
+      !date(commit.committedDate) ||
       !Array.isArray(entries) ||
       !entries.every((e: unknown) => text(record(e).name))
     ) {
       throw new Error("malformed or inconsistent head commit");
     }
     tree = { entries: entries as { name: string }[] };
+    committedDate = commit.committedDate as string;
     if (pending.length === 0) {
       break;
     }
@@ -370,6 +387,7 @@ function readReviewState(owner: string, name: string, n: number): ReviewState {
     pending = next;
   }
   const commit = {
+    committedDate: committedDate!,
     tree: tree!,
     statusCheckRollup: { contexts: { nodes: collected.contexts as Context[] } },
   };
@@ -428,6 +446,68 @@ function unansweredReviewBodies(pr: ReviewState): string[] {
     }
   }
   return unanswered;
+}
+
+/**
+ * What a bare CodeRabbit "Review failed." on the head commit means. The first one needs a single
+ * re-trigger; a second one at least an hour after that re-trigger is treated as no capacity.
+ * Returns nothing when CodeRabbit has not failed without a reason since the head commit.
+ */
+function codeRabbitBareFailure(
+  pr: ReviewState,
+  name: string,
+): { open?: string; skipped?: string } | undefined {
+  const headAt = Date.parse(pr.commits.nodes[0]?.commit.committedDate ?? "");
+  const visible = pr.comments.nodes.filter(
+    (comment) => comment.isMinimized === false && Date.parse(comment.createdAt) > headAt,
+  );
+  const times = (keep: (comment: ReviewState["comments"]["nodes"][number]) => boolean) =>
+    visible
+      .filter(keep)
+      .map((comment) => Date.parse(comment.createdAt))
+      .sort((a, b) => a - b);
+  const failures = times(
+    (comment) =>
+      isBot(comment.author) &&
+      CODERABBIT_BOT.test(comment.author!.login) &&
+      CODERABBIT_BARE_FAILURE.test(
+        comment.body
+          .replace(/<!--[\s\S]*?-->/g, "")
+          .replace(/<[^>]+>/g, " ")
+          .replace(/\s+/g, " ")
+          .trim(),
+      ),
+  );
+  const first = failures[0];
+  if (first === undefined) {
+    return undefined;
+  }
+  const at = (ms: number) => new Date(ms).toISOString();
+  const retriggers = times(
+    (comment) =>
+      comment.author?.__typename === "User" && CODERABBIT_RETRIGGER.test(comment.body.trim()),
+  ).filter((ms) => ms > first);
+  const retrigger = retriggers[0];
+  if (retrigger === undefined) {
+    return {
+      open: `${name} failed without a stated reason at ${at(first)}; re-trigger it once with ${CODERABBIT_RETRIGGER_COMMAND}, then rerun this check`,
+    };
+  }
+  const later = failures.filter((ms) => ms > retrigger);
+  const second = later.find((ms) => ms - retrigger >= CODERABBIT_RETRY_WAIT_MS);
+  if (second !== undefined) {
+    return {
+      skipped: `${name}: no capacity (it failed without a stated reason at ${at(first)} and again at ${at(second)}, an hour or more after the re-trigger at ${at(retrigger)})`,
+    };
+  }
+  if (later.length > 0) {
+    return {
+      open: `${name} failed again without a stated reason at ${at(later.at(-1)!)}, inside an hour of the re-trigger at ${at(retrigger)}; after ${at(retrigger + CODERABBIT_RETRY_WAIT_MS)} comment ${CODERABBIT_RETRIGGER_COMMAND} once more: a bare failure at or after that time counts as no capacity`,
+    };
+  }
+  return {
+    open: `${name} was re-triggered at ${at(retrigger)} after a failure without a stated reason at ${at(first)}; wait for its review to start, then rerun this check (${FOLLOW_UP} if it never does)`,
+  };
 }
 
 /** Whether cubic commented, after its check completed, that the workspace is out of review quota. */
@@ -505,8 +585,16 @@ export function reviewFeedback(pr: ReviewState): { open: string[]; skipped: stri
       (ctx.state !== "SUCCESS" || (CODERABBIT.test(name) && !REVIEWED.test(ctx.description ?? "")))
     ) {
       const description = ctx.description ?? "";
+      const bare =
+        CODERABBIT.test(name) && ctx.state === "SUCCESS"
+          ? codeRabbitBareFailure(pr, name)
+          : undefined;
       if (CODERABBIT.test(name) && ctx.state === "SUCCESS" && CODERABBIT_LIMIT.test(description)) {
         skipped.push(`${name}: no capacity (status "${description}")`);
+      } else if (bare?.skipped) {
+        skipped.push(bare.skipped);
+      } else if (bare?.open) {
+        open.push(bare.open);
       } else {
         open.push(`${name} did not review the head commit ("${description}"): ${FOLLOW_UP}`);
       }

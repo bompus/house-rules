@@ -20,7 +20,15 @@ function pr({ threads = [], reviews = [], comments = [], contexts = [], files = 
     reviews: { nodes: reviews },
     comments: { nodes: comments },
     commits: {
-      nodes: [{ commit: { tree, statusCheckRollup: { contexts: { nodes: contexts } } } }],
+      nodes: [
+        {
+          commit: {
+            committedDate: "2026-10-18T09:00:00Z",
+            tree,
+            statusCheckRollup: { contexts: { nodes: contexts } },
+          },
+        },
+      ],
     },
   };
 }
@@ -457,6 +465,147 @@ test("skips a rate-limited CodeRabbit and keeps every other reason to refuse", (
       `${CUBIC}: no quota (check title "AI review line limit reached")`,
     ],
   });
+});
+
+// CodeRabbit answers a review command that failed without a reason with "Review failed." and leaves
+// the status on "Review skipped". One re-trigger is expected; a second failure an hour or more later
+// is treated like a bot with no capacity.
+const manualOnly = {
+  context: "CodeRabbit",
+  state: "SUCCESS",
+  description: "Review skipped: manual review required for this OSS repository",
+};
+/** @param {string} createdAt @param {string} [reason] */
+const bareFailure = (createdAt, reason = "Review failed.") => ({
+  author: bot,
+  isMinimized: false,
+  createdAt,
+  body: `<!-- This is an auto-generated reply by CodeRabbit -->\n<!-- CodeRabbit review command invocation: v2:abc -->\n<details>\n<summary>❌ Action failed</summary>\n\n${reason}\n\n</details>`,
+});
+/** @param {string} createdAt */
+const retrigger = (createdAt) => ({
+  author: user,
+  isMinimized: false,
+  createdAt,
+  body: "@coderabbitai full review",
+});
+const skippedStatus = `CodeRabbit did not review the head commit ("${manualOnly.description}"): ${FOLLOW_UP}`;
+
+test("a first bare CodeRabbit failure asks for one re-trigger and says when it failed", () => {
+  const state = pr({
+    contexts: [manualOnly],
+    comments: [retrigger("2026-10-18T09:26:00Z"), bareFailure("2026-10-18T09:52:11Z")],
+  });
+  expect(reviewFeedback(state)).toEqual({
+    open: [
+      "CodeRabbit failed without a stated reason at 2026-10-18T09:52:11.000Z; re-trigger it once with `@coderabbitai full review`, then rerun this check",
+    ],
+    skipped: [],
+  });
+});
+
+test("after the re-trigger the pull request waits for the new review", () => {
+  const state = pr({
+    contexts: [manualOnly],
+    comments: [bareFailure("2026-10-18T09:52:11Z"), retrigger("2026-10-18T09:54:17Z")],
+  });
+  expect(openFeedback(state)).toEqual([
+    `CodeRabbit was re-triggered at 2026-10-18T09:54:17.000Z after a failure without a stated reason at 2026-10-18T09:52:11.000Z; wait for its review to start, then rerun this check (${FOLLOW_UP} if it never does)`,
+  ]);
+  // A review that finished clears the earlier failure.
+  const done = { context: "CodeRabbit", state: "SUCCESS", description: "Review completed" };
+  expect(openFeedback({ ...state, commits: pr({ contexts: [done] }).commits })).toEqual([]);
+});
+
+test("a second bare failure inside an hour of the re-trigger still refuses and says when to look again", () => {
+  const state = pr({
+    contexts: [manualOnly],
+    comments: [
+      bareFailure("2026-10-18T09:52:11Z"),
+      retrigger("2026-10-18T09:54:17Z"),
+      bareFailure("2026-10-18T10:54:16Z"),
+    ],
+  });
+  expect(reviewFeedback(state)).toEqual({
+    open: [
+      "CodeRabbit failed again without a stated reason at 2026-10-18T10:54:16.000Z, inside an hour of the re-trigger at 2026-10-18T09:54:17.000Z; after 2026-10-18T10:54:17.000Z comment `@coderabbitai full review` once more: a bare failure at or after that time counts as no capacity",
+    ],
+    skipped: [],
+  });
+});
+
+test("a second bare failure an hour or more after the re-trigger skips CodeRabbit as out of capacity", () => {
+  const state = pr({
+    contexts: [manualOnly],
+    comments: [
+      bareFailure("2026-10-18T09:52:11Z"),
+      retrigger("2026-10-18T09:54:17Z"),
+      bareFailure("2026-10-18T10:54:17Z"),
+    ],
+  });
+  expect(reviewFeedback(state)).toEqual({
+    open: [],
+    skipped: [
+      "CodeRabbit: no capacity (it failed without a stated reason at 2026-10-18T09:52:11.000Z and again at 2026-10-18T10:54:17.000Z, an hour or more after the re-trigger at 2026-10-18T09:54:17.000Z)",
+    ],
+  });
+  // The skip clears only CodeRabbit: an open thread elsewhere still refuses.
+  const thread = { isResolved: false, comments: { nodes: [{ url: "u1" }] } };
+  expect(reviewFeedback({ ...state, reviewThreads: { nodes: [thread] } }).open).toEqual([
+    "unresolved thread: u1",
+  ]);
+});
+
+test("a later re-trigger does not restart the hour", () => {
+  const state = pr({
+    contexts: [manualOnly],
+    comments: [
+      bareFailure("2026-10-18T09:52:11Z"),
+      retrigger("2026-10-18T09:54:17Z"),
+      bareFailure("2026-10-18T09:56:00Z"),
+      retrigger("2026-10-18T11:00:00Z"),
+      bareFailure("2026-10-18T11:02:00Z"),
+    ],
+  });
+  expect(reviewFeedback(state).skipped).toEqual([
+    "CodeRabbit: no capacity (it failed without a stated reason at 2026-10-18T09:52:11.000Z and again at 2026-10-18T11:02:00.000Z, an hour or more after the re-trigger at 2026-10-18T09:54:17.000Z)",
+  ]);
+});
+
+test("a CodeRabbit failure that states a reason keeps the usual refusal", () => {
+  const comments = [
+    bareFailure("2026-10-18T09:52:11Z", "Review failed. The pull request is too large to review."),
+    retrigger("2026-10-18T09:54:17Z"),
+    bareFailure("2026-10-18T10:54:17Z", "Review failed. The pull request is too large to review."),
+  ];
+  expect(reviewFeedback(pr({ contexts: [manualOnly], comments }))).toEqual({
+    open: [skippedStatus],
+    skipped: [],
+  });
+});
+
+test("only a visible bare failure from CodeRabbit after the head commit counts", () => {
+  const stale = bareFailure("2026-10-17T09:52:11Z");
+  const hidden = { ...bareFailure("2026-10-18T09:52:11Z"), isMinimized: true };
+  const human = { ...bareFailure("2026-10-18T09:52:11Z"), author: user };
+  const lookalike = { ...bareFailure("2026-10-18T09:52:11Z"), author: cubicBot };
+  for (const comment of [stale, hidden, human, lookalike]) {
+    expect(openFeedback(pr({ contexts: [manualOnly], comments: [comment] }))).toEqual([
+      skippedStatus,
+    ]);
+  }
+  // A re-trigger from the bot itself, or before the failure, is not the person's re-trigger.
+  const botRetrigger = { ...retrigger("2026-10-18T09:54:17Z"), author: bot };
+  const early = retrigger("2026-10-18T09:26:00Z");
+  for (const comment of [botRetrigger, early]) {
+    expect(
+      openFeedback(
+        pr({ contexts: [manualOnly], comments: [bareFailure("2026-10-18T09:52:11Z"), comment] }),
+      ),
+    ).toEqual([
+      "CodeRabbit failed without a stated reason at 2026-10-18T09:52:11.000Z; re-trigger it once with `@coderabbitai full review`, then rerun this check",
+    ]);
+  }
 });
 
 test("waitForReview still waits for a bot that is merely slow", async () => {
