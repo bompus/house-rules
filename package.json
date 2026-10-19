@@ -24,6 +24,7 @@
     "!**/__pycache__/",
     "docs/",
     "!docs/npm-release.md",
+    "!docs/assets/",
     "examples/",
     "LICENSE",
     "THIRD_PARTY_NOTICES.md",

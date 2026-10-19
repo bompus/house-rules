@@ -4,6 +4,11 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- The npm package no longer ships the README images in `docs/assets/`, which cuts the packed size from
+  1.9 MB to 382 KB. npmjs already loads README images from GitHub, so the page looks the same. The dark-mode
+  banner now uses its full GitHub address, because npmjs does not rewrite a relative `srcset` and that
+  banner was missing there.
+
 - `merge-pr.sh` in `hr-pr-followup` installs dependencies before the check with package lifecycle scripts
   off: `--ignore-scripts` for bun, npm, pnpm and Yarn 1, and `--mode=skip-build` for Yarn 2 and later. A
   repository's `postinstall` can be production setup, and merging must not run it. A `check` command that

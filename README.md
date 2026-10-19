@@ -1,6 +1,6 @@
 <h1 align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/banner-dark.png">
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/bompus/house-rules/HEAD/docs/assets/banner-dark.png">
     <img src="docs/assets/banner-light.png" alt="house-rules: Working rules and skills for AI coding agents" width="100%">
   </picture>
 </h1>
