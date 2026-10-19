@@ -4,6 +4,11 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- The `hr-benchmarking` tools reference now says how to count CPUs and how to trace off-CPU time under WSL2.
+  `nproc --all` ignores a cgroup CPU quota, while some other counters follow it and round a fractional quota
+  differently (measured: a 1.5 CPU quota read 1 from Node and Bun, 2 from uutils `nproc`, 16 from GNU `nproc`).
+  A new subsection gives the `bpftrace` recipe that tracks a target and its children when the distro's PID
+  namespace differs from the kernel's.
 - `hr-test-audit` rejects three more kinds of test: one for a module the change did not touch or a harness
   added for completeness, one written to lift a coverage threshold that still passes with the covered branch
   deleted, and one that waits a fixed delay where an observable condition could be awaited. Its authoring

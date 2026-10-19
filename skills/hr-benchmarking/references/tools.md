@@ -82,6 +82,12 @@ a setting does not prove it took effect.
 In a virtual machine, guest affinity does not reserve host cores; host
 activity, shared cache, memory bandwidth and power limits still apply.
 
+Count CPUs with `nproc --all`, which ignores a cgroup CPU quota. Some other
+counters follow the quota and disagree about fractions. Under a quota of 1.5 CPUs on a
+16-CPU host, Node 26 and Bun `os.availableParallelism()` read 1, uutils `nproc`
+0.10.0 read 2, and GNU `nproc` 9.7 read 16. Record which counter produced a
+worker or job count.
+
 Avoid realtime [CPU](https://man7.org/linux/man-pages/man7/sched.7.html) or
 [I/O](https://man7.org/linux/man-pages/man1/ionice.1.html) classes for generic
 benchmark noise reduction; they can starve dependencies or monitoring.
@@ -153,6 +159,62 @@ For a concrete crash, hang or event-tracing question, use the available
 tools, not benchmark prerequisites; platform and permissions affect availability.
 
 For TypeScript compiler versus application timing, and for Bun-versus-Node pitfalls, read [the language reference](javascript.md).
+
+### Off-CPU tracing under WSL2
+
+`bpftrace` needs `sudo`. Check available tracepoints before attaching. The
+distro's PID namespace differs from the kernel namespace used by scheduler
+tracepoints. The `pid` and `tid` builtins can also fail with EINVAL from
+`get_ns_current_pid_tgid`, and a `/proc` PID filter can silently match nothing.
+
+Start tracing before the target execs. Seed from a uniquely named executable
+symlink and follow `sched_process_fork`, using only tracepoint PIDs. Keep the
+symlink's absolute path at most 60 bytes because bpftrace's default string
+capture is 64 bytes. Replace `<unique executable path>` below with that path.
+Store the script and capture in the task's disk-backed scratch directory.
+
+```bpftrace
+tracepoint:sched:sched_process_exec
+/ strncmp(str(args->filename), "<unique executable path>", 60) == 0 /
+{ if (@main == 0) { @main = args->pid; } @tracked[args->pid] = 1; }
+
+tracepoint:sched:sched_process_fork / @tracked[args->parent_pid] /
+{ @tracked[args->child_pid] = 1; }
+
+tracepoint:sched:sched_switch
+{
+  if (@tracked[args->prev_pid]) {
+    @start[args->prev_pid] = nsecs;
+    @name[args->prev_pid] = args->prev_comm;
+    @stack[args->prev_pid] = kstack(3);
+  }
+  $next = args->next_pid;
+  if (@start[$next]) {
+    @off_us[@name[$next], @stack[$next]] = sum((nsecs - @start[$next]) / 1000);
+    delete(@start[$next]); delete(@stack[$next]);
+  }
+}
+
+tracepoint:sched:sched_process_exit / @tracked[args->pid] /
+{
+  delete(@tracked[args->pid]); delete(@start[args->pid]);
+  delete(@name[args->pid]); delete(@stack[args->pid]);
+  if (args->pid == @main) { exit(); }
+}
+interval:s:25 { exit(); }
+```
+
+Run `sudo -n bpftrace <script>` and wait for `Attached` on stderr before
+starting the target through the unique symlink. `Attaching` on stdout is too
+early. Retain stderr and verify that `@main` was set. The script exits when the
+main process exits or after 25 seconds; record which limit ended the capture.
+bpftrace 0.25 prints "Return value discarded" warnings for the `delete` calls.
+They do not change the result.
+
+The totals include runnable time waiting for a CPU as well as blocked time.
+They omit intervals still open when tracing stops. Thread-name groups combine
+multiple threads, so their sums can exceed wall time. A three-frame kernel stack
+shows scheduler wait reasons; use deeper stacks when caller attribution matters.
 
 ## Correctness and audit evidence
 
