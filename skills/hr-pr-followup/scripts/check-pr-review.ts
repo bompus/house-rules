@@ -438,7 +438,7 @@ const cubicSaidOutOfQuota = (pr: ReviewState, completedAt: string | null | undef
       CUBIC_BOT.test(comment.author!.login) &&
       comment.isMinimized === false &&
       Date.parse(comment.createdAt) > Date.parse(completedAt ?? "") &&
-      CUBIC_LIMIT_COMMENT.test(comment.body ?? ""),
+      CUBIC_LIMIT_COMMENT.test(comment.body),
   );
 
 /** Every reason the pull request is not ready to land; empty when it is. */
