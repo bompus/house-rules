@@ -4,6 +4,8 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- `hr-benchmarking` asks each reported result to name the runtime versions it was measured on, and to be
+  rerun when a new runtime release is likely to change it.
 - `merge-pr.sh` in `hr-pr-followup` runs the repository's own `check` command at the pull request head
   before it merges, or before it prints the push for a repository that lands by fast-forward. The check is
   package.json `scripts.check`. It runs in a throwaway detached worktree of the head, so a dirty local tree

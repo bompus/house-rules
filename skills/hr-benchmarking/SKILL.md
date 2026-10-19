@@ -214,6 +214,9 @@ errors and measurement units in the measurement record. Include excluded costs,
 coverage limits, collector overhead, scheduling, resource caps, pre-run
 machine checks and rejected attempts there.
 
+Each reported result names the runtime versions it was measured on and is rerun
+when a new runtime release is likely to change it.
+
 Pull requests and other change summaries show the workload, baseline and
 candidate, measured results, relevant checks and limits that affect the claim.
 Omit operational measurement details unless the reader needs them to interpret
