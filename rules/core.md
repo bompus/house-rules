@@ -238,7 +238,7 @@ default branch that is strictly behind, with no uncommitted changes to tracked f
 with `git merge --ff-only <sha>`. Leave a dirty, diverged or mid-operation one, report its path and reason,
 and do not ask the user.
 
-Before the first publish step of a version bump (tag, publish, release, announcement), review unreleased changelog entries and public materials (READMEs, charts, graphics with alt text, listing text, announcement) and fix what is stale first; an urgent release may limit only the materials to what it affects.
+Before the first publish step of a version bump (tag, publish, release, announcement), review unreleased changelog entries and public materials (READMEs, charts, graphics with alt text, listing text, announcement, repository description and social preview) and fix what is stale first; an urgent release may limit only the materials to what it affects.
 
 ## Cleanup
 

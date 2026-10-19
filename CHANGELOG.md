@@ -4,6 +4,8 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- The core rule and the landing reference now list the repository description and social preview among
+  the public materials to check before the first publish step of a version bump.
 - The `hr-pr-followup` review gate skips a review bot that reports it has no quota or capacity, with no
   end date, and prints which bot it skipped and why: cubic's "AI review line limit reached" check, or a
   monthly-limit comment cubic posted after its check, and CodeRabbit's "Review rate limited" or "Review
