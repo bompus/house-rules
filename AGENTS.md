@@ -8,7 +8,7 @@ in the README's Development section; run all of them before landing.
 The maintainer lands pull requests; contributors' commits keep their author
 (see CONTRIBUTING.md). When you land for the maintainer, open a pull request
 for the record, then land it with
-`HR_PUSH_LANDED=bompus/house-rules bash skills/hr-pr-followup/scripts/merge-pr.sh <n>`.
+`HR_PUSH_LANDED=bompus/house-rules bash skills/hr-pr-followup/scripts/merge-pr.sh bompus/house-rules#<n>`.
 After the review and `check` gates pass, it fast-forwards `main` to the
 reviewed head with a push, deletes the branch and verifies the landing. Do not
 push to `main` by hand. A hand-written check-then-push sequence can push past a

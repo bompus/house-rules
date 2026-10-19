@@ -188,8 +188,8 @@ exit $code
     }
     writeFileSync(target, text.replace("set -euo pipefail\n", ""));
   }
-  const run = (...args) => {
-    const r = Bun.spawnSync(["bash", target, "7", ...args], {
+  const runTarget = (pr, ...args) => {
+    const r = Bun.spawnSync(["bash", target, pr, ...args], {
       cwd: fromTask ? wt : work,
       env: {
         ...process.env,
@@ -200,7 +200,8 @@ exit $code
     });
     return { code: r.exitCode, out: r.stdout.toString(), err: r.stderr.toString() };
   };
-  return { remote, work, wt, oid, squash, log, pmLog, run };
+  const run = (...args) => runTarget(`${repo}#7`, ...args);
+  return { remote, work, wt, oid, squash, log, pmLog, run, runTarget };
 }
 
 test("merges without --delete-branch, deletes only the remote head and names the worktree", () => {
@@ -308,6 +309,47 @@ for (const repo of ["bompus/house-rules", "owner/app"]) {
     expect(sh(fx.remote, "git", "branch", "--list", "feature")).toContain("feature");
   });
 }
+
+// gh resolves a bare number against the current directory's repository, so the same number in
+// another repository would be merged. The pull request must name its repository, and the current
+// directory must be a checkout of it.
+test("a bare pull request number is refused before gh is asked about any pull request", () => {
+  const { log, runTarget } = fixture();
+  const r = runTarget("7");
+  expect(r.code).toBe(2);
+  expect(r.err).toContain("owner/repo#7");
+  expect(existsSync(log)).toBe(false);
+});
+
+test("a pull request of another repository is refused from this checkout", () => {
+  const { log, remote, runTarget } = fixture({ repo: "bompus/house-rules" });
+  const before = sh(remote, "git", "rev-parse", "main");
+  const r = runTarget("bompus/chief-of-staff#7");
+  expect(r.code).toBe(1);
+  expect(r.err).toContain("run this from a checkout of bompus/chief-of-staff");
+  expect(readFileSync(log, "utf8")).not.toContain("pr ");
+  expect(sh(remote, "git", "rev-parse", "main")).toBe(before);
+});
+
+test("the URL form and --repo name the repository, and every gh pr call carries it", () => {
+  const byUrl = fixture();
+  const r = byUrl.runTarget("https://github.com/owner/app/pull/7");
+  expect(r.err).toBe("");
+  expect(r.code).toBe(0);
+  const calls = readFileSync(byUrl.log, "utf8")
+    .split("\n")
+    .filter((line) => line.startsWith("pr "));
+  expect(calls.length).toBeGreaterThan(2);
+  for (const line of calls) {
+    expect(line).toContain("--repo owner/app");
+  }
+  const byFlag = fixture();
+  expect(byFlag.runTarget("7", "--repo", "Owner/App").code).toBe(0);
+  const mixed = fixture();
+  const conflict = mixed.runTarget("owner/app#7", "--repo", "owner/other");
+  expect(conflict.code).toBe(2);
+  expect(existsSync(mixed.log)).toBe(false);
+});
 
 test("landing from a task fast-forwards the primary with no flag, even with a session running in it", () => {
   const { work, wt, oid, squash, remote, run } = fixture({ staleDefault: true, fromTask: true });

@@ -45,15 +45,22 @@
 # must stay in history, such as an `-s ours` merge that records an upstream reconcile; a squash
 # would drop that parent. Every other PR is squashed.
 #
+# The pull request names its repository: `owner/repo#<n>`, its URL, or `<n> --repo owner/repo`. A
+# bare number is refused, because gh would resolve it against whatever repository the current
+# directory belongs to and could merge another repository's pull request of the same number. The
+# current directory must be a checkout of that repository, since the check and the push run here.
+#
 # Exit status: 0 landed and every local default current; 1 refused or failed; 2 usage; 3 landed, local sync pending.
 #
-# Usage: bash scripts/merge-pr.sh <pr> [--merge] [--remote <name>]
+# Usage: bash scripts/merge-pr.sh <owner/repo#n | PR URL | n --repo owner/repo> [--merge] [--remote <name>]
 set -euo pipefail
 
 PUSH_LANDED=" ${HR_PUSH_LANDED:-} "
+USAGE="usage: merge-pr.sh <owner/repo#n | PR URL | n --repo owner/repo> [--merge] [--remote <name>]"
 
-PR="${1:?usage: merge-pr.sh <pr> [--merge] [--remote <name>]}"
+TARGET="${1:?$USAGE}"
 shift
+NAMED_REPO=""
 REMOTE=origin
 STRATEGY=--squash
 SYNC_ARGS=(--ff)
@@ -67,6 +74,10 @@ while [ $# -gt 0 ]; do
       REMOTE="${2:?}"
       shift 2
       ;;
+    --repo)
+      NAMED_REPO="${2:?}"
+      shift 2
+      ;;
     *)
       echo "unknown argument: $1" >&2
       exit 2
@@ -74,7 +85,31 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-IFS=$'\t' read -r HEAD OID BASE STATE FORK < <(gh pr view "$PR" \
+if [[ "$TARGET" =~ ^https://github\.com/([^/]+/[^/]+)/pull/([0-9]+)/?$ ]] \
+  || [[ "$TARGET" =~ ^([^/#[:space:]]+/[^/#[:space:]]+)#([0-9]+)$ ]]; then
+  if [ -n "$NAMED_REPO" ] && [ "${NAMED_REPO,,}" != "${BASH_REMATCH[1],,}" ]; then
+    echo "$TARGET and --repo $NAMED_REPO name different repositories" >&2
+    exit 2
+  fi
+  NAMED_REPO="${BASH_REMATCH[1]}"
+  PR="${BASH_REMATCH[2]}"
+elif [[ "$TARGET" =~ ^[0-9]+$ ]] && [ -n "$NAMED_REPO" ]; then
+  PR="$TARGET"
+else
+  echo "name the pull request's repository, as owner/repo#$TARGET or with --repo; a bare number resolves against the current directory's repository" >&2
+  echo "$USAGE" >&2
+  exit 2
+fi
+if ! REPO="$(gh repo view --json nameWithOwner --jq .nameWithOwner)"; then
+  echo "refused: the current directory is not a GitHub checkout gh can read; PR $NAMED_REPO#$PR is not merged" >&2
+  exit 1
+fi
+if [ "${REPO,,}" != "${NAMED_REPO,,}" ]; then
+  echo "refused: PR $NAMED_REPO#$PR, but the current directory is a checkout of $REPO; run this from a checkout of $NAMED_REPO" >&2
+  exit 1
+fi
+
+IFS=$'\t' read -r HEAD OID BASE STATE FORK < <(gh pr view "$PR" --repo "$REPO" \
   --json headRefName,headRefOid,baseRefName,state,isCrossRepository \
   --jq '[.headRefName, .headRefOid, .baseRefName, .state, .isCrossRepository] | @tsv')
 [ "$STATE" = OPEN ] || {
@@ -82,7 +117,7 @@ IFS=$'\t' read -r HEAD OID BASE STATE FORK < <(gh pr view "$PR" \
   exit 1
 }
 
-if ! DEPENDENTS="$(gh pr list --state open --base "$HEAD" --json number --jq '.[].number')"; then
+if ! DEPENDENTS="$(gh pr list --repo "$REPO" --state open --base "$HEAD" --json number --jq '.[].number')"; then
   echo "refused: could not list the open PRs that target $HEAD; PR $PR is not merged" >&2
   exit 1
 fi
@@ -92,7 +127,7 @@ if [ -n "${DEPENDENTS// /}" ]; then
   exit 1
 fi
 
-if ! bun "$(dirname "${BASH_SOURCE[0]}")/check-pr-review.ts" "$PR"; then
+if ! bun "$(dirname "${BASH_SOURCE[0]}")/check-pr-review.ts" "$PR" --repo "$REPO"; then
   echo "refused: review feedback is open (check-pr-review.ts); PR $PR is not merged" >&2
   exit 1
 fi
@@ -191,7 +226,6 @@ else
   remove_check_dir
 fi
 
-REPO="$(gh repo view --json nameWithOwner --jq .nameWithOwner)" || exit 1
 if [[ "$PUSH_LANDED" == *" $REPO "* ]]; then
   # The reviewed and checked commit itself becomes the base: a plain push, which refuses a non-fast-forward.
   if ! git fetch --quiet --no-tags "$REMOTE" "refs/heads/$BASE"; then
@@ -220,11 +254,11 @@ if [[ "$PUSH_LANDED" == *" $REPO "* ]]; then
   SHA="$OID"
   echo "landed: PR $PR as $SHA by fast-forward push to $BASE"
 else
-  if ! gh pr merge "$PR" "$STRATEGY" --match-head-commit "$OID"; then
+  if ! gh pr merge "$PR" "$STRATEGY" --match-head-commit "$OID" --repo "$REPO"; then
     echo "refused: gh pr merge failed; PR $PR is not merged" >&2
     exit 1
   fi
-  SHA="$(gh pr view "$PR" --json mergeCommit --jq '.mergeCommit.oid // empty')"
+  SHA="$(gh pr view "$PR" --repo "$REPO" --json mergeCommit --jq '.mergeCommit.oid // empty')"
   if ! [[ "$SHA" =~ ^([0-9a-f]{40}|[0-9a-f]{64})$ ]]; then
     echo "PR $PR has no merge commit yet (a merge queue may still hold it); leaving its head branch alone" >&2
     exit 1

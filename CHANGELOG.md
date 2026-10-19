@@ -13,6 +13,11 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 - `hr-code-review` checks that a retry, poll or batch loop changes something before the next
   attempt, and whether one failing item stops later items when the loop's contract says they
   should continue.
+- `merge-pr.sh` in `hr-pr-followup` now needs the pull request's repository: `owner/repo#<n>`, the pull
+  request's URL, or `<n> --repo owner/repo`. A bare number used to resolve against the repository of the
+  current directory, so running the helper from another repository's checkout could merge that repository's
+  pull request of the same number. It also refuses when the current directory is not a checkout of the named
+  repository, and passes the repository to every `gh` call.
 - `merge-pr.sh` in `hr-pr-followup` now lands a repository listed in `HR_PUSH_LANDED` itself. It used to
   print the push for the caller to run. After the review and `check` gates pass, it pushes the head commit to
   the base without force, deletes the head branch in the same atomic push and verifies the landing. It

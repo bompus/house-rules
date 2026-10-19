@@ -128,9 +128,11 @@ It does not clear that gate's review-body findings or change the landing workflo
 Three scripts in `scripts/` implement the landing steps § Landing describes. They never
 reset, switch or delete a checkout.
 
-- `merge-pr.sh <pr> [--merge] [--remote <name>]` squash-merges
-  (or merge-commits) an open pull request and deletes its remote head without
-  `gh pr merge --delete-branch`, which removes other sessions' linked worktrees. It
+- `merge-pr.sh <owner/repo#n | PR URL | n --repo owner/repo> [--merge] [--remote <name>]` squash-merges
+  (or merge-commits) an open pull request. It refuses a bare number, which gh would resolve against the
+  current directory's repository, and refuses when the current directory is not a checkout of the named
+  repository. It deletes the remote head without `gh pr merge --delete-branch`, which
+  removes other sessions' linked worktrees. It
   refuses while review feedback is open (`check-pr-review.ts`), while another open pull
   request targets the head. A repository listed in `HR_PUSH_LANDED` (space-separated
   `owner/repo`) lands by fast-forward push instead of a merge: after the same checks
