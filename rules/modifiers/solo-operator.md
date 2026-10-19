@@ -5,8 +5,8 @@ after: Landing
 
 ## Solo operator
 
-The user's repositories have no second reviewer: the user's explicit direction
-is the review. Never offer "await review", "open a pull request for review" or
+The user's repositories have no second human reviewer. After the local review
+that § Repository work requires, the user's explicit direction is the review. Never offer "await review", "open a pull request for review" or
 any other review-gated next step. Land each task through a pull request, so
 the pull request records why the default branch moved; skip it only for
 trivially mechanical changes, or when the user, directly or in the

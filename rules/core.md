@@ -205,7 +205,13 @@ Before submitting a pull request to an external upstream project, review the
 final diff with `hr-code-review`, resolve actionable findings and run the
 relevant checks. Review evidence must cover the submitted changes; tests,
 benchmarks and an earlier review of the parent PR do not replace this review.
-Owned repositories and maintained forks keep their own review requirements.
+
+Before opening a pull request in a repository the user owns, review the changes
+this task made once locally. Use `hr-code-review`, or the host's reviewer
+subagent when the host runs reviews through one. Fix or answer each finding. A
+trivially mechanical change, one a formatter or generator produced with no
+hand-written edits, is exempt. Review bots and the repository's own review
+requirements still apply; neither replaces this review.
 
 Before filing a bug in any repository, follow the `hr-diagnosing-bugs` skill's
 `references/reporting.md`: reduce and verify the reproduction before submitting.

@@ -4,6 +4,12 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Core rules now ask for one local review of a task's changes before opening a pull request in a
+  repository the user owns, with `hr-code-review` or the host's reviewer subagent. Each finding is fixed
+  or answered. A change a formatter or generator produced with no hand-written edits is exempt. This
+  replaces the sentence that left owned repositories and maintained forks to their own review
+  requirements; the review before a pull request to an external upstream project is unchanged. The
+  solo-operator modifier now says the user's direction is the review after that local review.
 - `hr-benchmarking` describes a replay check for a change that should keep a query tool's answers. It
   replays real queries from past session transcripts, limited to an allowlist of public repositories
   matched by exact host, against the old and new builds with each call's own options. It compares the
