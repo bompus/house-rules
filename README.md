@@ -296,7 +296,7 @@ changing the configuration.
 | `hr-lean-plan`              | Write or tighten an implementation plan with the fewest moving parts.                                     |
 | `hr-maintainability-review` | Review a diff or entire codebase strictly for structure, over-engineering and leftover scaffolding.       |
 | `hr-manual-qa`              | Give reproducible human checks after reporting agent verification results.                                |
-| `hr-navigation-retro`       | Audit navigation failures in selected transcripts and propose verified findability fixes; explicit-only.  |
+| `hr-navigation-retro`       | Audit navigation failures in selected transcripts and propose verified findability fixes.                 |
 | `hr-ordering-tests`         | Enumerate event orderings through the real code to find race bugs.                                        |
 | `hr-plain-prose`            | Make text people read plain and specific.                                                                 |
 | `hr-progress-report`        | Report current task activity, milestone completion and remaining wall-clock time.                         |
@@ -319,7 +319,7 @@ transcripts, then proposes fixes verified against current source. Any agent with
 file and shell access can run it. Supported inputs include Claude Code, Codex,
 OpenCode exports, Cursor CLI streams and ACP v1 recordings from other agents.
 See its [input limits](skills/hr-navigation-retro/references/inputs.md).
-It is explicit-only, requires Python 3.11+ and keeps reports local.
+It requires Python 3.11+ and keeps reports local.
 
 ## Checking the rules against your models
 

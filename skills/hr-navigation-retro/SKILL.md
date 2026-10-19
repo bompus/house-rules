@@ -1,8 +1,7 @@
 ---
 name: hr-navigation-retro
-description: "Audit agent navigation using selected tool-call transcripts: rank misses, widened searches, re-reads and stale-doc remarks, verify findings against current repositories, and propose findability fixes. Use for agent-navigation retrospectives or re-measuring navigation fixes; general project retrospectives are outside this scope."
+description: "Audit agent navigation using selected tool-call transcripts: rank misses, widened searches, re-reads and stale-doc remarks, verify findings against current repositories, and propose findability fixes. Use when asked to run a navigation retro or to re-measure navigation fixes on named transcripts; general project retrospectives and ordinary conversation are outside this scope."
 argument-hint: "<transcript ...> --repo-root NAME=ROOT"
-disable-model-invocation: true
 ---
 
 # Navigation retro
@@ -17,7 +16,9 @@ a request for a retrospective alone authorizes the investigation and proposals.
 
 1. Read each target repository's guidance and its restrictions on access.
 2. Locate transcripts through the host's existing tools. Select only authorized
-   input files; do not scan every account or transcript store to find them.
+   input files; do not scan every account or transcript store to find them. The
+   request or schedule that invoked the skill supplies that list. If it names
+   none, stop and ask.
 3. Record the repository roots used in those sessions, including each checkout
    when the same repository appears at several paths. Map each to one name.
 4. Keep transcripts, timelines, metric JSON and reports local. They expose raw
