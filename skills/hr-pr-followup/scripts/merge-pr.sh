@@ -22,9 +22,15 @@
 # `nice -n 10` with RAYON_NUM_THREADS and UV_THREADPOOL_SIZE capped at half the CPUs unless set. A failing install or check refuses the merge and names the
 # command and its exit code. A head with no `scripts.check` prints a warning and merges anyway.
 #
-# Refuses, after those checks, a repository listed in HR_PUSH_LANDED (space-separated owner/repo names;
-# empty by default): its own guidance lands by fast-forwarding the base to the head, because a GitHub
-# merge writes the account's profile name into public history. It prints that push instead.
+# A repository listed in HR_PUSH_LANDED (space-separated owner/repo names; empty by default) lands by
+# fast-forwarding the base to the head, because a GitHub merge writes the account's profile name into
+# public history. After the same checks, this script pushes the head commit to the base itself, and
+# refuses when the base is not an ancestor of the head (rebase onto the base first). The push never
+# forces, so a base that moved meanwhile refuses it too.
+#
+# Every refusal is an explicit exit-status test, not `set -e`: some agent shells run commands so
+# that `set -e` does not stop on a failing one, which once let a hand-written gate-then-push
+# sequence push past a refusal.
 #
 # Landing never waits on a local checkout. After the merge it fast-forwards the checkout that holds
 # the default branch when that checkout is on the default branch, clean, free of an unfinished Git
@@ -74,13 +80,20 @@ IFS=$'\t' read -r HEAD OID BASE STATE FORK < <(gh pr view "$PR" \
   exit 1
 }
 
-DEPENDENTS="$(gh pr list --state open --base "$HEAD" --json number --jq '.[].number' | tr '\n' ' ')"
+if ! DEPENDENTS="$(gh pr list --state open --base "$HEAD" --json number --jq '.[].number')"; then
+  echo "refused: could not list the open PRs that target $HEAD; PR $PR is not merged" >&2
+  exit 1
+fi
+DEPENDENTS="$(echo "$DEPENDENTS" | tr '\n' ' ')"
 if [ -n "${DEPENDENTS// /}" ]; then
   echo "open PRs target $HEAD: ${DEPENDENTS% }; retarget them first: gh pr edit <n> --base $BASE" >&2
   exit 1
 fi
 
-bun "$(dirname "${BASH_SOURCE[0]}")/check-pr-review.ts" "$PR"
+if ! bun "$(dirname "${BASH_SOURCE[0]}")/check-pr-review.ts" "$PR"; then
+  echo "refused: review feedback is open (check-pr-review.ts); PR $PR is not merged" >&2
+  exit 1
+fi
 
 # The repository's own check, at the reviewed head. refs/pull/<n>/head also covers a fork's head.
 # It is fetched into a ref of this run's own, since another fetch in the checkout rewrites FETCH_HEAD.
@@ -92,8 +105,11 @@ remove_check_dir() {
   git update-ref -d "$CHECK_REF" 2>/dev/null || true
 }
 trap remove_check_dir EXIT
-git fetch --quiet --no-tags "$REMOTE" "+refs/pull/$PR/head:$CHECK_REF"
-FETCHED="$(git rev-parse "$CHECK_REF")"
+if ! git fetch --quiet --no-tags "$REMOTE" "+refs/pull/$PR/head:$CHECK_REF"; then
+  echo "refused: could not fetch PR $PR's head; PR $PR is not merged" >&2
+  exit 1
+fi
+FETCHED="$(git rev-parse "$CHECK_REF")" || exit 1
 [ "$FETCHED" = "$OID" ] || {
   echo "PR $PR head moved to $FETCHED after it was read as $OID; rerun" >&2
   exit 1
@@ -140,7 +156,7 @@ else
   CHECK_ROOT="$(git rev-parse --path-format=absolute --git-common-dir)/hr-merge-check"
   mkdir -p "$CHECK_ROOT"
   CHECK_DIR="$(mktemp -d "$CHECK_ROOT/pr-$PR.XXXXXX")"
-  git worktree add --quiet --detach "$CHECK_DIR" "$OID"
+  git worktree add --quiet --detach "$CHECK_DIR" "$OID" || exit 1
   # No lifecycle scripts. Yarn 2 and later reject --ignore-scripts and skip them with skip-build.
   case "$PM" in
     bun) INSTALL=(bun install --frozen-lockfile --ignore-scripts) ;;
@@ -173,20 +189,35 @@ else
   remove_check_dir
 fi
 
-REPO="$(gh repo view --json nameWithOwner --jq .nameWithOwner)"
+REPO="$(gh repo view --json nameWithOwner --jq .nameWithOwner)" || exit 1
 if [[ "$PUSH_LANDED" == *" $REPO "* ]]; then
-  echo "$REPO lands by fast-forward push, not a GitHub merge (see its AGENTS.md). Run:" >&2
-  echo "  git push $REMOTE $HEAD:$BASE && git push $REMOTE --delete $HEAD" >&2
-  exit 1
+  # The reviewed and checked commit itself becomes the base: a plain push, which refuses a non-fast-forward.
+  if ! git fetch --quiet --no-tags "$REMOTE" "refs/heads/$BASE"; then
+    echo "refused: could not fetch $REMOTE/$BASE; PR $PR is not landed" >&2
+    exit 1
+  fi
+  if ! git merge-base --is-ancestor FETCH_HEAD "$OID"; then
+    echo "refused: $BASE is not an ancestor of ${OID:0:12}; rebase PR $PR onto $BASE and push it first" >&2
+    exit 1
+  fi
+  if ! git push --quiet "$REMOTE" "$OID:refs/heads/$BASE"; then
+    echo "refused: the fast-forward push of ${OID:0:12} to $BASE failed; PR $PR is not landed" >&2
+    exit 1
+  fi
+  SHA="$OID"
+  echo "landed: PR $PR as $SHA by fast-forward push to $BASE"
+else
+  if ! gh pr merge "$PR" "$STRATEGY" --match-head-commit "$OID"; then
+    echo "refused: gh pr merge failed; PR $PR is not merged" >&2
+    exit 1
+  fi
+  SHA="$(gh pr view "$PR" --json mergeCommit --jq '.mergeCommit.oid // empty')"
+  if ! [[ "$SHA" =~ ^([0-9a-f]{40}|[0-9a-f]{64})$ ]]; then
+    echo "PR $PR has no merge commit yet (a merge queue may still hold it); leaving its head branch alone" >&2
+    exit 1
+  fi
+  echo "merged: PR $PR as $SHA"
 fi
-
-gh pr merge "$PR" "$STRATEGY" --match-head-commit "$OID"
-SHA="$(gh pr view "$PR" --json mergeCommit --jq '.mergeCommit.oid // empty')"
-if ! [[ "$SHA" =~ ^([0-9a-f]{40}|[0-9a-f]{64})$ ]]; then
-  echo "PR $PR has no merge commit yet (a merge queue may still hold it); leaving its head branch alone" >&2
-  exit 1
-fi
-echo "merged: PR $PR as $SHA"
 
 # A fork's head lives in another repository; a repository may also delete merged heads itself.
 # Delete only a branch that still sits at the pull request's head commit, so a same-named branch on

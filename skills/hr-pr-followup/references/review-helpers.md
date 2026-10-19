@@ -132,9 +132,12 @@ reset, switch or delete a checkout.
   (or merge-commits) an open pull request and deletes its remote head without
   `gh pr merge --delete-branch`, which removes other sessions' linked worktrees. It
   refuses while review feedback is open (`check-pr-review.ts`), while another open pull
-  request targets the head, and for a repository listed in `HR_PUSH_LANDED`
-  (space-separated `owner/repo`; those land by fast-forward push, which it prints).
-  Before merging or printing that push, it runs the repository's `check` command
+  request targets the head. A repository listed in `HR_PUSH_LANDED` (space-separated
+  `owner/repo`) lands by fast-forward push instead of a merge: after the same checks
+  the script pushes the head commit to the base, without force, and refuses when the
+  base is not an ancestor of the head. Each refusal tests the failing command's exit
+  status itself, because some agent shells do not stop on `set -e`, so run this script
+  rather than a hand-written check-then-push sequence. Before merging or pushing, it runs the repository's `check` command
   (package.json `scripts.check`) at the pull request head, in a throwaway detached
   worktree under the repository's Git directory, so a local edit cannot change the result.
   It uses the package manager that `packageManager` or the lockfile names (else npm),
@@ -144,7 +147,7 @@ reset, switch or delete a checkout.
   under `nice -n 10` with `RAYON_NUM_THREADS` and `UV_THREADPOOL_SIZE` at half the
   CPUs unless already set. A failing install or check, an invalid package.json, or a
   head pushed after the review refuses the merge and names the failing command and its
-  exit code. A head with no `scripts.check` gets a warning and merges for now. The
+  exit code. A head with no `scripts.check` gets a warning and merges for now. A GitHub
   merge passes `--match-head-commit`. It lists worktrees still on the merged branch so
   their owners clean up. The merge never waits on a local checkout; the local default is
   synchronized afterwards as `verify-landed.sh` describes.

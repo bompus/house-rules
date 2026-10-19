@@ -7,10 +7,14 @@ in the README's Development section; run all of them before landing.
 
 The maintainer lands pull requests; contributors' commits keep their author
 (see CONTRIBUTING.md). When you land for the maintainer, open a pull request
-for the record, then fast-forward `main` to the branch head with
-`git push origin <branch>:main` and delete the branch. GitHub's merge buttons
-and any CLI or script merge are off limits, because they write the account's
-profile name into the public history.
+for the record, then land it with
+`HR_PUSH_LANDED=bompus/house-rules bash skills/hr-pr-followup/scripts/merge-pr.sh <n>`.
+After the review and `check` gates pass, it fast-forwards `main` to the
+reviewed head with a push, deletes the branch and verifies the landing. Do not
+push to `main` by hand. A hand-written check-then-push sequence can push past a
+refusal in a shell that ignores `set -e`. GitHub's merge buttons and
+`gh pr merge` are off limits, because they write the account's profile name into
+the public history.
 
 Commits you write on `main` carry `bompus <bompus@users.noreply.github.com>`
 as author and committer, set per commit with

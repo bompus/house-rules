@@ -2,9 +2,17 @@ import { afterEach, expect, test as base } from "bun:test";
 
 // These drive bash scripts and POSIX git behavior.
 const test = process.platform === "win32" ? base.skip : base;
-import { chmodSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  chmodSync,
+  cpSync,
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 
 const script = new URL("../scripts/merge-pr.sh", import.meta.url).pathname;
 const roots = [];
@@ -53,7 +61,7 @@ function stub(bin, name, body) {
  * @param {{ dependents?: string, threads?: object[], repo?: string, staleDefault?: boolean,
  *   fromTask?: boolean, queued?: boolean, history?: number, check?: string | null,
  *   packageJson?: string | null, pnpmInstallExit?: number, files?: Record<string, string>,
- *   racingFetch?: boolean }} [options]
+ *   racingFetch?: boolean, baseCurrent?: boolean, errexitOff?: boolean }} [options]
  */
 function fixture({
   dependents = "",
@@ -73,6 +81,10 @@ function fixture({
   files = {},
   // Another fetch in the checkout rewrites FETCH_HEAD right after this script fetches the head.
   racingFetch = false,
+  // Leaves main at the head's parent, as a repository that lands by fast-forward push needs.
+  baseCurrent = false,
+  // Runs a copy of the scripts with `set -euo pipefail` removed, as a shell that ignores it would.
+  errexitOff = false,
 } = {}) {
   const root = mkdtempSync(join(tmpdir(), "merge-pr-"));
   roots.push(root);
@@ -105,8 +117,10 @@ function fixture({
   if (staleDefault) {
     sh(root, "git", "clone", remote, writer);
   }
-  sh(writer, "git", "commit", "--allow-empty", "-m", "squash");
-  sh(writer, "git", "push", "origin", "main");
+  if (!baseCurrent) {
+    sh(writer, "git", "commit", "--allow-empty", "-m", "squash");
+    sh(writer, "git", "push", "origin", "main");
+  }
   const squash = sh(writer, "git", "rev-parse", "HEAD");
   const log = join(root, "gh.log");
   const bin = join(root, "bin");
@@ -145,8 +159,19 @@ exit $code
 `,
     );
   }
+  let target = script;
+  if (errexitOff) {
+    const copy = join(root, "scripts");
+    cpSync(dirname(script), copy, { recursive: true });
+    target = join(copy, "merge-pr.sh");
+    const text = readFileSync(target, "utf8");
+    if (!text.includes("set -euo pipefail\n")) {
+      throw new Error("merge-pr.sh no longer sets -euo pipefail; update this fixture");
+    }
+    writeFileSync(target, text.replace("set -euo pipefail\n", ""));
+  }
   const run = (...args) => {
-    const r = Bun.spawnSync(["bash", script, "7", ...args], {
+    const r = Bun.spawnSync(["bash", target, "7", ...args], {
       cwd: fromTask ? wt : work,
       env: {
         ...process.env,
@@ -220,14 +245,41 @@ test("refuses while review feedback is open", () => {
   expect(sh(remote, "git", "branch", "--list", "feature")).toContain("feature");
 });
 
-test("refuses a repository that lands by fast-forward push and prints the push", () => {
-  const { remote, log, run } = fixture({ repo: "bompus/house-rules" });
+test("a repository that lands by fast-forward push gets its checked head pushed to the base", () => {
+  const { remote, oid, log, run } = fixture({ repo: "bompus/house-rules", baseCurrent: true });
+  const r = run();
+  expect(r.err).toBe("");
+  expect(r.code).toBe(0);
+  expect(r.out).toContain(`landed: PR 7 as ${oid} by fast-forward push to main`);
+  expect(sh(remote, "git", "rev-parse", "main")).toBe(oid);
+  expect(sh(remote, "git", "branch", "--list", "feature")).toBe("");
+  expect(readFileSync(log, "utf8")).not.toContain("pr merge");
+});
+
+test("a fast-forward landing refuses when the base moved past the head's parent", () => {
+  const { remote, squash, log, run } = fixture({ repo: "bompus/house-rules" });
   const r = run();
   expect(r.code).toBe(1);
-  expect(r.err).toContain("git push origin feature:main && git push origin --delete feature");
-  expect(readFileSync(log, "utf8")).not.toContain("pr merge");
+  expect(r.err).toContain("main is not an ancestor of");
+  expect(sh(remote, "git", "rev-parse", "main")).toBe(squash);
   expect(sh(remote, "git", "branch", "--list", "feature")).toContain("feature");
+  expect(readFileSync(log, "utf8")).not.toContain("pr merge");
 });
+
+// A shell that does not stop on a failing command must not carry a refusal into a merge or push.
+for (const repo of ["bompus/house-rules", "owner/app"]) {
+  test(`with set -e removed, a review refusal still stops ${repo} before any merge or push`, () => {
+    const thread = { isResolved: false, comments: { nodes: [{ url: "https://example.test/t1" }] } };
+    const fx = fixture({ repo, threads: [thread], baseCurrent: true, errexitOff: true });
+    const before = sh(fx.remote, "git", "rev-parse", "main");
+    const r = fx.run();
+    expect(r.code).toBe(1);
+    expect(r.err).toContain("refused: review feedback is open");
+    expect(readFileSync(fx.log, "utf8")).not.toContain("pr merge");
+    expect(sh(fx.remote, "git", "rev-parse", "main")).toBe(before);
+    expect(sh(fx.remote, "git", "branch", "--list", "feature")).toContain("feature");
+  });
+}
 
 test("landing from a task fast-forwards the primary with no flag, even with a session running in it", () => {
   const { work, wt, oid, squash, remote, run } = fixture({ staleDefault: true, fromTask: true });
