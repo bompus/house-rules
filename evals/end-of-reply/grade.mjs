@@ -47,11 +47,13 @@ const LOOKUP = new RegExp(
 // are not actions.
 const WRAPPER_LEAD = new RegExp(`^${WRAPPER}`, "i");
 // Backticks run even inside double quotes, so their contents are checked on their own.
+/** @param {string} text */
 const withoutPaths = (text) =>
   text
     .split(/\s+/)
     .filter((word) => !/[/\\]|\.\w{1,5}$/.test(word))
     .join(" ");
+/** @param {string} call */
 const actsAlso = (call) => {
   const body = call.replace(/^TOOL_CALL:?\s*/i, "").replace(WRAPPER_LEAD, "");
   const unquoted = body.replace(/"[^"]*"|(?<!\w)'[^']*'(?!\w)/g, "");
@@ -67,6 +69,7 @@ const ALSO_ACTS =
 // the first call that acts or the first prose line after a call; text before the first call is
 // narration and goes with the reads. A reply made only of reads is graded whole, and so is one whose
 // only prose comes before the first call (a status line, then a read, then an acting call).
+/** @param {string} reply */
 export function afterLeadingReads(reply) {
   const lines = reply.split("\n");
   let last = -1;
@@ -88,13 +91,34 @@ export function afterLeadingReads(reply) {
     .slice(last + 1)
     .join("\n")
     .trim();
+  /** @param {string} line */
   const isCall = (line) => /^TOOL_CALL\b/.test(line.trim());
+  /** @param {string[]} list */
   const hasProse = (list) => list.some((line) => line.trim() && !isCall(line));
   const proseOnlyBefore =
     hasProse(lines.slice(0, lines.findIndex(isCall))) && !hasProse(lines.slice(last + 1));
   return last >= 0 && rest && !proseOnlyBefore ? rest : reply;
 }
 
+/**
+ * @typedef {object} GradeOptions
+ * @property {boolean} [coded]
+ * @property {string} [requiredCall]
+ * @property {string} [requiredText]
+ * @property {string} [requiredPattern]
+ * @property {string} [forbiddenPattern]
+ * @property {string} [options]
+ * @property {string} [minOptions]
+ * @property {string} [forbiddenInOffer]
+ * @property {string} [forbiddenCall]
+ * @property {boolean} [allowRead]
+ * @property {boolean} [closeOut]
+ */
+/**
+ * @param {string} reply
+ * @param {string} expect
+ * @param {GradeOptions} [options]
+ */
 export function grade(
   reply,
   expect,
@@ -146,6 +170,7 @@ export function grade(
     : "";
   const forbidden = forbiddenCall && new RegExp(forbiddenCall, "i");
   // A ledger write is prose, so only `&&`, `||` and a `;` or `|` before a command split it.
+  /** @param {string} call */
   const segments = (call) => {
     const text = call.replace(/^TOOL_CALL:?\s*/i, "");
     const split = RECORDING.test(text)

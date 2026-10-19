@@ -21,28 +21,38 @@ const usage =
 // One sentence asking for the same behavior: the control the rules must beat.
 const CONTROL =
   "When work you are allowed to do remains, keep doing it. When the user must decide something, end by asking them, with your recommendation and what to reply.";
-const fail = (msg) => {
+/**
+ * @param {string} msg
+ * @returns {never}
+ */
+function fail(msg) {
   console.error(`${msg}\n${usage}`);
   process.exit(2);
-};
-let values;
-try {
-  ({ values } = parseArgs({
-    options: {
-      rules: { type: "string" },
-      cmd: { type: "string" },
-      slice: { type: "string", default: "0" },
-      runs: { type: "string", default: "1" },
-      coded: { type: "boolean" },
-      baseline: { type: "boolean" },
-      scenarios: { type: "string" },
-      screen: { type: "boolean" },
-      "allow-read": { type: "boolean" },
-    },
-  }));
-} catch (e) {
-  fail(e.message);
 }
+function parseOptions() {
+  try {
+    return parseArgs({
+      options: {
+        rules: { type: "string" },
+        cmd: { type: "string" },
+        slice: { type: "string", default: "0" },
+        runs: { type: "string", default: "1" },
+        coded: { type: "boolean" },
+        baseline: { type: "boolean" },
+        scenarios: { type: "string" },
+        screen: { type: "boolean" },
+        "allow-read": { type: "boolean" },
+      },
+    }).values;
+  } catch (e) {
+    return fail(e instanceof Error ? e.message : String(e));
+  }
+}
+const values = parseOptions();
+/**
+ * @param {"slice" | "runs"} name
+ * @param {number} min
+ */
 const count = (name, min) => {
   const n = Number(values[name]);
   if (!Number.isInteger(n) || n < min) {
@@ -67,7 +77,8 @@ const scenarios = readdirSync(dir)
   .sort()
   .map((file) => {
     const { meta, body } = parseFragment(readFileSync(join(dir, file), "utf8"), file);
-    if (!EXPECTS.includes(meta.expect)) {
+    const expect = meta.expect;
+    if (expect === undefined || !EXPECTS.includes(expect)) {
       fail(`${file}: expect: must be one of ${EXPECTS.join(", ")}`);
     }
     for (const key of [
@@ -79,7 +90,7 @@ const scenarios = readdirSync(dir)
       try {
         new RegExp(meta[key] ?? "", "i");
       } catch (e) {
-        fail(`${file}: ${key}: ${e.message}`);
+        fail(`${file}: ${key}: ${e instanceof Error ? e.message : String(e)}`);
       }
     }
     if (!["true", "false", undefined].includes(meta.allowRead)) {
@@ -93,7 +104,7 @@ const scenarios = readdirSync(dir)
     }
     return {
       file,
-      expect: meta.expect,
+      expect,
       body,
       allowRead: values["allow-read"] || meta.allowRead === "true",
       closeOut: meta.closeOut === "true",
@@ -110,7 +121,9 @@ const scenarios = readdirSync(dir)
   });
 
 // Control arms are graded without --coded: one sentence does not ask for codes.
-const arms = [{ name: "rules", text: rules, coded: values.coded, sliced: slice }];
+const arms = [{ name: "rules", text: rules, coded: Boolean(values.coded), sliced: slice }];
+// The screening arm's text is set per scenario, to the rules without the rule that scenario names.
+const withoutArm = { name: "without", text: "", coded: Boolean(values.coded), sliced: slice };
 if (values.baseline) {
   arms.push(
     { name: "one-line", text: CONTROL, coded: false, sliced: 0 },
@@ -118,10 +131,18 @@ if (values.baseline) {
   );
 }
 if (values.screen) {
-  arms.push({ name: "without", text: "", coded: values.coded, sliced: slice });
+  arms.push(withoutArm);
 }
+/** @type {Map<string, Map<string, number>>} */
 const passes = new Map(arms.map((a) => [a.name, new Map()]));
+/** @type {Map<string, number>} */
 const behaviors = new Map(arms.map((a) => [a.name, 0]));
+/**
+ * @param {string} arm
+ * @param {string} file
+ */
+const passCount = (arm, file) => passes.get(arm)?.get(file) ?? 0;
+/** @param {string} text */
 const indent = (text) =>
   text
     .trim()
@@ -130,15 +151,20 @@ const indent = (text) =>
     .join("\n");
 
 // A screening arm is the rules with the one rule a scenario names taken out.
+/**
+ * @param {string} file
+ * @param {string | undefined} pattern
+ */
 function removeRule(file, pattern) {
   if (!pattern) {
     fail(`${file}: --screen needs a without: pattern naming the rule to remove`);
   }
   const found = [...rules.matchAll(new RegExp(pattern, "gis"))];
-  if (found.length !== 1) {
+  const [only] = found;
+  if (found.length !== 1 || !only) {
     fail(`${file}: without: must match the rules exactly once, matched ${found.length}`);
   }
-  return rules.replace(found[0][0], "");
+  return rules.replace(only[0], "");
 }
 
 let failed = 0;
@@ -159,7 +185,7 @@ for (const {
   without,
 } of scenarios) {
   if (values.screen) {
-    arms.find((a) => a.name === "without").text = removeRule(file, without);
+    withoutArm.text = removeRule(file, without);
   }
   for (const arm of arms) {
     const label = values.baseline ? `[${arm.name}] ${file}` : file;
@@ -208,7 +234,7 @@ for (const {
         closeOut,
       });
       if (g.behavior) {
-        behaviors.set(arm.name, behaviors.get(arm.name) + 1);
+        behaviors.set(arm.name, (behaviors.get(arm.name) ?? 0) + 1);
       }
       if (g.pass) {
         passed++;
@@ -220,14 +246,14 @@ for (const {
         console.log(indent(r.stdout));
       }
     }
-    passes.get(arm.name).set(file, passed);
+    passes.get(arm.name)?.set(file, passed);
   }
 }
 if (values.screen) {
   console.log("screen (passes of " + runs + " runs per arm):");
   for (const { file } of scenarios) {
-    const full = passes.get("rules").get(file);
-    const minus = passes.get("without").get(file);
+    const full = passCount("rules", file);
+    const minus = passCount("without", file);
     const verdict =
       full === minus
         ? full === runs
@@ -241,14 +267,15 @@ if (values.screen) {
 }
 if (values.baseline) {
   const total = scenarios.length * runs;
-  const sum = (name) => [...passes.get(name).values()].reduce((a, b) => a + b, 0);
+  /** @param {string} name */
+  const sum = (name) => [...(passes.get(name)?.values() ?? [])].reduce((a, b) => a + b, 0);
   console.log(arms.map((a) => `${a.name} ${sum(a.name)}/${total}`).join(", "));
   // Whether the reply took the right turn, apart from the scenario's declared labels, calls and patterns.
   console.log(
     `behavior only: ${arms.map((a) => `${a.name} ${behaviors.get(a.name)}/${total}`).join(", ")}`,
   );
   for (const { file } of scenarios) {
-    if (arms.every((a) => passes.get(a.name).get(file) === runs)) {
+    if (arms.every((a) => passCount(a.name, file) === runs)) {
       console.log(
         `WARN ${file} passes every run in every arm, so it cannot show what the rules add`,
       );

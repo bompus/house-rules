@@ -10,6 +10,7 @@ const CODED = /^[*_]*Question\s+\d+\b/i;
 const QUESTION = new RegExp(`\\?[*_]*$|${CODED.source}`, "i");
 const ACCEPT = /^[*_]*(?:Recommended(?: combination)?:|To accept\b|Reply\b)/i;
 
+/** @param {string} text */
 const label = (text) =>
   text
     .replace(/[*_]{2}/g, "")
@@ -18,11 +19,15 @@ const label = (text) =>
     .replace(/^[:\-–]\s*/, "")
     .trim();
 
+/** @param {string} reply */
 export function parseOffer(reply) {
   const raws = reply.split("\n");
   const lines = raws.map((raw) => raw.trim());
+  /** @type {string[]} */
   const questions = [];
+  /** @type {string[]} */
   const options = [];
+  /** @type {Set<number>} */
   const optionLines = new Set();
   let open = false;
   let chosen = 0;
@@ -39,7 +44,10 @@ export function parseOffer(reply) {
       options.push(label(line.replace(ITEM, "")));
       optionLines.add(i);
       chosen++;
-    } else if (open && (ACCEPT.test(line) || (chosen && line && raws[i] === raws[i].trimStart()))) {
+    } else if (
+      open &&
+      (ACCEPT.test(line) || (chosen && line && raws[i] === raws[i]?.trimStart()))
+    ) {
       open = false;
     }
   });
@@ -60,12 +68,15 @@ const ACCEPTANCE_ONLY =
 // A GFM table has a delimiter row, so its rows may omit the outer pipes and still open with a code.
 const TABLE_DELIMITER = /^\s*\|?\s*:?-+:?\s*(?:\|\s*:?-+:?\s*)*\|?\s*$/;
 
+/** @param {string} reply */
 export function layoutProblems(reply) {
   const lines = reply.split(/\r?\n/);
   const accepted = lines.findIndex((line) => ACCEPTANCE.test(line.trim()));
   if (accepted < 0) {
     return [];
   }
+  const acceptance = (lines[accepted] ?? "").trim();
+  /** @type {string[]} */
   const problems = [];
   for (const paragraph of reply.split(/\r?\n[ \t]*\r?\n/)) {
     const rows = paragraph.split(/\r?\n/);
@@ -80,9 +91,9 @@ export function layoutProblems(reply) {
       );
     }
   }
-  if (!ACCEPTANCE_ONLY.test(lines[accepted].trim())) {
+  if (!ACCEPTANCE_ONLY.test(acceptance)) {
     problems.push(
-      `the acceptance line has text besides its reply codes: "${lines[accepted].trim().slice(0, 60)}"`,
+      `the acceptance line has text besides its reply codes: "${acceptance.slice(0, 60)}"`,
     );
   }
   const after = lines.slice(accepted + 1).find((line) => line.trim());
@@ -102,11 +113,13 @@ const CLOSING_QUESTION = new RegExp(
   String.raw`\b${CLOSING}\b[^?]*\bsession\b|\bsession\b[^?]*\b${CLOSING}\b|\b(?:finish|wrap(?: it)? up|close(?: it)?(?: out)?|end)\W*$`,
   "i",
 );
+/** @param {string} reply */
 export function closeOutOffer(reply) {
   const lines = reply.split("\n");
+  /** @param {string} line */
   const unmarked = (line) => line.trim().replace(ITEM, "");
   const q = lines.findIndex((line) => QUESTION.test(line.trim()));
-  if (q < 0 || !CLOSING_QUESTION.test(unmarked(lines[q]))) {
+  if (q < 0 || !CLOSING_QUESTION.test(unmarked(lines[q] ?? ""))) {
     return null;
   }
   const accept = lines.findIndex((line, i) => i > q && ACCEPT.test(line.trim()));
@@ -117,12 +130,13 @@ export function closeOutOffer(reply) {
   if (block.some((line, i) => /^TOOL_CALL\b/i.test(unmarked(line)) || (i && line.includes("?")))) {
     return null;
   }
-  if (!/\ball done\b/i.test(lines[accept]) || /\bpause\b/i.test(lines[accept])) {
+  const acceptance = lines[accept] ?? "";
+  if (!/\ball done\b/i.test(acceptance) || /\bpause\b/i.test(acceptance)) {
     return null;
   }
   const options = lines.slice(q + 1, accept).filter((line) => line.trim());
   const labels = options.map((line) => label(unmarked(line)));
-  if (!optionsMatch(labels, ["All done", "Pause"]) || !/\(Recommended/i.test(options[0])) {
+  if (!optionsMatch(labels, ["All done", "Pause"]) || !/\(Recommended/i.test(options[0] ?? "")) {
     return null;
   }
   const rest = [...lines.slice(0, q), ...lines.slice(accept + 1)].join("\n");
@@ -133,12 +147,21 @@ export function closeOutOffer(reply) {
 // `expected` lists the label each option must start with, in order. A label ending in a letter or
 // digit must end there, so "Defer" does not accept "Deferentially publish".
 const WORD = /[\p{L}\p{N}]/u;
+/**
+ * @param {string} option
+ * @param {string} want
+ */
 const startsWithLabel = (option, want) =>
-  option.startsWith(want) && !(WORD.test(want.at(-1)) && WORD.test(option[want.length] ?? ""));
+  option.startsWith(want) &&
+  !(WORD.test(want.at(-1) ?? "") && WORD.test(option[want.length] ?? ""));
 
+/**
+ * @param {string[]} options
+ * @param {string[]} expected
+ */
 export function optionsMatch(options, expected) {
   return (
     options.length === expected.length &&
-    expected.every((want, i) => startsWithLabel(options[i], want))
+    expected.every((want, i) => startsWithLabel(options[i] ?? "", want))
   );
 }
