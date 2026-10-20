@@ -946,6 +946,49 @@ for (const identity of [
   });
 }
 
+for (const prefix of ["docs-fix-20261016.", "docs-fix-20261016-", "DOCS-FIX-20261016."]) {
+  test(`UUID-bearing IDs do not share a truncated work or offer prefix: ${prefix}`, () => {
+    const { plan } = setup({
+      ledger: [
+        `- [ ] wait for ${prefix}cda864ac-85b0-4612-b571-1e29c94a32d0`,
+        `- [x] finished ${prefix}3f9a2c1e-7b4d-4e68-9a15-c0d2e8b6f471 ... evidence: sent`,
+        `- [ ] ${prefix}cda864ac-85b0-4612-b571-1e29c94a32d0: land docs-check-20261019`,
+        `- [x] ${prefix}3f9a2c1e-7b4d-4e68-9a15-c0d2e8b6f471: docs-check-20261019 done ... evidence: git`,
+      ],
+    });
+    const { code, report } = check(plan, "--offline");
+    expect(code).toBe(2);
+    expect(report.open).toHaveLength(2);
+    expect(report.resolvedLater).toEqual([
+      expect.stringMatching(
+        /^L8 .* — work:docs-check-20261019 is named by later done line\(s\) L9$/,
+      ),
+    ]);
+  });
+}
+
+posixOnly("UUID repository names retain URL and shorthand GitHub references", () => {
+  const name = "cda864ac-85b0-4612-b571-1e29c94a32d0";
+  const { plan } = setup({
+    ledger: [
+      `- [ ] land https://github.com/acme/${name}/pull/123`,
+      `- [ ] finish acme/${name}#124`,
+      `- [x] finished acme/${name}#124 ... evidence: git`,
+    ],
+  });
+  const gh = fakeGh({ [`acme/${name}#123`]: "merged", [`acme/${name}#124`]: "closed" });
+  const { code, report } = checkWith(gh.env, plan);
+  expect(code).toBe(2);
+  expect(report.stale).toEqual([
+    expect.stringContaining(`acme/${name}#123 merged`),
+    expect.stringContaining(`acme/${name}#124 closed`),
+  ]);
+  expect(report.resolvedLater).toEqual([
+    expect.stringMatching(/^L7 .* is named by later done line\(s\) L8$/),
+  ]);
+  expect(gh.calls()).toHaveLength(2);
+});
+
 test("UUIDs leave genuine commit, work and explicit thread matches on the same lines intact", () => {
   const uuid = "cda864ac-85b0-4612-b571-1e29c94a32d0";
   const { plan } = setup({

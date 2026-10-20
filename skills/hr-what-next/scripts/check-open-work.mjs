@@ -1,6 +1,5 @@
 #!/usr/bin/env node
-// Open-work check for a session plan: lists what is still open before anyone says
-// "nothing remains" or archives the plan. See ../SKILL.md and the plan-files rule.
+// Lists open work before claiming "nothing remains" or archiving a plan. See ../SKILL.md and plan-files.
 // Exit 0: nothing open; 1: invalid input; 2: open work remains or archiving refused.
 // "awaiting your yes/no" lists the deferred items whose trigger is only the user's own action
 // ("user selects", "user's decision", "user asks for the backlog"): they were deferred, not decided,
@@ -113,7 +112,7 @@ const GITHUB_URL = /https:\/\/github\.com\/([\w.-]+)\/([\w.-]+)\/(?:pull|issues)
 const GITHUB_REF = /(?<![\w./-])([\w.-]+)\/([\w.-]+)#(\d+)\b/g;
 const BARE_REF = /(?:\bPR\s*#?\s*|(?<![\w/#&])#)(\d{1,6})\b/gi;
 const COMMIT = /\b[0-9a-f]{7,40}\b/g;
-const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
+const UUID = /(?<![\w.-])[\w.-]*[a-f\d]{8}(?:-[a-f\d]{4}){3}-[a-f\d]{12}[\w.-]*/gi;
 const THREAD_ID = /\bmcp:([0-9a-f]{8})(?:-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})?/g;
 // Three or more parts, so "UTF-8" is not an offer ID but "ABC-12-3" is.
 const LONG_OFFER_ID = /\b[A-Z][A-Z0-9]*(?:-[A-Z0-9]+){2,}\b/g;
@@ -334,7 +333,7 @@ function references(text, repo) {
     const after = text.slice(offset + length, offset + length + 25).split(/[;,()]|\.\s/)[0];
     return REPORTED.test(`${before} ${after}`);
   };
-  let rest = text.replace(UUID, (id) => " ".repeat(id.length));
+  let rest = text;
   for (const pattern of [GITHUB_URL, GITHUB_REF]) {
     rest = rest.replace(
       pattern,
@@ -347,6 +346,7 @@ function references(text, repo) {
       },
     );
   }
+  rest = rest.replace(UUID, (id) => " ".repeat(id.length));
   for (const match of rest.matchAll(BARE_REF)) {
     if (reported(match.index, match[0].length)) {
       continue;
@@ -618,7 +618,7 @@ function namedThings(text, repo) {
     found.add(`thread:${id}`);
     return " ";
   });
-  // UUIDs also occur bare or inside encoded URLs; their groups are not commits or work IDs.
+  // Mask whole UUID-bearing IDs so removing a suffix cannot create a shared work or offer prefix.
   rest = rest.replace(UUID, " ");
   rest = rest.replace(LONG_OFFER_ID, (id) => {
     if (/\d/.test(id)) {
