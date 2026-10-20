@@ -138,8 +138,7 @@ export function planSnapshot(planText) {
 }
 
 /**
- * Lines dropped "by: user" that neither say "asked in <offer ID or message>" nor name an offer ID (an option
- * line of a named offer): a bulk close-out is not an answer about each item.
+ * Lines dropped "by: user" that neither say "asked in <offer ID or message>" nor explicitly name an offer ID: a bulk close-out is not an answer about each item.
  * @param {LedgerItem[]} items
  */
 export function droppedByUserUnasked(items) {
@@ -148,6 +147,6 @@ export function droppedByUserUnasked(items) {
       item.mark === "-" &&
       /\bby:\s*user\b/i.test(item.text) &&
       !/\basked in\s+\S/i.test(item.text) &&
-      !/\b[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+\b/.test(item.text),
+      !/\b[Oo]ffer\s+[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+\b/.test(item.text),
   );
 }

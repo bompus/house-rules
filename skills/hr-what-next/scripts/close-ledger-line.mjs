@@ -39,7 +39,7 @@ function parseArguments(argv) {
       ["--line", "--match", "--evidence", "--by", "--asked", "--time"].includes(argument)
     ) {
       const value = argv[++index];
-      if (value === undefined) {
+      if (value === undefined || (argument === "--asked" && value.startsWith("--"))) {
         throw new Error(`${argument} needs a value\n${usage}`);
       }
       // A line break would end the ledger item early and leave the rest of the note outside it.

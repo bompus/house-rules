@@ -169,6 +169,18 @@ test("an item the user dropped without a record of asking is a warning", () => {
   expect(warnings).not.toContain("L8 dropped by the user");
 });
 
+test("an issue ID alone does not record asking, but a named offer does", () => {
+  const { plan } = setup({
+    ledger: [
+      "- [-] Review API-123 - by: user",
+      "- [-] tidy - by: user, offer TIDY-1 (answered 1B)",
+    ],
+  });
+  const warnings = check(plan).report.warnings.join("\n");
+  expect(warnings).toContain("L6 dropped by the user without");
+  expect(warnings).not.toContain("L7 dropped by the user");
+});
+
 test("the close-out message tells the agent to ask each item in its own question first", () => {
   const { plan } = setup({ ledger: ["- [~] a: later - trigger: 2026-12-01"] });
   const text = spawnSync("node", [script, plan], { encoding: "utf8" }).stdout;

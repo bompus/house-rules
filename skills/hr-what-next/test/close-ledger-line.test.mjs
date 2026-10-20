@@ -87,6 +87,15 @@ test("a line the user dropped records where they answered about it", () => {
   );
 });
 
+test("a flag cannot stand in for the asking location", () => {
+  const plan = setup(["- [ ] a: maybe rename the tool"]);
+  const before = readFileSync(plan, "utf8");
+  const result = close(plan, "--line", "6", "--drop", "--by", "user", "--asked", "--drop");
+  expect(result.status).toBe(1);
+  expect(result.stderr).toContain("--asked needs a value");
+  expect(readFileSync(plan, "utf8")).toBe(before);
+});
+
 test("a line someone else dropped needs no record of asking", () => {
   const plan = setup(["- [ ] a: maybe rename the tool"]);
   expect(close(plan, "--line", "6", "--drop", "--by", "superseded by #12").status).toBe(0);
