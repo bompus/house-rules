@@ -4,6 +4,8 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Update the development formatter to oxfmt 0.74.0 and linter to oxlint 1.89.0.
+
 - Flag more missing spaces in plain-prose counts, revision references and punctuation before counts, while preserving literal technical tokens.
 
 - Check affected directory and Git metadata access before fast-forwarding a checked-out default branch. Skip predictable permission failures before changing files, keeping the existing landed-with-sync-pending exit status.
