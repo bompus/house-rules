@@ -23,6 +23,14 @@ Copyright (c) 2026 HumanLayer
 
 Selected ideas also come from [Luke Parker's writing-pr post](https://x.com/LukeParkerDev/status/2096769160021979571).
 
+## Cursor workflow ideas
+
+Source: https://cursor.com/docs/skills
+
+- `skills/hr-writing-pr/references/splitting.md`: independently written workflow informed by the
+  purpose of Cursor's built-in `split-to-prs` skill. No Cursor instruction text is distributed in this
+  bundle; the MIT licence below applies to the newly written house-rules material, not to Cursor's skill.
+
 ## house-rules and MIT permission notice
 
 MIT License

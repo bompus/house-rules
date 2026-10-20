@@ -1,11 +1,15 @@
 ---
 name: hr-writing-pr
-description: Write or revise pull request titles and bodies from the final diff, with concrete behavior and relevant proof. Use when preparing a PR or improving its description.
+description: Write or revise pull request titles and bodies from the final diff, with concrete behavior and relevant proof, and split a branch or set of changes into small reviewable PRs. Use when preparing a PR, improving its description, or when the user asks to divide the changes into several PRs.
 ---
 
 # Writing pull requests
 
 Give a reviewer who has not seen the conversation enough context to understand the change and assess its evidence. Follow the target repository's PR template and contribution rules. This skill governs writing; existing rules govern commits, publication, and review gates.
+
+## Dividing work into several PRs
+
+When the user asks to split a branch, chat or set of changes into smaller PRs, read `references/splitting.md` before moving any changes, then come back here for each PR's text.
 
 ## Fix scope
 
@@ -44,7 +48,7 @@ Resolve mismatches between the description and the implementation before calling
 
 Write a title naming the resulting behavior or fixed failure, in the words of the person who feels it ("fork threads open faster"), not the mechanism ("skip hidden ancestor payloads"). Use the repository's title convention when it has one. When the PR title becomes the squash commit line, keep a measured speedup out of it, because the figure goes stale there. A repository whose convention asks for the figure keeps it. Put the qualified result, with the workload it holds for, in the body's opening sentence.
 
-Check the title's type and scope against the diff's dominant change. A `docs:` title on a diff that adds an executable installer misfiles the squash commit. When no PR template exists, the title convention is the only template; default to Conventional Commits `type(scope):` unless the repository's recent history uses another style. Flag a mixed diff as a possible split into separate PRs (the `hr-split-to-prs` skill, where installed) instead of stretching the title to cover it.
+Check the title's type and scope against the diff's dominant change. A `docs:` title on a diff that adds an executable installer misfiles the squash commit. When no PR template exists, the title convention is the only template; default to Conventional Commits `type(scope):` unless the repository's recent history uses another style. Flag a mixed diff as a possible split into separate PRs (`references/splitting.md`) instead of stretching the title to cover it.
 
 Open the body with one sentence that states the benefit, before any problem detail. For a measured change it carries the qualified figure and its workload ("Clean Android builds finish 32% faster, 67.7 s to 46.2 s on a warm Gradle cache"). For a bug fix it says who hit the bug and what now works ("Cursor title generation no longer leaks a SQLite file handle on every call"). The problem and resulting behavior follow. A small change may need only a paragraph and a validation sentence. Expand only where the reviewer needs more context:
 

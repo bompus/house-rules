@@ -9,12 +9,12 @@ the end.
 
 Source: https://cursor.com/docs/skills
 
-- `skills/hr-split-to-prs/`: independently written workflow informed by the
+- `skills/hr-writing-pr/references/splitting.md`: independently written workflow informed by the
   purpose of Cursor's built-in `split-to-prs` skill.
 - `skills/hr-pr-followup/`: independently written workflow informed by the
   purpose of Cursor's built-in `autopilot` skill.
 
-These bundles distribute no Cursor instruction text. Their MIT licence applies
+These files distribute no Cursor instruction text. Their MIT licence applies
 to newly written house-rules material, not to the Cursor skills.
 
 ## mattpocock/skills

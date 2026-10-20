@@ -4,6 +4,10 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- **Breaking for configs that list it:** `hr-split-to-prs` is folded into `hr-writing-pr`. The procedure for
+  dividing a branch into several PRs is now `skills/hr-writing-pr/references/splitting.md`, and the
+  `hr-writing-pr` description covers splitting. A config that lists `hr-split-to-prs` in `skills.include` now
+  fails composition with "unknown shipped skill". Replace it with `hr-writing-pr`.
 - `npm run check` type-checks with Bun's type checker (`bun --check`) instead of `tsc`, so contributors need Bun 1.4.3 or later (CI moves
   from 1.4.2). On this repository both report the same errors when the unused-code and index-signature
   strict flags are added.

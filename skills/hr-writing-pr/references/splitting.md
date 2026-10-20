@@ -1,9 +1,4 @@
----
-name: hr-split-to-prs
-description: Split a branch, chat or set of changes into small reviewable PRs when the user asks to divide the work.
----
-
-# Split work into pull requests
+# Splitting work into pull requests
 
 Produce slices that can be reviewed and verified against their actual bases.
 A request for a split proposal authorizes analysis. Execute a selected split
@@ -58,4 +53,4 @@ Preserve recovery material until cleanup is authorized and no owner needs it.
 Report each PR or retained branch, its base and verification result. Reconcile
 remaining working-tree files and commits against the original inventory.
 Identify blockers, other owners' work and any recovery material still retained.
-Use `hr-writing-pr` for PR text when that skill is available.
+Write each PR's title and body as `SKILL.md` describes.
