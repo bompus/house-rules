@@ -4,6 +4,8 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Flag more missing spaces in plain-prose counts, revision references and punctuation before counts, while preserving literal technical tokens.
+
 - Check affected directory and Git metadata access before fast-forwarding a checked-out default branch. Skip predictable permission failures before changing files, keeping the existing landed-with-sync-pending exit status.
 
 - Keep UUIDs out of commit and work-ID matches in the open-work checker, including encoded thread URLs. Explicit `mcp:` thread matches still work.
