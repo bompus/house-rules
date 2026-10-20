@@ -115,7 +115,9 @@ observations required below.
 ## Measure without changing the experiment
 
 Keep measured files, toolchains and services unchanged, and keep other work on
-the machine from competing with the run.
+the machine from competing with the run. That competing-work rule applies only
+while a measurement runs; when none does, nothing in this skill delays ordinary
+work.
 
 Prefer removing competing work to raising priority. Record effective CPU and
 I/O scheduling policies and memory protections; keep them equal across arms.

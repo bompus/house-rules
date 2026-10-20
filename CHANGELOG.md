@@ -4,6 +4,17 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- **Behavior change for configs that enable `shared-host-load`:** the modifier no longer makes ordinary
+  work wait for a quiet host. Before, it told agents to follow the host's resource budgets, check load
+  before resource-intensive phases and get operator direction before parallel workers or
+  whole-repository commands. Now only a benchmark, timing run or other performance measurement is gated
+  on load, and it keeps every `hr-benchmarking` rule. Other work is never delayed, serialized or refused
+  because the host is busy, needs no lock or admission check, and may run alongside other heavy jobs.
+  Work that would compete with a measurement already running still follows that measurement's isolation
+  rules. Checking and reporting load stay allowed, and a limit the user states for a run still applies.
+  The memory-cap guidance for very large jobs keeps its content and now says plainly that it holds
+  whatever the load. The `scratch-on-disk` modifier is untouched. `hr-benchmarking` also says its
+  competing-work rule applies only while a measurement runs.
 - **Breaking for configs that list it:** `hr-split-to-prs` is folded into `hr-writing-pr`. The procedure for
   dividing a branch into several PRs is now `skills/hr-writing-pr/references/splitting.md`, and the
   `hr-writing-pr` description covers splitting. A config that lists `hr-split-to-prs` in `skills.include` now
