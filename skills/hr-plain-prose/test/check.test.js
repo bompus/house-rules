@@ -37,6 +37,72 @@ test("spacing checks preserve literal code and ordinary names", () => {
   ).toEqual([]);
 });
 
+test("reported count, revision and punctuation joins are missing-space cues", () => {
+  const draft = [
+    "Required checks exited0. All8 selected files match.",
+    "Both reviews passed;26 tests pass after15minutes.",
+    "Installed froma1b2c3d using the existing installer.",
+    "All12 managed files match. Backups retained;103 entries checked; repeat changed0 files.",
+  ].join("\n");
+  const spacing = check(draft).filter((f) => f.rule === "missing-space");
+  expect(spacing.map((f) => f.text)).toEqual([
+    "exited",
+    "All",
+    "passed;",
+    "after",
+    "from",
+    "All",
+    "retained;",
+    "changed",
+  ]);
+  for (const finding of spacing) {
+    expect(draft.split("\n")[finding.line - 1]?.slice(finding.col - 1)).toStartWith(finding.text);
+  }
+  expect(
+    check(
+      draft
+        .replace(/exited0/g, "exited 0")
+        .replace(/All(\d+)/g, "All $1")
+        .replace(/;(\d+)/g, "; $1")
+        .replace("after15minutes", "after 15 minutes")
+        .replace("froma1b2c3d", "from a1b2c3d")
+        .replace("changed0", "changed 0"),
+    ),
+  ).toEqual([]);
+  for (const input of [
+    "All8 files match.",
+    "Checks exited0.",
+    "Repeat changed0 files.",
+    "Installed froma1b2c3d.",
+    "Checks passed;26 tests pass.",
+    "Backups retained;103 entries checked.",
+  ]) {
+    const result = spawnSync(process.execPath, [SCRIPT, "--json"], { input, encoding: "utf8" });
+    expect(result.status).toBe(1);
+    expect(JSON.parse(result.stdout)).toContainEqual(
+      expect.objectContaining({ rule: "missing-space" }),
+    );
+  }
+});
+
+test("new spacing cues preserve technical tokens and explicitly kept text", () => {
+  const draft = [
+    "Use `All8`, `exited0`, `changed0`, `froma1b2c3d` and `passed;26`.",
+    'The quoted output is "All12 exited0 froma1b2c3d;26".',
+    "See https://example.com/All8/froma1b2c3d or [log](./changed0.txt).",
+    "See logs/archive;26, ./archive,26 and src/retained;103 for the saved files.",
+    "Use /logs/All8, ./exited0.txt, src/changed0.json and C:\\logs\\froma1b2c3d.txt.",
+    "Keep task-All8, changed0.json, exited0_status, froma1b2c3d.json and All8Parser identifiers.",
+    "HTTP/2, SHA256, H264, UTF8, IPv6, v1.2.3 and a1b2c3d remain literal.",
+    "The ID is 123e4567-e89b-12d3-a456-426614174000; ports are 127.0.0.1:8080.",
+    "> All8 exited0 froma1b2c3d;26",
+    "```text",
+    "All8 exited0 froma1b2c3d;26",
+    "```",
+  ].join("\n");
+  expect(check(draft)).toEqual([]);
+});
+
 test("every term in SKILL.md's two word tables is loaded", () => {
   const terms = parseWordTables(readFileSync(join(import.meta.dir, "../SKILL.md"), "utf8"));
   // 17 terms in "Choose plain words" and 12 in "Name the actual thing". A

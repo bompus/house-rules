@@ -101,6 +101,9 @@ const DASHES = [
 // never insert spaces into the draft automatically.
 const JOINED_PROSE = [
   /\b(?:has|have|had|after|before|during|vs|took)(?=\d)/g,
+  /(?<![\w./\\-])(?:all|exited|changed)(?=\d+(?![\w/\\-]|\.[\w]))/gi,
+  /(?<![\w./\\-])from(?=[a-f0-9]{7,40}(?![\w/\\-]|\.[\w]))/gi,
+  /(?<![\w./\\-])[A-Za-z]+[;,](?=\d+(?:\s|$))/g,
   /(?<=\d)(?:accepted|unfinished|remaining|passed|failed)\b/g,
   /\d+(?:\.\d+)?(?:[KMGT]i?B|CPU-s|ms|s)(?=$|[^A-Za-z]|[A-Z]|process|peak|idle|during|scope)/g,
 ];
