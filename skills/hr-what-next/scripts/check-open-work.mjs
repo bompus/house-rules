@@ -17,13 +17,10 @@
 // outside its default branch keeps the item off the list. Bare numbers ("PR #4") are looked up only in
 // --repo. The check needs `gh`; without it, offline, or with --offline it is skipped and "skipped" says so.
 // "re-check due" lists items whose `recheck: YYYY-MM-DD` date is past or within 7 days.
-// "possibly resolved by a later done line" lists open or deferred items that share a token with a LATER done
-// (`- [x]`) line, whatever their `recheck:` date: the result may have been logged as a new line instead of
-// closing the old one, which close-ledger-line.mjs does in place. A token names one thing: a pull request or
-// issue (a bare number counts as --repo's), a commit, an `mcp:` thread id, an offer ID of three or more parts
-// or a work id (lowercase words joined by hyphens with a digit, such as `docs-fix-20261016`). A token that more
-// than 8 ledger lines name is too common to tie two lines together. The check reads only the plan text, so it
-// runs on a plan that fails its lint. These three groups are subsets of `open` and do not change the exit code.
+// "possibly resolved by a later done line" lists open/deferred lines sharing a token with a later done line,
+// regardless of recheck date. Close the original with close-ledger-line.mjs. Tokens name PRs/issues (bare
+// numbers use --repo), commits, explicit mcp: threads, 3+ part offers or work IDs (docs-fix-20261016), not bare UUIDs.
+// Tokens named by >8 lines are ignored. These groups run even if plan lint fails and never change exit codes.
 // The ledger budget warns above 100 open or deferred lines or a plan over 256 KiB: see LEDGER_BUDGET.
 // "unanswered offers" counts the open (`- [ ]`) ledger items that name an offer, one per offer ID, and warns at
 // three or more, the point where the offers rule says to present no further offer. A line names an offer when
@@ -116,6 +113,7 @@ const GITHUB_URL = /https:\/\/github\.com\/([\w.-]+)\/([\w.-]+)\/(?:pull|issues)
 const GITHUB_REF = /(?<![\w./-])([\w.-]+)\/([\w.-]+)#(\d+)\b/g;
 const BARE_REF = /(?:\bPR\s*#?\s*|(?<![\w/#&])#)(\d{1,6})\b/gi;
 const COMMIT = /\b[0-9a-f]{7,40}\b/g;
+const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
 const THREAD_ID = /\bmcp:([0-9a-f]{8})(?:-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})?/g;
 // Three or more parts, so "UTF-8" is not an offer ID but "ABC-12-3" is.
 const LONG_OFFER_ID = /\b[A-Z][A-Z0-9]*(?:-[A-Z0-9]+){2,}\b/g;
@@ -336,7 +334,7 @@ function references(text, repo) {
     const after = text.slice(offset + length, offset + length + 25).split(/[;,()]|\.\s/)[0];
     return REPORTED.test(`${before} ${after}`);
   };
-  let rest = text;
+  let rest = text.replace(UUID, (id) => " ".repeat(id.length));
   for (const pattern of [GITHUB_URL, GITHUB_REF]) {
     rest = rest.replace(
       pattern,
@@ -620,6 +618,8 @@ function namedThings(text, repo) {
     found.add(`thread:${id}`);
     return " ";
   });
+  // UUIDs also occur bare or inside encoded URLs; their groups are not commits or work IDs.
+  rest = rest.replace(UUID, " ");
   rest = rest.replace(LONG_OFFER_ID, (id) => {
     if (/\d/.test(id)) {
       found.add(`offer:${id}`);

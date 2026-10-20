@@ -4,6 +4,8 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Keep UUIDs out of commit and work-ID matches in the open-work checker, including encoded thread URLs. Explicit `mcp:` thread matches still work.
+
 - React guidance now prefers render-time derivation, event handlers and supported
   library callbacks over unnecessary effects. Effects remain appropriate for
   external synchronization, with cleanup and a reason for layout effects.

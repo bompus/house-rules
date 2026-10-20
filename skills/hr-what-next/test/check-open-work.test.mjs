@@ -608,6 +608,7 @@ posixOnly(
           `- [ ] a: land acme/tool#1 (${landed})`,
           `- [ ] b: land acme/tool#1 (${local})`,
           `- [ ] c: the pin is still ${landed}`,
+          `- [ ] d: land acme/tool#1 (session ${local.slice(0, 8)}-1234-4567-89ab-123456789abc)`,
           "",
         ].join("\n"),
       ),
@@ -617,6 +618,7 @@ posixOnly(
     const { report } = checkWith(env, plan, "--checkout", checkout);
     expect(report.stale).toEqual([
       expect.stringMatching(new RegExp(`^L6 .*acme/tool#1 merged, ${landed} in origin/main`)),
+      expect.stringMatching(/^L9 .*acme\/tool#1 merged$/),
     ]);
   },
 );
@@ -628,7 +630,7 @@ posixOnly(
       ledger: [
         "- [~] a: the part left out of acme/tool#1 ... trigger: next release",
         "- [~] b: residual advisories after acme/tool#1 merged ... trigger: next audit",
-        "- [ ] c: acme/tool#1 merged; clean up acme/tool#2",
+        "- [ ] c: cda864ac-85b0-4612-b571-1e29c94a32d0 acme/tool#1 merged; clean up acme/tool#2",
       ],
     });
     const gh = fakeGh({ "acme/tool#1": "merged", "acme/tool#2": "merged" });
@@ -918,6 +920,46 @@ test("an open line is listed without waiting for its re-check date, and a work i
     expect.stringMatching(/^L6 .*acme\/tool#5.*L11/),
     expect.stringMatching(/^L7 .*work:demo-docs-fix-20261016.*L12/),
     expect.stringMatching(/^L8 .*work:release-0\.17\.0-20261018.*L13/),
+  ]);
+});
+
+for (const identity of [
+  "3f9a2c1e-7b4d-4e68-9a15-c0d2e8b6f471",
+  "cda864ac-85b0-4612-b571-1e29c94a32d0",
+  "CDA864AC-85B0-4612-B571-1E29C94A32D0",
+  "mcp%3A3f9a2c1e-7b4d-4e68-9a15-c0d2e8b6f471",
+  "run:thread:mcp%3Acda864ac-85b0-4612-b571-1e29c94a32d0:ordinal:3",
+  "run:thread:mcp%253Acda864ac-85b0-4612-b571-1e29c94a32d0:ordinal:3",
+  "https://example.com/sessions/cda864ac-85b0-4612-b571-1e29c94a32d0",
+]) {
+  test(`a shared UUID does not resolve unrelated ledger work: ${identity}`, () => {
+    const { plan } = setup({
+      ledger: [
+        `- [ ] ask session ${identity} for the pin`,
+        `- [x] asked session ${identity} for the list ... evidence: sent`,
+      ],
+    });
+    const { code, report } = check(plan, "--offline");
+    expect(code).toBe(2);
+    expect(report.open).toHaveLength(1);
+    expect(report.resolvedLater).toEqual([]);
+  });
+}
+
+test("UUIDs leave genuine commit, work and explicit thread matches on the same lines intact", () => {
+  const uuid = "cda864ac-85b0-4612-b571-1e29c94a32d0";
+  const { plan } = setup({
+    ledger: [
+      `- [ ] session ${uuid}: land 6b5c7aef for docs-fix-20261019`,
+      `- [x] session ${uuid}: landed 6b5c7aef123 for docs-fix-20261019 ... evidence: git`,
+      `- [ ] ask mcp:${uuid} about the pin`,
+      `- [x] reply from mcp:${uuid} ... evidence: sent`,
+    ],
+  });
+  const { report } = check(plan, "--offline");
+  expect(report.resolvedLater).toEqual([
+    expect.stringMatching(/^L6 .*commit:6b5c7ae, work:docs-fix-20261019.*L7$/),
+    expect.stringMatching(/^L8 .* — thread:cda864ac is named by later done line\(s\) L9$/),
   ]);
 });
 
