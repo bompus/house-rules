@@ -103,7 +103,7 @@ Keep every live candidate in the ledger with what was decided about it: this tas
 - A no is dropped, and so are options passed over in an answered offer. Defer only what the user wants done later; a `go` accepting a deferral you recommended is recorded with `trigger: user decides` and asked again at the next review.
 - Work filed upstream or handed to another owner closes as moved, with owner and link, unless you still owe a step or wait on its result.
 - Superseded entries stay as history linked to their replacement, which inherits no wider authority. Age or inactivity never closes an item; when one looks irrelevant, ask.
-- Handbacks show the recommended next step and every decision needed to finish authorized work, including unlanded changes. "What remains" and backlog reviews list every live candidate.
+- Handbacks show the recommended next step and every decision needed to finish authorized work, including unlanded changes. "What remains" and backlog reviews account for every live candidate. List in-scope candidates and account for parked candidates by count and ledger link without offering them, unless § Session purpose brings them into scope.
 
 Recommend the current task's next unfinished step first, since a finished step
 does not end the task. While the session purpose has a ready next step, recommend

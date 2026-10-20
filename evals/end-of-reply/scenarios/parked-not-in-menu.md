@@ -1,6 +1,7 @@
 ---
 expect: offer-or-continue
 minOptions: 2
+forbiddenPattern: [^\n?]*(flaky|timezone|date-fns|vendored|leap[- ]?day)[^\n?]*\?
 forbiddenInOffer: leap[- ]?day fix|fix (?:an? |the )?leap[- ]?day|date-fns|vendor|flaky|retry
 ---
 

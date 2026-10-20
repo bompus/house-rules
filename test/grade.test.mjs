@@ -506,10 +506,10 @@ test("the parked-item scenarios read the offer in any rendering", () => {
   ]) {
     check(reply, false);
   }
-  // A closing question that no list follows is prose, and a later status bullet is not an option.
+  // A prose question about parked work is unsolicited even outside a menu.
   check(
     `${ask("1. How should I round?", "   1. Round each line. (Recommended)", "   2. Round the total.")}\n\nShould I look at the flaky test later?`,
-    true,
+    false,
   );
   const spin = scenario("spin-off-batch.md");
   assert.equal(
@@ -545,9 +545,21 @@ test("parked scope scenarios distinguish a blocker, a broader request and a fini
   );
   const finished = scenario("parked-after-purpose.md");
   const accounting =
-    "Selected work is verified. Two parked items remain in the ledger with their original triggers.";
+    "Selected work is verified. Two parked items remain in [the ledger](plans/invoice-export/plan.md) with their original triggers.";
   assert.equal(grade(accounting, finished.expect ?? "", finished).pass, true);
+  assert.equal(
+    grade(
+      `TOOL_CALL: read plans/invoice-export/plan.md\n${accounting}`,
+      finished.expect ?? "",
+      finished,
+    ).pass,
+    true,
+  );
   for (const reply of [
+    "Two parked items remain with their original triggers.",
+    "Parked items remain in [the ledger](plans/invoice-export/plan.md).",
+    `${accounting}\nTOOL_CALL: edit plans/invoice-export/plan.md remove parked observations`,
+    `TOOL_CALL: edit plans/invoice-export/plan.md remove parked observations\n${accounting}`,
     "Two parked items were dropped. Nothing remains.",
     `${accounting} This session is complete and can be closed.`,
     "Two parked items were dropped.",
