@@ -2,7 +2,9 @@
 // Closes one open or deferred ledger line of a session plan in place, so a result is recorded on the line
 // that promised it instead of on a new line that leaves the old one open. See ../SKILL.md.
 // `--evidence <text>` marks the line done (`- [x]`) and appends ` … evidence: <text> (closed <time>)`;
-// `--drop --by <who>` marks it dropped (`- [-]`) and appends ` … by: <who> (dropped <time>)`.
+// `--drop --by <who>` marks it dropped (`- [-]`) and appends ` … by: <who> (dropped <time>)`. A drop by the
+// user also needs `--asked <where>` (the offer ID or message where they answered about this item), recorded
+// as `by: user, asked in <where>`: a bulk close-out is not an answer about each item.
 // The line is chosen by `--line <n>` (its number in the file) or `--match <text>` (a piece of text exactly
 // one open or deferred ledger line contains). A wrapped item gets the note on its last line.
 // Running the same command again changes nothing: a line already closed with that evidence, or dropped by
@@ -15,7 +17,7 @@ import { parsePlan } from "./plan-ledger.mjs";
 /** @typedef {ReturnType<typeof parseArguments>} Options */
 
 const usage =
-  "usage: close-ledger-line.mjs <plan.md> (--line <n> | --match <text>) (--evidence <text> | --drop --by <who>) [--time <text>]";
+  "usage: close-ledger-line.mjs <plan.md> (--line <n> | --match <text>) (--evidence <text> | --drop --by <who> [--asked <offer ID or message>]) [--time <text>]";
 
 /** @param {string[]} argv */
 function parseArguments(argv) {
@@ -26,13 +28,16 @@ function parseArguments(argv) {
     evidence: /** @type {string | null} */ (null),
     drop: false,
     by: /** @type {string | null} */ (null),
+    asked: /** @type {string | null} */ (null),
     time: /** @type {string | null} */ (null),
   };
   for (let index = 0; index < argv.length; index++) {
     const argument = argv[index] ?? "";
     if (argument === "--drop") {
       options.drop = true;
-    } else if (["--line", "--match", "--evidence", "--by", "--time"].includes(argument)) {
+    } else if (
+      ["--line", "--match", "--evidence", "--by", "--asked", "--time"].includes(argument)
+    ) {
       const value = argv[++index];
       if (value === undefined) {
         throw new Error(`${argument} needs a value\n${usage}`);
@@ -41,7 +46,9 @@ function parseArguments(argv) {
       if (/[\r\n]/.test(value)) {
         throw new Error(`${argument} must be one line\n${usage}`);
       }
-      const key = /** @type {"line" | "match" | "evidence" | "by" | "time"} */ (argument.slice(2));
+      const key = /** @type {"line" | "match" | "evidence" | "by" | "asked" | "time"} */ (
+        argument.slice(2)
+      );
       options[key] = value.trim();
     } else if (argument.startsWith("--") || options.plan) {
       throw new Error(usage);
@@ -68,9 +75,18 @@ function parseArguments(argv) {
     if (!options.by) {
       throw new Error(`refused: dropping a line needs --by <who dropped it>\n${usage}`);
     }
+    const byUser = /^user\b/i.test(options.by);
+    if (byUser && !options.asked) {
+      throw new Error(
+        `refused: a drop by the user needs --asked <offer ID or message where they answered about this item>; a bulk close-out or an unpicked option elsewhere is not an answer\n${usage}`,
+      );
+    }
+    if (options.asked && !byUser) {
+      throw new Error(`--asked goes with a drop by the user\n${usage}`);
+    }
   } else {
-    if (options.by !== null) {
-      throw new Error(`--by goes with --drop\n${usage}`);
+    if (options.by !== null || options.asked !== null) {
+      throw new Error(`--by and --asked go with --drop\n${usage}`);
     }
     if (!options.evidence) {
       throw new Error(`refused: closing a line needs --evidence <what shows it is done>\n${usage}`);
@@ -95,7 +111,9 @@ function close(options) {
   const lines = text.split(/\r?\n/);
   const { items } = parsePlan(text);
   const [mark, label, note] = /** @type {[string, string, string]} */ (
-    options.drop ? ["-", "by", options.by] : ["x", "evidence", options.evidence]
+    options.drop
+      ? ["-", "by", options.asked ? `${options.by}, asked in ${options.asked}` : options.by]
+      : ["x", "evidence", options.evidence]
   );
   // The whole recorded note, up to the stamp this script writes, so "Bob" does not match "by: Bobby".
   const escaped = note.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");

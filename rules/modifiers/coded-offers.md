@@ -25,8 +25,9 @@ Use § Finishing work to select displayed candidates. Each offer stands alone:
 Include alternatives the user raised or needed to explain a material tradeoff.
 Routine offers include an option to decline or defer displayed proposals; say other
 ledger items remain pending. Declining drops a proposal. Defer only work the user wants
-done later. Full backlog offers include `All done`, which drops every listed candidate
-unless the user explicitly asks for some to be done later; defer only those. Record what
+done later. Full backlog offers include `All done`, which drops every listed candidate that
+the user has already answered in an offer of its own, unless the user explicitly asks for some to be done later;
+defer only those. A candidate never asked about individually gets its own question first. Record what
 was decided about each; deferral never means completion.
 
 Name what each applicable option produces and how far it goes. Cover the change,

@@ -51,7 +51,8 @@ does not judge the outcome.
 - Keep the ledger as a `## Ledger` section of item lines a script can read:
   `- [ ] text` is open, `- [~] text … trigger: <what reopens it>` deferred,
   `- [x] text … evidence: <result>` done and `- [-] text … by: <who dropped it>`
-  dropped (`by: user, not selected` for an option the user passed over). Name
+  dropped (`by: user, not selected, asked in <offer ID>` for an option the user passed over; a drop by
+  the user always records where they answered). Name
   each scratch directory, checkout and branch you own in an item. Write each
   follow-up as an item, not as a sentence elsewhere in the plan.
 - An item that waits on another thread (an upstream issue or pull request, a

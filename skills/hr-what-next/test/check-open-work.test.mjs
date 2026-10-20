@@ -155,6 +155,27 @@ test("when every open item is deferred the report says the close-out is due", ()
   expect(check(withOpen.plan).report.closeOutDue).toBe(false);
 });
 
+test("an item the user dropped without a record of asking is a warning", () => {
+  const { plan } = setup({
+    ledger: [
+      "- [-] a: rename - by: user, not selected",
+      "- [-] b: tidy - by: user, asked in offer TIDY-1",
+      "- [-] c: old - by: superseded by #4",
+    ],
+  });
+  const warnings = check(plan).report.warnings.join("\n");
+  expect(warnings).toContain("L6 dropped by the user without");
+  expect(warnings).not.toContain("L7 dropped by the user");
+  expect(warnings).not.toContain("L8 dropped by the user");
+});
+
+test("the close-out message tells the agent to ask each item in its own question first", () => {
+  const { plan } = setup({ ledger: ["- [~] a: later - trigger: 2026-12-01"] });
+  const text = spawnSync("node", [script, plan], { encoding: "utf8" }).stdout;
+  expect(text).toContain("in its own question");
+  expect(text).toContain("asked in <offer ID>");
+});
+
 test("a paused plan without a done line recording the user's Pause is a finding", () => {
   const bare = setup({ status: "paused", ledger: ["- [~] a: later - trigger: 2026-12-01"] });
   expect(check(bare.plan).report.findings.join("\n")).toContain("no done ledger item records");
@@ -186,11 +207,15 @@ test("a paused plan without a done line recording the user's Pause is a finding"
 test("all items done under a completed status is the only clean result", () => {
   const { plan } = setup({
     status: "completed",
-    ledger: ["- [x] a: shipped - evidence: PR 1", "- [-] b: dropped - by: user, message 4"],
+    ledger: [
+      "- [x] a: shipped - evidence: PR 1",
+      "- [-] b: dropped - by: user, asked in message 4",
+    ],
   });
   const { code, report } = check(plan);
   expect(code).toBe(0);
   expect(report.open).toEqual([]);
+  expect(report.warnings.join("\n")).not.toContain("dropped by the user");
 });
 
 test("a completed status over an open item is a finding", () => {
@@ -332,13 +357,14 @@ test("options the user passed over, dropped as not selected, leave nothing open"
     status: "completed",
     ledger: [
       "- [x] 1B: chosen change - evidence: PR 4",
-      "- [-] 1A: option not picked - by: user, not selected (answered 1B)",
-      "- [-] 1C: option not picked - by: user, not selected (answered 1B)",
+      "- [-] 1A: option not picked - by: user, not selected, asked in offer DEMO-1 (answered 1B)",
+      "- [-] 1C: option not picked - by: user, not selected, asked in offer DEMO-1 (answered 1B)",
     ],
   });
   const { code, report } = check(plan);
   expect(code).toBe(0);
   expect(report.open).toEqual([]);
+  expect(report.warnings.join("\n")).not.toContain("dropped by the user");
 });
 
 test("archiving moves only a completed plan with nothing open", () => {

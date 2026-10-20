@@ -11,7 +11,7 @@
 // "close-out due" prints when every open item is deferred and the plan is not completed: the session's work
 // is finished, so the user owes a decision on each item and the reply offers All done or Pause. A plan whose
 // Status is paused without a done line recording the user's Pause choice is a finding; with one, the pause
-// stands and the prompt does not print.
+// stands and the prompt does not print. A line dropped by the user with no `asked in <where>` or offer ID warns.
 // "possibly finished" lists open or deferred items whose every named pull request or issue is merged or
 // closed on GitHub: done work left open, or a trigger that has fired. A named commit that a --checkout has
 // outside its default branch keeps the item off the list. Bare numbers ("PR #4") are looked up only in
@@ -37,7 +37,7 @@
 // hr-forgotten-work-audit writes: a missing, unreadable or older-than-30-days record is a warning. A plan
 // without that line gets no audit warning.
 import { pathToFileURL } from "node:url";
-import { MARKS, RECHECK, parsePlan, planSnapshot } from "./plan-ledger.mjs";
+import { MARKS, RECHECK, droppedByUserUnasked, parsePlan, planSnapshot } from "./plan-ledger.mjs";
 import { spawn, spawnSync } from "node:child_process";
 import {
   existsSync,
@@ -876,6 +876,11 @@ async function run(options) {
     report.warnings.push(`${prose - 5} more narrative marker line(s)`);
   }
   offerWarnings(plan.items, report.warnings);
+  const unasked = droppedByUserUnasked(plan.items).map(
+    (item) =>
+      `L${item.line} dropped by the user without "asked in <offer ID or message>": ${clip(item.text, 60)}`,
+  );
+  capped(report.warnings, unasked, "item(s) dropped by the user with no record of asking");
   report.unansweredOffers = unansweredOffers(plan.items);
   if (report.unansweredOffers.length >= OFFER_LIMIT) {
     report.warnings.push(
@@ -971,7 +976,7 @@ async function main() {
     }
     if (report.closeOutDue) {
       console.log(
-        "close-out due: every remaining item is deferred. Ask the user to decide each one (do it now, hand it to an owner, or drop it) and offer All done or Pause; do not mark the plan paused yourself",
+        "close-out due: every remaining item is deferred. Ask the user about each one in its own question (do it now, hand it to an owner, or drop it) and record 'asked in <offer ID>' on its line; offer All done or Pause only once every item has been asked, and do not mark the plan paused yourself",
       );
     }
     console.log(

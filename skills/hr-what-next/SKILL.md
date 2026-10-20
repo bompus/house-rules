@@ -27,7 +27,8 @@ completed state before the completion message; a report alone does not do so.
    finding): run it and quote its result instead of recalling the ledger. Its
    "awaiting your yes/no" group lists the user-trigger deferrals by a text match.
    When every remaining item is deferred it prints "close-out due": ask the user
-   to decide each item and offer `All done` or `Pause`; a plan marked paused with
+   about each item in its own numbered question (the walk-through below) and
+   record `asked in <offer ID>` on its line, then offer `All done` or `Pause`; a plan marked paused with
    no done line recording the user's Pause is a finding.
    Its "possibly finished" group lists items whose named pull requests or
    issues are all merged or closed (add `--repo <owner/repo>` for bare numbers),
@@ -40,8 +41,9 @@ completed state before the completion message; a report alone does not do so.
    Look at each before reporting it as done or still waiting. Close a
    finished line in place with `scripts/close-ledger-line.mjs <plan>
    --line <n> --evidence "<what shows it is done>"`, or drop it with
-   `--drop --by "<who>"`; `--match <text>` picks the line by its text. It
-   refuses without evidence and changes nothing when run again. The checker
+   `--drop --by "<who>"`; a drop by the user also needs `--asked "<offer ID or
+   message>"`, and the checker warns about one without it. `--match <text>` picks
+   the line by its text. It refuses without evidence and changes nothing when run again. The checker
    warns when a ledger has more than 100 open or deferred lines or the plan
    reaches 256 KiB.
    It also prints `unanswered offers: N`, the number of offer IDs ("Offer
@@ -109,8 +111,9 @@ completed state before the completion message; a report alone does not do so.
 
 ## Walk-through
 
-When the user asks to go through the backlog item by item, or three or more
-offers are open and unanswered, run it in groups:
+When the user asks to go through the backlog item by item, three or more
+offers are open and unanswered, or items remain that the user was never asked
+about individually (before any close-out), run it in groups:
 
 1. Rank and save the report as above. Where the user's rules have a backlog
    view (§ Backlog view), show it for the whole ranked backlog with the

@@ -4,6 +4,13 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- **Behavior change for the close-out offer:** `All done` no longer drops items the user never answered.
+  Before, one `All done` dropped every listed item, and an option passed over in an answered offer counted as
+  dropped. Now each item is put to the user in its own offer first, with `asked in <offer ID>` recorded on its
+  ledger line, and a close-out is offered only once every item has been asked. `close-ledger-line.mjs`
+  refuses a drop by the user without `--asked <offer ID or message>`, and `check-open-work.mjs` warns about a
+  line dropped by the user with no record of asking and tells the agent to ask each item first when it
+  reports "close-out due".
 - **Behavior change for configs that enable `shared-host-load`:** the modifier no longer makes ordinary
   work wait for a quiet host. Before, it told agents to follow the host's resource budgets, check load
   before resource-intensive phases and get operator direction before parallel workers or

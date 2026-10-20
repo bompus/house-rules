@@ -69,13 +69,42 @@ test("a deferred line can be closed, and a line can be found by a unique piece o
   expect(lines(plan)[6]).toMatch(/^- \[x\] b: ship the docs trigger: release … evidence: docs/);
 });
 
-test("a line can be dropped with who dropped it", () => {
+test("a line the user dropped records where they answered about it", () => {
   const plan = setup(["- [ ] a: maybe rename the tool"]);
-  const run = close(plan, "--line", "6", "--drop", "--by", "user, not selected");
+  const run = close(
+    plan,
+    "--line",
+    "6",
+    "--drop",
+    "--by",
+    "user",
+    "--asked",
+    "offer RENAME-TOOL-1",
+  );
   expect(run.status).toBe(0);
   expect(lines(plan)[5]).toBe(
-    "- [-] a: maybe rename the tool … by: user, not selected (dropped 2026-10-18 17:05 -06:00)",
+    "- [-] a: maybe rename the tool … by: user, asked in offer RENAME-TOOL-1 (dropped 2026-10-18 17:05 -06:00)",
   );
+});
+
+test("a line someone else dropped needs no record of asking", () => {
+  const plan = setup(["- [ ] a: maybe rename the tool"]);
+  expect(close(plan, "--line", "6", "--drop", "--by", "superseded by #12").status).toBe(0);
+  expect(lines(plan)[5]).toBe(
+    "- [-] a: maybe rename the tool … by: superseded by #12 (dropped 2026-10-18 17:05 -06:00)",
+  );
+});
+
+test("a drop by the user without a record of asking is refused, and so is --asked for others", () => {
+  const plan = setup(["- [ ] a: maybe rename the tool"]);
+  const before = readFileSync(plan, "utf8");
+  const bulk = close(plan, "--line", "6", "--drop", "--by", "user, not selected");
+  expect(bulk.status).toBe(1);
+  expect(bulk.stderr).toMatch(/needs --asked/);
+  const other = close(plan, "--line", "6", "--drop", "--by", "Bob", "--asked", "offer X-1");
+  expect(other.status).toBe(1);
+  expect(other.stderr).toMatch(/--asked goes with a drop by the user/);
+  expect(readFileSync(plan, "utf8")).toBe(before);
 });
 
 test("a second identical run changes nothing and says so", () => {
@@ -92,9 +121,11 @@ test("a second identical run changes nothing and says so", () => {
     expect(readFileSync(plan, "utf8")).toBe(before);
   }
   const drop = setup(["- [ ] a: maybe"]);
-  close(drop, "--line", "6", "--drop", "--by", "user");
+  close(drop, "--line", "6", "--drop", "--by", "user", "--asked", "offer MAYBE-1");
   const dropped = readFileSync(drop, "utf8");
-  expect(close(drop, "--line", "6", "--drop", "--by", "user").status).toBe(0);
+  expect(
+    close(drop, "--line", "6", "--drop", "--by", "user", "--asked", "offer MAYBE-1").status,
+  ).toBe(0);
   expect(readFileSync(drop, "utf8")).toBe(dropped);
 });
 
