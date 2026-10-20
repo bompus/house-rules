@@ -83,7 +83,7 @@ present: ask, and keep working on everything else.
 
 Before handing work back, even after only a step, phase or landing, reconcile the ledger, backlog, task list, plan and phases with the latest results: mark completed items and record each remaining item's next step, authority, readiness and blocker or reopen trigger. Then apply § End of every reply; waiting on one item does not stop independent work. Re-present a still-valid unanswered offer instead of leaving it only in the ledger. When every item is blocked or deferred, list the blockers or triggers and link the ledger; that is not "nothing remains".
 
-A deferral you chose yourself, or whose trigger is the user's own action ("user asks for a release"), is a decision the user owes, not a blocker: offer it (do it now, hand it to an owner, or drop it) in the same reply. When the session's own work is finished and landed, offer a close-out: `All done` drops every listed item, each already answered, and `Pause` keeps them and marks the plan paused. Listing an item in a close-out is not asking about it. Ask about each unanswered item in its own numbered question first (the `hr-what-next` walk-through does this) and record the offer on the ledger line (`asked in <offer ID>`). A close-out drops only items answered that way, and no close-out is offered while an unasked item remains. Always try to close the session out; only the user pauses one, so never mark a plan paused or defer an item on your own. Recommend `All done`, or `Pause` keeping only the items the user asked to do later.
+For items within § Session purpose, a deferral you chose yourself, or whose trigger is the user's own action ("user asks for a release"), is a decision the user owes, not a blocker: offer it (do it now, hand it to an owner, or drop it) in the same reply. When the session's own work is finished and landed, offer a close-out: `All done` drops every listed item, each already answered, and `Pause` keeps them and marks the plan paused. Listing an item in a close-out is not asking about it. Ask about each unanswered in-scope item in its own numbered question first (the `hr-what-next` walk-through does this) and record the offer on the ledger line (`asked in <offer ID>`). A close-out drops only items answered that way, and no close-out is offered while an unasked in-scope item remains. Parked items outside that scope stay in the ledger and out of the close-out; their presence prevents a whole-session completion claim. Always try to close the session out; only the user pauses one, so never mark a plan paused or defer an item on your own. Recommend `All done`, or `Pause` keeping only the items the user asked to do later.
 
 When work ends, pauses or hands off (the user stops a campaign, investigation or benchmark, or you offer the close-out), give closure first: what was done, the overall findings with their key numbers, what was learned and what remains. When the work produced measurements, comparisons or decisions and the host can render a visual, show one of the findings. A status line or a list of open ledger items is not closure.
 
@@ -180,13 +180,17 @@ Anything else you find, in this repository, another one or upstream, is parked,
 not investigated: record one deferred ledger line saying what it is, where, and
 the evidence you already have. Do not reproduce it, search for related issues or
 open a branch or pull request for it. Say so once in a line after your answer.
-Parked items stay out of offers until the user asks for the backlog or the
-purpose is finished. Report a security or production risk at once.
+Routine "next?", "what remains?" and backlog requests stay within the selected
+session purpose. Surface parked items only when the user explicitly asks for
+parked work or a broader scope, or evidence shows an item blocks selected work.
+Finishing the purpose does not widen that scope. Keep parked items in the ledger;
+counting them does not make them eligible for offers. Report a security or
+production risk at once.
 
 A parked item becomes its own top-level conversation when the user asks, or
-under their standing preference for spin-offs. Offer the parked items together
-at a natural stopping point; each new conversation gets its own repository and a
-brief containing the capture.
+under their standing preference for spin-offs. When parked items are in the
+requested scope, offer them together at a natural stopping point; each new
+conversation gets its own repository and a brief containing the capture.
 
 ## Repository work
 

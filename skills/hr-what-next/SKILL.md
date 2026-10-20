@@ -14,8 +14,11 @@ Before a session-completion claim, apply the governing § Finishing work's
 full-session gate even when the request was only a short "next?". Save the
 completed state before the completion message; a report alone does not do so.
 
-1. Choose the review scope from the request and its context. For a short
-   "next?", check the current task, its ledger and latest results, plus this
+1. Choose the review scope from the request and its context, applying
+   § Session purpose. Routine next-step and backlog requests stay within the
+   selected session purpose; invoking this skill does not request parked or
+   other-project work. For a short "next?", check the current task, its ledger
+   and latest results, plus this
    floor whatever the scope: every question from an earlier offer in this
    conversation that the user has not answered, every item deferred with only the
    user's selection as its trigger, every owned uncommitted file, unpushed commit
@@ -26,10 +29,11 @@ completed state before the completion message; a report alone does not do so.
    `--app-managed <path>` for one an app retires, which is reported but not a
    finding): run it and quote its result instead of recalling the ledger. Its
    "awaiting your yes/no" group lists the user-trigger deferrals by a text match.
-   When every remaining item is deferred it prints "close-out due": ask the user
-   about each item in its own numbered question (the walk-through below) and
-   record `asked in <offer ID>` on its line, then offer `All done` or `Pause`; a plan marked paused with
-   no done line recording the user's Pause is a finding.
+   When every remaining item is deferred it prints "close-out due". Apply the
+   scope boundary before asking about those items (step 6); the checker does
+   not decide offer eligibility. Record `asked in <offer ID>` for each question
+   before a close-out. A plan marked paused with no done line recording the
+   user's Pause is a finding.
    Its "possibly finished" group lists items whose named pull requests or
    issues are all merged or closed (add `--repo <owner/repo>` for bare numbers),
    unless a named commit sits outside a `--checkout`'s default branch,
@@ -53,10 +57,13 @@ completed state before the completion message; a report alone does not do so.
    When the plan's header has a `Project: <name>` line, it also warns when that
    project's last `hr-forgotten-work-audit` record is missing or over 30 days
    old; offer the audit then.
-   Report each floor item, or state that the floor is empty. While any floor
+   Account for each floor item, or state that the floor is empty. While any floor
    item remains, do not say that nothing is left or that nothing needs the
-   user; re-present the unanswered questions and ask the undecided items (step 6). When three
-   or more offers from this conversation are open and unanswered, do not
+   user. Re-present eligible unanswered questions and ask eligible undecided
+   items (step 6). Account for out-of-scope items by count and ledger link,
+   keeping their decisions and triggers unchanged. Enumeration does not widen
+   scope or authorize investigation, an offer or a transfer. When three
+   or more eligible offers from this conversation are open and unanswered, do not
    re-present them one by one: start a walk-through over them. When asked
    for all current and past items, review the available session transcript,
    relevant plans, task lists, handoffs and linked follow-ups. Name source
@@ -98,10 +105,12 @@ completed state before the completion message; a report alone does not do so.
    follows the offer rules, which make an offer visual only when the user asks
    for one.
 6. Continue work that can advance under existing authorization. Ask only for
-   unresolved choices using the governing offer format. Invoking this skill is
-   asking for the backlog (§ Session purpose), so present every needs-your-decision
-   item as an offer, or as a walk-through when three or more questions are open,
-   instead of only counting it. Record each answer as yes, no
+   unresolved choices within the scope chosen in step 1, using the governing
+   offer format. Present every eligible needs-your-decision item as an offer,
+   or as a walk-through when three or more eligible questions are open,
+   instead of only counting it. Keep parked observations outside that offer
+   unless § Session purpose admits them through an explicit request or a
+   demonstrated blocker. Completion of selected work alone does not admit them. Record each answer as yes, no
    (dropped) or defer with a trigger other than the user's selection, so the
    item is not asked again on every run. A no is dropped, even when it names
    what would make the user reconsider. Defer only work the user wants done later. Items waiting on others stay listed
@@ -111,9 +120,9 @@ completed state before the completion message; a report alone does not do so.
 
 ## Walk-through
 
-When the user asks to go through the backlog item by item, three or more
-offers are open and unanswered, or items remain that the user was never asked
-about individually (before any close-out), run it in groups:
+Within the scope chosen in step 1, run the walk-through in groups when the user
+asks for it, three or more offers are open and unanswered, or items remain that
+the user was never asked about individually before a close-out:
 
 1. Rank and save the report as above. Where the user's rules have a backlog
    view (§ Backlog view), show it for the whole ranked backlog with the

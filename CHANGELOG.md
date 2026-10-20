@@ -4,6 +4,8 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Keep routine next-step and backlog offers within the selected session purpose, while retaining full ledger accounting and explicit broader-scope requests.
+
 - Update the development formatter to oxfmt 0.74.0 and linter to oxlint 1.89.0.
 
 - Flag more missing spaces in plain-prose counts, revision references and punctuation before counts, while preserving literal technical tokens.

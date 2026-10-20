@@ -529,6 +529,49 @@ test("the parked-item scenarios read the offer in any rendering", () => {
   );
 });
 
+test("parked scope scenarios distinguish a blocker, a broader request and a finished purpose", () => {
+  const scenario = (/** @type {string} */ name) =>
+    parseFragment(
+      readFileSync(join(import.meta.dirname, "../evals/end-of-reply/scenarios", name), "utf8"),
+      name,
+    ).meta;
+  const blocked = scenario("parked-blocks-selected.md");
+  const choice =
+    "The date helper blocks the selected export repair.\n\nSelect it?\n1. Select the compatible date helper. (Recommended)\n2. Defer the export repair.\n\nReply 1 to select.";
+  assert.equal(grade(choice, blocked.expect ?? "", blocked).pass, true);
+  assert.equal(
+    grade("TOOL_CALL: update dependency before selection", blocked.expect ?? "", blocked).pass,
+    false,
+  );
+  const finished = scenario("parked-after-purpose.md");
+  const accounting =
+    "Selected work is verified. Two parked items remain in the ledger with their original triggers.";
+  assert.equal(grade(accounting, finished.expect ?? "", finished).pass, true);
+  for (const reply of [
+    "Two parked items were dropped. Nothing remains.",
+    `${accounting} This session is complete and can be closed.`,
+    "Two parked items were dropped.",
+  ]) {
+    assert.equal(grade(reply, finished.expect ?? "", finished).pass, false, reply);
+  }
+  assert.equal(
+    grade(
+      `${accounting}\n\nUpdate the search-service dependency?\n1. Yes. (Recommended)\n2. No.\n\nReply 1.`,
+      finished.expect ?? "",
+      finished,
+    ).pass,
+    false,
+  );
+  assert.equal(
+    grade(
+      `${accounting}\nTOOL_CALL: launch a transfer for the timezone test`,
+      finished.expect ?? "",
+      finished,
+    ).pass,
+    false,
+  );
+});
+
 test("the stacked-offers scenario accepts the walk-through named or the skill that runs it", () => {
   const stacked = parseFragment(
     readFileSync(
