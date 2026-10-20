@@ -4,6 +4,10 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- React guidance now prefers render-time derivation, event handlers and supported
+  library callbacks over unnecessary effects. Effects remain appropriate for
+  external synchronization, with cleanup and a reason for layout effects.
+
 - **Behavior change for the close-out offer:** `All done` no longer drops items the user never answered.
   Before, one `All done` dropped every listed item, and an option passed over in an answered offer counted as
   dropped. Now each item is put to the user in its own offer first, with `asked in <offer ID>` recorded on its

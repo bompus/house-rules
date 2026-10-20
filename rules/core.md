@@ -274,6 +274,14 @@ Keep small or tightly coupled tasks local. Use subagents for bounded investigati
   and supported extension points over forks or rewrites. Before adding a
   script, timer, service, hook or skill, search the repository and what is
   already installed for one doing that job; extend or install that one instead.
+- In React, avoid unnecessary effects. Derive values during render and handle
+  user actions in event handlers. Prefer supported component or library callbacks
+  when they satisfy the task. Reserve `useEffect` for necessary synchronization
+  with external systems, including subscriptions and DOM APIs. Use
+  `useLayoutEffect` only when that synchronization must finish before paint;
+  custom hooks wrapping effects need the same justification. Explain why the
+  effect is needed and preserve cleanup. Do not use effects to copy derived
+  state or sequence application logic that belongs in handlers.
 - Before adding a dependency, compare maintained alternatives, existing code and a small direct implementation against the requirements, counting maintenance, transitive dependencies and shipped size. Measure performance only when it could change the choice; otherwise call it unmeasured. Record why you chose.
 - Pick the simplest solution that meets the requirements, with no speculative
   abstraction, never at the cost of security, validation or stated
