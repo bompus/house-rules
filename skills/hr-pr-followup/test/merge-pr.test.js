@@ -100,7 +100,7 @@ function fixture({
   // Someone pushes to the head branch after the checks pass, just before the landing push.
   advanceHead = false,
 } = {}) {
-  const root = mkdtempSync(join(tmpdir(), "merge-pr-"));
+  const root = mkdtempSync(join(process.env.HOUSE_RULES_TEST_TMP ?? tmpdir(), "merge-pr-"));
   roots.push(root);
   const remote = join(root, "remote.git");
   sh(root, "git", "-c", "init.defaultBranch=main", "init", "--bare", remote);
@@ -693,3 +693,24 @@ test("Yarn 1 installs with --ignore-scripts and Yarn 2 or later skips builds", (
     "install --immutable --mode=skip-build\nrun check\n",
   );
 });
+
+test.skipIf(process.getuid?.() === 0)(
+  "permission preflight skip propagates exit 3 after landing",
+  () => {
+    const fx = fixture({ staleDefault: true, fromTask: true });
+    const before = sh(fx.work, "git", "rev-parse", "HEAD");
+    const index = readFileSync(join(fx.work, ".git", "index"));
+    const refs = join(fx.work, ".git", "refs", "heads");
+    chmodSync(refs, 0o555);
+    try {
+      const r = fx.run();
+      expectLandedSyncPending(fx, r, "Git metadata refs/heads/main: not writable: " + refs);
+      expect(sh(fx.work, "git", "rev-parse", "HEAD")).toBe(before);
+      expect(readFileSync(join(fx.work, ".git", "index"))).toEqual(index);
+      expect(existsSync(join(fx.work, "package.json"))).toBe(false);
+      expect(sh(fx.remote, "git", "rev-parse", "main")).toBe(fx.squash);
+    } finally {
+      chmodSync(refs, 0o755);
+    }
+  },
+);

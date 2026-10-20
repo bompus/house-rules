@@ -2,20 +2,34 @@ import { afterEach, expect, test as base } from "bun:test";
 
 // These drive bash scripts and POSIX git behavior.
 const test = process.platform === "win32" ? base.skip : base;
-import { chmodSync, existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import {
+  chmodSync,
+  existsSync,
+  lstatSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  readlinkSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 
 const script = new URL("../scripts/verify-landed.sh", import.meta.url).pathname;
 /** @type {string[]} */
 const roots = [];
 const dir = () => {
-  const path = mkdtempSync(join(tmpdir(), "verify-landed-"));
+  const path = mkdtempSync(join(process.env.HOUSE_RULES_TEST_TMP ?? tmpdir(), "verify-landed-"));
   roots.push(path);
   return path;
 };
 /** @type {Bun.Subprocess[]} */
 const residents = [];
+/** @type {string[]} */
+const deniedDirectories = [];
 // A live process whose working directory is in `cwd`, as an agent session in a primary checkout is.
 /** @param {string} cwd */
 function resident(cwd) {
@@ -26,6 +40,9 @@ function resident(cwd) {
 afterEach(() => {
   for (const child of residents.splice(0)) {
     child.kill();
+  }
+  for (const path of deniedDirectories.splice(0).reverse()) {
+    chmodSync(path, 0o755);
   }
   for (const path of roots.splice(0)) {
     rmSync(path, { recursive: true, force: true });
@@ -392,3 +409,377 @@ for (const flag of ["--idle-primary", "--preflight"]) {
     expect(sh(work, "git", "rev-parse", "HEAD")).toBe(before);
   });
 }
+
+// Root bypasses mode-based denial. These cases are run only by a genuinely unprivileged process.
+const permissionTest = process.getuid?.() === 0 ? base.skip : test;
+
+/** @param {string} path */
+function denyDirectory(path) {
+  chmodSync(path, 0o555);
+  deniedDirectories.push(path);
+}
+
+/** @param {string} work */
+function checkoutSnapshot(work) {
+  /** @type {Record<string, {mode: number, bytes?: string, kind: string}>} */
+  const files = {};
+  /** @param {string} relative */
+  function visit(relative) {
+    for (const name of readdirSync(join(work, relative))) {
+      if (!relative && name === ".git") {
+        continue;
+      }
+      const path = join(relative, name);
+      const stat = lstatSync(join(work, path));
+      files[path] = { mode: stat.mode, kind: stat.isDirectory() ? "directory" : "file" };
+      if (stat.isDirectory()) {
+        visit(path);
+      } else {
+        files[path].bytes = stat.isSymbolicLink()
+          ? readlinkSync(join(work, path))
+          : readFileSync(join(work, path)).toString("base64");
+      }
+    }
+  }
+  visit("");
+  return {
+    head: sh(work, "git", "rev-parse", "HEAD"),
+    index: readFileSync(
+      resolve(work, sh(work, "git", "rev-parse", "--git-path", "index")),
+    ).toString("base64"),
+    headFile: readFileSync(
+      resolve(work, sh(work, "git", "rev-parse", "--git-path", "HEAD")),
+    ).toString("base64"),
+    indexMode: lstatSync(resolve(work, sh(work, "git", "rev-parse", "--git-path", "index"))).mode,
+    files,
+  };
+}
+
+function permissionFixture() {
+  const { root, remote, work } = fixture();
+  for (const path of ["a writable", "z denied"]) {
+    mkdirSync(join(work, path));
+  }
+  writeFileSync(join(work, "a writable", "existing"), "before\n");
+  writeFileSync(join(work, "z denied", "existing"), "before\n");
+  sh(work, "git", "add", ".");
+  sh(work, "git", "commit", "-m", "directories");
+  sh(work, "git", "push", "origin", "main");
+  const other = join(root, "other");
+  sh(root, "git", "clone", remote, other);
+  return { root, work, other };
+}
+
+permissionTest("denied later parent skips before any checkout writes, repeatably", () => {
+  expect(process.getuid?.()).not.toBe(0);
+  const { work, other } = permissionFixture();
+  writeFileSync(join(other, "a writable", "existing"), "after\n");
+  writeFileSync(join(other, "a writable", "added"), "new\n");
+  writeFileSync(join(other, "z denied", "added"), "new\n");
+  sh(other, "git", "add", ".");
+  sh(other, "git", "commit", "-m", "upstream");
+  sh(other, "git", "push", "origin", "main");
+  const sha = sh(other, "git", "rev-parse", "HEAD");
+  writeFileSync(join(work, "notes"), "keep\n");
+  denyDirectory(join(work, "z denied"));
+  const before = checkoutSnapshot(work);
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const r = runScript(work, "--commit", sha, "--ff");
+    expect(r.code).toBe(3);
+    expect(checkoutSnapshot(work)).toEqual(before);
+    expect(r.out).toContain("not writable: " + join(work, "z denied"));
+    expect(existsSync(join(work, "z denied", "added"))).toBe(false);
+    expect(r.out).not.toContain("fast-forward refused");
+  }
+});
+
+/** @param {string} other */
+function publishFixture(other) {
+  sh(other, "git", "add", "-A");
+  sh(other, "git", "commit", "-m", "upstream");
+  sh(other, "git", "push", "origin", "main");
+  return sh(other, "git", "rev-parse", "HEAD");
+}
+
+for (const action of [
+  "modify",
+  "delete",
+  "nested addition",
+  "rename source",
+  "rename destination",
+]) {
+  permissionTest(`a denied parent prevents ${action} without changing the checkout`, () => {
+    const { work, other } = permissionFixture();
+    const denied = join(other, "z denied", "existing");
+    writeFileSync(join(other, "a writable", "existing"), "after\n");
+    if (action === "modify") {
+      writeFileSync(denied, "after\n");
+    } else if (action === "delete") {
+      rmSync(denied);
+    } else if (action === "rename source") {
+      sh(other, "git", "mv", "z denied/existing", "a writable/renamed");
+    } else if (action === "rename destination") {
+      sh(other, "git", "mv", "a writable/existing", "z denied/renamed");
+    } else {
+      mkdirSync(join(other, "z denied", "new\nfolder", "nested space"), { recursive: true });
+      writeFileSync(join(other, "z denied", "new\nfolder", "nested space", "file\nname"), "new\n");
+    }
+    const sha = publishFixture(other);
+    denyDirectory(join(work, "z denied"));
+    expect(lstatSync(join(work, "z denied", "existing")).mode & 0o200).toBe(0o200);
+    const before = checkoutSnapshot(work);
+    const r = runScript(work, "--commit", sha, "--ff");
+    expect(r.code).toBe(3);
+    expect(r.out).toContain("not writable: " + join(work, "z denied"));
+    expect(checkoutSnapshot(work)).toEqual(before);
+  });
+}
+
+permissionTest(
+  "writable affected parents allow read-only file replacement and ignore unrelated denial",
+  () => {
+    const { work, other } = permissionFixture();
+    writeFileSync(join(other, "a writable", "existing"), "after\n");
+    mkdirSync(join(other, "a writable", "new\nfolder"));
+    writeFileSync(join(other, "a writable", "new\nfolder", "file space"), "new\n");
+    const sha = publishFixture(other);
+    chmodSync(join(work, "a writable", "existing"), 0o444);
+    denyDirectory(join(work, "z denied"));
+    writeFileSync(join(work, "notes"), "keep\n");
+    const r = runScript(work, "--commit", sha, "--ff");
+    expect(r.code).toBe(0);
+    expect(sh(work, "git", "rev-parse", "HEAD")).toBe(sha);
+    expect(readFileSync(join(work, "a writable", "existing"), "utf8")).toBe("after\n");
+    expect(readFileSync(join(work, "a writable", "new\nfolder", "file space"), "utf8")).toBe(
+      "new\n",
+    );
+    expect(readFileSync(join(work, "notes"), "utf8")).toBe("keep\n");
+  },
+);
+
+test("writable deletion and rename paths advance to the exact target tree", () => {
+  const { work, other } = permissionFixture();
+  rmSync(join(other, "a writable", "existing"));
+  sh(other, "git", "mv", "z denied/existing", "z denied/renamed\nfile");
+  const sha = publishFixture(other);
+  const r = runScript(work, "--commit", sha, "--ff");
+  expect(r.code).toBe(0);
+  expect(sh(work, "git", "rev-parse", "HEAD")).toBe(sha);
+  expect(sh(work, "git", "status", "--porcelain")).toBe("");
+  expect(existsSync(join(work, "a writable", "existing"))).toBe(false);
+  expect(readFileSync(join(work, "z denied", "renamed\nfile"), "utf8")).toBe("before\n");
+});
+
+for (const type of ["symlink", "file to directory", "directory to file"]) {
+  test(`unsupported ${type} transition is skipped before any writes`, () => {
+    const { work, other } = permissionFixture();
+    writeFileSync(join(other, "a writable", "existing"), "after\n");
+    if (type === "directory to file") {
+      rmSync(join(other, "z denied"), { recursive: true });
+      writeFileSync(join(other, "z denied"), "replacement\n");
+    } else {
+      rmSync(join(other, "z denied", "existing"));
+      if (type === "symlink") {
+        symlinkSync("../a writable/existing", join(other, "z denied", "existing"));
+      } else {
+        mkdirSync(join(other, "z denied", "existing"));
+        writeFileSync(join(other, "z denied", "existing", "nested"), "new\n");
+      }
+    }
+    const sha = publishFixture(other);
+    const before = checkoutSnapshot(work);
+    const r = runScript(work, "--commit", sha, "--ff");
+    expect(r.code).toBe(3);
+    expect(r.out).toContain("cannot inspect");
+    expect(checkoutSnapshot(work)).toEqual(before);
+  });
+}
+
+for (const metadata of ["refs/heads"]) {
+  permissionTest(
+    `denied Git metadata directory ${metadata} is skipped before checkout changes`,
+    () => {
+      const { work, other } = permissionFixture();
+      writeFileSync(join(other, "a writable", "existing"), "after\n");
+      const sha = publishFixture(other);
+      denyDirectory(join(work, ".git", metadata));
+      const before = checkoutSnapshot(work);
+      const r = runScript(work, "--commit", sha, "--ff");
+      expect(r.code).toBe(3);
+      expect(r.out).toContain("Git metadata");
+      expect(r.out).toContain("not writable: " + join(work, ".git", metadata));
+      expect(checkoutSnapshot(work)).toEqual(before);
+    },
+  );
+}
+
+for (const output of ["failure", "malformed", "truncated"]) {
+  test(`diff ${output} fails closed without changing the checkout`, () => {
+    const { work, sha } = behind({ onMain: true });
+    const bin = join(dir(), "bin");
+    mkdirSync(bin);
+    const git = sh(work, "which", "git");
+    writeFileSync(
+      join(bin, "git"),
+      `#!/bin/bash
+case " $* " in *" diff --raw "*)
+  case "$VERIFY_DIFF_OUTPUT" in
+    failure) exit 1 ;;
+    malformed) printf 'invalid\\0' ;;
+    truncated) printf ':100644 100644 aaaaaaa bbbbbbb M\\0' ;;
+  esac
+  exit 0 ;;
+esac
+exec "${git}" "$@"
+`,
+      { mode: 0o755 },
+    );
+    const before = checkoutSnapshot(work);
+    const run = Bun.spawnSync(["bash", script, "--commit", sha, "--ff"], {
+      cwd: work,
+      env: { ...env, PATH: bin + ":" + env.PATH, VERIFY_DIFF_OUTPUT: output },
+    });
+    expect(run.exitCode).toBe(3);
+    expect(run.stdout.toString()).toContain("cannot inspect checkout changes");
+    expect(checkoutSnapshot(work)).toEqual(before);
+  });
+}
+
+permissionTest("an unsearchable addition ancestor is skipped without creating nested paths", () => {
+  const { work, other } = permissionFixture();
+  mkdirSync(join(work, "opaque"));
+  mkdirSync(join(other, "opaque", "nested"), { recursive: true });
+  writeFileSync(join(other, "opaque", "nested", "new"), "new\n");
+  const sha = publishFixture(other);
+  const before = checkoutSnapshot(work);
+  chmodSync(join(work, "opaque"), 0o444);
+  deniedDirectories.push(join(work, "opaque"));
+  const index = readFileSync(join(work, ".git", "index"));
+  const r = runScript(work, "--commit", sha, "--ff");
+  expect(r.code).toBe(3);
+  expect(r.out).toContain("not searchable: " + join(work, "opaque"));
+  expect(sh(work, "git", "rev-parse", "HEAD")).toBe(before.head);
+  expect(readFileSync(join(work, ".git", "index"))).toEqual(index);
+  chmodSync(join(work, "opaque"), 0o755);
+  expect(checkoutSnapshot(work)).toEqual(before);
+});
+
+permissionTest("a non-writable reflog is skipped before tree changes", () => {
+  const { work, other } = permissionFixture();
+  writeFileSync(join(other, "a writable", "existing"), "after\n");
+  const sha = publishFixture(other);
+  chmodSync(join(work, ".git", "logs", "HEAD"), 0o444);
+  const before = checkoutSnapshot(work);
+  const r = runScript(work, "--commit", sha, "--ff");
+  expect(r.code).toBe(3);
+  expect(r.out).toContain("Git metadata not writable: logs/HEAD");
+  expect(checkoutSnapshot(work)).toEqual(before);
+});
+
+permissionTest(
+  "an existing writable reflog needs search but no creation access in its parent",
+  () => {
+    const { work, other } = permissionFixture();
+    writeFileSync(join(other, "a writable", "existing"), "after\n");
+    const sha = publishFixture(other);
+    denyDirectory(join(work, ".git", "logs", "refs", "heads"));
+    const r = runScript(work, "--commit", sha, "--ff");
+    expect(r.code).toBe(0);
+    expect(sh(work, "git", "rev-parse", "HEAD")).toBe(sha);
+  },
+);
+
+test("an existing ref lock prevents checkout changes", () => {
+  const { work, other } = permissionFixture();
+  writeFileSync(join(other, "a writable", "existing"), "after\n");
+  const sha = publishFixture(other);
+  writeFileSync(join(work, ".git", "refs", "heads", "main.lock"), "other operation\n");
+  const before = checkoutSnapshot(work);
+  const r = runScript(work, "--commit", sha, "--ff");
+  expect(r.code).toBe(3);
+  expect(r.out).toContain("Git metadata lock exists: refs/heads/main.lock");
+  expect(checkoutSnapshot(work)).toEqual(before);
+});
+
+test("a symlink ancestor is skipped without writing through it", () => {
+  const { root, work, other } = permissionFixture();
+  const outside = join(root, "outside");
+  mkdirSync(outside);
+  writeFileSync(join(outside, "keep"), "outside\n");
+  symlinkSync(outside, join(work, "linked"));
+  mkdirSync(join(other, "linked"));
+  writeFileSync(join(other, "linked", "added"), "new\n");
+  const sha = publishFixture(other);
+  const before = checkoutSnapshot(work);
+  const r = runScript(work, "--commit", sha, "--ff");
+  expect(r.code).toBe(3);
+  expect(r.out).toContain("cannot inspect symlink directory");
+  expect(checkoutSnapshot(work)).toEqual(before);
+  expect(readdirSync(outside)).toEqual(["keep"]);
+});
+
+test("gitlink changes are skipped before any checkout writes", () => {
+  const { work, other } = permissionFixture();
+  writeFileSync(join(other, "a writable", "existing"), "after\n");
+  sh(other, "git", "add", "-A");
+  sh(
+    other,
+    "git",
+    "update-index",
+    "--add",
+    "--cacheinfo",
+    "160000," + sh(other, "git", "rev-parse", "HEAD") + ",submodule",
+  );
+  sh(other, "git", "commit", "-m", "gitlink");
+  sh(other, "git", "push", "origin", "main");
+  const sha = sh(other, "git", "rev-parse", "HEAD");
+  const before = checkoutSnapshot(work);
+  const r = runScript(work, "--commit", sha, "--ff");
+  expect(r.code).toBe(3);
+  expect(r.out).toContain("cannot inspect checkout path type: submodule");
+  expect(checkoutSnapshot(work)).toEqual(before);
+});
+
+test("a writable regular file mode change reaches the exact target", () => {
+  const { work, other } = permissionFixture();
+  chmodSync(join(other, "a writable", "existing"), 0o755);
+  const sha = publishFixture(other);
+  const r = runScript(work, "--commit", sha, "--ff");
+  expect(r.code).toBe(0);
+  expect(sh(work, "git", "rev-parse", "HEAD")).toBe(sha);
+  expect(lstatSync(join(work, "a writable", "existing")).mode & 0o111).toBe(0o111);
+});
+
+test("diff config cannot hide a changed gitlink from the preflight", () => {
+  const { work, other } = permissionFixture();
+  sh(
+    work,
+    "git",
+    "update-index",
+    "--add",
+    "--cacheinfo",
+    "160000," + sh(work, "git", "rev-parse", "HEAD") + ",submodule",
+  );
+  sh(work, "git", "commit", "-m", "base gitlink");
+  sh(work, "git", "push", "origin", "main");
+  sh(other, "git", "fetch", "origin");
+  sh(other, "git", "merge", "--ff-only", "origin/main");
+  writeFileSync(join(other, "a writable", "existing"), "after\n");
+  sh(other, "git", "add", "a writable/existing");
+  sh(
+    other,
+    "git",
+    "update-index",
+    "--cacheinfo",
+    "160000," + sh(other, "git", "rev-parse", "HEAD") + ",submodule",
+  );
+  sh(other, "git", "commit", "-m", "changed gitlink");
+  sh(other, "git", "push", "origin", "main");
+  const sha = sh(other, "git", "rev-parse", "HEAD");
+  sh(work, "git", "config", "diff.ignoreSubmodules", "all");
+  const before = checkoutSnapshot(work);
+  const r = runScript(work, "--commit", sha, "--ff");
+  expect(r.code).toBe(3);
+  expect(r.out).toContain("cannot inspect checkout path type: submodule");
+  expect(checkoutSnapshot(work)).toEqual(before);
+});

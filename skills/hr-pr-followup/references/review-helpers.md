@@ -182,6 +182,18 @@ reset, switch or delete a checkout.
   `working tree dirty` (tracked changes), `diverged from <remote>/<default>`, `on branch
   <name>, not <default>`, `unfinished Git operation: <name>`, `fast-forward refused: <why>`,
   `cannot inspect Git state` or `cannot inspect working tree`.
+  Before updating a checked-out branch, it checks access to Git lock/ref/index destinations,
+  reflogs and affected directories. A NUL-separated diff with rename detection disabled covers
+  additions, changes and deletions, including both rename paths. Nested additions check the
+  nearest existing ancestor. Existing ancestors need search access; directories whose entries
+  change need write access too. Deletions conservatively check ancestor write access because Git
+  can remove empty directories. Read-only files under writable parents can be replaced.
+  An access denial, unreadable change list or unsupported path type skips the update before
+  calling Git merge. Symlink/gitlink changes, directory/file transitions and non-files ref storage
+  are conservatively skipped. The unheld-branch ref update is unchanged.
+  These checks prevent predictable access failures, not partial writes caused by permission races,
+  sticky directories, immutable flags, mount changes, full disks, hooks or other unexpected failures.
+  They do not repair permissions or roll back a checkout. Fetch bookkeeping is outside the check.
   Exit 0 means landed and current; 1 is a failure; 2 is usage; 3 means landed with a local
   sync pending, which is not a failed landing and needs no question to the user: record
   the path and reason in the task plan. Both scripts use these exit codes. After a

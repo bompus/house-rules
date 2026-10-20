@@ -153,11 +153,137 @@ holder_blocker() {
     return
   fi
   # Untracked files may stay: Git itself refuses a fast-forward that would overwrite one.
-  status="$(git -C "$path" status --porcelain --untracked-files=no 2>/dev/null)" || {
+  status="$(GIT_OPTIONAL_LOCKS=0 git -C "$path" status --porcelain --untracked-files=no 2>/dev/null)" || {
     echo "cannot inspect working tree"
     return
   }
   [ -z "$status" ] || echo "working tree dirty"
+}
+
+# Check every existing ancestor without following symlinks. For nested additions,
+# creation starts at the nearest existing parent, not the absent final directory.
+directory_blocker() {
+  local target="$1" write="${2:-1}" rest="${1#/}" current="/" part
+  while [ -n "$rest" ]; do
+    part="${rest%%/*}"
+    if [ "$rest" = "$part" ]; then rest=""; else rest="${rest#*/}"; fi
+    [ -n "$part" ] || continue
+    if [ ! -x "$current" ]; then
+      echo "not searchable: $current"
+      return
+    fi
+    if [ -L "$current$part" ]; then
+      echo "cannot inspect symlink directory: $current$part"
+      return
+    fi
+    if [ ! -e "$current$part" ]; then
+      [ -w "$current" ] || echo "not writable: ${current%/}"
+      return
+    fi
+    current="$current$part/"
+    if [ ! -d "$current" ]; then
+      echo "cannot inspect directory: ${current%/}"
+      return
+    fi
+  done
+  if [ ! -x "$target" ]; then
+    echo "not searchable: $target"
+  elif [ "$write" = 1 ] && [ ! -w "$target" ]; then echo "not writable: $target"; fi
+}
+
+# This prevents predictable permission failures, not races, full disks or hook failures.
+# Raw, non-renaming, NUL-separated records cover both sides of renames. The terminal
+# marker distinguishes a successful empty diff from a failed or truncated producer.
+permission_blocker() {
+  local path="$1" from="$2" to="$3" entry location reason record file old new state parent write storage
+  if storage="$(git -C "$path" config --get extensions.refStorage 2>/dev/null)"; then
+    if [ "$storage" != files ]; then
+      echo "cannot inspect Git ref storage: $storage"
+      return
+    fi
+  elif [ "$?" != 1 ]; then
+    echo "cannot inspect Git ref storage"
+    return
+  fi
+  for entry in index HEAD ORIG_HEAD "refs/heads/$DEFAULT" logs/HEAD "logs/refs/heads/$DEFAULT"; do
+    location="$(git -C "$path" rev-parse --path-format=absolute --git-path "$entry" 2>/dev/null)" || {
+      echo "cannot inspect Git metadata: $entry"
+      return
+    }
+    write=1
+    case "$entry" in logs/*) if [ -f "$location" ]; then write=0; fi ;; esac
+    reason="$(directory_blocker "${location%/*}" "$write")"
+    if [ -n "$reason" ]; then
+      echo "Git metadata $entry: $reason"
+      return
+    fi
+    if [ -L "$location" ] || { [ -e "$location" ] && [ ! -f "$location" ]; }; then
+      echo "cannot inspect Git metadata: $entry"
+      return
+    fi
+    if [ -e "$location.lock" ] || [ -L "$location.lock" ]; then
+      echo "Git metadata lock exists: $entry.lock"
+      return
+    fi
+    if [ -e "$location" ] && [ ! -r "$location" ]; then
+      echo "Git metadata not readable: $entry"
+      return
+    fi
+    # Reflogs are appended in place; refs and the index use sibling lock files.
+    case "$entry" in logs/*)
+      if [ -e "$location" ] && [ ! -w "$location" ]; then
+        echo "Git metadata not writable: $entry"
+        return
+      fi
+      ;;
+    esac
+  done
+  while IFS= read -r -d '' record; do
+    if [ "$record" = complete ]; then return; fi
+    if [[ ! "$record" =~ ^:([0-7]{6})\ ([0-7]{6})\ [0-9a-f]+\ [0-9a-f]+\ ([AMDT])$ ]]; then
+      echo "cannot inspect checkout changes: invalid diff record"
+      return
+    fi
+    old="${BASH_REMATCH[1]}" new="${BASH_REMATCH[2]}" state="${BASH_REMATCH[3]}"
+    if ! IFS= read -r -d '' file || [ -z "$file" ] || [[ "$file" = /* || "/$file/" = */../* ]]; then
+      echo "cannot inspect checkout changes: invalid path"
+      return
+    fi
+    case "$old:$new" in *120000* | *160000*)
+      echo "cannot inspect checkout path type: $file"
+      return
+      ;;
+    esac
+    if [ "$new" != 000000 ] && [ -d "$path/$file" ]; then
+      echo "cannot inspect checkout path type: $file"
+      return
+    fi
+    parent="$path"
+    case "$file" in */*) parent="$path/${file%/*}" ;; esac
+    reason="$(directory_blocker "$parent")"
+    if [ -n "$reason" ]; then
+      echo "$reason"
+      return
+    fi
+    # Removing the last child may also remove its containing directories.
+    if [ "$state" = D ]; then
+      while [ "$parent" != "$path" ]; do
+        parent="${parent%/*}"
+        reason="$(directory_blocker "$parent")"
+        if [ -n "$reason" ]; then
+          echo "$reason"
+          return
+        fi
+      done
+    fi
+  done < <(
+    if git -C "$path" diff --raw -z --no-renames --no-ext-diff --ignore-submodules=none "$from" "$to" -- 2>/dev/null; then
+      printf 'complete\0'
+    else
+      printf 'failed\0'
+    fi
+  )
+  echo "cannot inspect checkout changes: incomplete diff"
 }
 
 if git merge-base --is-ancestor "$COMMIT" "$REMOTE/$DEFAULT" 2>/dev/null; then
@@ -195,6 +321,7 @@ if git show-ref --verify --quiet "refs/heads/$DEFAULT"; then
     else
       # The state is read right before the merge; Git refuses it if edits would be overwritten.
       REASON="$(holder_blocker "$HOLDER")"
+      if [ -z "$REASON" ]; then REASON="$(permission_blocker "$HOLDER" "$LOCAL" "$UPSTREAM")"; fi
       if [ -n "$REASON" ]; then
         skip "$HOLDER" "$REASON"
       elif MERGE_ERR="$(git -C "$HOLDER" merge --quiet --ff-only "$UPSTREAM" 2>&1)"; then
