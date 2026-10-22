@@ -4,6 +4,8 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Recognize explicit CodeRabbit credit-capacity evidence for the current head when its successful status reports a skipped review. File-count limits alone still block landing.
+
 - Split the close-out instructions into shorter paragraphs without changing their requirements.
 
 - Keep routine next-step and backlog offers within the selected session purpose, while retaining full ledger accounting and explicit broader-scope requests.

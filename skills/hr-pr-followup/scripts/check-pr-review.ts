@@ -18,7 +18,9 @@
 // with no end date, and the gate prints which bot it skipped and why: a NEUTRAL cubic check titled
 // "AI review line limit reached", or a NEUTRAL cubic check followed, after it completed, by a cubic
 // comment that the monthly review limit is reached; and a CodeRabbit success status saying "Review
-// rate limited" or "Review limit reached". A bot that is still running is waited for, and a failed
+// rate limited" or "Review limit reached". A successful skipped CodeRabbit status also qualifies
+// when its authenticated current-head summary explicitly reports insufficient credits or capacity;
+// a file limit alone does not. A bot that is still running is waited for, and a failed
 // result, any other skipped review, an open thread or an unanswered review body still refuses.
 // A CodeRabbit reply that is only "Review failed." (no reason) on a head commit it has not reviewed
 // refuses once and names the single re-trigger, `@coderabbitai full review`; when a second bare failure
@@ -68,6 +70,8 @@ const CUBIC_LIMIT_TITLE = /line limit reached/i;
 const CUBIC_LIMIT_COMMENT = /reached its (?:free )?monthly review limit/i;
 const CUBIC_BOT = /^cubic-dev-ai$/i;
 const CODERABBIT_LIMIT = /^Review (?:rate limited|limit reached)/i;
+const CODERABBIT_CREDITS =
+  /This review couldn't start because sufficient usage credits or metered capacity aren't available\./i;
 // CodeRabbit's reply to a review command that failed without saying why: the whole comment, once
 // its markers and tags are removed, is "Action failed Review failed." A failure that states a
 // reason does not match.
@@ -531,6 +535,35 @@ const cubicSaidOutOfQuota = (pr: ReviewState, completedAt: string | null | undef
       CUBIC_LIMIT_COMMENT.test(comment.body),
   );
 
+/** A credit-capacity summary must identify the final head, not merely exceed a file limit. */
+const codeRabbitSaidOutOfCredits = (pr: ReviewState) =>
+  pr.comments.nodes.some((comment) => {
+    if (
+      !isBot(comment.author) ||
+      !CODERABBIT_BOT.test(comment.author!.login) ||
+      comment.isMinimized !== false ||
+      (comment.lastEditedAt &&
+        (!isBot(comment.editor) || !CODERABBIT_BOT.test(comment.editor!.login))) ||
+      !(
+        Date.parse(comment.lastEditedAt ?? comment.createdAt) >
+        Date.parse(pr.commits.nodes[0]?.commit.committedDate ?? "")
+      )
+    ) {
+      return false;
+    }
+    const body = comment.body.replace(/\s+/g, " ");
+    const ranges = [
+      ...body.matchAll(
+        /Reviewing files that changed from the base of the PR and between `?[a-f0-9]{40}`? and `?([a-f0-9]{40})`?\./gi,
+      ),
+    ];
+    return (
+      CODERABBIT_CREDITS.test(body) &&
+      ranges.length === 1 &&
+      ranges[0]?.[1]?.toLowerCase() === pr.headRefOid.toLowerCase()
+    );
+  });
+
 /** Every reason the pull request is not ready to land; empty when it is. */
 export function openFeedback(pr: ReviewState): string[] {
   return reviewFeedback(pr).open;
@@ -601,6 +634,15 @@ export function reviewFeedback(pr: ReviewState): { open: string[]; skipped: stri
           : undefined;
       if (CODERABBIT.test(name) && ctx.state === "SUCCESS" && CODERABBIT_LIMIT.test(description)) {
         skipped.push(`${name}: no capacity (status "${description}")`);
+      } else if (
+        CODERABBIT.test(name) &&
+        ctx.state === "SUCCESS" &&
+        /^Review skipped\b/i.test(description) &&
+        codeRabbitSaidOutOfCredits(pr)
+      ) {
+        skipped.push(
+          `${name}: no capacity (authenticated current-head comment reports insufficient usage credits or metered capacity)`,
+        );
       } else if (bare?.skipped) {
         skipped.push(bare.skipped);
       } else if (bare?.open) {

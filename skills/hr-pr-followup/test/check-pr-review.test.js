@@ -467,6 +467,115 @@ test("skips a rate-limited CodeRabbit and keeps every other reason to refuse", (
   });
 });
 
+const fileLimit = {
+  context: "CodeRabbit",
+  state: "SUCCESS",
+  description: "Review skipped: 154 files exceed the limit of 100",
+};
+const capacityComment = {
+  author: bot,
+  editor: null,
+  lastEditedAt: null,
+  isMinimized: false,
+  createdAt: "2026-10-18T10:00:00Z",
+  body: `> ## Review skipped
+> This PR contains 154 files, which is 54 over the limit of 100.
+> This review couldn't start because sufficient usage credits or metered capacity aren't available.
+> Reviewing files that changed from the base of the PR and between ${"b".repeat(40)} and ${"a".repeat(40)}.`,
+};
+
+test("accepts explicit current-head CodeRabbit credit capacity evidence, not a file limit alone", () => {
+  expect(openFeedback(pr({ contexts: [fileLimit] }))).toHaveLength(1);
+  const result = reviewFeedback(pr({ contexts: [fileLimit], comments: [capacityComment] }));
+  expect(result.open).toEqual([]);
+  expect(result.skipped).toHaveLength(1);
+  expect(result.skipped[0]).toContain("CodeRabbit: no capacity");
+  expect(result.skipped[0]).toContain("current-head");
+  // CodeRabbit updates its original summary for later heads, rather than posting a new one.
+  expect(
+    openFeedback(
+      pr({
+        contexts: [fileLimit],
+        comments: [
+          {
+            ...capacityComment,
+            createdAt: "2026-10-18T08:00:00Z",
+            lastEditedAt: "2026-10-18T10:00:00Z",
+            editor: bot,
+          },
+        ],
+      }),
+    ),
+  ).toEqual([]);
+});
+
+test("rejects stale, foreign, hidden or unbound CodeRabbit capacity evidence", () => {
+  for (const comment of [
+    { ...capacityComment, body: "> Too many files! This PR exceeds the limit of 100." },
+    {
+      ...capacityComment,
+      body: capacityComment.body.replace(
+        "This review couldn't start because sufficient usage credits or metered capacity aren't available.",
+        "Upgrade to a paid plan to raise the file limit.",
+      ),
+    },
+    { ...capacityComment, body: capacityComment.body.replace("a".repeat(40), "c".repeat(40)) },
+    { ...capacityComment, body: capacityComment.body.split("\n").slice(0, -1).join("\n") },
+    {
+      ...capacityComment,
+      body: capacityComment.body.replace("a".repeat(40), "a".repeat(40) + "1"),
+    },
+    {
+      ...capacityComment,
+      body:
+        capacityComment.body +
+        "\nReviewing files that changed from the base of the PR and between " +
+        "a".repeat(40) +
+        " and " +
+        "c".repeat(40) +
+        ".",
+    },
+    { ...capacityComment, author: user },
+    { ...capacityComment, author: { __typename: "Bot", login: "other-review-bot" } },
+    { ...capacityComment, isMinimized: true },
+    { ...capacityComment, createdAt: "2026-10-18T08:59:59Z" },
+    { ...capacityComment, createdAt: "invalid date" },
+    { ...capacityComment, lastEditedAt: "2026-10-18T10:01:00Z", editor: user },
+    { ...capacityComment, lastEditedAt: "2026-10-18T10:01:00Z", editor: null },
+  ]) {
+    const result = reviewFeedback(pr({ contexts: [fileLimit], comments: [comment] }));
+    expect(result.open).toHaveLength(1);
+    expect(result.skipped).toEqual([]);
+  }
+});
+
+test("capacity comments cannot clear pending, failed, missing or unrelated review gates", () => {
+  for (const state of ["PENDING", "FAILURE", "ERROR"]) {
+    const result = reviewFeedback(
+      pr({ contexts: [{ ...fileLimit, state }], comments: [capacityComment] }),
+    );
+    expect(result.open).toHaveLength(1);
+    expect(result.skipped).toEqual([]);
+  }
+  expect(
+    openFeedback(pr({ files: [".coderabbit.yaml"], comments: [capacityComment] })),
+  ).toHaveLength(1);
+  const result = reviewFeedback(
+    pr({
+      contexts: [fileLimit, { name: "check", status: "COMPLETED", conclusion: "FAILURE" }],
+      comments: [capacityComment],
+      threads: [{ isResolved: false, comments: { nodes: [{ url: "unresolved" }] } }],
+      reviews: [outsideDiff],
+    }),
+  );
+  expect(result.open).toEqual([
+    "unresolved thread: unresolved",
+    "check check concluded FAILURE",
+    `unanswered findings in a review body: ${outsideDiff.url}`,
+  ]);
+  expect(result.skipped).toHaveLength(1);
+});
+
 // CodeRabbit answers a review command that failed without a reason with "Review failed." and leaves
 // the status on "Review skipped". One re-trigger is expected; a second failure an hour or more later
 // is treated like a bot with no capacity.
