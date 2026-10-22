@@ -668,6 +668,25 @@ test("a later failure supersedes credit evidence for the same head", () => {
   ).toEqual([]);
 });
 
+test("foreign edits cannot erase a later CodeRabbit failure", () => {
+  for (const editor of [user, null, { __typename: "Bot", login: "other-review-bot" }]) {
+    const failure = {
+      ...bareFailure(
+        "2026-10-18T11:00:00Z",
+        "Review failed. The pull request is too large to review.",
+      ),
+      lastEditedAt: "2026-10-18T11:30:00Z",
+      editor,
+    };
+    expect(
+      reviewFeedback(pr({ contexts: [fileLimit], comments: [capacityComment, failure] })),
+    ).toMatchObject({
+      open: [expect.any(String)],
+      skipped: [],
+    });
+  }
+});
+
 test("a first bare CodeRabbit failure asks for one re-trigger and says when it failed", () => {
   const state = pr({
     contexts: [manualOnly],

@@ -551,9 +551,15 @@ const codeRabbitCommentAt = (comment: ReviewState["comments"]["nodes"][number]) 
 const codeRabbitSaidOutOfCredits = (pr: ReviewState) => {
   let latestFailure = -Infinity;
   for (const comment of pr.comments.nodes) {
-    const at = codeRabbitCommentAt(comment);
-    if (Number.isFinite(at) && CODERABBIT_FAILURE.test(botText(comment))) {
-      latestFailure = Math.max(latestFailure, at);
+    if (
+      isBot(comment.author) &&
+      CODERABBIT_BOT.test(comment.author!.login) &&
+      comment.isMinimized === false &&
+      CODERABBIT_FAILURE.test(botText(comment))
+    ) {
+      // A foreign edit cannot grant a capacity skip or remove a failure that would block it.
+      const at = Date.parse(comment.lastEditedAt ?? comment.createdAt);
+      latestFailure = Number.isFinite(at) ? Math.max(latestFailure, at) : Infinity;
     }
   }
   return pr.comments.nodes.some((comment) => {
