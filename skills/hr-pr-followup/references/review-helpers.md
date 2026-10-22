@@ -48,10 +48,11 @@ with no end date, and the gate prints a `skipped review bot` line naming it and 
   followed, after it completed, by a comment from cubic that the workspace reached its
   monthly review limit (cubic's reply to `@cubic review` when it is out of quota);
 - a CodeRabbit success status saying "Review rate limited" or "Review limit reached";
-- a successful CodeRabbit "Review skipped" status accompanied by a visible comment from
+- a successful CodeRabbit "Review skipped: N files exceed the limit of M" status accompanied by a visible comment from
   the CodeRabbit bot explicitly reporting insufficient usage credits or metered capacity.
   Its review range must name the full current head, and its creation or bot-authored edit
-  must follow that commit. A file-count limit alone does not qualify;
+  must follow that commit, with no later CodeRabbit failure superseding that summary.
+  Evidence inside HTML comments does not count. A file-count limit alone does not qualify;
 - a CodeRabbit that failed twice without saying why (below).
 
 The gate then judges only the bots that did review. Record in the pull request which bot skipped

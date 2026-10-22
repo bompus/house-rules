@@ -539,9 +539,15 @@ test("rejects stale, foreign, hidden or unbound CodeRabbit capacity evidence", (
     { ...capacityComment, author: { __typename: "Bot", login: "other-review-bot" } },
     { ...capacityComment, isMinimized: true },
     { ...capacityComment, createdAt: "2026-10-18T08:59:59Z" },
+    { ...capacityComment, createdAt: "2026-10-18T09:00:00Z" },
     { ...capacityComment, createdAt: "invalid date" },
     { ...capacityComment, lastEditedAt: "2026-10-18T10:01:00Z", editor: user },
     { ...capacityComment, lastEditedAt: "2026-10-18T10:01:00Z", editor: null },
+    {
+      ...capacityComment,
+      lastEditedAt: "2026-10-18T10:01:00Z",
+      editor: { __typename: "Bot", login: "other-review-bot" },
+    },
   ]) {
     const result = reviewFeedback(pr({ contexts: [fileLimit], comments: [comment] }));
     expect(result.open).toHaveLength(1);
@@ -599,6 +605,68 @@ const retrigger = (createdAt) => ({
   body: "@coderabbitai full review",
 });
 const skippedStatus = `CodeRabbit did not review the head commit ("${manualOnly.description}"): ${FOLLOW_UP}`;
+
+test("credit evidence cannot be hidden in HTML comments", () => {
+  for (const body of [
+    `<!-- ${capacityComment.body} -->`,
+    capacityComment.body.replace(
+      "This review couldn't start because sufficient usage credits or metered capacity aren't available.",
+      "<!-- This review couldn't start because sufficient usage credits or metered capacity aren't available. -->",
+    ),
+    capacityComment.body.replace(/Reviewing files[^\n]+/, (range) => `<!-- ${range} -->`),
+  ]) {
+    expect(
+      reviewFeedback(pr({ contexts: [fileLimit], comments: [{ ...capacityComment, body }] })),
+    ).toMatchObject({ open: [expect.any(String)], skipped: [] });
+  }
+});
+
+test("credit evidence does not excuse manual or disabled review statuses", () => {
+  for (const description of [
+    manualOnly.description,
+    "Review skipped: reviews are disabled for this base branch",
+  ]) {
+    expect(
+      reviewFeedback(
+        pr({ contexts: [{ ...fileLimit, description }], comments: [capacityComment] }),
+      ),
+    ).toMatchObject({ open: [expect.any(String)], skipped: [] });
+  }
+});
+
+test("a later failure supersedes credit evidence for the same head", () => {
+  for (const reason of [
+    "Review failed.",
+    "Review failed. The pull request is too large to review.",
+  ]) {
+    for (const comments of [
+      [capacityComment, bareFailure("2026-10-18T11:30:00Z", reason)],
+      [bareFailure("2026-10-18T11:30:00Z", reason), capacityComment],
+      [
+        capacityComment,
+        {
+          ...bareFailure("2026-10-18T09:30:00Z", reason),
+          lastEditedAt: "2026-10-18T11:30:00Z",
+          editor: bot,
+        },
+      ],
+    ]) {
+      expect(reviewFeedback(pr({ contexts: [fileLimit], comments }))).toMatchObject({
+        open: [expect.any(String)],
+        skipped: [],
+      });
+    }
+  }
+  // A newer explicit capacity summary can supersede an earlier failure.
+  expect(
+    openFeedback(
+      pr({
+        contexts: [fileLimit],
+        comments: [bareFailure("2026-10-18T09:30:00Z"), capacityComment],
+      }),
+    ),
+  ).toEqual([]);
+});
 
 test("a first bare CodeRabbit failure asks for one re-trigger and says when it failed", () => {
   const state = pr({
