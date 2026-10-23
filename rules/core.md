@@ -293,7 +293,10 @@ Keep small or tightly coupled tasks local. Use subagents for bounded investigati
 - Before adding a dependency, compare maintained alternatives, existing code and a small direct implementation against the requirements, counting maintenance, transitive dependencies and shipped size. Measure performance only when it could change the choice; otherwise call it unmeasured. Record why you chose.
 - Pick the simplest solution that meets the requirements, with no speculative
   abstraction, never at the cost of security, validation or stated
-  requirements.
+  requirements. When proposing extra defensive machinery, describe the concrete
+  failure, the evidence it can occur, and the maintenance cost. Omit speculative
+  additions; ask for a decision only when the proposal expands the authorized
+  scope.
 - Replace rather than wrap. When nothing outside the change depends on the
   old shape (no released interface, stored data or outside caller), update
   every caller and keep no compatibility path, shim or migration. Delete the

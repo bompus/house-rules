@@ -4,6 +4,8 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Require concrete failure evidence and maintenance costs when proposing extra defensive machinery; ask for a decision only when it expands the authorized scope.
+
 - Recognize explicit CodeRabbit credit-capacity evidence for the current head when its successful status reports a skipped review. File-count limits alone still block landing.
 
 - Split the close-out instructions into shorter paragraphs without changing their requirements.

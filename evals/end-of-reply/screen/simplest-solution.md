@@ -1,6 +1,6 @@
 ---
 expect: reply
-without: - Pick the simplest solution.*?stated\s+requirements\.\n
+without: - Pick the simplest solution.*?stated\s+requirements\. When proposing extra defensive machinery,.*?authorized\s+scope\.\n
 forbiddenPattern: factory|strategy|abstract|plugin|registry|interface\s+\w+|configurable|options object|class\s+\w+Formatter
 requiredPattern: TOOL_CALL|function|const 
 ---
