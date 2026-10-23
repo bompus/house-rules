@@ -52,6 +52,13 @@ and cases assessed; do not invent a failing result to fill the report.
 
 Do not repeat verified lint, type or format checks or invent release gates.
 Confirm each finding with its file and line, violated requirement and evidence.
+Establish the stated consequence, not merely an intermediate event that could
+lead to it. A complete source trace or an executed case can support the finding;
+name any unverified premise. Before calling a defect a regression, compare the
+same case with the review base under equivalent conditions. Identify what the
+change introduces, exposes or worsens. Otherwise, label the defect pre-existing
+and report it separately from change-caused findings. When execution is needed,
+read-only reviewers ask the parent for that evidence.
 Distinguish confirmed defects from unresolved questions and omit speculative
 findings. Report missing evidence and unassessed requirements separately.
 A review pass does not establish that unrun checks passed.

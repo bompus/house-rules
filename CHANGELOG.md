@@ -4,6 +4,8 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Require review findings to establish their stated consequence and distinguish change-caused regressions from pre-existing defects using an equivalent base comparison.
+
 - Require concrete failure evidence and maintenance costs when proposing extra defensive machinery; ask for a decision only when it expands the authorized scope.
 
 - Recognize explicit CodeRabbit credit-capacity evidence for the current head when its successful status reports a skipped review. File-count limits alone still block landing.
