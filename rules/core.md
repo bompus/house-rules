@@ -219,8 +219,11 @@ this task's changes straight into its default branch, review the changes this ta
 made once locally. Use `hr-code-review`, or the host's reviewer
 subagent when the host runs reviews through one. Fix or answer each finding. A
 trivially mechanical change, one a formatter or generator produced with no
-hand-written edits, is exempt. Review bots and the repository's own review
-requirements still apply; neither replaces this review.
+hand-written edits, is exempt. So is a change that only records dated findings
+or figures copied from cited sources, with no code, rule, setting or
+configuration change; check each figure against its source before opening the
+pull request or pushing. Review bots and the repository's own review requirements still
+apply; neither replaces this review.
 
 Before filing a bug in any repository, follow the `hr-diagnosing-bugs` skill's
 `references/reporting.md`: reduce and verify the reproduction before submitting.

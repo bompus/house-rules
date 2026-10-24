@@ -4,6 +4,8 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Exempt records-only changes from the local review before a pull request or direct push: a change that only records dated findings or figures copied from cited sources, with no code, rule, setting or configuration change, after checking each figure against its source.
+
 - Require review findings to establish their stated consequence and distinguish change-caused regressions from pre-existing defects using an equivalent base comparison.
 
 - Require concrete failure evidence and maintenance costs when proposing extra defensive machinery; ask for a decision only when it expands the authorized scope.
