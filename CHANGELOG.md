@@ -4,6 +4,8 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Add repeated checks on values a schema, constructor or internal type already guarantees to the maintainability review's list of things to challenge, with the boundary that should own the validation.
+
 - Make `merge-pr.sh` delete the merged remote head with `--no-verify`, so a failing pre-push hook in the checkout (say a stale `node_modules`) no longer ends the run with exit 1 after the merge. A delete that still fails now lets `verify-landed.sh` run, which fast-forwards the checkout and reports the leftover branch.
 
 - Exempt records-only changes from the local review before a pull request or direct push: a change that only records dated findings or figures copied from cited sources, with no code, rule, setting or configuration change, after checking each figure against its source.
