@@ -252,6 +252,30 @@ test("a same-named branch at another commit is not deleted", () => {
   expect(sh(remote, "git", "branch", "--list", "feature")).not.toBe("");
 });
 
+test("a failing pre-push hook in the checkout does not stop the remote head's deletion", () => {
+  const { remote, work, run } = fixture();
+  writeFileSync(join(work, ".git", "hooks", "pre-push"), "#!/bin/sh\necho hook ran >&2\nexit 1\n");
+  chmodSync(join(work, ".git", "hooks", "pre-push"), 0o755);
+  const r = run();
+  expect(r.err).toBe("");
+  expect(r.code).toBe(0);
+  expect(r.out).toContain("deleted: origin/feature");
+  expect(sh(remote, "git", "branch", "--list", "feature")).toBe("");
+});
+
+test("a rejected delete still runs the landing checks, then exits 1 for the leftover branch", () => {
+  const { remote, work, squash, run } = fixture({ staleDefault: true });
+  sh(remote, "git", "config", "receive.denyDeletes", "true");
+  expect(sh(work, "git", "rev-parse", "main")).not.toBe(squash);
+  const r = run();
+  expect(r.code).toBe(1);
+  expect(r.err).toContain("delete failed: origin/feature");
+  expect(r.err).toContain("leftover branch: origin/feature still exists after merge");
+  expect(sh(remote, "git", "branch", "--list", "feature")).not.toBe("");
+  // verify-landed.sh ran: the primary's main was fast-forwarded to the merge commit.
+  expect(sh(work, "git", "rev-parse", "main")).toBe(squash);
+});
+
 test("--merge lands with a merge commit instead of a squash", () => {
   const { oid, log, run } = fixture();
   const r = run("--merge");

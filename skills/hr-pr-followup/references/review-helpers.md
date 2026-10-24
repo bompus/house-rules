@@ -154,7 +154,9 @@ reset, switch or delete a checkout.
   (or merge-commits) an open pull request. It refuses a bare number, which gh would resolve against the
   current directory's repository, and refuses when the current directory is not a checkout of the named
   repository. It deletes the remote head without `gh pr merge --delete-branch`, which
-  removes other sessions' linked worktrees. It
+  removes other sessions' linked worktrees, and with `git push --no-verify`, so a failing
+  pre-push hook cannot stop the landing report; a delete that fails anyway leaves the branch
+  for `verify-landed.sh` to report (exit 1). It
   refuses while review feedback is open (`check-pr-review.ts`), while another open pull
   request targets the head. A repository listed in `HR_PUSH_LANDED` (space-separated
   `owner/repo`) lands by fast-forward push instead of a merge: after the same checks

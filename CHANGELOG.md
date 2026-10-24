@@ -4,6 +4,8 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Make `merge-pr.sh` delete the merged remote head with `--no-verify`, so a failing pre-push hook in the checkout (say a stale `node_modules`) no longer ends the run with exit 1 after the merge. A delete that still fails now lets `verify-landed.sh` run, which fast-forwards the checkout and reports the leftover branch.
+
 - Exempt records-only changes from the local review before a pull request or direct push: a change that only records dated findings or figures copied from cited sources, with no code, rule, setting or configuration change, after checking each figure against its source.
 
 - Require review findings to establish their stated consequence and distinguish change-caused regressions from pre-existing defects using an equivalent base comparison.

@@ -272,8 +272,15 @@ fi
 if [ "$FORK" != true ]; then
   REMOTE_HEAD="$(git ls-remote --heads "$REMOTE" "refs/heads/$HEAD" | awk '{print $1}')"
   if [ "$REMOTE_HEAD" = "$OID" ]; then
-    git push --quiet --force-with-lease="refs/heads/$HEAD:$OID" "$REMOTE" --delete "$HEAD"
-    echo "deleted: $REMOTE/$HEAD"
+    # --no-verify: pre-push hooks guard what a push adds, and a deletion adds nothing. The head was
+    # already checked above, so a hook failing here (say a stale node_modules in this checkout) must
+    # not cut the landing report short. A delete that still fails does not either: verify-landed.sh
+    # below reports the leftover branch and exits 1.
+    if git push --quiet --no-verify --force-with-lease="refs/heads/$HEAD:$OID" "$REMOTE" --delete "$HEAD"; then
+      echo "deleted: $REMOTE/$HEAD"
+    else
+      echo "delete failed: $REMOTE/$HEAD; PR $PR is merged, so the landing checks still run" >&2
+    fi
   elif [ -n "$REMOTE_HEAD" ]; then
     echo "kept: $REMOTE/$HEAD is at $REMOTE_HEAD, not the pull request head $OID" >&2
   fi
