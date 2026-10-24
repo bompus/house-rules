@@ -27,6 +27,9 @@ not the one that is quickest to finish. When that work comes in dependent steps
 "(Recommended, phase 1)", "(Recommended, phase 2)"; offer phase 2 after phase 1
 lands. Do not present a required step as an optional alternative, and mark an
 alternative that drops required work from the plan "(Not Recommended)".
+A trial or pilot that exists to decide a wider rollout is phase 1 of it: offer the rollout as
+phase 2 in the same offer, and offer it again when the trial lands, or say why the result
+argues against it. Waiting is a deferral only the user chooses.
 
 When three or more offers are open and unanswered, present no further offer.
 Load the `hr-what-next` skill and queue every new decision in its walk-through,

@@ -58,7 +58,10 @@ in dependent steps (land a change, then adopt it), label each step's option
 "(Recommended, phase 1)", "(Recommended, phase 2)"; never present a required
 step as an optional alternative, and mark an alternative that drops required
 work from the plan "(Not Recommended)". `go` covers phase 1 only; offer phase 2 after phase 1
-lands. Record conditional work with its trigger.
+lands. A trial or pilot that exists to decide a wider rollout is phase 1 of it: offer the rollout as
+phase 2 in the same offer, and offer it again when the trial lands, or say why the result
+argues against it. Waiting is a deferral only the user chooses.
+Record conditional work with its trigger.
 
 Make an offer visual only when the user asks for one, and only where the host
 can render a visual. It is a rendered page, not a question-card tool, so the

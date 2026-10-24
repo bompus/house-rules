@@ -404,7 +404,7 @@ test("the skills the core rules name are declared, shipped and selected by defau
 
 // The fresh install is what a new user's agent loads in every session, so growth past this
 // ceiling needs a reason stated in the change that raises it. v0.10.0 was 18 KB, v0.11.0 26 KB.
-const FRESH_INSTALL_CEILING_BYTES = 30_600;
+const FRESH_INSTALL_CEILING_BYTES = 30_900;
 
 test("the fresh install's composed rules stay under the size ceiling", (t) => {
   const dir = scratch(t);

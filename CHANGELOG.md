@@ -4,6 +4,8 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Treat a trial or pilot that exists to decide a wider rollout as phase 1 of it: the offer includes that rollout as phase 2, the reply that lands the trial offers it again or says why the result argues against it, and waiting is a deferral only the user chooses. The fresh-install size ceiling rises from 30,600 to 30,900 bytes for the added sentences (the composed rules grow by 248 bytes, to 30,818).
+
 - Clarify in the shared-host-load summary that competing work follows a running measurement's isolation rules; the rule body is unchanged.
 
 - Check formatting with `bun fmt --no-script --check` instead of oxfmt in `npm run check`. Both read `.oxfmtrc.json` and check the same 348 files with no differences here. Contributors need Bun 1.4.4 or later (1.4.3 had no `bun fmt`).
