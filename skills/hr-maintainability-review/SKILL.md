@@ -72,11 +72,12 @@ not reviewed. Report gaps rather than claiming a complete audit from a sample.
   fields that cover a rule nobody wrote down. Often the fix is two types, or a
   required field set at construction.
 - **Repeated checks on trusted values.** `typeof` and property-existence
-  checks, null guards or `try`/`catch` around a value that a schema,
-  constructor or internal type already guarantees. A value is validated once,
-  at the boundary that receives it as unknown. Before proposing to remove the
-  inner copies, confirm that boundary exists and checks the same property.
-  Keep a check whose input can still be untrusted.
+  checks, null guards, or a `try`/`catch` that only validates the input, around
+  a value that a schema, constructor or internal type already guarantees. A
+  value is validated once, at the boundary that receives it as unknown. Before
+  proposing to remove the inner copies, confirm that boundary exists and checks
+  the same property. Keep a check whose input can still be untrusted, and keep
+  catches for operational failures, cleanup and error translation.
 - **Logic in the wrong home.** Code that reaches into another module's
   internals, belongs beside the data it reads, or repeats a helper that already
   exists.
