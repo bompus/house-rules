@@ -344,16 +344,17 @@ npm run check:package -- --bun   # npm tarball: packs, installs, runs the CLI
 bun install && npm run check     # format, lint and type check
 ```
 
-`npm run check` runs oxfmt, oxlint, `bun --check` (Bun 1.4.3 or later), ruff, shfmt and
-shellcheck. Apart from `bun --check`, the JavaScript tools are pinned dev dependencies. Ruff 0.17.1, shellcheck 0.11.0
+`npm run check` runs `bun fmt` (Bun 1.4.4 or later), oxlint, `bun --check`, ruff, shfmt and
+shellcheck. Apart from the two Bun commands, the JavaScript tools are pinned dev dependencies. Ruff 0.17.1, shellcheck 0.11.0
 and shfmt 3.14.1 come from your `PATH`; `scripts/install-check-tools.sh DIR`
 installs those versions on Linux x86_64, as CI does. The type check covers every
 folder except `node_modules` and the skill test fixtures (`tsconfig.check.json`).
 
-Oxfmt checks authored Markdown, HTML, JSON, JSONC, YAML, TOML and CSS as well
-as JavaScript and TypeScript. Test fixtures stay excluded because scanner
-tests depend on their exact text and line numbers. Package fields and
-dependency maps are sorted; script order is preserved.
+`npm run check` runs `bun fmt --no-script --check`, which reads `.oxfmtrc.json`. The flag keeps
+Bun's formatter from running a `package.json` `fmt` script instead. It checks authored Markdown, HTML, JSON, JSONC, YAML, TOML and CSS as well
+as JavaScript and TypeScript. The pinned `oxfmt` stays installed for editors that use it.
+Test fixtures stay excluded because scanner tests depend on their exact text and line
+numbers. Package fields and dependency maps are sorted; script order is preserved.
 
 Tests remove their own fixture directories after each test, including failures.
 Set `HOUSE_RULES_TEST_TMP` to an existing directory to choose their scratch root;

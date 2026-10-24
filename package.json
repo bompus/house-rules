@@ -38,7 +38,7 @@
   },
   "scripts": {
     "typecheck": "bun --check --tsconfig-override tsconfig.check.json",
-    "check": "oxfmt --check && oxlint --deny-warnings . && npm run typecheck && ruff format --check . && ruff check . && bash scripts/check-shell.sh",
+    "check": "bun fmt --no-script --check && oxlint --deny-warnings . && npm run typecheck && ruff format --check . && ruff check . && bash scripts/check-shell.sh",
     "check:package": "node scripts/check-package.mjs"
   },
   "devDependencies": {
