@@ -1,5 +1,5 @@
 ---
-description: Only benchmarks and other performance measurements wait for a quiet host; other work runs whatever the load. Very large jobs still run under a memory cap.
+description: Only benchmarks and other performance measurements wait for a quiet host. Other work runs whatever the load; while an isolated measurement runs, competing work follows its isolation rules. Very large jobs still run under a memory cap.
 after: Coordination and isolation
 ---
 
