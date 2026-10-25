@@ -63,6 +63,11 @@ issue form or only a Markdown template. Verify the published body and labels.
 With no signed-in browser, prepare the report and ask for access or user
 submission; do not fall back to `gh issue create` and drop the form's labels.
 
+A form field declared with `render: shell` (or any `render:` value) is wrapped
+in a code fence by GitHub, so a fenced block inside it ends the wrapper early and
+turns everything after it into code. Indent commands in such a field instead of
+fencing them, and compare the rendered issue with the draft before leaving it.
+
 Every issue offers the pull request, whatever the repository's triage timing.
 Waiting for a maintainer's verdict decides when you open the pull request, not
 whether the issue says one is available. State in the issue's fix or workaround
