@@ -64,6 +64,8 @@ const CHECK_RUNNING = "check still running: ";
 // Check-run conclusions that do not block a merge; every other conclusion does.
 const PASSING_CONCLUSIONS = ["SUCCESS", "NEUTRAL", "SKIPPED"];
 const NO_CHECK = "no CodeRabbit check on the head commit";
+// Checks that only observe a pull request. Queued, running or failed, they never refuse a landing.
+const ADVISORY_CHECKS = new Set(["shadow review"]);
 // A neutral cubic result means it did not review the head; a person has to ask again.
 const CUBIC_RETRY = "comment `@cubic review`";
 // Signs that a review bot has no quota or capacity for this pull request.
@@ -609,6 +611,9 @@ export function reviewFeedback(pr: ReviewState): { open: string[]; skipped: stri
   }
   for (const ctx of contexts) {
     const name = ctx.context ?? ctx.name ?? "";
+    if (ADVISORY_CHECKS.has(name)) {
+      continue;
+    }
     const running =
       ctx.state === "PENDING" || (ctx.status !== undefined && ctx.status !== "COMPLETED");
     if (!isReviewBot(name)) {

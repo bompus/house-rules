@@ -293,6 +293,29 @@ test("blocks any other check that failed, was cancelled or is unfinished, and pa
   }
 });
 
+test("never blocks on the advisory shadow review check, whatever its state", () => {
+  /** @param {string} status @param {string | null} conclusion */
+  const run = (status, conclusion) => ({ name: "shadow review", status, conclusion });
+  /** @type {[string, string | null][]} */
+  const states = [
+    ["QUEUED", null],
+    ["IN_PROGRESS", null],
+    ["COMPLETED", "FAILURE"],
+    ["COMPLETED", "CANCELLED"],
+    ["COMPLETED", "STARTUP_FAILURE"],
+  ];
+  for (const [status, conclusion] of states) {
+    expect(openFeedback(pr({ contexts: [run(status, conclusion)] }))).toEqual([]);
+  }
+  // Other checks keep their authority beside it, including one with a similar name.
+  const build = { name: "build", status: "COMPLETED", conclusion: "FAILURE" };
+  const similar = { name: "shadow review 2", status: "COMPLETED", conclusion: "FAILURE" };
+  expect(openFeedback(pr({ contexts: [run("QUEUED", null), build, similar] }))).toEqual([
+    "check build concluded FAILURE",
+    "check shadow review 2 concluded FAILURE",
+  ]);
+});
+
 test("blocks a commit status that is not SUCCESS", () => {
   /** @param {string} state */
   const status = (state) => ({ context: "ci/legacy", state, description: null });

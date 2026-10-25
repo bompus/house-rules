@@ -4,6 +4,8 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Stop the pull request review gate from refusing a landing, or waiting, on a check named `shadow review`: that check only observes a pull request, so queued, running or failed it is ignored. Every other check keeps its authority.
+
 - Report a missing entity only after retrying the other documented identifier forms, and only then call it gone. T3 Code writes attached-thread references as `thread_<uuid>` while its thread tools reject that form in favour of the bare uuid or `mcp:<uuid>`; a thread known only by its title is found by listing projects and searching each. The paragraph is removed once the upstream lookup accepts the prefixed form. The fresh-install size ceiling rises from 30,900 to 31,500 bytes for the added sentences (the composed rules grow by 541 bytes, to 31,441).
 
 - Added a warning to the bug-reporting steps that a YAML issue form field with a `render:` value (such as `render: shell`) is wrapped in a code fence by GitHub, so a fenced block inside it breaks the rest of the field; indent commands instead and compare the rendered issue with the draft.
