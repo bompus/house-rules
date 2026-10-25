@@ -4,6 +4,8 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Report a missing entity only after retrying the other documented identifier forms, and only then call it gone. T3 Code writes attached-thread references as `thread_<uuid>` while its thread tools reject that form in favour of the bare uuid or `mcp:<uuid>`; a thread known only by its title is found by listing projects and searching each. The paragraph is removed once the upstream lookup accepts the prefixed form. The fresh-install size ceiling rises from 30,900 to 31,500 bytes for the added sentences (the composed rules grow by 541 bytes, to 31,441).
+
 - Treat a trial or pilot that exists to decide a wider rollout as phase 1 of it: the offer includes that rollout as phase 2, the reply that lands the trial offers it again or says why the result argues against it, and waiting is a deferral only the user chooses. The fresh-install size ceiling rises from 30,600 to 30,900 bytes for the added sentences (the composed rules grow by 248 bytes, to 30,818).
 
 - Clarify in the shared-host-load summary that competing work follows a running measurement's isolation rules; the rule body is unchanged.

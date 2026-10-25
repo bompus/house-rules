@@ -161,6 +161,15 @@ verification, failed or unrun checks and remaining uncertainty. At task or sessi
 save reusable lessons with their condition, action and evidence in the project's record or notes.
 Link existing rules or checks. When none emerged, no lesson entry is needed.
 
+An identifier a tool hands you is not proof that the thing is gone, and one error
+string is not evidence for "no longer exists". When a lookup fails, retry the other
+documented forms before reporting the entity missing, and say which forms you tried.
+T3 Code writes attached-thread references as `thread_<uuid>` while its thread tools
+accept only the bare uuid or `mcp:<uuid>`: strip the prefix and retry that form.
+To find a thread known only by its title, list the projects and
+search within each rather than searching the calling project alone. Remove this
+paragraph once the upstream lookup accepts the prefixed form.
+
 Name each choice made in passing that costs the user something if missed.
 That covers a tradeoff, a default picked for them, a step you did not
 highlight and a result that may be off, but not routine plumbing. Describe
