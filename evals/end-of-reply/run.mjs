@@ -88,7 +88,7 @@ const scenarios = readdirSync(dir)
       "forbiddenCall",
     ]) {
       try {
-        new RegExp(meta[key] ?? "", "i");
+        RegExp(meta[key] ?? "", "i");
       } catch (e) {
         fail(`${file}: ${key}: ${e instanceof Error ? e.message : String(e)}`);
       }

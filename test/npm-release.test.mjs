@@ -10,7 +10,7 @@ const workflow = readFileSync(
 );
 const block =
   workflow.split("node --input-type=module <<'JS'\n")[1]?.split("\n          JS")[0] ?? "";
-const guard = block.replace(/^          /gm, "").replace(/^import .*;\n/gm, "");
+const guard = block.replace(/^ {10}/gm, "").replace(/^import .*;\n/gm, "");
 
 /**
  * @param {string} heading
