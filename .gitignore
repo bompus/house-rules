@@ -1,3 +1,7 @@
-__pycache__/
-*.py[cod]
+# Shared ignore lines; a repository adds its own lines after these.
 node_modules
+__pycache__/
+.DS_Store
+.codegraph/
+
+*.py[cod]
