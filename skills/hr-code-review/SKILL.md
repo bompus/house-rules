@@ -163,3 +163,5 @@ A change can pass one axis and fail the other:
 - Code that does exactly what the issue asked but breaks the project's conventions is a **Spec pass, Standards fail.**
 
 Reporting them separately stops one axis from masking the other.
+
+When the applicable rules give existing code precedence over conflicting documentation, code that follows the existing code is an inconsistency to report, not a Standards violation. A documented legacy or migration exception still applies.

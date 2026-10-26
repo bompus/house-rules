@@ -17,6 +17,14 @@ Source: https://cursor.com/docs/skills
 These files distribute no Cursor instruction text. Their MIT licence applies
 to newly written house-rules material, not to the Cursor skills.
 
+## Xu and Wu, stale instruction files
+
+Source: Xiaonan Xu and Wenjing Wu, "Stale Instruction Files Override the Code in Coding Agents: A One-Sentence Fix", arXiv:2610.30571 (22 October 2026).
+
+- `rules/modifiers/code-over-stale-docs.md`: its one sentence adapts the paper's user-level instruction. It keeps the paper's rule to follow the existing code's conventions and to report each mismatch in the final reply, and adds an exception for documentation that says the code is legacy or being migrated. No other text is copied.
+
+The paper's licence is the arXiv non-exclusive distribution licence, which does not grant others a licence to reuse the text, and its data repository (`WenJing95/stale-docs-data`) states none. The authors' abstract invites users to add the sentence to their own instruction file. This notice records the source and that no reuse licence was found; it does not claim one. The MIT licence of this repository applies to the wording of the adaptation and the exception, not to the paper.
+
 ## mattpocock/skills
 
 Source: https://github.com/mattpocock/skills (compared at revision `d81f3a1`)
