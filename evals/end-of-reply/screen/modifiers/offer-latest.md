@@ -14,6 +14,6 @@ Keep the ledger in plans/invoice-fix/plan.md.
 
 ## Transcript so far
 
-LEDGER: OFFER O-12 open (presented earlier, never answered): `1A` Publish the 1.4 release notes; `1B` Hold them.
-LEDGER: OFFER O-13 open (the latest, presented last turn): `1A` (Recommended) Land PR #44 (squash merge, then clean up the branch); `1B` Keep the branch unmerged.
+LEDGER: OFFER O-12 open (presented earlier, never answered): `1a` Publish the 1.4 release notes; `1b` Hold them.
+LEDGER: OFFER O-13 open (the latest, presented last turn): `1a` (Recommended) Land PR #44 (squash merge, then clean up the branch); `1b` Keep the branch unmerged.
 USER: 1A

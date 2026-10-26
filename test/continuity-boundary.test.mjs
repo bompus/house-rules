@@ -62,7 +62,7 @@ const state = (disposition, extra = {}) => {
   };
 };
 const offer =
-  "**Question 1: Next step?**\n\n`1A` (Recommended): Run the assessment.\n\n`1B`: Defer.\n\nRecommended: reply `1A` or `go`";
+  "**Question 1: Next step?**\n\n`1a` (Recommended): Run the assessment.\n\n`1b`: Defer.\n\nRecommended: reply `1a` or `go`";
 
 test("an already-approved blocker stops without a redundant decision", () => {
   const reply = "Publication remains pending. The integration slot is occupied.";
@@ -77,6 +77,17 @@ test("an already-approved blocker stops without a redundant decision", () => {
   const permission = reply + " Can I proceed?";
   assert.equal(checkBoundary(permission, state("blocked")).pass, false);
   assert.equal(grade(permission, "blocked", { coded: true }).pass, false);
+});
+
+test("an offer is recognized in either letter case, but must print lowercase codes", () => {
+  const upper = offer.replace(/`1a`/g, "`1A`").replace(/`1b`/g, "`1B`");
+  assert.equal(checkBoundary(upper, state("offer")).pass, false);
+  assert.match(checkBoundary(upper, state("offer")).issues.join(" "), /lowercase/);
+  assert.equal(checkBoundary(upper, state("blocked")).pass, false);
+  assert.equal(
+    checkBoundary(`Your reply \`1A\` was recorded.\n\n${offer}`, state("offer")).pass,
+    true,
+  );
 });
 
 test("ready decisions appear in the handback, not only as prose", () => {

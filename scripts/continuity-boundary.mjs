@@ -1,5 +1,6 @@
 // Validates current coverage and producer attestations, not semantic readiness or permission.
 import { isDeepStrictEqual } from "node:util";
+import { uppercaseCodes } from "../evals/end-of-reply/offer.mjs";
 import { planSnapshot } from "../skills/hr-what-next/scripts/plan-ledger.mjs";
 export const DISPOSITIONS = ["continue", "offer", "blocked", "complete", "paused"];
 
@@ -49,8 +50,11 @@ export function replyFacts(reply, coded = false) {
     done: /nothing (else )?(remains|is left|left)(?! for (?:a )?later| (?:over|locally|unpushed|uncommitted|unmerged)\b)(?![\s\S]*\b(?:remains|is left|left)\b)|\bnothing (?:else )?(?:needs|requires|is waiting on|waits on) (?:you|your)\b(?![^.!?\n]*\b(?:except|besides|beyond|other than|apart from)\b)|(?<!(?:\bnot|\bnever|n't)\b[^.!?\n]{0,40}\b(?:say|claim|assert|state)\w*\b[^.!?\n]{0,40})(?<!["'“‘])(?:this session is complete|session can be closed)/i.test(
       reply,
     ),
+    // An offer is recognized in either letter case; uppercaseCodes() reports the casing separately.
     offer: coded
-      ? [...reply.matchAll(/Question\s*(\d+)/gi)].some(([, n]) => reply.includes(`\`${n}A\``)) &&
+      ? [...reply.matchAll(/Question\s*(\d+)/gi)].some(([, n]) =>
+          new RegExp(`\`${n}[a-z]\``, "i").test(reply),
+        ) &&
         reply.includes("(Recommended") &&
         /reply\s+`/i.test(reply)
       : reply.includes("?") &&
@@ -103,6 +107,8 @@ export function checkBoundary(reply, state, context) {
   } else if (state.disposition === "offer") {
     if (!facts.offer || facts.done) {
       issues.push("Present the ready decision as a coded offer.");
+    } else if (uppercaseCodes(reply).length > 0) {
+      issues.push("Print the offer codes in lowercase.");
     }
   } else {
     if (facts.asks) {
@@ -241,7 +247,7 @@ function reconciliationIssues(reply, state, context) {
       typeof reply !== "string" ||
       !reply
         .split(/\r?\n/)
-        .some((line) => /^\s*(?:[-*]\s+)?`\d+[A-Z]`/.test(line) && line.includes(decision.text))
+        .some((line) => /^\s*(?:[-*]\s+)?`\d+[a-z]`/.test(line) && line.includes(decision.text))
     ) {
       issues.push("Each ready decision needs its concrete text on a presented offer option.");
     } else {

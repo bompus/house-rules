@@ -53,7 +53,7 @@ with a known command word. These checks enforce declared replay facts, not seman
 for arbitrary replies.
 
 A reply with a line starting `Recommended: reply` or `Recommended combination: reply` is checked
-for two layout problems. Two or more bare coded option lines (`1A`, `1B`) in one paragraph
+for two layout problems. Two or more bare coded option lines (`1a`, `1b`) in one paragraph
 render as one run-on paragraph in Markdown; list items and table rows do not count. Anything
 after the acceptance line is the other problem. A reply without such a line has no layout check.
 

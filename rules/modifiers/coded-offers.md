@@ -1,5 +1,5 @@
 ---
-description: Offers use numbered questions and coded options (1A, 1B) so one short reply answers every decision.
+description: Offers use numbered questions and coded options (1a, 1b) so one short reply answers every decision.
 replaces: Offers
 ---
 
@@ -12,9 +12,10 @@ Use § Finishing work to select displayed candidates. Each offer stands alone:
 2. One numbered question per independent decision, such as
    `**Question 1: Next step?**`. If all options combine, add "Pick any combination."
 3. One list item per option, so options cannot run together. Start each with its
-   inline-code code (`1A`, `1B`; Question 2 uses `2A`, `2B`). Put the recommendation
+   inline-code code in lowercase (`1a`, `1b`; Question 2 uses `2a`, `2b`); a reply's
+   code matches in any case (`2A` selects `2a`). Put the recommendation
    first, with "(Recommended)" immediately after its code. Mark options you would not
-   pick "(Not Recommended)"; name partial combinations, such as "(Combinable with 1A)".
+   pick "(Not Recommended)"; name partial combinations, such as "(Combinable with 1a)".
    Keep each to a line or two that says what it does and how far it goes.
 4. The exact acceptance line, a plain paragraph after the list. One question uses
    "Recommended: reply `<code>` or `go`". Several use "Recommended combination: reply

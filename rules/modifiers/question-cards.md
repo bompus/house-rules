@@ -31,7 +31,7 @@ would answer without that content. Send those offers as text alone.
 3. Ask one card question per offer question, in the same order. Give each
    option the label it has in the text offer, code included when the offer
    uses codes, with "(Recommended)" where the text offer has it: for example
-   `1A (Recommended) pylon` under coded offers, not `pylon`. Write each
+   `1a (Recommended) pylon` under coded offers, not `pylon`. Write each
    option's description so it stands alone, saying what the option does and
    what it costs or risks: on some hosts the card is all the user sees before
    answering. Use multi-select when the options combine. Leave out an "Other"

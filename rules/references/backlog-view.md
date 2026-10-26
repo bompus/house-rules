@@ -12,7 +12,7 @@ bottom-up, so the items that can move sit last, next to the offer:
 2. **Needs your decision**, with its count. One bordered row per question: a Q
    badge carrying the offer's question number, the item, a muted second line
    with its status and owner, and answer chips on the right: the question's own
-   option codes when the offer uses codes (`1A`, `1B`), otherwise yes, no and
+   option codes when the offer uses codes (`1a`, `1b`), otherwise yes, no and
    defer. The chips repeat the offer's choices; they are not controls and are
    never a second set of reply labels. Mark the group being
    asked "group N of M, this reply" in the header, tinted, with an accent rail

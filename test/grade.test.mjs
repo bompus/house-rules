@@ -8,7 +8,7 @@ import { layoutProblems } from "../evals/end-of-reply/offer.mjs";
 
 const offer = "Run the migration now?\n\n1. Apply it (Recommended)\n2. Wait\n\nReply 1 to apply.";
 const coded =
-  "**Question 1: Apply?**\n\n`1A` (Recommended) Apply it.\n\n`1B` Wait.\n\nRecommended: reply `1A` or `go`";
+  "**Question 1: Apply?**\n\n`1a` (Recommended) Apply it.\n\n`1b` Wait.\n\nRecommended: reply `1a` or `go`";
 
 test("each expectation passes its intended reply and fails the others", () => {
   const cases =
@@ -49,7 +49,7 @@ test("each expectation passes its intended reply and fails the others", () => {
       ["offer", `${offer}\nThis session is complete and can be closed.`, {}, false],
       ["offer-or-continue", "TOOL_CALL: run tests\nThe session can be closed.", {}, false],
       // A screening reply is graded by its declared checks only, so an offer-layout problem does not fail it.
-      ["reply", "`1A` Yes\n`1B` No\n\nRecommended: reply `1A` or `go`", {}, true],
+      ["reply", "`1a` Yes\n`1b` No\n\nRecommended: reply `1a` or `go`", {}, true],
     ]);
   for (const [expect, reply, opts, pass] of cases) {
     assert.equal(grade(reply, expect, opts).pass, pass, `${expect}: ${reply}`);
@@ -67,7 +67,7 @@ test("remainder scenarios grade declared operations and options", () => {
     coded: true,
   };
   const decision =
-    "**Question 1: Fix the validation bug?**\n\n`1A` (Recommended) Fix and land the configuration validation bug.\n\n`1B` Defer this repair.\n\nRecommended: reply `1A` or `go`";
+    "**Question 1: Fix the validation bug?**\n\n`1a` (Recommended) Fix and land the configuration validation bug.\n\n`1b` Defer this repair.\n\nRecommended: reply `1a` or `go`";
   for (const reply of [
     "TOOL_CALL: Bash run tests",
     "The installed configuration is pending.\nTOOL_CALL: Bash run tests",
@@ -120,13 +120,13 @@ Reply "1" to accept the recommendation.`,
 
 Reply "1" to accept the recommendation.`,
   "coded options":
-    "**Question 1: Fix the bug?**\n\n`1A` (Recommended) Fix and land the bug.\n\n`1B` Defer this repair.\n\nRecommended: reply `1A` or `go`",
+    "**Question 1: Fix the bug?**\n\n`1a` (Recommended) Fix and land the bug.\n\n`1b` Defer this repair.\n\nRecommended: reply `1a` or `go`",
   "coded options as list items":
-    "**Question 1: Fix the bug?**\n\n- `1A` (Recommended) Fix and land the bug.\n- `1B` Defer this repair.\n\nRecommended: reply `1A` or `go`",
+    "**Question 1: Fix the bug?**\n\n- `1a` (Recommended) Fix and land the bug.\n- `1b` Defer this repair.\n\nRecommended: reply `1a` or `go`",
   "coded options as bold list items":
-    "**Question 1: Fix the bug?**\n\n- **`1A` (Recommended)** Fix and land the bug.\n- **`1B`** Defer this repair.\n\nRecommended: reply `1A` or `go`",
+    "**Question 1: Fix the bug?**\n\n- **`1a` (Recommended)** Fix and land the bug.\n- **`1b`** Defer this repair.\n\nRecommended: reply `1a` or `go`",
   "coded options as bold list items with a colon":
-    "**Question 1: Fix the bug?**\n\n- **`1A`**: (Recommended) Fix and land the bug.\n- **`1B`:** Defer this repair.\n\nRecommended: reply `1A` or `go`",
+    "**Question 1: Fix the bug?**\n\n- **`1a`**: (Recommended) Fix and land the bug.\n- **`1b`:** Defer this repair.\n\nRecommended: reply `1a` or `go`",
 };
 
 test("an offer's options match whatever way the model lists them", () => {
@@ -154,7 +154,7 @@ Reply \`1\` to accept the recommendation.`;
 
 test("a coded question may be followed by explanation before its options", () => {
   const reply =
-    "**Question 2: What happens to the checkout?**\n\nThis question is still open from the last offer.\n\n`2A` (Recommended) Keep it.\n\n`2B` Delete it.\n\nRecommended: reply `2A` or `go`";
+    "**Question 2: What happens to the checkout?**\n\nThis question is still open from the last offer.\n\n`2a` (Recommended) Keep it.\n\n`2b` Delete it.\n\nRecommended: reply `2a` or `go`";
   assert.equal(grade(reply, "offer", { coded: true, options: "Keep it. | Delete it." }).pass, true);
   // A closing question with no list before the reply line stays prose.
   const closing = reply.replace("What happens to the checkout?", "Done?");
@@ -167,36 +167,36 @@ test("a coded question may be followed by explanation before its options", () =>
 
 test("a coded offer's options must not share a paragraph and nothing may follow the acceptance line", () => {
   const options = { options: "Fix and land the bug. | Defer this repair.", coded: true };
-  const accept = "Recommended: reply `1A` or `go`";
+  const accept = "Recommended: reply `1a` or `go`";
   /** @param {string} body */
   const offer = (body) => `**Question 1: Fix the bug?**\n\n${body}\n\n${accept}`;
   /** @param {string} reply */
   const pass = (reply) => grade(reply, "offer", options);
   // Bare coded lines with no blank line between them render as one paragraph.
   const collapsed = pass(
-    offer("`1A` (Recommended) Fix and land the bug.\n`1B` Defer this repair."),
+    offer("`1a` (Recommended) Fix and land the bug.\n`1b` Defer this repair."),
   );
   assert.equal(collapsed.pass, false);
   assert.equal(collapsed.declared, true);
-  assert.deepEqual(collapsed.layout, ["2 options share one paragraph: `1A` `1B`"]);
+  assert.deepEqual(collapsed.layout, ["2 options share one paragraph: `1a` `1b`"]);
   // The same options as list items, or as bare paragraphs, are fine.
   for (const body of [
-    "- `1A` (Recommended) Fix and land the bug.\n- `1B` Defer this repair.",
-    "- **`1A` (Recommended)** Fix and land the bug.\n- **`1B`** Defer this repair.",
-    "- **`1A`**: (Recommended) Fix and land the bug.\n- **`1B`:** Defer this repair.",
-    "`1A` (Recommended) Fix and land the bug.\n\n`1B` Defer this repair.",
+    "- `1a` (Recommended) Fix and land the bug.\n- `1b` Defer this repair.",
+    "- **`1a` (Recommended)** Fix and land the bug.\n- **`1b`** Defer this repair.",
+    "- **`1a`**: (Recommended) Fix and land the bug.\n- **`1b`:** Defer this repair.",
+    "`1a` (Recommended) Fix and land the bug.\n\n`1b` Defer this repair.",
   ]) {
     assert.deepEqual(pass(offer(body)), { ...pass(offer(body)), pass: true, layout: [] }, body);
   }
   // A table row opens with a marker, so rows are not run together either.
   assert.deepEqual(
-    layoutProblems(offer("| `1A` | Fix and land the bug. |\n| `1B` | Defer this repair. |")),
+    layoutProblems(offer("| `1a` | Fix and land the bug. |\n| `1b` | Defer this repair. |")),
     [],
   );
   // Text after the acceptance line fails, whatever it is.
   for (const after of ["Parked: the flaky test.", "- later status bullet"]) {
     const late = pass(
-      `${offer("- `1A` (Recommended) Fix and land the bug.\n- `1B` Defer this repair.")}\n\n${after}`,
+      `${offer("- `1a` (Recommended) Fix and land the bug.\n- `1b` Defer this repair.")}\n\n${after}`,
     );
     assert.equal(late.pass, false, after);
     assert.equal(late.layout.length, 1, after);
@@ -204,41 +204,99 @@ test("a coded offer's options must not share a paragraph and nothing may follow 
   // A GFM table may omit its outer pipes, so its rows open with the code.
   assert.deepEqual(
     layoutProblems(
-      offer("Code | Option\n--- | ---\n`1A` | Fix and land the bug.\n`1B` | Defer this repair."),
+      offer("Code | Option\n--- | ---\n`1a` | Fix and land the bug.\n`1b` | Defer this repair."),
     ),
     [],
   );
   // Options written above a table in the same paragraph are still run together.
   assert.equal(
-    layoutProblems(offer("`1A` Fix it.\n`1B` Defer it.\nCode | Option\n--- | ---\n`1C` | Later."))
+    layoutProblems(offer("`1a` Fix it.\n`1b` Defer it.\nCode | Option\n--- | ---\n`1c` | Later."))
       .length,
     1,
   );
   // Text after the acceptance line fails when a second acceptance line ends the reply, and when it
   // sits on the acceptance line itself.
   assert.equal(
-    layoutProblems(`${offer("`1A` Fix it.")}\n\nParked: the flaky test.\n\n${accept}`).length,
+    layoutProblems(`${offer("`1a` Fix it.")}\n\nParked: the flaky test.\n\n${accept}`).length,
     1,
   );
   assert.equal(
-    layoutProblems(offer("`1A` Fix it.").replace("or `go`", "or `go`. Parked: the flaky test."))
+    layoutProblems(offer("`1a` Fix it.").replace("or `go`", "or `go`. Parked: the flaky test."))
       .length,
     1,
   );
   // The reply codes may be one span or several.
   for (const line of [
-    "Recommended combination: reply `1A, 2A` or `go`",
-    "**Recommended combination: reply `1A`, `2A` or `go`**",
-    "Recommended: reply `1A` or `go`.",
+    "Recommended combination: reply `1a, 2a` or `go`",
+    "**Recommended combination: reply `1a`, `2a` or `go`**",
+    "Recommended: reply `1a` or `go`.",
   ]) {
     assert.deepEqual(
-      layoutProblems(`**Question 1: Fix?**\n\n- \`1A\` Fix it.\n\n${line}`),
+      layoutProblems(`**Question 1: Fix?**\n\n- \`1a\` Fix it.\n\n${line}`),
       [],
       line,
     );
   }
+  // Codes are printed in lowercase: an uppercase code span is a problem wherever it appears.
+  for (const reply of [
+    "**Question 1: Apply?**\n\n- `1A` (Recommended) Apply it.\n- `1B` Wait.\n\nRecommended: reply `1a` or `go`",
+    "**Question 1: Apply?**\n\n- `1a` (Recommended) Apply it.\n- `1b` Wait.\n\nRecommended: reply `1A` or `go`",
+    "**Question 1: Apply?**\n\n- `1a` (Recommended) Apply it.\n- `1b` Wait.\n\n**Question 2: Land?**\n\n- `2a` (Recommended) Land it.\n- `2b` Wait.\n\nRecommended combination: reply `1A, 2A` or `go`",
+  ]) {
+    assert.deepEqual(layoutProblems(reply, true).length, 1, reply);
+    assert.equal(grade(reply, "offer", { coded: true }).pass, false, reply);
+  }
+  // A typed code quoted in surrounding prose is not a printed offer code.
+  assert.deepEqual(
+    layoutProblems(
+      "Your reply `2A` selected the earlier offer.\n\n**Question 1: Apply?**\n\n- `1a` (Recommended) Apply it.\n- `1b` Wait.\n\nRecommended: reply `1a` or `go`",
+      true,
+    ),
+    [],
+  );
+  assert.deepEqual(
+    layoutProblems(
+      "`2A` selected the earlier offer.\n\n**Question 1: Apply?**\n\n- `1a` (Recommended) Apply it.\n- `1b` Wait.\n\nRecommended: reply `1a` or `go`",
+      true,
+    ),
+    [],
+  );
+  // An acknowledgement of a typed code is not an offer, and casing is a coded-offers rule only.
+  assert.equal(
+    grade("`1A` selected the completed fix. Nothing remains.", "complete", { coded: true }).pass,
+    true,
+  );
+  assert.deepEqual(
+    layoutProblems(
+      "**Question 1: Apply?**\n\n- `1A` (Recommended) Apply it.\n- `1B` Wait.\n\nRecommended: reply `1A` or `go`",
+    ),
+    [],
+  );
+  // The offer is found the way the parser finds it, so a heading before the question does not matter.
+  assert.deepEqual(
+    layoutProblems(
+      "`2A` selected the earlier offer.\n\n### Question 1: Apply?\n\n- `1a` (Recommended) Apply it.\n- `1b` Wait.\n\nRecommended: reply `1a` or `go`",
+      true,
+    ),
+    [],
+  );
+  // The close-out question is part of the printed reply, so its codes are checked too.
+  const closeOutReply =
+    "Nothing remains.\n\n**Question 1: Close the session?**\n\n- `1A` (Recommended) All done\n- `1B` Pause\n\nRecommended: reply `All done` or `go`";
+  assert.equal(grade(closeOutReply, "complete", { coded: true, closeOut: true }).pass, false);
+  assert.equal(
+    grade(closeOutReply.replace(/`1A`/g, "`1a`").replace(/`1B`/g, "`1b`"), "complete", {
+      coded: true,
+      closeOut: true,
+    }).pass,
+    true,
+  );
+  // An offer in uppercase is still an offer, so a blocked reply cannot carry one.
+  const upperOffer =
+    "Pending maintainer reply.\n\n**Question 1: Apply?**\n\n`1A` (Recommended) Apply it.\n\n`1B` Wait.\n\nReply `1A` to proceed.";
+  assert.equal(grade(upperOffer, "blocked", { coded: true }).pass, false);
   // A reply with no acceptance line is not an offer, so it has no layout problems.
-  assert.deepEqual(layoutProblems("`1A` Fix it.\n`1B` Defer it.\n\nNothing else to add."), []);
+  assert.deepEqual(layoutProblems("`1a` Fix it.\n`1b` Defer it.\n\nNothing else to add."), []);
   assert.deepEqual(layoutProblems("Tests pass.\n\nNothing remains."), []);
   assert.equal(grade("Tests pass.\nTOOL_CALL: Bash run lint", "continue").layout.length, 0);
 });
@@ -247,7 +305,7 @@ test("the parser handles the shapes reviewers raised", () => {
   const options = { options: "Keep it. | Delete it." };
   // A coded question with no question mark, explanation before its options, and CRLF line ends.
   const coded =
-    "**Question 2: Pick one**\r\n\r\nThe checkout is open.\r\n\r\n`2A` (Recommended) Keep it.\r\n\r\n`2B` Delete it.\r\n\r\nRecommended: reply `2A` or `go`";
+    "**Question 2: Pick one**\r\n\r\nThe checkout is open.\r\n\r\n`2a` (Recommended) Keep it.\r\n\r\n`2b` Delete it.\r\n\r\nRecommended: reply `2a` or `go`";
   assert.equal(grade(coded, "offer", { ...options, coded: true }).pass, true);
   // An earlier plain question does not borrow a later status bullet as an option.
   const unrelated =

@@ -173,7 +173,7 @@ test("an issue ID alone does not record asking, but a named offer does", () => {
   const { plan } = setup({
     ledger: [
       "- [-] Review API-123 - by: user",
-      "- [-] tidy - by: user, offer TIDY-1 (answered 1B)",
+      "- [-] tidy - by: user, offer TIDY-1 (answered 1b)",
     ],
   });
   const warnings = check(plan).report.warnings.join("\n");
@@ -195,7 +195,7 @@ test("a paused plan without a done line recording the user's Pause is a finding"
     status: "paused",
     ledger: [
       "- [~] a: later - trigger: 2026-12-01",
-      "- [x] user chose Pause in offer DEMO-9 - evidence: reply 1B",
+      "- [x] user chose Pause in offer DEMO-9 - evidence: reply 1b",
     ],
   });
   expect(check(chosen.plan).report.findings).toEqual([]);
@@ -368,9 +368,9 @@ test("options the user passed over, dropped as not selected, leave nothing open"
   const { plan } = setup({
     status: "completed",
     ledger: [
-      "- [x] 1B: chosen change - evidence: PR 4",
-      "- [-] 1A: option not picked - by: user, not selected, asked in offer DEMO-1 (answered 1B)",
-      "- [-] 1C: option not picked - by: user, not selected, asked in offer DEMO-1 (answered 1B)",
+      "- [x] 1b: chosen change - evidence: PR 4",
+      "- [-] 1a: option not picked - by: user, not selected, asked in offer DEMO-1 (answered 1b)",
+      "- [-] 1c: option not picked - by: user, not selected, asked in offer DEMO-1 (answered 1b)",
     ],
   });
   const { code, report } = check(plan);
@@ -672,12 +672,12 @@ test("an answered offer line that does not say what happened to the other option
   const { plan } = setup({
     status: "completed",
     ledger: [
-      "- [x] Offer DEMO-1 selected 1B ... evidence: PR 1",
-      "- [x] Offer DEMO-2 selected 1A; 1B not selected ... evidence: PR 2",
+      "- [x] Offer DEMO-1 selected 1b ... evidence: PR 1",
+      "- [x] Offer DEMO-2 selected 1a; 1b not selected ... evidence: PR 2",
       "- [x] Offer DEMO-3 selected 2A ... evidence: PR 3",
       "- [-] Offer DEMO-3 option 2B ... by: user, not selected",
-      "- [x] Offer DEMO-4 selected 1A; rollout deferred until the release ... evidence: PR 4",
-      "- [x] Offer DEMO-5 selected 1A, 1B deferred ... evidence: PR 5",
+      "- [x] Offer DEMO-4 selected 1a; rollout deferred until the release ... evidence: PR 4",
+      "- [x] Offer DEMO-5 selected 1a, 1b deferred ... evidence: PR 5",
       "- [x] Presented the offer ... evidence: reply text",
     ],
   });
@@ -690,7 +690,7 @@ test("an answered offer line that does not say what happened to the other option
 });
 
 /** @param {string} id */
-const offerLine = (id, rest = "(presented 2026-10-12): Q1 pick one; 1A recommended") =>
+const offerLine = (id, rest = "(presented 2026-10-12): Q1 pick one; 1a recommended") =>
   `- [ ] Offer ${id} ${rest}`;
 /** @param {Report} report */
 const offerWarning = (report) =>
@@ -740,7 +740,7 @@ test("an offer answered, superseded or dropped on another ledger line is not cou
   const { plan } = setup({
     ledger: [
       offerLine("DEMO-1"),
-      "- [x] Offer DEMO-1 answered `go` = 1A; 1B not selected ... evidence: user message",
+      "- [x] Offer DEMO-1 answered `go` = 1a; 1b not selected ... evidence: user message",
       offerLine("DEMO-2"),
       "- [-] Offer DEMO-2 superseded by offer DEMO-3 ... by: superseded",
       offerLine("DEMO-3"),
@@ -772,7 +772,7 @@ test("an offer that is only awaiting the user's reply stays unanswered", () => {
 
 test("an offer the user chose is answered", () => {
   const { plan } = setup({
-    ledger: [offerLine("ABC-12"), "- [x] Offer ABC-12 chosen 1A ... evidence: PR 1"],
+    ledger: [offerLine("ABC-12"), "- [x] Offer ABC-12 chosen 1a ... evidence: PR 1"],
   });
   const { report } = check(plan);
   expect(report.unansweredOffers).toEqual([]);

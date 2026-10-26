@@ -90,7 +90,7 @@ const PAUSE_CHOICE =
 // still open, so only a line that says it was selected, chosen, picked or answered counts as an answer.
 const ANSWERED_OFFER =
   /\boffer\b.*\b(?:selected|chose|chosen|picked|answered)\b|\b(?:selected|chose|chosen|picked|answered)\b.*\boffer\b/i;
-// "deferred" and "dropped" count only next to an option code ("1B deferred"), since a line can defer
+// "deferred" and "dropped" count only next to an option code ("1b deferred"), since a line can defer
 // something else ("rollout deferred until the release").
 const DISPOSITION =
   /not selected|unselected|unpicked|declined|superseded|passed over|only option|all selected|no other options?|\b\d+[a-z]\b[^.;]{0,30}\b(?:deferred|dropped)\b|\b(?:deferred|dropped)\b[^.;]{0,15}\b\d+[a-z]\b/i;

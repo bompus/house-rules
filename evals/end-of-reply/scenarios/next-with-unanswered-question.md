@@ -11,7 +11,7 @@ Research checkouts with uncommitted results are kept or deleted only on the user
 
 ## Transcript so far
 
-AGENT: **Question 1: Land the guidance?** `1A` (Recommended) Land it now. `1B` Land it after adoption. **Question 2: What happens to the research checkout with 12 uncommitted result files?** `2A` (Recommended) Keep the research checkout. `2B` Delete it. Recommended combination: reply `1A, 2A` or `go`
+AGENT: **Question 1: Land the guidance?** `1a` (Recommended) Land it now. `1b` Land it after adoption. **Question 2: What happens to the research checkout with 12 uncommitted result files?** `2a` (Recommended) Keep the research checkout. `2b` Delete it. Recommended combination: reply `1a, 2a` or `go`
 USER: 1b
 AGENT: TOOL_CALL land the guidance after adoption
 TOOL RESULT: The guidance landed. Adoption is blocked on another session's pin move.

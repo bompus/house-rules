@@ -144,6 +144,8 @@ export function grade(
   }
   // `closeOut` lets a complete reply end with the close-out question; everything around it is graded as
   // usual, and any other question mark fails it.
+  // The layout is read from the whole reply, including the close-out block graded as part of it.
+  const printed = reply;
   if (closeOut && expect === "complete") {
     reply = closeOutOffer(reply) ?? reply;
   }
@@ -218,7 +220,7 @@ export function grade(
               ? true
               : (offer || tool) && !done;
   // The offer's layout is part of the shape the rules ask for, so a bad layout fails the behavior.
-  const layout = layoutProblems(reply);
+  const layout = layoutProblems(printed, coded);
   const right = behavior && (expect === "reply" || layout.length === 0);
   return { pass: right && declared, behavior: right, declared, tool, asks, done, offer, layout };
 }

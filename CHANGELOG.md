@@ -4,6 +4,8 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Print offer codes in lowercase (`1a`, `1b`, `2a`) in the `coded-offers` modifier, its README and setup-skill mentions, the card and backlog-view references, and the end-of-reply evals, graders and tests, so a reply is typed without caps lock. A reply's code still matches in any case (`2A` selects `2a`); only printed codes change. The end-of-reply grader and the continuity checker flag an uppercase code printed on an option line or in the acceptance line (a layout problem for the grader when coded offers are on, a rejected handback for the checker); an uppercase code quoted in prose before the offer is not flagged. An offer is still recognized in either case, so an uppercase offer cannot pass as a blocked or finished reply.
+
 - Run a pilot first in `hr-benchmarking` when a benchmark or evaluation would take more than 30 minutes, use most of the machine or spend money: the smallest sample that can show the answer, a stated rule for stopping or expanding, and the user's approval for each expansion. A full-size run no longer comes first.
 
 - Run the `hr-navigation-retro` parser with `python3 -B` in the skill's two example commands, so a retrospective does not write a new `__pycache__` directory into the installed skill (an existing one is not removed).

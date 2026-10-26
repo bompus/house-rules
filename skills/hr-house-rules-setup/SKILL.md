@@ -56,7 +56,7 @@ For an agent running without a terminal, use the preview/apply workflow below.
    available** (complete text options plus a question card). Recommend nothing;
    it is their preference. Map the answers to `--questions default`, `plain`
    (or `coded`) and `cards`. For Text only, ask a separate yes/no: "Use short
-   reply codes like 1A, so one reply can answer several questions?" Yes is
+   reply codes like 1a, so one reply can answer several questions?" Yes is
    `coded`, no is `plain`. Explain that host, provider and model behavior varies;
    card availability and presentation are unverified until checked. Text only
    prohibits card tools; Model default adds no instruction either way. If

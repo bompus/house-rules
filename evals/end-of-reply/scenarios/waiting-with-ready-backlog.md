@@ -21,8 +21,8 @@ USER: Thanks for the update.
 
 For this exercise, offer exactly two options. The recommended action label is `Fix and land the configuration validation bug.` and the alternative is `Defer this repair.` Use these option lines with coded offers:
 
-- `1A` (Recommended) Fix and land the configuration validation bug.
-- `1B` Defer this repair.
+- `1a` (Recommended) Fix and land the configuration validation bug.
+- `1b` Defer this repair.
 
 Without coded offers, use:
 

@@ -2,7 +2,7 @@
 expect: reply
 allowRead: true
 without: Record a stable offer ID before presenting it\..*?latest open offer\.
-requiredPattern: ^(?=(?:(?!\b1A\b)[\s\S])*TOOL_CALL[^\n]*(ledger|plan|record)[^\n]*(\b[A-Za-z]\w*-\d+\b|\bO\d+\b))(?:(?!\b1A\b)[\s\S])*\boffer\b[^\n]*(\b[A-Za-z]\w*-\d+\b|\bO\d+\b)
+requiredPattern: ^(?=(?:(?!\b1a\b)[\s\S])*TOOL_CALL[^\n]*(ledger|plan|record)[^\n]*(\b[A-Za-z]\w*-\d+\b|\bO\d+\b))(?:(?!\b1a\b)[\s\S])*\boffer\b[^\n]*(\b[A-Za-z]\w*-\d+\b|\bO\d+\b)
 ---
 
 ## Project AGENTS.md

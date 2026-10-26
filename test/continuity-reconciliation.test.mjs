@@ -48,7 +48,7 @@ const state = () => ({
 });
 const reply = "Owner is running.";
 const offer =
-  "**Question 1: Next step?**\n\n- `1A` (Recommended): Select deployment.\n- `1B`: Defer.\n\nRecommended: reply `1A` or `go`";
+  "**Question 1: Next step?**\n\n- `1a` (Recommended): Select deployment.\n- `1b`: Defer.\n\nRecommended: reply `1a` or `go`";
 
 test("floor emits a bound receipt, including open identities on invalid input", () => {
   const root = mkdtempSync(join(process.env.HOUSE_RULES_TEST_TMP ?? tmpdir(), "bound-floor-"));
