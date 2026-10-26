@@ -193,8 +193,9 @@ comparison's own noise floor, and it can supply the preset variation statistic.
 Before the first run used in that claim, set a reproducible variation criterion
 (statistic and threshold), and the stopping rule if it differs from the default.
 
-Size the benchmark to that criterion and no larger: plan the fewest cases, the
-shortest per-run duration and the fewest runs that can resolve it. Add no arms,
+Once the required coverage and controls are in, size the benchmark to that
+criterion and no larger: plan the fewest cases, the shortest per-run duration
+and the fewest runs that can resolve it. Add no arms,
 stages, warm-ups or repeats beyond what a valid comparison needs unless the
 user asks. When a shorter run cannot clear the criterion within the stopping
 rule, report the comparison as inconclusive, describe any difference seen as
