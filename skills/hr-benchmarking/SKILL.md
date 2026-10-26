@@ -209,12 +209,15 @@ answer: on every arm, the same harness and settings as the full run, over the
 fewest cases (at least 5, or all of them when fewer) chosen to cover each kind of
 case in the full set. Before it starts, write down what ends the work and what
 expands it. Stop when the verdict is settled: the pilot clears the declared
-criterion, or the cases left cannot change the result. Expand only when the
+criterion on every kind of case it covers (the spread between cases counts, not
+only run-to-run noise), or the cases left cannot change the result. A result
+that holds only for the pilot's cases is reported as that. Expand only when the
 pilot leaves the decision open, one planned stage at a time, with the stage's
 cost stated and the user's approval. Report the result with its sample size,
 and call a quality difference that sits inside the cases' run-to-run noise
-indicative only. Drop from later stages the cases and arms the pilot showed add
-nothing, such as a case every arm passes or an arm behind on every case.
+indicative only. When the comparison is of pass rate alone, drop from later
+stages the cases every arm passes and the arms behind on every case; keep a case
+that still separates the arms on time, cost or graded quality.
 
 For short or tail metrics, such as the longest stall in a run, give the
 threshold an absolute floor or use a percentile or count metric; a percentage
