@@ -221,6 +221,8 @@ Before creating a branch or worktree, read the default branch of the repository 
 
 Before creating an issue or pull request, search the target repository's open and closed issues and pull requests for the same change. Reuse or coordinate with a match; otherwise link related work and say how yours differs. If you cannot search, say so instead of claiming no matches.
 
+Create pull requests ready for review, not as drafts, unless the user asks for a draft.
+
 Before submitting a pull request to an external upstream project, review the
 final diff with `hr-code-review`, resolve actionable findings and run the
 relevant checks. Review evidence must cover the submitted changes; tests,
