@@ -4,6 +4,8 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Run a pilot first in `hr-benchmarking` when a benchmark or evaluation would take more than 30 minutes, use most of the machine or spend money: the smallest sample that can show the answer, a stated rule for stopping or expanding, and the user's approval for each expansion. A full-size run no longer comes first.
+
 - Run the `hr-navigation-retro` parser with `python3 -B` in the skill's two example commands, so a retrospective does not write a new `__pycache__` directory into the installed skill (an existing one is not removed).
 
 - Create pull requests ready for review, not as drafts, unless the user asks for a draft. Review bots skip drafts by default, and a draft has to be marked ready by hand before reviewers see it. The fresh-install size ceiling rises from 31,800 to 31,900 bytes for the added sentence (the composed rules grow by 89 bytes, to 31,838).
