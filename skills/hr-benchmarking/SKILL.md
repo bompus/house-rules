@@ -208,7 +208,9 @@ memory, or to spend money. The pilot is the smallest sample that can show the
 answer: on every arm, the same harness and settings as the full run, over the
 fewest cases (at least 5, or all of them when fewer) chosen to cover each kind of
 case in the full set. Before it starts, write down what ends the work and what
-expands it. Stop when the verdict is settled: the pilot clears the declared
+expands it.
+
+Stop when the verdict is settled: the pilot clears the declared
 criterion on every kind of case it covers (the spread between cases counts, not
 only run-to-run noise), or the cases left cannot change the result. A result
 that holds only for the pilot's cases is reported as that. Expand only when the
