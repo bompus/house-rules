@@ -1,5 +1,5 @@
 ---
-description: When documentation and existing code disagree, follow the code's conventions and report each mismatch, unless the documentation marks the code legacy.
+description: When documentation and existing code disagree, follow the code's conventions and report each mismatch, unless the documentation marks the code legacy or being migrated.
 after: Repository work
 ---
 
