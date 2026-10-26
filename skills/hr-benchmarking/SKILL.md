@@ -193,6 +193,14 @@ comparison's own noise floor, and it can supply the preset variation statistic.
 Before the first run used in that claim, set a reproducible variation criterion
 (statistic and threshold), and the stopping rule if it differs from the default.
 
+Size the benchmark to that criterion and no larger: plan the fewest cases, the
+shortest per-run duration and the fewest runs that can resolve it. Add no arms,
+stages, warm-ups or repeats beyond what a valid comparison needs unless the
+user asks. When a shorter run cannot clear the criterion within the stopping
+rule, report the comparison as inconclusive, describe any difference seen as
+indicative only, and state the wall-clock cost of a longer run instead of
+lengthening it.
+
 For short or tail metrics, such as the longest stall in a run, give the
 threshold an absolute floor or use a percentile or count metric; a percentage
 of a single small maximum can fail on the workload's own variation.
