@@ -4,6 +4,8 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Run the `hr-navigation-retro` parser with `python3 -B` in the skill's two example commands, so a retrospective leaves no `__pycache__` directory in the installed skill.
+
 - Create pull requests ready for review, not as drafts, unless the user asks for a draft. Review bots skip drafts by default, and a draft has to be marked ready by hand before reviewers see it. The fresh-install size ceiling rises from 31,800 to 31,900 bytes for the added sentence (the composed rules grow by 89 bytes, to 31,838).
 
 - Say when to reach for a visual beyond decisions: when a chart, table, diagram, image collage or mockup would say more than prose, build it self-contained, check how it renders and show it with the host's own preview or render tool before the final reply, falling back to a Markdown table or outline where the host has none. The reply adds only what the visual does not say and still carries the answer and any offer. This extends the existing "use a visual when it makes a change or decision clearer" sentence in the core Reporting section and its copy in the `hr-what-next` reporting reference; it names no host tools, and offers stay text. The fresh-install size ceiling rises from 31,500 to 31,800 bytes for the added words (the composed rules grow by 308 bytes, to 31,749).

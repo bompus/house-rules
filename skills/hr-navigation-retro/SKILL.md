@@ -38,7 +38,7 @@ Resolve the installed skill directory and task scratch directory before running
 these commands. Pass actual selected paths for the placeholders:
 
 ```bash
-python3 <skill-directory>/scripts/retro.py rank \
+python3 -B <skill-directory>/scripts/retro.py rank \
   --repo-root app=<absolute-recorded-repository-root> \
   --json <task-scratch>/retro.json \
   <selected-transcript.jsonl> <another-selected-transcript.jsonl>
@@ -59,7 +59,7 @@ can match. Neither the score nor a repeated read proves a navigation mistake.
 Read each top session through its timeline:
 
 ```bash
-python3 <skill-directory>/scripts/retro.py timeline <selected-transcript.jsonl>
+python3 -B <skill-directory>/scripts/retro.py timeline <selected-transcript.jsonl>
 ```
 
 Record the transcript and tool-call number for each navigation finding.
