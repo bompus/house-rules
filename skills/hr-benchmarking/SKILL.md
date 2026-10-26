@@ -215,10 +215,7 @@ that holds only for the pilot's cases is reported as that. Expand only when the
 pilot leaves the decision open, one planned stage at a time, with the stage's
 cost stated and the user's approval. Report the result with its sample size,
 and call a quality difference that sits inside the cases' run-to-run noise
-indicative only. When the comparison is of pass rate alone, drop from later
-stages the cases every arm passes; keep a case that still separates the arms on
-time, cost or graded quality. Keep every arm in later stages unless the cases
-left cannot change its standing.
+indicative only.
 
 For short or tail metrics, such as the longest stall in a run, give the
 threshold an absolute floor or use a percentile or count metric; a percentage
