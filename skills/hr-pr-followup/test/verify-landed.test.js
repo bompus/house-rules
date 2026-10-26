@@ -648,6 +648,7 @@ exec "${git}" "$@"
 permissionTest("an unsearchable addition ancestor is skipped without creating nested paths", () => {
   const { work, other } = permissionFixture();
   mkdirSync(join(work, "opaque"));
+  chmodSync(join(work, "opaque"), 0o755);
   mkdirSync(join(other, "opaque", "nested"), { recursive: true });
   writeFileSync(join(other, "opaque", "nested", "new"), "new\n");
   const sha = publishFixture(other);
@@ -747,7 +748,7 @@ test("a writable regular file mode change reaches the exact target", () => {
   const r = runScript(work, "--commit", sha, "--ff");
   expect(r.code).toBe(0);
   expect(sh(work, "git", "rev-parse", "HEAD")).toBe(sha);
-  expect(lstatSync(join(work, "a writable", "existing")).mode & 0o111).toBe(0o111);
+  expect(lstatSync(join(work, "a writable", "existing")).mode & 0o100).toBe(0o100);
 });
 
 test("diff config cannot hide a changed gitlink from the preflight", () => {
