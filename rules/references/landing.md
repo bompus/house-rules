@@ -46,3 +46,5 @@ After integration:
   original feature commits need not be ancestors.
 
 Before the first publish step of a version bump (tag, publish, release, announcement), review unreleased changelog entries and public materials (READMEs, charts, graphics with alt text, listing text, announcement, repository description and social preview) and fix what is stale first; an urgent release may limit only the materials to what it affects.
+
+When a change alters something the project states about itself (its scope, supported platforms, defaults, limits or counts), search every place that states it for the old claim before opening the pull request. Search the old wording and its synonyms; do not rely on remembering where it appears. Cover the README, package and registry metadata, docs, graphics and their sources and alt text, tool and help text, setup output, and the hosted repository's description, topics and social preview. Fix each hit or say why it stays. Where the project can, add a check that fails on the old claim.

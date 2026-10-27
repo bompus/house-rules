@@ -272,6 +272,8 @@ and do not ask the user.
 
 Before the first publish step of a version bump (tag, publish, release, announcement), review unreleased changelog entries and public materials (READMEs, charts, graphics with alt text, listing text, announcement, repository description and social preview) and fix what is stale first; an urgent release may limit only the materials to what it affects.
 
+When a change alters something the project states about itself (its scope, supported platforms, defaults, limits or counts), search every place that states it for the old claim before opening the pull request. Search the old wording and its synonyms; do not rely on remembering where it appears. Cover the README, package and registry metadata, docs, graphics and their sources and alt text, tool and help text, setup output, and the hosted repository's description, topics and social preview. Fix each hit or say why it stays. Where the project can, add a check that fails on the old claim.
+
 ## Cleanup
 
 Clean up your own leftovers without being asked. Delete a scratch directory you created once anything worth keeping is saved where it belongs and no process still uses it. Remove a task worktree and local branch you created as soon as their work is merged or saved elsewhere. First check that the default branch contains the work, the tree and index are clean, and no session, process or external dependency uses the path. A finished turn, an absent process, an inventory report or a merged-branch status does not prove release. Keep unique untracked or ignored files, then remove the worktree with `git worktree remove` and delete the branch locally and remotely.
