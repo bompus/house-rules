@@ -148,7 +148,7 @@ case "$*" in
   "pr view"*) printf 'feature\\t${oid}\\tmain\\tOPEN\\tfalse\\n';;
   "pr list"*) printf '%s' "${dependents}";;
   "repo view"*) echo "${repo}";;
-  "api graphql"*) printf '%s' '${JSON.stringify({ data: { viewer: { __typename: "User", login: "maintainer" }, repository: { viewerPermission: "ADMIN", pullRequest: { headRefOid: oid, reviewThreads: { nodes: threads, pageInfo: { hasNextPage: false, endCursor: null } }, reviews: { nodes: [], pageInfo: { hasNextPage: false, endCursor: null } }, comments: { nodes: [], pageInfo: { hasNextPage: false, endCursor: null } }, commits: { nodes: [{ commit: { oid, committedDate: "2026-10-01T00:00:00Z", tree: { entries: [] }, statusCheckRollup: null } }] } } } } })}';;
+  "api graphql"*) printf '%s' '${JSON.stringify({ data: { viewer: { __typename: "User", login: "maintainer" }, repository: { viewerPermission: "ADMIN", pullRequest: { headRefOid: oid, baseRef: { branchProtectionRule: null, rules: { pageInfo: { hasNextPage: false }, nodes: [] } }, reviewThreads: { nodes: threads, pageInfo: { hasNextPage: false, endCursor: null } }, reviews: { nodes: [], pageInfo: { hasNextPage: false, endCursor: null } }, comments: { nodes: [], pageInfo: { hasNextPage: false, endCursor: null } }, commits: { nodes: [{ commit: { oid, committedDate: "2026-10-01T00:00:00Z", tree: { entries: [] }, statusCheckRollup: null } }] } } } } })}';;
 esac
 `,
   );

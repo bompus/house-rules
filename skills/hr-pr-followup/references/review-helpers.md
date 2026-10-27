@@ -25,10 +25,16 @@ existing review check must report completion, apart from the no-quota skip below
 Every other check on the head commit must have finished and passed. A check run that is
 not COMPLETED, or that concluded anything but SUCCESS, NEUTRAL or SKIPPED, blocks the gate,
 and so does a commit status that is not SUCCESS. A head commit with no checks is not blocked,
-so a repository without CI passes on this point. The gate does not tell required checks from
-optional ones. A check that fails for a known unrelated reason blocks the merge until it passes
-or the owner decides to land another way. `--wait` also polls while such a check runs. The gate
-does not authorize landing.
+so a repository without CI passes on this point. A check the base branch requires, from
+branch protection or an active ruleset, that has not reported on the head commit also blocks
+the gate, so a required check that never started does not pass as green. The gate treats every
+check that did report the same way, required or not. It reads only what the API shows the
+viewer, and classic branch protection can be hidden from a viewer without write access. It
+matches names as written, so a required check restricted to one GitHub App is satisfied by a
+same-named check from any source; GitHub's merge check decides the source. A check
+that fails for a known unrelated reason blocks the merge until it passes or the owner decides to
+land another way. `--wait` also polls while such a check runs, and for a few minutes while a
+required check has not yet appeared. The gate does not authorize landing.
 
 The check named exactly "cubic · AI code reviewer" on the head commit is held to the
 same rule: while it runs, the gate refuses, and a completed one must conclude
@@ -101,7 +107,8 @@ judges whether the explanation answers the findings.
 Connections are paginated. Partial responses, malformed fields, repeated
 cursors and head changes fail closed. A final head read does not make review
 feedback an atomic snapshot. `--wait --timeout 30` polls while CodeRabbit,
-cubic or any other check runs, or briefly while CodeRabbit's expected check has not appeared.
+cubic or any other check runs, or briefly while CodeRabbit's expected check or a required check
+has not appeared.
 
 ## Resolve one review thread
 

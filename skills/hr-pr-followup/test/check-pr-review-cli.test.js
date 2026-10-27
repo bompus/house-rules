@@ -53,6 +53,7 @@ const connection = key => {
 const changed = (f.changedHead && val("reviewThreadsCursor")) ||
   (f.finalHeadChange && !query.includes("reviewThreads(first:"));
 const pr = {headRefOid:changed ? "b".repeat(40) : "${head}",
+  baseRef: "baseRef" in f ? f.baseRef : {branchProtectionRule:null,rules:{pageInfo:{hasNextPage:false},nodes:[]}},
   commits:{nodes:[{commit:{oid:"${head}",committedDate:"committedDate" in f ? f.committedDate : "2026-10-01T00:00:00Z",tree:{entries:[]},
     statusCheckRollup:{contexts:connection("contexts")}}}]},
   reviewThreads:connection("reviewThreads"),reviews:connection("reviews"),comments:connection("comments")};
@@ -274,4 +275,48 @@ test("CLI refuses a head commit with a missing or malformed commit date", () => 
   for (const committedDate of [null, "not a date", 5]) {
     expect(run({ committedDate }).code).toBe(2);
   }
+});
+
+const requiredByRuleset = (/** @type {string[]} */ ...contexts) => ({
+  branchProtectionRule: null,
+  rules: {
+    pageInfo: { hasNextPage: false },
+    nodes: [
+      {
+        type: "REQUIRED_STATUS_CHECKS",
+        parameters: { requiredStatusChecks: contexts.map((context) => ({ context })) },
+      },
+    ],
+  },
+});
+
+test("CLI refuses a required check that has not reported on the head", () => {
+  const passing = { name: "check", status: "COMPLETED", conclusion: "SUCCESS" };
+  const r = run({ baseRef: requiredByRuleset("check", "windows"), contexts: [page([passing])] });
+  expect(r.code).toBe(1);
+  expect(r.err).toContain("required check has not reported: windows");
+  expect(r.err).not.toContain("required check has not reported: check");
+  const both = run({
+    baseRef: requiredByRuleset("check", "windows"),
+    contexts: [page([passing, { ...passing, name: "windows" }])],
+  });
+  expect(both.code).toBe(0);
+});
+
+test("CLI reads classic branch protection and refuses an incomplete rule list", () => {
+  const classic = {
+    branchProtectionRule: {
+      requiredStatusCheckContexts: ["legacy"],
+      requiredStatusChecks: [{ context: "legacy" }],
+    },
+    rules: { pageInfo: { hasNextPage: false }, nodes: [] },
+  };
+  const missing = run({ baseRef: classic });
+  expect(missing.code).toBe(1);
+  expect(missing.err).toContain("required check has not reported: legacy");
+  const partial = run({
+    baseRef: { ...classic, rules: { pageInfo: { hasNextPage: true }, nodes: [] } },
+  });
+  expect(partial.code).toBe(2);
+  expect(run({ baseRef: null }).code).toBe(2);
 });

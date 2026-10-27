@@ -1,5 +1,10 @@
 import { expect, test } from "bun:test";
-import { openFeedback, reviewFeedback, waitForReview } from "../scripts/check-pr-review.ts";
+import {
+  openFeedback,
+  requiredCheckNames,
+  reviewFeedback,
+  waitForReview,
+} from "../scripts/check-pr-review.ts";
 
 const bot = { __typename: "Bot", login: "coderabbitai" };
 const user = { __typename: "User", login: "maintainer" };
@@ -7,15 +12,23 @@ const user = { __typename: "User", login: "maintainer" };
 // Resolved threads can coexist with an unanswered outside-diff review finding.
 // Returns `any`: tests pass partial nodes that omit fields the real query always returns.
 /**
- * @param {{ threads?: any[], reviews?: any[], comments?: any[], contexts?: any[], files?: string[] }} [parts]
+ * @param {{ threads?: any[], reviews?: any[], comments?: any[], contexts?: any[], files?: string[], requiredChecks?: string[] }} [parts]
  * @returns {any}
  */
-function pr({ threads = [], reviews = [], comments = [], contexts = [], files = [] } = {}) {
+function pr({
+  threads = [],
+  reviews = [],
+  comments = [],
+  contexts = [],
+  files = [],
+  requiredChecks = [],
+} = {}) {
   const tree = { entries: files.map((name) => ({ name })) };
   return {
     headRefOid: "a".repeat(40),
     viewer: user,
     viewerPermission: "ADMIN",
+    requiredChecks,
     reviewThreads: { nodes: threads },
     reviews: { nodes: reviews },
     comments: { nodes: comments },
@@ -944,4 +957,87 @@ test("waitForReview still waits for a bot that is merely slow", async () => {
     [],
   );
   expect(clock).toBe(60_000);
+});
+
+test("a required check that has not reported on the head is not green by omission", () => {
+  const passing = { name: "check", status: "COMPLETED", conclusion: "SUCCESS" };
+  const required = ["check", "windows"];
+  expect(openFeedback(pr({ requiredChecks: required, contexts: [passing] }))).toEqual([
+    "required check has not reported: windows",
+  ]);
+  // Either kind of check satisfies the name: a check run or a commit status.
+  const status = { context: "windows", state: "SUCCESS" };
+  expect(openFeedback(pr({ requiredChecks: required, contexts: [passing, status] }))).toEqual([]);
+  // A required check that reported and failed keeps its own reason, not the missing one.
+  const failed = { name: "windows", status: "COMPLETED", conclusion: "FAILURE" };
+  expect(openFeedback(pr({ requiredChecks: required, contexts: [passing, failed] }))).toEqual([
+    "check windows concluded FAILURE",
+  ]);
+  // An advisory check never refuses, even when a ruleset lists it.
+  expect(openFeedback(pr({ requiredChecks: ["shadow review"] }))).toEqual([]);
+  // With nothing required the old behavior stands: a head with no checks is not blocked.
+  expect(openFeedback(pr())).toEqual([]);
+});
+
+test("waitForReview gives a required check a few minutes to appear, then reports it", async () => {
+  const required = ["check"];
+  const missing = pr({ requiredChecks: required });
+  const done = pr({
+    requiredChecks: required,
+    contexts: [{ name: "check", status: "COMPLETED", conclusion: "SUCCESS" }],
+  });
+  let clock = 0;
+  const opts = {
+    pollMs: 30_000,
+    sleep: async (/** @type {number} */ ms) => (clock += ms),
+    now: () => clock,
+  };
+  const reads = [missing, missing, done];
+  expect(await waitForReview(() => reads.shift(), { ...opts, timeoutMs: 1_800_000 })).toEqual([]);
+  clock = 0;
+  expect(await waitForReview(() => missing, { ...opts, timeoutMs: 1_800_000 })).toEqual([
+    "required check has not reported: check",
+  ]);
+  expect(clock).toBe(180_000);
+});
+
+test("requiredCheckNames merges classic protection with active rulesets and rejects partial data", () => {
+  const rules = (/** @type {any[]} */ nodes, hasNextPage = false) => ({
+    pageInfo: { hasNextPage },
+    nodes,
+  });
+  const ruleset = {
+    type: "REQUIRED_STATUS_CHECKS",
+    parameters: { requiredStatusChecks: [{ context: "Test" }, { context: "Check" }] },
+  };
+  const other = { type: "PULL_REQUEST", parameters: {} };
+  const protection = {
+    requiredStatusCheckContexts: ["Legacy", "Check"],
+    requiredStatusChecks: [{ context: "Legacy" }],
+  };
+  expect(
+    requiredCheckNames({ branchProtectionRule: protection, rules: rules([ruleset, other]) }),
+  ).toEqual(["Check", "Legacy", "Test"]);
+  expect(requiredCheckNames({ branchProtectionRule: null, rules: rules([other]) })).toEqual([]);
+  expect(() =>
+    requiredCheckNames({ branchProtectionRule: null, rules: rules([ruleset], true) }),
+  ).toThrow("incomplete");
+  expect(() => requiredCheckNames(null)).toThrow();
+  // Missing or mistyped fields fail closed instead of reading as "nothing required".
+  for (const bad of [
+    { branchProtectionRule: {}, rules: rules([]) },
+    {
+      branchProtectionRule: { requiredStatusCheckContexts: [], requiredStatusChecks: "x" },
+      rules: rules([]),
+    },
+    { branchProtectionRule: null, rules: rules([{ parameters: {} }]) },
+  ]) {
+    expect(() => requiredCheckNames(bad)).toThrow("malformed");
+  }
+  expect(() =>
+    requiredCheckNames({
+      branchProtectionRule: null,
+      rules: rules([{ type: "REQUIRED_STATUS_CHECKS", parameters: null }]),
+    }),
+  ).toThrow("malformed");
 });

@@ -69,13 +69,14 @@ Name the exact revision, failed or unfinished gates and unresolved decisions.
 Clean CI alone is not evidence that every review finding was handled. A review
 that times out, errors or never replies is not approval. A required check from
 branch protection or rulesets that has not reported on the head is unfinished,
-not green, whether or not a helper lists it.
+not green, even where no helper lists it.
 
 When the repository or user selects these GitHub helper policies, use
 [the CodeRabbit and cubic review gate and one-thread resolver](references/review-helpers.md).
 Its review-status checks cover CodeRabbit and cubic; its thread check covers any
 reviewer and its review-body check any bot. It also refuses while any other check on the head
-commit is unfinished or did not pass. It does not replace the caller's judgment. The same
+commit is unfinished or did not pass, and while a check the base branch requires has not
+reported on it. It does not replace the caller's judgment. The same
 reference describes the landing helper scripts (`merge-pr.sh`, `verify-landed.sh`,
 `check-landing.py`).
 

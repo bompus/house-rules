@@ -31,6 +31,11 @@
 // Every other check on the head commit must have finished and passed too: a check run that is not
 // COMPLETED, or that concluded anything but SUCCESS, NEUTRAL or SKIPPED, and a commit status that
 // is not SUCCESS, refuse. A head commit with no checks is not blocked.
+// A check the base branch requires (branch protection or an active ruleset) that has not reported on
+// the head commit refuses as well, so a required check that never started does not pass as green;
+// --wait gives it a few minutes to appear after a push, like the CodeRabbit check. Only what the
+// API shows the viewer is read: classic branch protection can be hidden from a viewer without
+// write access.
 //   bun scripts/check-pr-review.ts <pr> [--repo <owner>/<name>] [--wait [--timeout <minutes>]]
 // Exit 1 while feedback is open, 2 when gh fails. Without --repo, gh resolves the repository from
 // the current checkout. --wait polls every 30 s while CodeRabbit's or cubic's review or any other check is still running, and for
@@ -65,6 +70,7 @@ const CHECK_RUNNING = "check still running: ";
 // Check-run conclusions that do not block a merge; every other conclusion does.
 const PASSING_CONCLUSIONS = ["SUCCESS", "NEUTRAL", "SKIPPED"];
 const NO_CHECK = "no CodeRabbit check on the head commit";
+const REQUIRED_MISSING = "required check has not reported: ";
 // Checks that only observe a pull request. Queued, running or failed, they never refuse a landing.
 const ADVISORY_CHECKS = new Set(["shadow review"]);
 // A neutral cubic result means it did not review the head; a person has to ask again.
@@ -106,6 +112,8 @@ export type ReviewState = {
   headRefOid: string;
   viewer: Author;
   viewerPermission: string | null;
+  /** Check names the base branch requires, from branch protection and active rulesets. */
+  requiredChecks: string[];
   reviewThreads: { nodes: { isResolved: boolean; comments: { nodes: { url: string }[] } }[] };
   reviews: {
     nodes: {
@@ -157,6 +165,8 @@ const CONNECTIONS = {
   comments: `comments(first:100,after:$commentsCursor){${PAGE_INFO} nodes{author{__typename login} editor{__typename login} body createdAt lastEditedAt isMinimized}}`,
   contexts: `statusCheckRollup{contexts(first:100,after:$contextsCursor){${PAGE_INFO} nodes{... on StatusContext{context state description} ... on CheckRun{name status conclusion title completedAt}}}}`,
 };
+// The checks the base branch requires: classic branch protection and active rulesets.
+const REQUIRED_CHECKS_FIELDS = `baseRef{branchProtectionRule{requiredStatusCheckContexts requiredStatusChecks{context}} rules(first:100){pageInfo{hasNextPage} nodes{type parameters{... on RequiredStatusChecksParameters{requiredStatusChecks{context}}}}}}`;
 type Connection = keyof typeof CONNECTIONS;
 type Page = { nodes: unknown[]; pageInfo: { hasNextPage: boolean; endCursor: string | null } };
 
@@ -266,7 +276,7 @@ function requestReviewPage(
     .filter((k) => k !== "contexts")
     .map((k) => CONNECTIONS[k])
     .join("\n");
-  const query = `query($owner:String!,$name:String!,$n:Int!${declarations ? "," + declarations : ""}){viewer{__typename login} repository(owner:$owner,name:$name){viewerPermission pullRequest(number:$n){headRefOid ${fields} commits(last:1){nodes{commit{oid committedDate tree{entries{name}} ${pending.includes("contexts") ? CONNECTIONS.contexts : ""}}}}}}}`;
+  const query = `query($owner:String!,$name:String!,$n:Int!${declarations ? "," + declarations : ""}){viewer{__typename login} repository(owner:$owner,name:$name){viewerPermission pullRequest(number:$n){headRefOid ${REQUIRED_CHECKS_FIELDS} ${fields} commits(last:1){nodes{commit{oid committedDate tree{entries{name}} ${pending.includes("contexts") ? CONNECTIONS.contexts : ""}}}}}}}`;
   const variables: Record<string, string | number> = { owner, name, n };
   for (const key of pending) {
     if (cursors[key]) {
@@ -311,6 +321,53 @@ export function githubGraphQL(
   return record(response.data);
 }
 
+/** Names of the checks the base branch requires; rejects a missing base ref or a partial rule list. */
+export function requiredCheckNames(baseRef: unknown): string[] {
+  const ref = record(baseRef);
+  const rules = record(ref.rules);
+  if (record(rules.pageInfo).hasNextPage !== false || !Array.isArray(rules.nodes)) {
+    throw new Error("base branch rules are incomplete");
+  }
+  const names = new Set<string>();
+  const add = (value: unknown) => {
+    if (!text(value)) {
+      throw new Error("malformed required check");
+    }
+    names.add(value);
+  };
+  if (ref.branchProtectionRule !== null) {
+    const rule = record(ref.branchProtectionRule);
+    const contexts = rule.requiredStatusCheckContexts;
+    const checks = rule.requiredStatusChecks;
+    if (!Array.isArray(contexts) || !Array.isArray(checks)) {
+      throw new Error("malformed branch protection rule");
+    }
+    for (const context of contexts) {
+      add(context);
+    }
+    for (const check of checks) {
+      add(record(check).context);
+    }
+  }
+  for (const node of rules.nodes) {
+    const rule = record(node);
+    if (!text(rule.type)) {
+      throw new Error("malformed base branch rule");
+    }
+    if (rule.type !== "REQUIRED_STATUS_CHECKS") {
+      continue;
+    }
+    const checks = record(rule.parameters).requiredStatusChecks;
+    if (!Array.isArray(checks)) {
+      throw new Error("malformed required checks rule");
+    }
+    for (const check of checks) {
+      add(record(check).context);
+    }
+  }
+  return [...names].sort();
+}
+
 /** Reads complete connections; rejects partial responses and head changes during pagination. */
 function readReviewState(owner: string, name: string, n: number): ReviewState {
   const collected: Record<Connection, unknown[]> = {
@@ -330,6 +387,7 @@ function readReviewState(owner: string, name: string, n: number): ReviewState {
   let expectedHead: string | undefined;
   let viewer: Author = null;
   let viewerPermission: string | null = null;
+  let requiredChecks: string[] = [];
   let tree: ReviewState["commits"]["nodes"][number]["commit"]["tree"];
   let committedDate: string;
   for (;;) {
@@ -348,6 +406,7 @@ function readReviewState(owner: string, name: string, n: number): ReviewState {
       throw new Error("PR head changed during feedback read; rerun");
     }
     expectedHead = pr.headRefOid;
+    requiredChecks = requiredCheckNames(pr.baseRef);
     viewer = data.viewer as Author;
     viewerPermission = repo.viewerPermission as string | null;
     const commits = record(pr.commits).nodes;
@@ -406,6 +465,7 @@ function readReviewState(owner: string, name: string, n: number): ReviewState {
     headRefOid: expectedHead!,
     viewer,
     viewerPermission,
+    requiredChecks,
     reviewThreads: { nodes: collected.reviewThreads as ReviewState["reviewThreads"]["nodes"] },
     reviews: { nodes: collected.reviews as ReviewState["reviews"]["nodes"] },
     comments: { nodes: collected.comments as ReviewState["comments"]["nodes"] },
@@ -687,6 +747,12 @@ export function reviewFeedback(pr: ReviewState): { open: string[]; skipped: stri
       }
     }
   }
+  const reported = new Set(contexts.map((ctx) => ctx.context ?? ctx.name ?? ""));
+  for (const required of pr.requiredChecks) {
+    if (!reported.has(required) && !ADVISORY_CHECKS.has(required)) {
+      open.push(`${REQUIRED_MISSING}${required}`);
+    }
+  }
   open.push(...unansweredReviewBodies(pr));
   return { open, skipped };
 }
@@ -715,7 +781,8 @@ export async function waitForReview(
   const start = now();
   const pending = (open: string[]) =>
     reviewRunning(open) ||
-    (now() - start < NO_CHECK_GRACE_MS && open.some((line) => line.startsWith(NO_CHECK)));
+    (now() - start < NO_CHECK_GRACE_MS &&
+      open.some((line) => line.startsWith(NO_CHECK) || line.startsWith(REQUIRED_MISSING)));
   let open = openFeedback(read());
   while (pending(open) && now() - start < timeoutMs) {
     await sleep(pollMs);
