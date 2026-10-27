@@ -27,7 +27,9 @@ not COMPLETED, or that concluded anything but SUCCESS, NEUTRAL or SKIPPED, block
 and so does a commit status that is not SUCCESS. A head commit with no checks is not blocked,
 so a repository without CI passes on this point. A check the base branch requires, from
 branch protection or an active ruleset, that has not reported on the head commit also blocks
-the gate, so a required check that never started does not pass as green. The gate treats every
+the gate, so a required check that never started does not pass as green.
+
+The gate treats every
 check that did report the same way, required or not. It reads only what the API shows the
 viewer, and classic branch protection can be hidden from a viewer without write access. It
 matches names as written, so a required check restricted to one GitHub App is satisfied by a
