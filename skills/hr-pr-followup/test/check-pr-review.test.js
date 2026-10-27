@@ -603,6 +603,62 @@ test("skips a SKIPPED CodeRabbit check when its latest reply said the review lim
   ).toHaveLength(1);
 });
 
+test("accepts a neutral CodeRabbit rate-limit reply only after the head commit", () => {
+  const neutral = { ...skippedRun, conclusion: "NEUTRAL", title: null };
+  const result = reviewFeedback(pr({ contexts: [neutral], comments: [limitReply] }));
+  expect(result.open).toEqual([]);
+  expect(result.skipped).toHaveLength(1);
+  expect(result.skipped[0]).toContain("CodeRabbit: no capacity");
+  for (const createdAt of ["2026-10-18T08:00:00Z", "2026-10-18T09:00:00Z"]) {
+    expect(
+      openFeedback(pr({ contexts: [neutral], comments: [{ ...limitReply, createdAt }] })),
+    ).toHaveLength(1);
+  }
+  const failure = {
+    ...limitReply,
+    createdAt: "2026-10-18T10:06:00Z",
+    body: "<details><summary>❌ Action failed</summary><dd>Review failed.</dd></details>",
+  };
+  for (const comments of [
+    [],
+    [{ ...limitReply, author: user }],
+    [{ ...limitReply, isMinimized: true }],
+    [{ ...limitReply, lastEditedAt: "2026-10-18T10:01:00Z", editor: user }],
+    [
+      {
+        ...limitReply,
+        createdAt: "2026-10-18T08:00:00Z",
+        lastEditedAt: limitReply.createdAt,
+        editor: bot,
+      },
+    ],
+    [limitReply, failure],
+    [limitReply, { ...failure, createdAt: limitReply.createdAt }],
+  ]) {
+    expect(openFeedback(pr({ contexts: [neutral], comments }))).toHaveLength(1);
+  }
+  const review = { author: bot, body: "", submittedAt: limitReply.createdAt, url: "r1" };
+  expect(
+    openFeedback(pr({ contexts: [neutral], comments: [limitReply], reviews: [review] })),
+  ).toHaveLength(1);
+  for (const context of [
+    { ...neutral, status: "IN_PROGRESS" },
+    { ...neutral, conclusion: "FAILURE" },
+    { ...neutral, conclusion: "CANCELLED" },
+  ]) {
+    expect(openFeedback(pr({ contexts: [context], comments: [limitReply] }))).toHaveLength(1);
+  }
+  expect(
+    openFeedback(
+      pr({
+        contexts: [neutral],
+        comments: [limitReply],
+        threads: [{ isResolved: false, comments: { nodes: [{ url: "u1" }] } }],
+      }),
+    ),
+  ).toEqual(["unresolved thread: u1"]);
+});
+
 const fileLimit = {
   context: "CodeRabbit",
   state: "SUCCESS",
