@@ -57,6 +57,10 @@ with no end date, and the gate prints a `skipped review bot` line naming it and 
 - a completed NEUTRAL CodeRabbit check with a visible, bot-authored quota notice
   saying "Review rate limited" or "Review limit reached". The notice must name the
   full current head and follow that commit, with no later failure superseding it;
+- a CodeRabbit check run that concluded SKIPPED with the title "Review skipped", when
+  CodeRabbit's latest reply to a review command said "Review rate limited." and it has not
+  posted a review since (the reply can precede the head commit). Without such a reply, or with a
+  newer reply (or one at the same second) that says anything else, the skipped check refuses;
 - a successful CodeRabbit "Review skipped: N files exceed the limit of M" status accompanied by a visible comment from
   the CodeRabbit bot explicitly reporting insufficient usage credits or metered capacity.
   Its review range must name the full current head, and its creation or bot-authored edit

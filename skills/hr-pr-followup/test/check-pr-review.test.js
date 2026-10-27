@@ -503,6 +503,106 @@ test("skips a rate-limited CodeRabbit and keeps every other reason to refuse", (
   });
 });
 
+// CodeRabbit answers a review command at its limit with a comment, and its check run for the head
+// concludes SKIPPED with only the title "Review skipped".
+const skippedRun = {
+  name: "CodeRabbit",
+  status: "COMPLETED",
+  conclusion: "SKIPPED",
+  title: "Review skipped",
+  completedAt: "2026-10-18T10:05:00Z",
+};
+const limitReply = {
+  author: bot,
+  editor: null,
+  lastEditedAt: null,
+  isMinimized: false,
+  createdAt: "2026-10-18T10:00:00Z",
+  body: "<!-- coderabbit-ai-generated:v1 -->\n<details>\n<summary>⚠️ Action not completed</summary>\n<dl>\n<dd>\n\nReview rate limited.\n\n---\n\nYour included review limit is currently reached. Your next included review will be available in 51 minutes.\n\n</dd>\n</dl>\n</details>",
+};
+
+test("skips a SKIPPED CodeRabbit check when its latest reply said the review limit is reached", () => {
+  const files = [".coderabbit.yaml"];
+  const result = reviewFeedback(pr({ files, contexts: [skippedRun], comments: [limitReply] }));
+  expect(result.open).toEqual([]);
+  expect(result.skipped).toHaveLength(1);
+  expect(result.skipped[0]).toContain("CodeRabbit: no capacity");
+  // A push made while limited gets the SKIPPED check with no new reply, so the reply may precede the head commit.
+  const earlier = { ...limitReply, createdAt: "2026-10-18T08:00:00Z" };
+  expect(openFeedback(pr({ files, contexts: [skippedRun], comments: [earlier] }))).toEqual([]);
+  // A newer reply that is not the limit message (even one a person edited), a CodeRabbit review after
+  // the reply, no reply, a hidden or foreign reply, another skip title, or another conclusion still refuse.
+  const failure = {
+    ...limitReply,
+    createdAt: "2026-10-18T10:06:00Z",
+    body: "<details><summary>❌ Action failed</summary><dl><dd>Review failed. The pull request is too large to review.</dd></dl></details>",
+  };
+  const review = { author: bot, body: "", submittedAt: "2026-10-18T10:30:00Z", url: "r1" };
+  const sameSecond = { ...failure, createdAt: limitReply.createdAt };
+  const performed = {
+    ...limitReply,
+    createdAt: "2026-10-18T10:01:00Z",
+    body: "<details><summary>✅ Action performed</summary><dl><dd>Full review finished.</dd></dl></details>",
+  };
+  for (const { ctx, comments } of [
+    { ctx: skippedRun, comments: [] },
+    { ctx: skippedRun, comments: [limitReply, performed] },
+    { ctx: skippedRun, comments: [limitReply, failure] },
+    {
+      ctx: skippedRun,
+      comments: [limitReply, { ...failure, lastEditedAt: "2026-10-18T10:07:00Z", editor: user }],
+    },
+    { ctx: skippedRun, comments: [limitReply, sameSecond] },
+    { ctx: skippedRun, comments: [sameSecond, limitReply] },
+    {
+      ctx: skippedRun,
+      comments: [limitReply, { ...failure, body: `A note a person added.\n${failure.body}` }],
+    },
+    {
+      ctx: skippedRun,
+      comments: [
+        limitReply,
+        { ...failure, body: "Review failed.", lastEditedAt: "2026-10-18T10:07:00Z", editor: user },
+      ],
+    },
+    {
+      ctx: skippedRun,
+      comments: [
+        limitReply,
+        {
+          ...limitReply,
+          createdAt: "2026-10-18T10:06:00Z",
+          body: "<!-- summary -->\n> ## Review skipped\n> This PR contains 154 files, which is 54 over the limit of 100.",
+        },
+      ],
+    },
+    {
+      ctx: skippedRun,
+      comments: [limitReply, { ...failure, isMinimized: true }],
+    },
+    {
+      ctx: skippedRun,
+      comments: [{ ...failure, isMinimized: true }, limitReply, { ...failure, isMinimized: true }],
+    },
+    { ctx: skippedRun, comments: [{ ...limitReply, isMinimized: true }] },
+    { ctx: skippedRun, comments: [{ ...limitReply, author: user }] },
+    { ctx: skippedRun, comments: [{ ...limitReply, body: "Review rate limited." }] },
+    { ctx: { ...skippedRun, title: "Review failed" }, comments: [limitReply] },
+    { ctx: { ...skippedRun, conclusion: "FAILURE" }, comments: [limitReply] },
+  ]) {
+    expect(openFeedback(pr({ files, contexts: [ctx], comments }))).toHaveLength(1);
+  }
+  expect(
+    openFeedback(pr({ files, contexts: [skippedRun], comments: [earlier], reviews: [review] })),
+  ).toHaveLength(1);
+  const sameTime = { ...review, submittedAt: limitReply.createdAt };
+  expect(
+    openFeedback(
+      pr({ files, contexts: [skippedRun], comments: [limitReply], reviews: [sameTime] }),
+    ),
+  ).toHaveLength(1);
+});
+
 const fileLimit = {
   context: "CodeRabbit",
   state: "SUCCESS",
