@@ -217,6 +217,38 @@ The run prints each arm's passes, such as `rules 9/9, one-line 6/9, no-rules
 since such a scenario cannot show an effect. The two control arms are graded
 without `--coded`, and only the rules arm sets the exit status.
 
+### Claude Code Stop hook
+
+`scripts/stop-claim-check.mjs` is a small Stop hook that needs no other service. When a final reply says
+nothing is left, or that the session is complete (the `done` test in `replyFacts`), and the session's plan
+still has open or deferred ledger items, it holds the reply back once and names the first items. It reads the
+hook input on stdin, the transcript the input names and the plan file; it runs no model.
+
+Register it in Claude Code settings, with the path to this checkout:
+
+```json
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          { "type": "command", "command": "node \"<checkout>/scripts/stop-claim-check.mjs\"" }
+        ]
+      }
+    ]
+  }
+}
+```
+
+- **Which plan:** the last existing `plans/<topic>/plan.md` the session wrote (Write, Edit or MultiEdit) or
+  changed from the shell (`>`, `>>`, `tee`, `sed -i`), or handed to `check-open-work.mjs` or
+  `close-ledger-line.mjs`. A `cd` earlier in the same command and a bare `plan.md` after it are followed;
+  reading a plan with `cat` does not count. A session that never touched a plan file passes, because there is no
+  list to check.
+- **Once only:** the continuation carries `stop_hook_active`, which always passes, so the check cannot loop.
+- **Fails open:** an unreadable or corrupt transcript, an unreadable plan, or a plan that does not parse,
+  passes and prints one line on stderr. A partial last transcript line is ignored. It checks the claim against the ledger, not whether the reply is right.
+
 ## Results with `--baseline`
 
 A historical result, not a measurement of the current rules: `rules/core.md`
