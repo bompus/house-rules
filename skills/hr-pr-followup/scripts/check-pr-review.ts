@@ -649,7 +649,9 @@ export function reviewFeedback(pr: ReviewState): { open: string[]; skipped: stri
         ctx.conclusion === "NEUTRAL" &&
         codeRabbitSaidNoCapacity(pr, CODERABBIT_LIMIT_COMMENT)
       ) {
-        skipped.push(`${name}: no quota (authenticated current-head comment reports a review limit)`);
+        skipped.push(
+          `${name}: no quota (authenticated current-head comment reports a review limit)`,
+        );
       } else {
         const retry = CUBIC.test(name) ? `; ${CUBIC_RETRY}` : "";
         open.push(
