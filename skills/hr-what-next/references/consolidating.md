@@ -64,23 +64,27 @@ request or issue, `L<number>` for a ledger line. The verdicts:
 
 `verify <workdir> [--exclude <file>] [--offline]` checks every DONE and SUPERSEDED
 row against the snapshot and GitHub and writes `closure-candidates.json`. A DONE
-row is `ok` only when each pull request or issue it names, in the row or in the
-ledger line itself, is merged or closed and
-it names at least one such pull request or issue, or a ledger line already marked
-done (a dropped line was given up, not finished); a ledger line that the row or the line itself names and that is still
-open, or closed without its proof, holds the row back, as does a line the row names that does not exist. A SUPERSEDED row is `ok` when it names another ledger line that exists and
-keeps the scope: a line that is closed, stays open, or is itself superseded by one
-that does (two lines superseding each other carry nothing). A replacement that is
+row is `ok` only when it names at least one pull request, issue or ledger line
+already marked done (a dropped line was given up, not finished), and every pull
+request or issue it names, in the row or in the ledger line itself, is merged or
+closed. A ledger line that the row or the line itself names and that is still
+open, or closed without its proof, holds the row back, as does a line the row
+names that does not exist.
+
+A SUPERSEDED row is `ok` when it names another ledger line that exists and keeps
+the scope: a line that is closed, stays open, or is itself superseded by one that
+does (two lines superseding each other carry nothing). A replacement that is
 itself superseded by a line that fails the check holds the first row back too;
 fix the later row and verify again.
-Everything else is held back with a flag: `BAD` (a named pull request, issue or ledger line
-is open or not found), `UNCHECKED` (a DONE row, or its line, names a pull request or
-issue without its repository, such as `tool#2` or `PR #42`, which cannot be checked
-unless the same number is also named with one), `NOREF` (nothing
-checkable is named), `EXCLUDED`,
-`CONFLICT` (two rows disagree), `DUPLICATE` and `INVALID` (an unknown verdict, or
-a line that is not open or deferred). Run one `verify` at a time per work directory.
-When GitHub cannot be asked it exits 3 and checks nothing.
+
+Everything else is held back with a flag: `BAD` (a named pull request, issue or
+ledger line is open or not found), `UNCHECKED` (a DONE row, or its line, names a
+pull request or issue without its repository, such as `tool#2` or `PR #42`, which
+cannot be checked unless the same number is also named with one), `NOREF`
+(nothing checkable is named), `EXCLUDED`, `CONFLICT` (two rows disagree),
+`DUPLICATE` and `INVALID` (an unknown verdict, or a line that is not open or
+deferred). Run one `verify` at a time per work directory. When GitHub cannot be
+asked it exits 3 and checks nothing.
 
 Put the lines whose evidence is weaker than you want to close on without a look
 in the exclusion file, one `L<number>` per line (`#` starts a comment), and show
@@ -90,16 +94,21 @@ true and only lacks a reference to name.
 `apply <workdir> <plan> --dry-run` lists what would close; without `--dry-run` it
 closes each `ok` candidate in place with `close-ledger-line.mjs` (DONE as done,
 SUPERSEDED as dropped), adding the checks that passed to the evidence. A line
-edited since the snapshot, no longer open, or resting on a ledger line (or a chain of them) whose
-text has changed in any way, other than by a closure an earlier `apply` of this work
-directory made (it records each in `closures-written.json`), or whose closed state
-has changed since `verify` is skipped and reported; a snapshot that changed since `verify`
-stops the run. Apply soon after verifying: pull request states are read once, by
-`verify`. Nothing else should edit the plan while `apply` runs; it has no lock, so
-a line changed between its check and its close is not caught. A single line of about 128 KiB or more cannot be passed to the close helper; `apply` reports that closure as failed and leaves the line open. A superseded row
-rests on the first named line that carries the scope, and a dropped line counts as carrying it without the check following where its own `by:` text points; read the lines closed as superseded in the report. Running it
-again changes nothing. Afterwards run `check-open-work.mjs` on the plan and
-compare the counts with the dry run.
+edited since the snapshot, no longer open, or resting on a ledger line (or a chain
+of them) whose text has changed in any way, other than by a closure an earlier
+`apply` of this work directory made (it records each in `closures-written.json`),
+or whose closed state has changed since `verify` is skipped and reported; a
+snapshot that changed since `verify` stops the run. Apply soon after verifying:
+pull request states are read once, by `verify`.
+
+Nothing else should edit the plan while `apply` runs; it has no lock, so a line
+changed between its check and its close is not caught. A single line of about
+128 KiB or more cannot be passed to the close helper; `apply` reports that
+closure as failed and leaves the line open. A superseded row rests on the first
+named line that carries the scope, and a dropped line counts as carrying it
+without the check following where its own `by:` text points; read the lines
+closed as superseded in the report. Running it again changes nothing. Afterwards
+run `check-open-work.mjs` on the plan and compare the counts with the dry run.
 
 ## What remains
 
