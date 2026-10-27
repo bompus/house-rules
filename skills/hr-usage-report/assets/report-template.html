@@ -17,9 +17,10 @@
         --bg: var(--background, #1a1a19);
         --grid: color-mix(in srgb, var(--fg) 12%, transparent);
       }
-      html,
-      body {
-        background: var(--bg);
+      html {
+        /* The host's own background, as T3's html_render paints it, so an embedded report adds no
+           slab and follows the host's color scheme; a standalone file falls back to dark. */
+        background: var(--background, #1a1a19);
       }
       body {
         font-family: var(--font-sans, system-ui, sans-serif);
