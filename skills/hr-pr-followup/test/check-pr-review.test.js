@@ -578,6 +578,71 @@ test("rejects stale, foreign, hidden or unbound CodeRabbit capacity evidence", (
   }
 });
 
+const neutralCodeRabbit = { name: "CodeRabbit", status: "COMPLETED", conclusion: "NEUTRAL" };
+const quotaComment = {
+  ...capacityComment,
+  body: capacityComment.body.replace(
+    "This review couldn't start because sufficient usage credits or metered capacity aren't available.",
+    "Review limit reached. You've used all free OSS reviews for now.",
+  ),
+};
+
+test("accepts a neutral CodeRabbit check only with authenticated current-head quota evidence", () => {
+  for (const phrase of ["Review limit reached", "Review rate limited"]) {
+    const result = reviewFeedback(
+      pr({
+        contexts: [neutralCodeRabbit],
+        comments: [
+          { ...quotaComment, body: quotaComment.body.replace("Review limit reached", phrase) },
+        ],
+      }),
+    );
+    expect(result.open).toEqual([]);
+    expect(result.skipped).toEqual([
+      "CodeRabbit: no quota (authenticated current-head comment reports a review limit)",
+    ]);
+  }
+  for (const comment of [
+    { ...quotaComment, author: user },
+    { ...quotaComment, isMinimized: true },
+    { ...quotaComment, createdAt: "2026-10-18T08:00:00Z" },
+    { ...quotaComment, lastEditedAt: "2026-10-18T11:00:00Z", editor: user },
+    { ...quotaComment, body: quotaComment.body.replace("a".repeat(40), "c".repeat(40)) },
+    { ...quotaComment, body: "Review limit reached" },
+    {
+      ...quotaComment,
+      body: quotaComment.body.replace("Review limit reached", "<!-- Review limit reached -->"),
+    },
+    capacityComment,
+  ]) {
+    const result = reviewFeedback(pr({ contexts: [neutralCodeRabbit], comments: [comment] }));
+    expect(result.open).toHaveLength(1);
+    expect(result.skipped).toEqual([]);
+  }
+});
+
+test("quota evidence cannot clear failed, running or superseding failure gates", () => {
+  for (const context of [
+    { ...neutralCodeRabbit, status: "IN_PROGRESS" },
+    ...["FAILURE", "CANCELLED", "TIMED_OUT", "SKIPPED"].map((conclusion) => ({
+      ...neutralCodeRabbit,
+      conclusion,
+    })),
+  ]) {
+    const result = reviewFeedback(pr({ contexts: [context], comments: [quotaComment] }));
+    expect(result.open).toHaveLength(1);
+    expect(result.skipped).toEqual([]);
+  }
+  const result = reviewFeedback(
+    pr({
+      contexts: [neutralCodeRabbit],
+      comments: [quotaComment, bareFailure("2026-10-18T11:00:00Z")],
+    }),
+  );
+  expect(result.open).toHaveLength(1);
+  expect(result.skipped).toEqual([]);
+});
+
 test("capacity comments cannot clear pending, failed, missing or unrelated review gates", () => {
   for (const state of ["PENDING", "FAILURE", "ERROR"]) {
     const result = reviewFeedback(

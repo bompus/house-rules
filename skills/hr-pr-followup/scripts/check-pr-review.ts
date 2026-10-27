@@ -18,7 +18,8 @@
 // with no end date, and the gate prints which bot it skipped and why: a NEUTRAL cubic check titled
 // "AI review line limit reached", or a NEUTRAL cubic check followed, after it completed, by a cubic
 // comment that the monthly review limit is reached; and a CodeRabbit success status saying "Review
-// rate limited" or "Review limit reached". A successful file-limit skipped CodeRabbit status also
+// rate limited" or "Review limit reached", or a completed NEUTRAL check with an authenticated
+// current-head quota notice. A successful file-limit skipped CodeRabbit status also
 // qualifies when its authenticated, visible current-head summary explicitly reports insufficient
 // credits or capacity and no later failure supersedes it; a file limit alone does not.
 // A bot that is still running is waited for, and a failed
@@ -73,6 +74,7 @@ const CUBIC_LIMIT_TITLE = /line limit reached/i;
 const CUBIC_LIMIT_COMMENT = /reached its (?:free )?monthly review limit/i;
 const CUBIC_BOT = /^cubic-dev-ai$/i;
 const CODERABBIT_LIMIT = /^Review (?:rate limited|limit reached)/i;
+const CODERABBIT_LIMIT_COMMENT = /\bReview (?:rate limited|limit reached)\b/i;
 const CODERABBIT_FILE_LIMIT = /^Review skipped: \d+ files exceed the limit of \d+$/i;
 const CODERABBIT_CREDITS =
   /This review couldn't start because sufficient usage credits or metered capacity aren't available\./i;
@@ -549,8 +551,8 @@ const codeRabbitCommentAt = (comment: ReviewState["comments"]["nodes"][number]) 
     ? Date.parse(comment.lastEditedAt ?? comment.createdAt)
     : NaN;
 
-/** A credit-capacity summary must identify the final head and not precede a later failure. */
-const codeRabbitSaidOutOfCredits = (pr: ReviewState) => {
+/** A capacity summary must identify the final head and not precede a later failure. */
+const codeRabbitSaidNoCapacity = (pr: ReviewState, reason: RegExp) => {
   let latestFailure = -Infinity;
   for (const comment of pr.comments.nodes) {
     if (
@@ -579,7 +581,7 @@ const codeRabbitSaidOutOfCredits = (pr: ReviewState) => {
       ),
     ];
     return (
-      CODERABBIT_CREDITS.test(body) &&
+      reason.test(body) &&
       ranges.length === 1 &&
       ranges[0]?.[1]?.toLowerCase() === pr.headRefOid.toLowerCase()
     );
@@ -642,6 +644,12 @@ export function reviewFeedback(pr: ReviewState): { open: string[]; skipped: stri
         skipped.push(
           `${name}: no quota (${byTitle ? `check title "${ctx.title}"` : "it commented after this check that the monthly review limit is reached"})`,
         );
+      } else if (
+        CODERABBIT.test(name) &&
+        ctx.conclusion === "NEUTRAL" &&
+        codeRabbitSaidNoCapacity(pr, CODERABBIT_LIMIT_COMMENT)
+      ) {
+        skipped.push(`${name}: no quota (authenticated current-head comment reports a review limit)`);
       } else {
         const retry = CUBIC.test(name) ? `; ${CUBIC_RETRY}` : "";
         open.push(
@@ -663,7 +671,7 @@ export function reviewFeedback(pr: ReviewState): { open: string[]; skipped: stri
         CODERABBIT.test(name) &&
         ctx.state === "SUCCESS" &&
         CODERABBIT_FILE_LIMIT.test(description) &&
-        codeRabbitSaidOutOfCredits(pr)
+        codeRabbitSaidNoCapacity(pr, CODERABBIT_CREDITS)
       ) {
         skipped.push(
           `${name}: no capacity (authenticated current-head comment reports insufficient usage credits or metered capacity)`,
