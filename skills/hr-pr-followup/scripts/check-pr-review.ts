@@ -19,8 +19,9 @@
 // "AI review line limit reached", or a NEUTRAL cubic check followed, after it completed, by a cubic
 // comment that the monthly review limit is reached; and a CodeRabbit success status saying "Review
 // rate limited" or "Review limit reached", or a completed NEUTRAL check with an authenticated
-// current-head quota notice, or a SKIPPED CodeRabbit check titled "Review skipped" when CodeRabbit's
-// latest reply to a review command said "Review rate limited" and it has not reviewed since. A
+// current-head quota notice or a rate-limit reply after the head commit, or a SKIPPED CodeRabbit
+// check titled "Review skipped" when CodeRabbit's latest reply to a review command said "Review
+// rate limited" and it has not reviewed since. A
 // successful file-limit skipped CodeRabbit status also qualifies when its authenticated, visible
 // current-head summary explicitly reports insufficient credits or capacity and no later failure
 // supersedes it; a file limit alone does not.
@@ -626,9 +627,9 @@ const codeRabbitCommentAt = (comment: ReviewState["comments"]["nodes"][number]) 
  * CodeRabbit review after it. The reply can precede the head commit: a push made while limited gets a
  * SKIPPED check without a new reply. Any CodeRabbit comment a person edited, or a reply with a note
  * prepended, counts as the latest reply but never as the limit message, so an edit cannot hide a
- * newer failure.
+ * newer failure. A finite replyAfter requires the reply's original creation after that time.
  */
-const codeRabbitSaidRateLimited = (pr: ReviewState) => {
+const codeRabbitSaidRateLimited = (pr: ReviewState, replyAfter = -Infinity) => {
   let latest = -Infinity;
   let limited = false;
   for (const comment of pr.comments.nodes) {
@@ -645,7 +646,10 @@ const codeRabbitSaidRateLimited = (pr: ReviewState) => {
     const at = Date.parse(comment.lastEditedAt ?? comment.createdAt);
     // A hidden reply can end the skip, as a newer failure, but never start it.
     const isLimit =
-      authentic && comment.isMinimized === false && CODERABBIT_RATE_LIMIT_REPLY.test(text);
+      authentic &&
+      comment.isMinimized === false &&
+      Date.parse(comment.createdAt) > replyAfter &&
+      CODERABBIT_RATE_LIMIT_REPLY.test(text);
     if (at > latest) {
       latest = at;
       limited = isLimit;
@@ -656,6 +660,7 @@ const codeRabbitSaidRateLimited = (pr: ReviewState) => {
   }
   return (
     limited &&
+    latest > replyAfter &&
     !pr.reviews.nodes.some(
       (review) =>
         isBot(review.author) &&
@@ -756,12 +761,17 @@ export function reviewFeedback(pr: ReviewState): { open: string[]; skipped: stri
         (byTitle || cubicSaidOutOfQuota(pr, ctx.completedAt));
       if (
         CODERABBIT.test(name) &&
-        ctx.conclusion === "SKIPPED" &&
-        CODERABBIT_SKIPPED_TITLE.test(ctx.title ?? "") &&
-        codeRabbitSaidRateLimited(pr)
+        ((ctx.conclusion === "SKIPPED" && CODERABBIT_SKIPPED_TITLE.test(ctx.title ?? "")) ||
+          ctx.conclusion === "NEUTRAL") &&
+        codeRabbitSaidRateLimited(
+          pr,
+          ctx.conclusion === "NEUTRAL" ? Date.parse(head?.committedDate ?? "") : -Infinity,
+        )
       ) {
         skipped.push(
-          `${name}: no capacity (check "${ctx.title}" after its reply that the review limit is reached)`,
+          ctx.conclusion === "NEUTRAL"
+            ? `${name}: no capacity (authenticated rate-limit reply after the head commit)`
+            : `${name}: no capacity (check "${ctx.title}" after its reply that the review limit is reached)`,
         );
       } else if (limited) {
         skipped.push(
