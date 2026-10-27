@@ -637,7 +637,7 @@ test("accepts a neutral CodeRabbit check only with authenticated current-head qu
 test("quota evidence cannot clear failed, running or superseding failure gates", () => {
   for (const context of [
     { ...neutralCodeRabbit, status: "IN_PROGRESS" },
-    ...["FAILURE", "CANCELLED", "TIMED_OUT", "SKIPPED"].map((conclusion) => ({
+    ...["FAILURE", "CANCELLED", "TIMED_OUT"].map((conclusion) => ({
       ...neutralCodeRabbit,
       conclusion,
     })),
@@ -651,6 +651,119 @@ test("quota evidence cannot clear failed, running or superseding failure gates",
       contexts: [neutralCodeRabbit],
       comments: [quotaComment, bareFailure("2026-10-18T11:00:00Z")],
     }),
+  );
+  expect(result.open).toHaveLength(1);
+  expect(result.skipped).toEqual([]);
+});
+
+// CodeRabbit answers a review command it has no quota for with a reply that does not name the head.
+// The reply counts only as the answer to a person's command posted after the head commit (09:00).
+// A "SKIPPED" check ends the same way for the repository's manual-review setting, so the check alone
+// never shows a quota.
+const limitReply = (body = "Review rate limited.") => ({
+  author: bot,
+  editor: null,
+  lastEditedAt: null,
+  isMinimized: false,
+  createdAt: "2026-10-18T10:00:00Z",
+  body: `<!-- This is an auto-generated reply by CodeRabbit -->\n<details>\n<summary>⚠️ Action not completed</summary>\n\n${body}\n\n---\n\nYour included review limit is currently reached.\n</details>`,
+});
+const fullReview = {
+  author: user,
+  isMinimized: false,
+  createdAt: "2026-10-18T09:30:00Z",
+  body: "@coderabbitai full review",
+};
+const skippedCodeRabbit = { ...neutralCodeRabbit, conclusion: "SKIPPED" };
+
+test("accepts a skipped or neutral CodeRabbit check after a rate-limit reply to a current command", () => {
+  for (const context of [neutralCodeRabbit, skippedCodeRabbit]) {
+    for (const body of ["Review rate limited.", "Review limit reached."]) {
+      const result = reviewFeedback(
+        pr({ contexts: [context], comments: [fullReview, limitReply(body)] }),
+      );
+      expect(result.open).toEqual([]);
+      expect(result.skipped).toEqual([
+        "CodeRabbit: no quota (authenticated current-head comment reports a review limit)",
+      ]);
+    }
+  }
+});
+
+test("a rate-limit reply does not clear a skipped check unless it is current, genuine and unsuperseded", () => {
+  for (const comment of [
+    { ...limitReply(), author: user },
+    { ...limitReply(), isMinimized: true },
+    { ...limitReply(), createdAt: "2000-01-01T00:00:00Z" },
+    { ...limitReply(), lastEditedAt: "2026-10-18T11:00:00Z", editor: user },
+    limitReply("Review failed."),
+    limitReply("<!-- Review rate limited. -->"),
+    { ...limitReply(), body: "Review rate limited." },
+    { ...limitReply(), body: "Action not completed" },
+    // A reply naming another head is for another commit.
+    limitReply(
+      `Review rate limited. Reviewing files that changed from the base of the PR and between ${"b".repeat(40)} and ${"c".repeat(40)}.`,
+    ),
+  ]) {
+    const result = reviewFeedback(
+      pr({ contexts: [skippedCodeRabbit], comments: [fullReview, comment] }),
+    );
+    expect(result.open).toHaveLength(1);
+    expect(result.skipped).toEqual([]);
+  }
+  const superseded = reviewFeedback(
+    pr({
+      contexts: [skippedCodeRabbit],
+      comments: [fullReview, limitReply(), bareFailure("2026-10-18T11:00:00Z")],
+    }),
+  );
+  expect(superseded.open).toHaveLength(1);
+  expect(superseded.skipped).toEqual([]);
+});
+
+test("a rate-limit reply needs a person's review command after the head commit and before the reply", () => {
+  for (const command of [
+    undefined,
+    { ...fullReview, createdAt: "2026-10-18T08:00:00Z" },
+    { ...fullReview, createdAt: "2026-10-18T10:30:00Z" },
+    { ...fullReview, author: bot },
+    { ...fullReview, isMinimized: true },
+    { ...fullReview, body: "please review" },
+  ]) {
+    const result = reviewFeedback(
+      pr({
+        contexts: [skippedCodeRabbit],
+        comments: command ? [command, limitReply()] : [limitReply()],
+      }),
+    );
+    expect(result.open).toHaveLength(1);
+    expect(result.skipped).toEqual([]);
+  }
+});
+
+test("a bot edit does not make a rate-limit reply posted before the head commit current", () => {
+  const old = {
+    ...limitReply(),
+    createdAt: "2026-10-18T08:30:00Z",
+    lastEditedAt: "2026-10-18T10:00:00Z",
+    editor: bot,
+  };
+  const result = reviewFeedback(
+    pr({
+      contexts: [skippedCodeRabbit],
+      comments: [{ ...fullReview, createdAt: "2026-10-18T08:00:00Z" }, fullReview, old],
+    }),
+  );
+  expect(result.open).toHaveLength(1);
+  expect(result.skipped).toEqual([]);
+});
+
+test("a manual-review notice does not clear a skipped CodeRabbit check", () => {
+  const notice = limitReply(
+    "This repository does not receive automatic reviews because it has fewer than 10 stars.",
+  );
+  const result = reviewFeedback(
+    pr({ contexts: [skippedCodeRabbit], comments: [fullReview, notice] }),
   );
   expect(result.open).toHaveLength(1);
   expect(result.skipped).toEqual([]);

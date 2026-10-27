@@ -19,7 +19,10 @@
 // "AI review line limit reached", or a NEUTRAL cubic check followed, after it completed, by a cubic
 // comment that the monthly review limit is reached; and a CodeRabbit success status saying "Review
 // rate limited" or "Review limit reached", or a completed NEUTRAL check with an authenticated
-// current-head quota notice. A successful file-limit skipped CodeRabbit status also
+// current-head quota notice, or a completed NEUTRAL or skipped check after CodeRabbit's reply to a
+// person's `@coderabbitai full review` saying "Review rate limited" (the reply names no head; it is
+// current because the command and the reply both came after the head commit; a check skipped for
+// another reason is not told apart from it). A successful file-limit skipped CodeRabbit status also
 // qualifies when its authenticated, visible current-head summary explicitly reports insufficient
 // credits or capacity and no later failure supersedes it; a file limit alone does not.
 // A bot that is still running is waited for, and a failed
@@ -81,6 +84,10 @@ const CUBIC_LIMIT_COMMENT = /reached its (?:free )?monthly review limit/i;
 const CUBIC_BOT = /^cubic-dev-ai$/i;
 const CODERABBIT_LIMIT = /^Review (?:rate limited|limit reached)/i;
 const CODERABBIT_LIMIT_COMMENT = /\bReview (?:rate limited|limit reached)\b/i;
+// CodeRabbit's reply to a review command when it has no quota: the whole comment, once its markers
+// and tags are removed, starts "Action not completed Review rate limited."
+const CODERABBIT_LIMIT_REPLY =
+  /^(?:⚠\uFE0F?\s*)?Action not completed\s+Review (?:rate limited|limit reached)\b/i;
 const CODERABBIT_FILE_LIMIT = /^Review skipped: \d+ files exceed the limit of \d+$/i;
 const CODERABBIT_CREDITS =
   /This review couldn't start because sufficient usage credits or metered capacity aren't available\./i;
@@ -611,8 +618,8 @@ const codeRabbitCommentAt = (comment: ReviewState["comments"]["nodes"][number]) 
     ? Date.parse(comment.lastEditedAt ?? comment.createdAt)
     : NaN;
 
-/** A capacity summary must identify the final head and not precede a later failure. */
-const codeRabbitSaidNoCapacity = (pr: ReviewState, reason: RegExp) => {
+/** When CodeRabbit last failed, as a time; a foreign edit counts as infinitely late so it cannot lift a block. */
+const codeRabbitLatestFailure = (pr: ReviewState) => {
   let latestFailure = -Infinity;
   for (const comment of pr.comments.nodes) {
     if (
@@ -626,6 +633,12 @@ const codeRabbitSaidNoCapacity = (pr: ReviewState, reason: RegExp) => {
       latestFailure = Number.isFinite(at) ? Math.max(latestFailure, at) : Infinity;
     }
   }
+  return latestFailure;
+};
+
+/** A capacity summary must identify the final head and not precede a later failure. */
+const codeRabbitSaidNoCapacity = (pr: ReviewState, reason: RegExp) => {
+  const latestFailure = codeRabbitLatestFailure(pr);
   return pr.comments.nodes.some((comment) => {
     const at = codeRabbitCommentAt(comment);
     if (
@@ -645,6 +658,43 @@ const codeRabbitSaidNoCapacity = (pr: ReviewState, reason: RegExp) => {
       ranges.length === 1 &&
       ranges[0]?.[1]?.toLowerCase() === pr.headRefOid.toLowerCase()
     );
+  });
+};
+
+/**
+ * CodeRabbit's reply to a review command, saying it has no quota. The reply names no head, so it
+ * counts only as the answer to a person's `@coderabbitai full review` posted after the head commit
+ * and before the reply, and only by when the bot posted it: a later bot edit does not make an older
+ * reply current. A reply that does name another head, or that a later failure supersedes, does not
+ * count.
+ */
+const codeRabbitLimitReply = (pr: ReviewState) => {
+  const headAt = Date.parse(pr.commits.nodes[0]?.commit.committedDate ?? "");
+  const latestFailure = codeRabbitLatestFailure(pr);
+  return pr.comments.nodes.some((comment) => {
+    const edited = codeRabbitCommentAt(comment);
+    const at = Date.parse(comment.createdAt);
+    if (!(edited > headAt) || !(at > headAt) || at <= latestFailure) {
+      return false;
+    }
+    const body = botText(comment);
+    const named = [...body.matchAll(/\bbetween `?[a-f0-9]{40}`? and `?([a-f0-9]{40})`?/gi)];
+    if (
+      !CODERABBIT_LIMIT_REPLY.test(body) ||
+      named.some((match) => match[1]?.toLowerCase() !== pr.headRefOid.toLowerCase())
+    ) {
+      return false;
+    }
+    return pr.comments.nodes.some((command) => {
+      const sent = Date.parse(command.createdAt);
+      return (
+        command.author?.__typename === "User" &&
+        command.isMinimized === false &&
+        CODERABBIT_RETRIGGER.test(command.body.trim()) &&
+        sent > headAt &&
+        sent < at
+      );
+    });
   });
 };
 
@@ -706,8 +756,8 @@ export function reviewFeedback(pr: ReviewState): { open: string[]; skipped: stri
         );
       } else if (
         CODERABBIT.test(name) &&
-        ctx.conclusion === "NEUTRAL" &&
-        codeRabbitSaidNoCapacity(pr, CODERABBIT_LIMIT_COMMENT)
+        (ctx.conclusion === "NEUTRAL" || ctx.conclusion === "SKIPPED") &&
+        (codeRabbitSaidNoCapacity(pr, CODERABBIT_LIMIT_COMMENT) || codeRabbitLimitReply(pr))
       ) {
         skipped.push(
           `${name}: no quota (authenticated current-head comment reports a review limit)`,

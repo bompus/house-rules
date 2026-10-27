@@ -54,9 +54,18 @@ with no end date, and the gate prints a `skipped review bot` line naming it and 
   followed, after it completed, by a comment from cubic that the workspace reached its
   monthly review limit (cubic's reply to `@cubic review` when it is out of quota);
 - a CodeRabbit success status saying "Review rate limited" or "Review limit reached";
-- a completed NEUTRAL CodeRabbit check with a visible, bot-authored quota notice
+- a completed NEUTRAL or skipped CodeRabbit check with a visible, bot-authored quota notice
   saying "Review rate limited" or "Review limit reached". The notice must name the
   full current head and follow that commit, with no later failure superseding it;
+- a completed NEUTRAL or skipped CodeRabbit check after CodeRabbit's reply to a person's
+  `@coderabbitai full review`: the reply starts "Action not completed" and says "Review rate
+  limited" or "Review limit reached". The reply names no head, so it counts only when the
+  command was posted after the head commit and before the reply, the bot posted the reply
+  (a later edit does not count) after the head commit, no review range in it names another
+  head, and no later failure supersedes it. A skipped check shows the same "Review skipped"
+  title whatever the reason, so one skipped for another reason (such as a disabled base
+  branch) is not told apart from a quota skip when such a reply exists; a skipped check with
+  only the "no automatic reviews" notice stays refused;
 - a successful CodeRabbit "Review skipped: N files exceed the limit of M" status accompanied by a visible comment from
   the CodeRabbit bot explicitly reporting insufficient usage credits or metered capacity.
   Its review range must name the full current head, and its creation or bot-authored edit
