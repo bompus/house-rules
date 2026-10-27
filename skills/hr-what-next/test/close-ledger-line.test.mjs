@@ -241,3 +241,30 @@ test("a note with a line break is refused", () => {
   }
   expect(readFileSync(plan, "utf8")).toBe(before);
 });
+
+test("--expect closes the line only while it still reads as the caller saw it", () => {
+  const plan = setup(["- [ ] a:  wait for the release", "- [ ] b"]);
+  const changed = close(
+    plan,
+    "--line",
+    "6",
+    "--evidence",
+    "shipped",
+    "--expect",
+    "a: wait for the review",
+  );
+  expect(changed.status).toBe(1);
+  expect(changed.stderr).toContain("no longer reads as expected");
+  expect(lines(plan)[5]).toBe("- [ ] a:  wait for the release");
+  const same = close(
+    plan,
+    "--line",
+    "6",
+    "--evidence",
+    "shipped",
+    "--expect",
+    "a: wait for the release",
+  );
+  expect(same.status).toBe(0);
+  expect(lines(plan)[5]).toContain("- [x] a:  wait for the release … evidence: shipped");
+});

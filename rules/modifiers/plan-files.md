@@ -54,7 +54,9 @@ does not judge the outcome.
   dropped (`by: user, not selected, asked in <offer ID>` for an option the user passed over; a drop by
   the user always records where they answered). Name
   each scratch directory, checkout and branch you own in an item. Write each
-  follow-up as an item, not as a sentence elsewhere in the plan.
+  follow-up as an item, not as a sentence elsewhere in the plan. When a result
+  lands, close the item that promised it in place (`close-ledger-line.mjs`)
+  instead of adding a result line and leaving the old one open.
 - An item that waits on another thread (an upstream issue or pull request, a
   maintainer, another session) carries `recheck: YYYY-MM-DD`, because a
   trigger such as "maintainer replies" does not fire by itself. A question you

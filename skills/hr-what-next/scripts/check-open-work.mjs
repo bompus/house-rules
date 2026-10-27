@@ -33,8 +33,9 @@
 // hr-forgotten-work-audit writes: a missing, unreadable or older-than-30-days record is a warning. A plan
 // without that line gets no audit warning.
 import { pathToFileURL } from "node:url";
+import { githubStates } from "./github-state.mjs";
 import { MARKS, RECHECK, droppedByUserUnasked, parsePlan, planSnapshot } from "./plan-ledger.mjs";
-import { spawn, spawnSync } from "node:child_process";
+import { spawnSync } from "node:child_process";
 import {
   existsSync,
   mkdirSync,
@@ -358,81 +359,6 @@ function references(text, repo) {
     }
   }
   return { github: [...github], bare, commits: [...new Set(rest.match(COMMIT) ?? [])] };
-}
-
-/**
- * @param {...string} args
- * @returns {Promise<{ stdout?: string, error?: string }>}
- */
-function gh(...args) {
-  return new Promise((done) => {
-    let stdout = "";
-    let stderr = "";
-    const child = spawn("gh", args, { timeout: 30_000 });
-    child.stdout.on("data", (chunk) => (stdout += chunk));
-    child.stderr.on("data", (chunk) => (stderr += chunk));
-    child.on("error", (error) =>
-      done({
-        error:
-          /** @type {NodeJS.ErrnoException} */ (error).code === "ENOENT"
-            ? "gh not found"
-            : error.message,
-      }),
-    );
-    child.on("close", (code) =>
-      done(code === 0 ? { stdout } : { error: stderr.trim() || `gh exit ${code}` }),
-    );
-  });
-}
-
-// "merged", "closed", "open" or "unknown" (not found) per reference; null when GitHub cannot be asked.
-/**
- * @param {string[]} refs
- * @param {boolean} offline
- * @returns {Promise<{ states: Map<string, string>, skipped?: string }>}
- */
-async function githubStates(refs, offline) {
-  /** @type {Map<string, string>} */
-  const states = new Map();
-  if (!refs.length) {
-    return { states };
-  }
-  if (offline) {
-    return { states, skipped: "GitHub check skipped: --offline" };
-  }
-  /** @param {string} ref */
-  const lookup = async (ref) => {
-    const [, owner, name, number] = /** @type {RegExpMatchArray} */ (
-      ref.match(/^(.+)\/(.+)#(\d+)$/)
-    );
-    const result = await gh("api", `repos/${owner}/${name}/issues/${number}`);
-    if (result.error) {
-      if (/\b404\b|not found/i.test(result.error) && result.error !== "gh not found") {
-        return states.set(ref, "unknown");
-      }
-      throw new Error(result.error.split("\n")[0]);
-    }
-    const issue = JSON.parse(/** @type {string} */ (result.stdout));
-    states.set(ref, issue.pull_request?.merged_at ? "merged" : issue.state);
-  };
-  try {
-    // The first lookup runs alone, so an offline host or a missing gh costs one call, not one per item.
-    await lookup(/** @type {string} */ (refs[0]));
-    const queue = refs.slice(1);
-    await Promise.all(
-      Array.from({ length: 8 }, async () => {
-        while (queue.length) {
-          await lookup(/** @type {string} */ (queue.shift()));
-        }
-      }),
-    );
-  } catch (error) {
-    return {
-      states: new Map(),
-      skipped: `GitHub check skipped: ${/** @type {Error} */ (error).message}`,
-    };
-  }
-  return { states };
 }
 
 /** @param {string} path */
@@ -895,7 +821,7 @@ async function run(options) {
   report.resolvedLater = resolvedLater(plan.items, options.repo);
   if (open.length > LEDGER_BUDGET.open) {
     report.warnings.push(
-      `${open.length} open or deferred ledger lines, over the budget of ${LEDGER_BUDGET.open}: close finished lines in place with close-ledger-line.mjs and move parked ones to a backlog`,
+      `${open.length} open or deferred ledger lines, over the budget of ${LEDGER_BUDGET.open}: close finished lines in place with close-ledger-line.mjs and move parked ones to a backlog; offer a consolidation (references/consolidating.md)`,
     );
   }
   const kib = Math.floor(Buffer.byteLength(planText) / 1024);

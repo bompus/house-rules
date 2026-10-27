@@ -40,16 +40,23 @@ completed state before the completion message; a report alone does not do so.
    and "re-check due" lists `recheck:` dates that are past or within a week.
    Its "possibly resolved by a later done line" group lists open or deferred
    items whose pull request, issue, commit, thread id, offer ID or work id
-   (such as `docs-fix-20261016`) a later done line also names: the result was
-   likely logged as a new line instead of closing the old one.
+   (such as `docs-fix-20261016`) a later done line also names. It is a weak
+   hint: a shared work id matches lines that only belong to the same effort, and
+   one ledger listed 210 such items, many not resolved. Read the later line
+   before treating the earlier one as finished.
    Look at each before reporting it as done or still waiting. Close a
-   finished line in place with `scripts/close-ledger-line.mjs <plan>
+   finished line in place, when its result lands and not on a later pass, with `scripts/close-ledger-line.mjs <plan>
    --line <n> --evidence "<what shows it is done>"`, or drop it with
    `--drop --by "<who>"`; a drop by the user also needs `--asked "<offer ID or
    message>"`, and the checker warns about one without it. `--match <text>` picks
    the line by its text. It refuses without evidence and changes nothing when run again. The checker
    warns when a ledger has more than 100 open or deferred lines or the plan
-   reaches 256 KiB.
+   reaches 256 KiB. When the open-line warning fires, offer a consolidation in the same
+   reply, as one numbered question in the governing offer format: "consolidate
+   now?", with the helper count (the chunk count its `chunk` command reports),
+   the token range, the minutes and the plan quota they draw on, as
+   [the consolidation reference](references/consolidating.md) gives them. Detect, report and offer on your own; start the
+   consolidation's helpers or run its `apply` only after the user says go.
    It also prints `unanswered offers: N`, the number of offer IDs ("Offer
    ABC-12") on open ledger lines that no line records as answered, dropped or
    superseded, and warns at three. Plans that number offers without an ID are
@@ -131,7 +138,9 @@ the user was never asked about individually before a close-out:
    stacked offers start the walk-through, mark each superseded in the ledger,
    keep its option text, and queue its questions as groups.
 2. Put items in one group when one answer can cover them: the same owner, the
-   same action or one dependency. Ask one group per reply, one numbered
+   same action, one dependency or the same project or concern. Record the groups
+   in the plan as a question queue, one line per group, so a restart loses
+   nothing. Ask one group per reply, one numbered
    question per item with one combined acceptance line. Ask first the group
    whose answers change or unblock the others, then one with a date, then the
    rest; a decision whose prerequisite is still open waits for a later group.
