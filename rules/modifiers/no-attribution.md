@@ -7,7 +7,10 @@ after: Writing
 
 Commits, pull requests, issues and comments carry no agent or tool credit: no
 "Generated with" lines, no `Co-Authored-By` agent trailers, no "Made with"
-footers. Where a host has a setting that turns attribution off, set it.
+footers. Where a host has a setting that turns attribution off, set it. This
+removes only agent and tool credit. Keep human commit authors and human
+`Co-authored-by` trailers, including in squash messages, with identities taken
+from the commits, never guessed.
 
 When the target repository's contribution guidelines or pull request template
 ask for agent or model disclosure, give exactly what they ask for, where they
