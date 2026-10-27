@@ -729,6 +729,8 @@ test("a rate-limit reply needs a person's review command after the head commit a
     { ...fullReview, author: bot },
     { ...fullReview, isMinimized: true },
     { ...fullReview, body: "please review" },
+    // An ordinary comment edited into the command after the reply is not a command for this head.
+    { ...fullReview, createdAt: "2026-10-18T09:30:00Z", lastEditedAt: "2026-10-18T10:30:00Z" },
   ]) {
     const result = reviewFeedback(
       pr({

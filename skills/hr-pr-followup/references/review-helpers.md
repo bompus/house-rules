@@ -60,7 +60,7 @@ with no end date, and the gate prints a `skipped review bot` line naming it and 
 - a completed NEUTRAL or skipped CodeRabbit check after CodeRabbit's reply to a person's
   `@coderabbitai full review`: the reply starts "Action not completed" and says "Review rate
   limited" or "Review limit reached". The reply names no head, so it counts only when the
-  command was posted after the head commit and before the reply, the bot posted the reply
+  command was posted (or last edited) after the head commit and before the reply, the bot posted the reply
   (a later edit does not count) after the head commit, no review range in it names another
   head, and no later failure supersedes it. A skipped check shows the same "Review skipped"
   title whatever the reason, so one skipped for another reason (such as a disabled base

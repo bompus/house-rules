@@ -664,7 +664,7 @@ const codeRabbitSaidNoCapacity = (pr: ReviewState, reason: RegExp) => {
 /**
  * CodeRabbit's reply to a review command, saying it has no quota. The reply names no head, so it
  * counts only as the answer to a person's `@coderabbitai full review` posted after the head commit
- * and before the reply, and only by when the bot posted it: a later bot edit does not make an older
+ * and before the reply (by its last edit, if it was edited), and only by when the bot posted it: a later bot edit does not make an older
  * reply current. A reply that does name another head, or that a later failure supersedes, does not
  * count.
  */
@@ -686,7 +686,8 @@ const codeRabbitLimitReply = (pr: ReviewState) => {
       return false;
     }
     return pr.comments.nodes.some((command) => {
-      const sent = Date.parse(command.createdAt);
+      // An edit counts as sending it again, so a comment edited into a command after the reply does not.
+      const sent = Date.parse(command.lastEditedAt ?? command.createdAt);
       return (
         command.author?.__typename === "User" &&
         command.isMinimized === false &&
