@@ -294,7 +294,8 @@ commands that exit; for servers, watchers and other long runs, record the PID,
 port, stop command and a time limit, and stop them before finishing. A long run
 must outlive the call that launched it: a bare `nohup … &` can still die when
 the call's session or process group is reaped, so detach it into its own session
-(`setsid`, or `systemd-run --user --scope`, or the host's capped job runner),
+(`setsid`, or a detached systemd unit such as `systemd-run --user <command>`,
+or the host's capped job runner — a `--scope` unit keeps the caller's session),
 and verify it is still alive after the launching call returns. Reuse a running
 server, browser, watcher, emulator or test runner only when its working
 directory is your own checkout.
