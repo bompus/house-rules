@@ -12,7 +12,7 @@ line by itself.
 ## Before starting
 
 1. Work in a scratch directory outside the repository, kept until the closures
-   are applied and checked. Everything below is `node
+   are applied and checked. Everything below is `bun
    <skill-directory>/scripts/consolidate-ledger.mjs`.
 2. `chunk <plan> <workdir>` copies the plan to `plan.snapshot.md` and splits its
    open and deferred lines into `chunk-NN.txt` files of about 60 lines or 70 KB. It
