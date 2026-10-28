@@ -291,7 +291,11 @@ Stop only processes you started, by the PID you recorded when starting them.
 Never kill by pattern (`pkill -f`, `pgrep | kill`, or a PID found by matching
 a name or path): other sessions' servers and your own agent can match. Prefer
 commands that exit; for servers, watchers and other long runs, record the PID,
-port, stop command and a time limit, and stop them before finishing. Reuse a running
+port, stop command and a time limit, and stop them before finishing. A long run
+must outlive the call that launched it: a bare `nohup … &` can still die when
+the call's session or process group is reaped, so detach it into its own session
+(`setsid`, or `systemd-run --user --scope`, or the host's capped job runner),
+and verify it is still alive after the launching call returns. Reuse a running
 server, browser, watcher, emulator or test runner only when its working
 directory is your own checkout.
 

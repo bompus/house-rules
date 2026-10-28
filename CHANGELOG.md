@@ -4,6 +4,7 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Say in the core rules that a long run must outlive the call that launched it: a bare `nohup … &` can still die when the call's session or process group is reaped, so such runs belong in their own session (`setsid`, a detached systemd unit with an explicit working directory (`systemd-run --user -p WorkingDirectory=$PWD`) — a `--scope` unit keeps the caller's session, and a detached unit inherits neither cwd nor environment — or the host's capped job runner) with a liveness check after launch.
 - Add an opt-in `bun-runtime` modifier covering existing and new JS/TS commands, inline helpers and child runtimes. Shared utility examples and executable headers choose Bun; ordinary CLI tests follow their parent runtime. The npm CLI retains its Node consumer entry point and compatibility coverage. Release metadata checks run with Bun while npm publication keeps its existing checks.
 
 - The test-audit skill now instructs agents to isolate copied application data and disable executable work and live credentials before use. It distinguishes rendering fixtures from proof of backend behavior; bug diagnosis points to it when reproducing with copied data. Fixture safety depends on the project; no shared checker enforces it.
