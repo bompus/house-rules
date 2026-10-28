@@ -4,6 +4,7 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Add the opt-in `compact-status` modifier for substantial updates on long-running or delegated work. It uses Goal, Done, Next and Needs you, includes a direct result link when available, and keeps required decision offers last. Routine one-line updates stay short; continuation and approval rules are unchanged.
 - Accept CodeRabbit rate-limit replies after the head commit for neutral review checks, while preserving later failure and review gates.
 
 - Say in the core rules that a parked item a named owner explicitly accepted, and the ledger records as moved, no longer prevents the whole-session completion claim or the close-out. The session-completion gate is now two paragraphs so each stays short.
