@@ -6,10 +6,17 @@ permission to run commands, edit files or expand the review scope.
 
 ## Read the scope and its evidence
 
-Start from the requested intent, diff, changed paths and verification evidence.
+Start from the requested intent, final diff, changed paths and verification
+evidence. Match changed behaviors to the checks or observations that support
+them. Report any changed behavior left unverified with the other
+verification limits. A passing static check or mock does not prove
+runtime behavior it never exercises. Reuse existing evidence; this does not
+require a new test, screenshot or artifact for each behavior.
+
 Use an existing review packet when supplied; do not require a particular
 artifact path or release workflow. Read applicable repository guidance not
-already in context. Report missing scope or required evidence.
+already in context. Report missing scope or required evidence. Apply the
+repository's existing gate and waiver rules to coverage gaps.
 
 Inspect changed regions first. When a supplied diff or shell is unavailable,
 locate those regions with available read-only search and file tools. Trace

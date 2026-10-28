@@ -4,6 +4,8 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Make `hr-code-review` match each changed behavior in the final diff to its supporting checks or observations and report unverified behavior. Passing static checks or mocks do not establish runtime behavior they never exercise. Existing evidence can cover several behaviors without a new test, screenshot or artifact for each one. Repository gate and waiver rules still decide whether a gap blocks landing.
+
 - Add an opt-in `maintainer-edits` modifier to enable maintainer edits on GitHub PRs from personal forks, with unsupported cases and workflow-secret access made explicit.
 
 - Say in the core rules that a long run must outlive the call that launched it: a bare `nohup … &` can still die when the call's session or process group is reaped, so such runs belong in their own session (`setsid`, a detached systemd unit with an explicit working directory (`systemd-run --user -p WorkingDirectory=$PWD`) — a `--scope` unit keeps the caller's session, and a detached unit inherits neither cwd nor environment — or the host's capped job runner) with a liveness check after launch.

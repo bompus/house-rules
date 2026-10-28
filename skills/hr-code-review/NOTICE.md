@@ -1,5 +1,12 @@
 # Source notices
 
+Source: https://github.com/t3dotgg/tstack (revision `1085050f3baed1ac724caa4a8166145fb2ac88af`)
+
+The evidence method's changed-behavior coverage requirement is informed by
+`skills/full-send/SKILL.md`. The method is independently written.
+
+Copyright (c) 2026 Theo Browne
+
 Source: https://github.com/no-human-ai/no_human (compared at revision `9b50bf6`)
 
 The evidence method's test-weakening assessment and refutation of completion

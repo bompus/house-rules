@@ -196,6 +196,16 @@ Source: https://github.com/pingdotgg/t3code (revision `3b2f958603a51d8c42c4ede02
 
 Copyright (c) 2026 T3 Tools Inc.
 
+## t3dotgg/tstack
+
+Source: https://github.com/t3dotgg/tstack (revision `1085050f3baed1ac724caa4a8166145fb2ac88af`)
+
+- `skills/hr-code-review/references/evidence.md`: independently written guidance
+  informed by the final-diff proof coverage requirement in
+  `skills/full-send/SKILL.md`.
+
+Copyright (c) 2026 Theo Browne
+
 ## MIT License text
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
