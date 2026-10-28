@@ -8,6 +8,8 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 - Add an opt-in `maintainer-edits` modifier to enable maintainer edits on GitHub PRs from personal forks, with unsupported cases and workflow-secret access made explicit.
 
+- Require user-facing references to other conversations to use their current displayed titles and available links. When a title cannot be verified, use a project or task description. Keep routing aliases and opaque identifiers in tool calls or internal records. The fresh-install size ceiling rises from 33,200 to 33,600 bytes for the added paragraph; the composed rules grow by 340 bytes, from 33,114 to 33,454.
+
 - Say in the core rules that a long run must outlive the call that launched it: a bare `nohup … &` can still die when the call's session or process group is reaped, so such runs belong in their own session (`setsid`, a detached systemd unit with an explicit working directory (`systemd-run --user -p WorkingDirectory=$PWD`) — a `--scope` unit keeps the caller's session, and a detached unit inherits neither cwd nor environment — or the host's capped job runner) with a liveness check after launch.
 - Add an opt-in `bun-runtime` modifier covering existing and new JS/TS commands, inline helpers and child runtimes. Shared utility examples, including ledger consolidation, and executable headers choose Bun; ordinary CLI tests follow their parent runtime. The npm CLI retains its Node consumer entry point and compatibility coverage. Release metadata checks run with Bun while npm publication keeps its existing checks.
 
