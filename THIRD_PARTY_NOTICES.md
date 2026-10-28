@@ -5,6 +5,16 @@ License. Each source's copyright notice and the licence text follow.
 `CODE_OF_CONDUCT.md` is the Contributor Covenant, under CC BY 4.0, noted at
 the end.
 
+## Compact work updates
+
+Sources: https://x.com/davekiss/status/2115103988299264450 and
+https://x.com/nateberkopec/status/2114819619513135180.
+
+- `rules/modifiers/compact-status.md`: independently written guidance informed by
+  the four status fields and direct result links described in these posts.
+  No post text or screenshot is reproduced. The posts state no reuse licence;
+  this repository's MIT licence applies to its newly written guidance.
+
 ## Cursor workflow ideas
 
 Source: https://cursor.com/docs/skills
