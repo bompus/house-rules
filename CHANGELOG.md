@@ -4,6 +4,8 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Add an opt-in `bun-runtime` modifier covering existing and new JS/TS commands, inline helpers and child runtimes. Shared utility examples and executable headers choose Bun; ordinary CLI tests follow their parent runtime. The npm CLI retains its Node consumer entry point and compatibility coverage. Release metadata checks run with Bun while npm publication keeps its existing checks.
+
 - The test-audit skill now instructs agents to isolate copied application data and disable executable work and live credentials before use. It distinguishes rendering fixtures from proof of backend behavior; bug diagnosis points to it when reproducing with copied data. Fixture safety depends on the project; no shared checker enforces it.
 
 - Add the opt-in `compact-status` modifier for substantial updates on long-running or delegated work. It uses Goal, Done, Next and Needs you, includes a direct result link when available, and keeps required decision offers last. Routine one-line updates stay short; continuation and approval rules are unchanged.

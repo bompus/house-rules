@@ -102,7 +102,7 @@ record a later reopening separately.
 From this skill's directory, replace the receipt path with its saved location:
 
 ```sh
-node scripts/check-reconciliation.mjs <receipt.json>
+bun scripts/check-reconciliation.mjs <receipt.json>
 ```
 
 Bun runs the same script. It prints JSON with status, counts, missing IDs,

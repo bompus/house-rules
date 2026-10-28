@@ -117,8 +117,8 @@ other hosts take a copy in their user-level rules file, with the
 procedures in that directory, which hold detail; an agent may act without opening
 one, so each guard stays written in the rules themselves. Stdout and configuration
 previews keep the procedures inline. See [reference output](docs/configuration.md#reference-output). To change modifiers or
-skills, change to the checkout directory and run `node compose.mjs setup`,
-or `bun compose.mjs setup` when Node.js is unavailable. Review the numbered
+skills, change to the checkout directory and run `bun compose.mjs setup`.
+Node 22+ remains supported for npm consumers. Review the numbered
 choices and use `save` to change only the configuration. Setup then prints the
 command that applies the selection: the installer for a checkout, or
 `house-rules --config` for the npm package.
@@ -153,10 +153,10 @@ To keep the checkout somewhere else, run the same steps by hand. The commands us
 ```bash
 git clone https://github.com/bompus/house-rules.git
 cd house-rules
-node compose.mjs --list
+bun compose.mjs --list
 mkdir -p ~/.config/house-rules
 cp examples/person/house-rules.json ~/.config/house-rules/
-node compose.mjs --config ~/.config/house-rules/house-rules.json \
+bun compose.mjs --config ~/.config/house-rules/house-rules.json \
   --out ~/.config/house-rules/rules.md --skills-out ~/.config/house-rules/composed-skills
 ```
 
@@ -235,6 +235,7 @@ in name order, after the modifiers.
 | -------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `backlog-outline`                                                                                                                                        | A backlog report adds a Markdown outline of every open item grouped by what it waits on; nothing is rendered, so it reads the same on every host.                                                                                                                     |
 | `backlog-visual`                                                                                                                                         | A backlog report adds one dark panel of every open item grouped by what it waits on, with a table for waiting items and one row per decision; hosts without a render tool get the same outline in Markdown.                                                           |
+| `bun-runtime`                                                                                                                                            | Run existing and new JavaScript and TypeScript commands with Bun; retain evidenced Node requirements and explicit user requests.                                                                                                                                      |
 | `code-over-stale-docs`                                                                                                                                   | When documentation and existing code disagree, follow the code's conventions and report each mismatch, unless the documentation marks the code legacy or being migrated.                                                                                              |
 | `coded-offers`                                                                                                                                           | Offers use numbered questions and coded options (`1a`, `1b`) so one short reply answers every decision.                                                                                                                                                               |
 | `compact-reviews`                                                                                                                                        | Substantive review judgments use Decision, Evidence and applicable action, verification and limit labels; required review formats stay intact and work-status summaries do not repeat findings.                                                                       |
@@ -344,7 +345,7 @@ node --test test/*.test.mjs   # composer and eval grader
 bun test test/                # the same under Bun
 bun test skills/              # skill scripts
 npm run check:package -- --bun   # npm tarball: packs, installs, runs the CLI
-bun install && npm run check     # format, lint and type check
+bun install && bun run check     # format, lint and type check
 ```
 
 `npm run check` runs `bun fmt` (Bun 1.4.4 or later), oxlint, `bun --check`, ruff, shfmt and
@@ -368,7 +369,7 @@ CI runs these checks on every pull request and on pushes to `main`, and also run
 [CONTRIBUTING.md](CONTRIBUTING.md) before opening one.
 
 The local-reference gate runs in `test/guidance-links.test.mjs`. Audit another
-checkout with `node guidance-links.mjs --root <checkout> --repository
+checkout with `bun guidance-links.mjs --root <checkout> --repository
 owner/repo=<local-checkout>`; repeat `--repository` for other available sources.
 Its JSON report identifies GitHub file pointers to replace. When a remote
 link deliberately cites current provenance, downloads a file or refreshes

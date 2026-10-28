@@ -37,7 +37,7 @@ function setup(ledger, { eol = "\n", after = [] } = {}) {
 
 /** @param {string} plan @param {...string} args */
 const close = (plan, ...args) =>
-  spawnSync("node", [script, plan, "--time", "2026-10-18 17:05 -06:00", ...args], {
+  spawnSync(process.execPath, [script, plan, "--time", "2026-10-18 17:05 -06:00", ...args], {
     encoding: "utf8",
   });
 /** @param {string} plan */
@@ -56,7 +56,8 @@ test("closing a line by number marks it done in place with the evidence and the 
   expect(lines(plan)[6]).toBe("- [~] b: later trigger: release");
   // The checker accepts the closed line and no longer counts it.
   const report = JSON.parse(
-    spawnSync("node", [checker, plan, "--json", "--offline"], { encoding: "utf8" }).stdout,
+    spawnSync(process.execPath, [checker, plan, "--json", "--offline"], { encoding: "utf8" })
+      .stdout,
   );
   expect(report.errors).toEqual([]);
   expect(report.open).toEqual([expect.stringMatching(/^L7 /)]);
@@ -124,7 +125,7 @@ test("a second identical run changes nothing and says so", () => {
     ["--line", "6", "--evidence", "merged"],
     ["--match", "wait for acme/tool#5", "--evidence", "merged"],
   ]) {
-    const again = spawnSync("node", [script, plan, ...args], { encoding: "utf8" });
+    const again = spawnSync(process.execPath, [script, plan, ...args], { encoding: "utf8" });
     expect(again.status).toBe(0);
     expect(again.stdout).toMatch(/already done/);
     expect(readFileSync(plan, "utf8")).toBe(before);
@@ -203,8 +204,9 @@ test("a wrapped item gets its evidence on its last line, and Windows line ending
 test("without --time it stamps the local time with its UTC offset", () => {
   const plan = setup(["- [ ] a: one"]);
   expect(
-    spawnSync("node", [script, plan, "--line", "6", "--evidence", "x"], { encoding: "utf8" })
-      .status,
+    spawnSync(process.execPath, [script, plan, "--line", "6", "--evidence", "x"], {
+      encoding: "utf8",
+    }).status,
   ).toBe(0);
   expect(lines(plan)[5]).toMatch(
     /^- \[x\] a: one … evidence: x \(closed \d{4}-\d{2}-\d{2} \d{2}:\d{2} [+-]\d{2}:\d{2}\)$/,

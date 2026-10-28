@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 // Offline accounting check. See ../references/reconciliation.md for the input
 // format and limits. No writes, host queries, or semantic-completeness claim.
 // Exit 0: mechanically complete; 1: invalid/unreadable; 2: valid but partial.

@@ -32,7 +32,7 @@ jobs:
           bash scripts/install-check-tools.sh "$RUNNER_TEMP/bin"
           echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
       - name: Format, lint and type check
-        run: npm run check
+        run: bun run check
       - name: Composer and eval grader
         run: node --test test/*.test.mjs
       - name: Composer and eval grader under Bun

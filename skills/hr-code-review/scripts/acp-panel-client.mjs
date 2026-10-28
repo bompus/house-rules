@@ -30,7 +30,7 @@ const IDLE_MS = (idleArg > 0 ? idleArg : 5) * 60 * 1000;
 const [serverCmdJson, promptFile, outText, cwdArg] = rawArgs;
 if (!serverCmdJson || !promptFile || !outText) {
   console.error(
-    "usage: node acp-panel-client.mjs <server-cmd-json> <prompt-file> <out-text> [cwd] [--max-turns N] [--verdict MARK] [--model ID] [--effort LEVEL] [--idle-min N] [--timeout-min N]",
+    "usage: bun acp-panel-client.mjs <server-cmd-json> <prompt-file> <out-text> [cwd] [--max-turns N] [--verdict MARK] [--model ID] [--effort LEVEL] [--idle-min N] [--timeout-min N]",
   );
   process.exit(2);
 }

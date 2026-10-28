@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 // Claude Code Stop hook: holds back a final reply that says nothing is left, or that the session is complete,
 // while the session's plan still has open or deferred ledger items. It needs no other service: it reads the hook
 // input on stdin, the session transcript the input names, and the plan file the session itself used.
@@ -18,7 +18,7 @@
 // so a stuck check cannot loop. Any read or parse failure also passes and says so on stderr.
 //
 // Register it in Claude Code settings (adjust the path to this checkout):
-//   { "hooks": { "Stop": [ { "hooks": [ { "type": "command", "command": "node <checkout>/scripts/stop-claim-check.mjs" } ] } ] } }
+//   { "hooks": { "Stop": [ { "hooks": [ { "type": "command", "command": "bun <checkout>/scripts/stop-claim-check.mjs" } ] } ] } }
 import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { homedir } from "node:os";
 import { basename, resolve } from "node:path";

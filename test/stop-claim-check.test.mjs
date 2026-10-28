@@ -288,7 +288,7 @@ test("run as a program it reads the hook input from stdin and blocks once", () =
     writeFileSync(transcript, `${jsonl(user, assistant([tool("Edit", { file_path: plan })]))}\n`);
     const script = fileURLToPath(new URL("../scripts/stop-claim-check.mjs", import.meta.url));
     const call = (/** @type {object} */ input) =>
-      spawnSync("node", [script], { input: JSON.stringify(input), encoding: "utf8" });
+      spawnSync(process.execPath, [script], { input: JSON.stringify(input), encoding: "utf8" });
 
     const blocked = call({ transcript_path: transcript, cwd: dir, last_assistant_message: CLAIM });
     assert.equal(blocked.status, 0);
@@ -302,7 +302,7 @@ test("run as a program it reads the hook input from stdin and blocks once", () =
         .stdout,
       "",
     );
-    const garbage = spawnSync("node", [script], { input: "not json", encoding: "utf8" });
+    const garbage = spawnSync(process.execPath, [script], { input: "not json", encoding: "utf8" });
     assert.equal(garbage.status, 0);
     assert.match(garbage.stderr, /passed without checking/);
   } finally {

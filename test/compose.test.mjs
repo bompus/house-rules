@@ -456,3 +456,34 @@ test("each core section with a reference text carries every sentence of the shor
     assert.deepEqual(missing, [], `${path} lacks sentences core's short "${heading}" section has`);
   }
 });
+
+// Owned utility entry points must follow their Bun default even when invoked directly.
+// compose.mjs deliberately keeps its npm/Node consumer header; parser fixture strings are data.
+test("shared utility entry points and ordinary test children keep the selected runtime", () => {
+  const utilities = [
+    "scripts/stop-claim-check.mjs",
+    "skills/hr-what-next/scripts/check-open-work.mjs",
+    "skills/hr-what-next/scripts/close-ledger-line.mjs",
+    "skills/hr-what-next/scripts/consolidate-ledger.mjs",
+    "skills/hr-plain-prose/scripts/check.mjs",
+    "skills/hr-handoff/scripts/check-reconciliation.mjs",
+    "skills/hr-diagnosing-bugs/scripts/check-pr-offer.mjs",
+    "skills/hr-stock-ui-audit/scripts/scan.mjs",
+  ];
+  for (const file of utilities) {
+    assert.equal(readFileSync(join(root, file), "utf8").split("\n")[0], "#!/usr/bin/env bun", file);
+  }
+  for (const file of [
+    "skills/hr-what-next/test/check-open-work.test.mjs",
+    "skills/hr-what-next/test/close-ledger-line.test.mjs",
+    "skills/hr-code-review/test/check-receipts.test.mjs",
+    "skills/hr-diagnosing-bugs/test/check-pr-offer.test.js",
+    "test/stop-claim-check.test.mjs",
+  ]) {
+    assert.doesNotMatch(
+      readFileSync(join(root, file), "utf8"),
+      /spawnSync\(\s*(?:\[\s*)?["']node["']\s*,/,
+      `${file}: ordinary utility children must use the parent executable`,
+    );
+  }
+});

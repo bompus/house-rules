@@ -11,10 +11,10 @@ The user's choices live in a personal layer, by default
 `skills/` directories. Composition never edits host files; connecting a host
 is a separate step the user approves.
 
-The commands below use `node`. If only Bun is installed, replace `node` with
-`bun` in every `compose.mjs` command.
+The commands below use Bun. Node 22+ remains supported for composing rules and
+managing configuration when that runtime is selected.
 
-For a user working directly in a terminal, use `node compose.mjs setup` for
+For a user working directly in a terminal, use `bun compose.mjs setup` for
 numbered selection, review and explicit save. Read `docs/configuration.md`
 for commands and safeguards. Saving completes only configuration selection;
 composition and approved host connection remain separate steps below.
@@ -25,7 +25,7 @@ For an agent running without a terminal, use the preview/apply workflow below.
    `install.ps1` in `%LOCALAPPDATA%\house-rules`).
    When there is none, ask the user where to clone it.
    Done when the checkout and the user's config path are known.
-2. Inspect `node compose.mjs config status --config <path>`.
+2. Inspect `bun compose.mjs config status --config <path>`.
    If status reports legacy skill names, stop inspection. Read the config and follow
    `docs/skill-names.md` before continuing. If catalog or status reports
    `unknown modifier` or `question-cards requires coded-offers`, read the config
@@ -73,7 +73,7 @@ For an agent running without a terminal, use the preview/apply workflow below.
    `--disable-modifier` for the other, or for both when the answer is None.
    Done when the user selects relevant changes or keeps the current setup.
 
-3. Use `node compose.mjs config set --config <path>` with the selected
+3. Use `bun compose.mjs config set --config <path>` with the selected
    modifier and skill toggles or question preset. It previews
    without saving. Read every change and personal rule override; resolve any
    conflict before writing. Repeat those flags with `--apply --expect <revision>`
@@ -87,7 +87,7 @@ For an agent running without a terminal, use the preview/apply workflow below.
    `replaces:`, `after:`, `before:` or `removes:` and a core heading, then its
    own `## ` heading; without frontmatter it is appended at the end. A skill in
    the personal `skills/` replaces the house-rules skill of the same name.
-4. Run `node compose.mjs --config <path> --out <personal dir>/rules.md`. Done
+4. Run `bun compose.mjs --config <path> --out <personal dir>/rules.md`. Done
    when it exits 0; on an error, show it and fix the named file.
 5. Ask which hosts the user runs, then show what connecting each one changes
    and ask before writing:
@@ -99,7 +99,7 @@ For an agent running without a terminal, use the preview/apply workflow below.
      Place the `house-rules-references/` directory beside that file, because
      the written rules link to it.
    - Hosts with a settings screen for user rules: paste the stdout output of
-     `node compose.mjs --config <path>`, which keeps the procedures inline.
+     `bun compose.mjs --config <path>`, which keeps the procedures inline.
      Keep everything else in those files. Done when every chosen host is
      connected or the user declined it.
 6. For skills, compose them with `--skills-out <dir>` into a directory that

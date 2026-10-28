@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 // Fails when an issue draft neither offers a pull request nor links one.
 // usage: check-pr-offer.mjs <draft.md>   (or the draft on stdin)
 // The text checked is the "Fix applied or workaround" field when the draft has one, else the

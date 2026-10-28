@@ -135,7 +135,8 @@ describe("check-receipts command line", () => {
     const run = (text) => {
       const log = join(root, "panel.txt");
       writeFileSync(log, text);
-      return spawnSync("node", [script, "--repo", root, log], { encoding: "utf8" }).status;
+      return spawnSync(process.execPath, [script, "--repo", root, log], { encoding: "utf8" })
+        .status;
     };
     assert.equal(run("`buildTotals` (engine.ts:1)"), 0);
     assert.equal(run("`buildTotals` (engine.ts:2)"), 1);
@@ -178,7 +179,7 @@ describe("check-receipts edge cases", () => {
   test("an unreadable log exits 2", () => {
     const root = seedRepo();
     const script = join(import.meta.dirname, "../scripts/check-receipts.mjs");
-    const run = spawnSync("node", [script, "--repo", root, join(root, "missing.log")], {
+    const run = spawnSync(process.execPath, [script, "--repo", root, join(root, "missing.log")], {
       encoding: "utf8",
     });
     assert.equal(run.status, 2);

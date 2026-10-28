@@ -50,7 +50,10 @@ test("the command exits 1 on a missing offer and 0 on an offer", () => {
   const script = join(import.meta.dir, "../scripts/check-pr-offer.mjs");
   /** @param {string} text */
   const run = (text) =>
-    Bun.spawnSync(["node", script], { stdin: new TextEncoder().encode(text), stderr: "pipe" });
+    Bun.spawnSync([process.execPath, script], {
+      stdin: new TextEncoder().encode(text),
+      stderr: "pipe",
+    });
   expect(run(form("None applied.")).exitCode).toBe(1);
   expect(run(form("None applied. I can open a pull request.")).exitCode).toBe(0);
 });

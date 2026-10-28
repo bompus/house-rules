@@ -1,12 +1,12 @@
 # Configure house rules
 
-Use `node compose.mjs config help` to see the commands. Bun supports the same
+Use `bun compose.mjs config help` to see the commands. Node 22+ supports the same
 interface. The CLI manages the existing `house-rules.json`; it keeps personal
 layers, independent skill names and unrelated settings.
 
 ## Guided selection
 
-Run `node compose.mjs setup --config <config-path>` in a terminal. Bun supports
+Run `bun compose.mjs setup --config <config-path>` in a terminal. Node 22+ supports
 the same command. The numbered flow uses ordinary line input; `--plain` selects
 the same flow. Both input and output must be terminals. Redirected input or
 output prints scripting instructions and exits 2 without saving. Use
@@ -50,9 +50,9 @@ chosen hosts. It does not install, update, repair or remove managed output.
 ## Browse and inspect
 
 ```bash
-node compose.mjs config catalog --config <config-path>
-node compose.mjs config status --config <config-path>
-node compose.mjs config validate --config <config-path>
+bun compose.mjs config catalog --config <config-path>
+bun compose.mjs config status --config <config-path>
+bun compose.mjs config validate --config <config-path>
 ```
 
 `setup` initially shows current selections. Search for relevant additions or
@@ -85,7 +85,7 @@ validation proves what a running agent has loaded.
 ## Preview and save
 
 ```bash
-node compose.mjs config set --config <config-path> \
+bun compose.mjs config set --config <config-path> \
   --enable-modifier shared-host-load --disable-skill hr-read-reddit --questions coded
 ```
 
@@ -157,8 +157,8 @@ object, without a surrounding `panel` key. It must be a regular JSON file.
 ```
 
 ```bash
-node compose.mjs config preview --config <config-path> --panel-file <panel-json>
-node compose.mjs config set --config <config-path> --panel-file <panel-json> \
+bun compose.mjs config preview --config <config-path> --panel-file <panel-json>
+bun compose.mjs config set --config <config-path> --panel-file <panel-json> \
   --apply --expect <reviewed-config-revision> --expect-panel <reviewed-input-revision>
 ```
 
@@ -224,7 +224,7 @@ previous composed skills directory under a dated name; when they match, it keeps
 nothing extra. Manual `--skills-out` still requires an empty or absent directory.
 
 ```bash
-node compose.mjs --config <config-path> --out <rules-path> \
+bun compose.mjs --config <config-path> --out <rules-path> \
   --skills-out <new-skills-directory>
 ```
 

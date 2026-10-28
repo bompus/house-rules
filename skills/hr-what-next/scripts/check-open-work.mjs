@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 // Lists open work before claiming "nothing remains" or archiving a plan. See ../SKILL.md and plan-files.
 // Exit 0: nothing open; 1: invalid input; 2: open work remains or archiving refused.
 // "awaiting your yes/no" lists the deferred items whose trigger is only the user's own action

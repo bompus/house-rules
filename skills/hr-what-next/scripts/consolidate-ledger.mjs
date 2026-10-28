@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 // Splits a large ledger into chunks for read-only verification helpers, machine-checks the closures they
 // propose and applies the ones that hold. See ../references/consolidating.md.
 //   chunk <plan> <outdir> [--lines 60] [--bytes 70000] [--force]

@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 // Closes one open or deferred ledger line of a session plan in place, so a result is recorded on the line
 // that promised it instead of on a new line that leaves the old one open. See ../SKILL.md.
 // `--evidence <text>` marks the line done (`- [x]`) and appends ` … evidence: <text> (closed <time>)`;

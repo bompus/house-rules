@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 // Lists the spots in a draft that the plain-prose skill asks you to reread:
 // dash stand-ins, colons between two clauses, curly quotes, the words in
 // SKILL.md's two word tables and sentences over 30 words. Every finding is a

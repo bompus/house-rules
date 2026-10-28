@@ -5,7 +5,7 @@ preferences resolve to before any model runs. It reads files and prints a plan;
 it never launches a seat, discovers a provider, checks quota or changes a file.
 
 ```sh
-node <skill-directory>/scripts/panel-plan.mjs --bindings bindings.json \
+bun <skill-directory>/scripts/panel-plan.mjs --bindings bindings.json \
   --author-family <family-of-the-running-session> [--config <house-rules.json>] \
   [--task task.json] [--project project.json --approve-project <sha256-of-project.json>] \
   [--approve-metered <alias>] [--json]

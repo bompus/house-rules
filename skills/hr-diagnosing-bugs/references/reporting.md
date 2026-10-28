@@ -78,7 +78,7 @@ options I would measure>." When a branch or pull request already exists, link it
 instead.
 
 Before showing a draft to the user, run
-`node scripts/check-pr-offer.mjs <draft.md>` from this skill; it fails when that
+`bun scripts/check-pr-offer.mjs <draft.md>` from this skill; it fails when that
 text does not offer a pull request or link a pull request or branch. It is a
 text match: it skips a sentence that puts a negation before "pull request" but
 cannot judge meaning, so confirm the offer is genuine yourself. Read the offer back from the

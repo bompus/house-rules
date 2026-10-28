@@ -75,7 +75,7 @@ export function renderHelp() {
     "",
     `  ${paint("dim", "╭─")} ${paint("cyan", paint("bold", "HOUSE RULES"))}  ${paint("dim", "configuration")}`,
     "",
-    "  node compose.mjs config <command> [options]",
+    "  bun compose.mjs config <command> [options]",
     "",
     table(
       ["Command", "Writes", "Purpose"],

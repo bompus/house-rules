@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Composes rules and skills into explicit output paths; config commands manage selections.
-//   node compose.mjs --config <path> [--out <file>] [--skills-out <dir>]
-//   node compose.mjs config help
+//   bun compose.mjs --config <path> [--out <file>] [--skills-out <dir>]
+//   bun compose.mjs config help
 import {
   cpSync,
   existsSync,

@@ -48,7 +48,7 @@ function setup({ status = "active", ledger = [], extra = "", owner = "Alice, ses
 
 /** @param {string} plan @param {...string} args */
 function check(plan, ...args) {
-  const run = spawnSync("node", [script, plan, "--json", ...args], { encoding: "utf8" });
+  const run = spawnSync(process.execPath, [script, plan, "--json", ...args], { encoding: "utf8" });
   return {
     code: run.status,
     report: /** @type {Report} */ (run.stdout ? JSON.parse(run.stdout) : null),
@@ -102,7 +102,7 @@ test("a deferral whose only trigger is the user's own action is listed as awaiti
   expect(report.awaitingUser).toHaveLength(3);
   expect(report.awaitingUser.join("\n")).toContain("L6 [~] a: rename the flag");
   expect(report.open).toHaveLength(4);
-  const text = spawnSync("node", [script, plan], { encoding: "utf8" }).stdout;
+  const text = spawnSync(process.execPath, [script, plan], { encoding: "utf8" }).stdout;
   expect(text).toContain("awaiting your yes/no: L6 [~] a: rename the flag");
   expect(text).toContain("3 awaiting your yes/no");
 });
@@ -149,7 +149,7 @@ test("when every open item is deferred the report says the close-out is due", ()
   });
   const { report } = check(plan);
   expect(report.closeOutDue).toBe(true);
-  const text = spawnSync("node", [script, plan], { encoding: "utf8" }).stdout;
+  const text = spawnSync(process.execPath, [script, plan], { encoding: "utf8" }).stdout;
   expect(text).toContain("close-out due:");
   const withOpen = setup({ ledger: ["- [~] a: later - trigger: 2026-12-01", "- [ ] b: working"] });
   expect(check(withOpen.plan).report.closeOutDue).toBe(false);
@@ -183,7 +183,7 @@ test("an issue ID alone does not record asking, but a named offer does", () => {
 
 test("the close-out message tells the agent to ask each item in its own question first", () => {
   const { plan } = setup({ ledger: ["- [~] a: later - trigger: 2026-12-01"] });
-  const text = spawnSync("node", [script, plan], { encoding: "utf8" }).stdout;
+  const text = spawnSync(process.execPath, [script, plan], { encoding: "utf8" }).stdout;
   expect(text).toContain("in its own question");
   expect(text).toContain("asked in <offer ID>");
 });
@@ -201,7 +201,7 @@ test("a paused plan without a done line recording the user's Pause is a finding"
   expect(check(chosen.plan).report.findings).toEqual([]);
   // The user's pause stands: no second close-out prompt.
   expect(check(chosen.plan).report.closeOutDue).toBe(false);
-  const text = spawnSync("node", [script, chosen.plan], { encoding: "utf8" }).stdout;
+  const text = spawnSync(process.execPath, [script, chosen.plan], { encoding: "utf8" }).stdout;
   expect(text).not.toContain("close-out due");
   // A done line that only mentions the word is not the user's choice.
   const unrelated = setup({
@@ -447,7 +447,7 @@ test("the text report names the offers count and the markers even when the plan 
     ledger: ["- [x] a: said done"],
     extra: "## Notes\n- [ ] stray box\n",
   });
-  const run = spawnSync("node", [script, plan], { encoding: "utf8" });
+  const run = spawnSync(process.execPath, [script, plan], { encoding: "utf8" });
   expect(run.status).toBe(1);
   expect(run.stdout).toContain("unanswered offers: 0");
   expect(run.stdout).toContain("outside the ledger: - [ ] stray box");
@@ -464,7 +464,7 @@ test("an error from a host check on a valid plan is not blamed on the plan", () 
   });
   mkdirSync(join(notes, "tmp", "broken"), { recursive: true });
   writeFileSync(join(notes, "tmp", "broken", "manifest.json"), "{not json");
-  const run = spawnSync("node", [script, plan], { encoding: "utf8" });
+  const run = spawnSync(process.execPath, [script, plan], { encoding: "utf8" });
   expect(run.status).toBe(1);
   expect(run.stdout).toMatch(/result: invalid input\n?$/);
   expect(run.stdout).not.toContain("still ran");
@@ -703,7 +703,7 @@ test("a plan with no offers counts none and prints the count line", () => {
   const { report } = check(plan);
   expect(report.unansweredOffers).toEqual([]);
   expect(offerWarning(report)).toEqual([]);
-  const text = spawnSync("node", [script, plan], { encoding: "utf8" }).stdout;
+  const text = spawnSync(process.execPath, [script, plan], { encoding: "utf8" }).stdout;
   expect(text).toContain("unanswered offers: 0\n");
 });
 
@@ -716,7 +716,7 @@ test("two unanswered offers are counted and do not warn", () => {
     expect.stringMatching(/^L7 \[ \] Offer DEMO-2/),
   ]);
   expect(offerWarning(report)).toEqual([]);
-  const text = spawnSync("node", [script, plan], { encoding: "utf8" }).stdout;
+  const text = spawnSync(process.execPath, [script, plan], { encoding: "utf8" }).stdout;
   expect(text).toContain("unanswered offers: 2\n");
 });
 
@@ -730,7 +730,7 @@ test("three or more unanswered offers warn to start a walk-through and leave the
     expect(offerWarning(report)).toEqual([
       expect.stringMatching(new RegExp(`^${count} offers are open and unanswered.*walk-through`)),
     ]);
-    const text = spawnSync("node", [script, plan], { encoding: "utf8" }).stdout;
+    const text = spawnSync(process.execPath, [script, plan], { encoding: "utf8" }).stdout;
     expect(text).toContain(`unanswered offers: ${count}\n`);
     expect(text).toMatch(/warning: \d offers are open and unanswered/);
   }

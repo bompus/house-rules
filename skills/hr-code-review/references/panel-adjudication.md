@@ -15,7 +15,7 @@ cite and reporting the choices. Resolving the seats comes first and is in
 3. Run the citation gate on the logs:
 
    ```sh
-   node <skill-directory>/scripts/check-receipts.mjs --repo <repo> <panel-log>...
+   bun <skill-directory>/scripts/check-receipts.mjs --repo <repo> <panel-log>...
    ```
 
    A citation written as `` `name` (path:line) `` passes only when the identifier

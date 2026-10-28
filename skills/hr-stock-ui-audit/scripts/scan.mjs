@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 // First-pass scanner for template-default styling in frontend source.
 // Every finding is a candidate for human or agent triage, not a verdict.
 // Runs on Node 22+ or Bun with no dependencies.

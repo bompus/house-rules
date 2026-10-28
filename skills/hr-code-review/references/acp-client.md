@@ -6,7 +6,7 @@ effort or review scope. It does not select a route based on whether it uses the 
 allowance. Launch it only within the user's authorization.
 
 ```sh
-node <skill-directory>/scripts/acp-panel-client.mjs \
+bun <skill-directory>/scripts/acp-panel-client.mjs \
   '["<agent-command>","<stdio-argument>"]' brief.md answer.txt <review-root> \
   --model <advertised-model-id> --effort <advertised-effort-value> \
   --verdict 'VERDICT:' --max-turns 2 --idle-min 5 --timeout-min 60
