@@ -46,6 +46,16 @@ Source: https://github.com/omkamal/pypict-claude-skill (compared at revision `fb
 
 Copyright (c) 2025 pypict-claude-skill contributors
 
+## pingdotgg/t3code
+
+Source: https://github.com/pingdotgg/t3code (revision `3b2f958603a51d8c42c4ede02eee7b8cb310b2d9`)
+
+- `SKILL.md`: representative test-data isolation and the
+  rendering-only limit of directly seeded view state, adapted from `AGENTS.md`
+  and `.agents/skills/test-t3-app/references/sqlite-fixtures.md`.
+
+Copyright (c) 2026 T3 Tools Inc.
+
 ## MIT License text
 
 Permission is hereby granted, free of charge, to any person obtaining a copy

@@ -33,6 +33,9 @@ Prefer an existing test, command or captured input before building a harness.
 Minimize the scenario when doing so helps distinguish causes or create a useful
 regression test; an exhaustively minimal reproduction is not a prerequisite.
 
+When reproduction needs copied application data, use the representative-test-data
+guidance in `hr-test-audit` before starting against the copy.
+
 For intermittent failures, record attempts and failures under comparable
 conditions. Increase the reproduction rate when practical within host load and
 environment safeguards; do not impose a fixed retry count or success threshold.

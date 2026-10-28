@@ -4,6 +4,8 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Test fixtures copied from existing application data now stay isolated from live state and have executable work and live credentials disabled. The test-audit skill distinguishes rendering fixtures from proof of backend behavior; bug diagnosis points to it when reproducing with copied data.
+
 - Add the opt-in `compact-status` modifier for substantial updates on long-running or delegated work. It uses Goal, Done, Next and Needs you, includes a direct result link when available, and keeps required decision offers last. Routine one-line updates stay short; continuation and approval rules are unchanged.
 - Add the opt-in `compact-reviews` modifier for labeled review judgments. It keeps evidence and limits visible, omits unused fields, preserves required review formats and avoids repeating findings in work-status summaries.
 - Accept CodeRabbit rate-limit replies after the head commit for neutral review checks, while preserving later failure and review gates.

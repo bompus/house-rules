@@ -74,6 +74,20 @@ such as one behind a past bug or a documented constraint.
 Then check the test against the junk patterns below. A match fails the gate
 unless the retention bar names the contract it independently guards.
 
+## Representative test data
+
+When a test or reproduction needs existing application data, use isolated,
+disposable state. Copy mutable data through a consistent snapshot method; use
+`hr-sqlite` for SQLite copies. Never point a test server at live state or link
+its mutable files to live files. Before starting against the copy, remove or
+disable copied schedules, queued work and credentials that could contact real
+services. Prefer the project's fixture helper when it enforces these boundaries;
+check what it leaves active before running it.
+
+Directly seeded view state proves rendering only. Use the application's commands
+or APIs to prove backend behavior, including persistence and event history.
+Fixture isolation depends on the application; no shared checker enforces it.
+
 ## Junk patterns
 
 Authoring rejects new tests that match; audits hunt for existing ones that do.
