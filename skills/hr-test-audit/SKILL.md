@@ -55,6 +55,11 @@ the repository. It reports new suppression comments, added skips or
 exits 0 clean, 1 with findings, 2 when it could not run. Each finding still
 needs a reason; a 2 is never a pass.
 
+A run that executed no cases proves nothing. When you report a test result, say
+how many cases executed. If every case was skipped, the runner found no tests, or
+a comparison could not run, report the change as unproven, never as a pass: a
+comparison that cannot run counts as a failure, not a skip.
+
 For retry and concurrency failures, exercise the implementation at the boundary
 where order matters. Cover the credible lost-response, interrupted-write or
 restart sequence with controlled barriers and assert durable state or externally
