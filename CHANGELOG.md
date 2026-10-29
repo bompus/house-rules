@@ -4,6 +4,7 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Make `check-open-work.mjs` treat an open (`- [ ]`) or deferred (`- [~]`) box outside the `## Ledger` section as a finding: the result no longer says "nothing open" and the exit status is 2, so a caller that reads only the result cannot lose the item. Prose labels such as "Deferred:" outside the ledger still only warn.
 - Commit `docs/assets/build-assets.ts`, the script that draws the README banners and the social preview, so the images can be remade when the tagline, a chip or the facts line changes. Its header says how to run it with `playwright-core`, which the repository does not install; with Lato installed it reproduces the three committed PNGs byte for byte.
 - Add a rule to `hr-test-audit`: a run that executed zero cases (all skipped, no tests found, or a comparison that could not run) is reported as unproven, never as a pass, and a test report states how many cases executed.
 - Fix `benefit-chart.py` alt text that ended a note, headline or workload with two periods when the spec text already ended in one ("Lower is better..").

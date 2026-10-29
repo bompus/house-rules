@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
 // Lists open work before claiming "nothing remains" or archiving a plan. See ../SKILL.md and plan-files.
-// Exit 0: nothing open; 1: invalid input; 2: open work remains or archiving refused.
+// Exit 0: nothing open; 1: invalid input; 2: open work remains or archiving refused. An open or deferred box
+// outside the `## Ledger` section is a finding, so it also exits 2.
 // "awaiting your yes/no" lists the deferred items whose trigger is only the user's own action
 // ("user selects", "user's decision", "user asks for the backlog"): they were deferred, not decided,
 // so the user still owes a yes, a no or a trigger other than their own. The match is a heuristic on the
@@ -790,11 +791,16 @@ async function run(options) {
       "no `Purpose:` line in the first 40 lines (the session's purpose, one sentence)",
     );
   }
-  // Every unchecked box outside the ledger is a possible lost item, so each is listed. Prose labels such
-  // as "Deferred:" are listed up to five, with a count of the rest. Lines stay in file order.
+  // An open or deferred box outside the ledger is a lost item, so each is a finding and the result is not
+  // "nothing open". Prose labels such as "Deferred:" are warnings, listed up to five, with a count of the
+  // rest. Lines stay in file order.
   let prose = 0;
   for (const entry of plan.narrative) {
-    if (entry.box || ++prose <= 5) {
+    if (entry.box) {
+      report.findings.push(
+        `L${entry.line} outside the ledger: ${clip(entry.text, 70)} (move it into the ledger or delete it)`,
+      );
+    } else if (++prose <= 5) {
       report.warnings.push(`L${entry.line} outside the ledger: ${clip(entry.text, 70)}`);
     }
   }

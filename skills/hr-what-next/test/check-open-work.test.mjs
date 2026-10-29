@@ -402,15 +402,32 @@ test("archiving moves only a completed plan with nothing open", () => {
   expect(report.archived).toContain(join("plans", "archive"));
 });
 
-test("marker lines outside the ledger warn but do not change the result", () => {
+test("an open box outside the ledger is a finding that exits 2; a prose label only warns", () => {
   const { plan } = setup({
     status: "completed",
     ledger: ["- [x] a: shipped - evidence: x"],
     extra: "## Notes\n- pending: an old line\n- [ ] stray box\n",
   });
   const { code, report } = check(plan);
+  expect(code).toBe(2);
+  expect(report.findings).toEqual([expect.stringContaining("outside the ledger: - [ ] stray box")]);
+  expect(report.warnings).toEqual([expect.stringContaining("pending: an old line")]);
+  const run = spawnSync(process.execPath, [script, plan, "--offline"], { encoding: "utf8" });
+  expect(run.status).toBe(2);
+  expect(run.stdout).not.toContain("result: nothing open");
+  expect(run.stdout).toContain("1 finding(s)");
+});
+
+test("a prose label alone leaves the result at nothing open", () => {
+  const { plan } = setup({
+    status: "completed",
+    ledger: ["- [x] a: shipped - evidence: x"],
+    extra: "## Notes\n- pending: an old line\n",
+  });
+  const { code, report } = check(plan);
   expect(code).toBe(0);
-  expect(report.warnings).toHaveLength(2);
+  expect(report.findings).toEqual([]);
+  expect(report.warnings).toHaveLength(1);
 });
 
 test("a ledger lint error still reports every open marker outside the ledger", () => {
@@ -423,7 +440,7 @@ test("a ledger lint error still reports every open marker outside the ledger", (
   expect(code).toBe(1);
   expect(report.errors).toEqual([expect.stringContaining("needs `evidence:`")]);
   expect(report.open).toHaveLength(1);
-  expect(report.warnings.filter((warning) => warning.includes("stray box"))).toHaveLength(7);
+  expect(report.findings.filter((finding) => finding.includes("stray box"))).toHaveLength(7);
   expect(report.warnings.join("\n")).toContain("pending: an old line");
 });
 
@@ -436,8 +453,8 @@ test("every unchecked box outside the ledger is listed, with prose labels capped
     extra: ["## Notes", ...boxes, ...labels].join("\n"),
   });
   const { code, report } = check(plan);
-  expect(code).toBe(0);
-  expect(report.warnings.filter((warning) => warning.includes("stray box"))).toHaveLength(8);
+  expect(code).toBe(2);
+  expect(report.findings.filter((finding) => finding.includes("stray box"))).toHaveLength(8);
   expect(report.warnings.filter((warning) => warning.includes("label"))).toHaveLength(5);
   expect(report.warnings).toContain("2 more narrative marker line(s)");
 });
@@ -648,7 +665,7 @@ test("dates that are not on the calendar are rejected or reported", () => {
   expect(report.warnings).toEqual([expect.stringContaining("not a calendar date")]);
 });
 
-test("follow-up markers in prose and stray deferred boxes warn, ordinary prose does not", () => {
+test("follow-up markers in prose warn, a stray deferred box is a finding, ordinary prose is neither", () => {
   const { plan } = setup({
     status: "completed",
     ledger: ["- [x] a: shipped - evidence: x"],
@@ -664,8 +681,9 @@ test("follow-up markers in prose and stray deferred boxes warn, ordinary prose d
     ].join("\n"),
   });
   const { code, report } = check(plan);
-  expect(code).toBe(0);
-  expect(report.warnings.map((w) => w.match(/^L\d+/)?.[0])).toEqual(["L9", "L10", "L11", "L12"]);
+  expect(code).toBe(2);
+  expect(report.warnings.map((w) => w.match(/^L\d+/)?.[0])).toEqual(["L9", "L10", "L11"]);
+  expect(report.findings.map((f) => f.match(/^L\d+/)?.[0])).toEqual(["L12"]);
 });
 
 test("an answered offer line that does not say what happened to the other options warns", () => {
