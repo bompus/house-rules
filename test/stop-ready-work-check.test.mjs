@@ -73,6 +73,7 @@ test("a bare waiting or status line is not a stated blocker", () => {
     "I will recheck the build output next.",
     "No blockers: 3 of 5 files complete. Waiting.",
     "Blocker: none. Waiting.",
+    "I have not handed back the work. Waiting.",
     "No longer blocked on CI. Waiting.",
     "Still waiting for CI.",
     "Working on it, 3 of 5 files done.",
@@ -99,6 +100,14 @@ test("an open item that carries a wait, or a plan with only deferred items, pass
 
 test("work the plan's own owner holds, or whose re-check is already due, is ready work", () => {
   assert.equal(check("Waiting.", plan("- [ ] Item; owner: test-review")).block, false);
+  for (const item of [
+    "Item; blocked-by: none",
+    "Item; trigger: none",
+    "Item; owner: TBD",
+    "Item; owner: unassigned",
+  ]) {
+    assert.equal(check("Waiting.", plan(`- [ ] ${item}`)).block, true, item);
+  }
   for (const item of [
     "Item; owner: test",
     "Item; owner: Test",

@@ -32,7 +32,7 @@ import { replyFacts } from "./continuity-boundary.mjs";
 import { entries, finalReply, planPaths, unquoted, unquotedProse } from "./stop-claim-check.mjs";
 
 const WAIT =
-  /\b(?:trigger|blocked-by):|\b(?:waiting (?:on|for)|waits? on|awaiting|blocked (?:on|by))\b/i;
+  /\b(?:trigger|blocked-by):(?!\s*(?:none|n\/a|nothing)\s*(?:[.!?\n;]|$))|\b(?:waiting (?:on|for)|waits? on|awaiting|blocked (?:on|by))\b/i;
 const BLOCKER = new RegExp(
   [
     String.raw`(?<!\b(?:no longer|not|never|un) )\b(?:blocked (?:on|by)|(?:cannot|can't|can not) (?:proceed|continue)|reopens? (?:when|on|if)|needs? (?:your|the user)|only (?:the user|you) can)\b`,
@@ -43,7 +43,8 @@ const BLOCKER = new RegExp(
   "i",
 );
 const localDate = () => new Date().toLocaleDateString("en-CA");
-const HANDBACK = /\bhand(?:ed|ing)? (?:this |it |the work )?(?:back|off|over)\b|\bhandback\b/i;
+const HANDBACK =
+  /(?<!\b(?:not|never|no|n't) (?:yet )?)\bhand(?:ed|ing)? (?:this |it |the work )?(?:back|off|over)\b|\bhandback\b/i;
 
 /**
  * An open `[ ]` item carries a wait when it names a trigger, a `recheck:` date that is still ahead, an owner other
@@ -67,7 +68,13 @@ function waits(text, planOwner, today) {
   // "SageGlen (Orchestrator thread mcp:…)" names one identity, SageGlen; split on the separators around it.
   const own = (planOwner ?? "").toLowerCase();
   const identities = [own, ...own.split(/[,;()]/)].map((part) => part.trim());
-  return owner !== undefined && owner !== "" && !identities.includes(owner);
+  const unassigned = ["none", "tbd", "n/a", "unassigned", "unknown"];
+  return (
+    owner !== undefined &&
+    owner !== "" &&
+    !unassigned.includes(owner) &&
+    !identities.includes(owner)
+  );
 }
 
 /**
