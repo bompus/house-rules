@@ -75,6 +75,40 @@ export function looksLikePrompt(e: Entry): boolean {
  * start one. A message is metadata only when stripping those elements leaves nothing: a person can
  * prepend a command block and still ask something after it.
  */
+/**
+ * Slash commands that maintain the session rather than ask for work. Any other slash command,
+ * such as a skill the person invoked, is an ask and starts a task.
+ */
+const CONTROL_COMMANDS = new Set([
+  "compact",
+  "clear",
+  "resume",
+  "exit",
+  "quit",
+  "model",
+  "effort",
+  "config",
+  "login",
+  "logout",
+  "help",
+  "cost",
+  "status",
+  "doctor",
+  "permissions",
+  "hooks",
+  "mcp",
+  "plugin",
+  "agents",
+  "init",
+  "memory",
+  "vim",
+  "terminal-setup",
+  "bug",
+  "release-notes",
+]);
+
+const SLASH_COMMAND = /<command-name>\s*\/([^\s<]+)\s*<\/command-name>/i;
+
 const META_ELEMENT =
   /^<(command-name|command-message|local-command-caveat|local-command-stdout|local-command-stderr|bash-input|bash-stdout|bash-stderr|system-reminder)>[\s\S]*?<\/\1>\s*/i;
 
@@ -91,6 +125,10 @@ export function isMetadataEntry(e: Entry): boolean {
     return false;
   }
   let text = allText(content).trim();
+  const command = SLASH_COMMAND.exec(text);
+  if (command && !CONTROL_COMMANDS.has(command[1]!.toLowerCase())) {
+    return false;
+  }
   for (let m = META_ELEMENT.exec(text); m; m = META_ELEMENT.exec(text)) {
     text = text.slice(m[0].length);
   }

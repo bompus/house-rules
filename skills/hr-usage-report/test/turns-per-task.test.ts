@@ -250,6 +250,16 @@ describe("humanPrompt", () => {
       }),
     ).toBe(true);
     expect(isMetadataEntry({ message: { content: "fix the bug" } })).toBe(false);
+    // A skill the person invoked is an ask; session housekeeping is not.
+    expect(
+      isMetadataEntry({ message: { content: "<command-name>/grilling</command-name>\n" } }),
+    ).toBe(false);
+    expect(
+      isMetadataEntry({ message: { content: "<command-name>/hr-what-next</command-name>" } }),
+    ).toBe(false);
+    expect(
+      humanPrompt({ promptId: "p", message: { content: "<command-name>/compact</command-name>" } }),
+    ).toBe(false);
     expect(
       isMetadataEntry({
         message: {
