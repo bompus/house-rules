@@ -125,8 +125,9 @@ user asked for progress.
   is not by itself a blockage: read the pending requests first (see
   `pendingRequestCount` below) and handle a legitimate question instead of
   interrupting. Interrupt with `t3_thread_interrupt` only when the child waits
-  on an approval nobody will see, or nothing has moved; say so to the user and
-  relaunch only after fixing the cause. Do not poll beyond this check while
+  on an approval nobody will see, or the stall check under "Is it stuck?"
+  (pending requests, then the newest activity) confirms nothing is moving.
+  Say so to the user and relaunch only after fixing the cause. Do not poll beyond this check while
   completion wakes the parent; the cases below that never send that wake get
   bounded follow-up checks instead.
 - Tell the user within the same reply when a child is stuck. Never wait for
@@ -183,10 +184,13 @@ behavior.
   expected duration suggests, not continuously. A reasoning or tool item under
   about 3 minutes old means it is working. An assistant message ending in the
   sentinel that is over 2 minutes old with the run still `running` means it
-  finished, but only when the message belongs to the current run: check it
-  against the active run's identity or `startedAt`, and ignore sentinel
+  finished, but only when the message belongs to the current run and no
+  background command or subagent of that run is still running: check the
+  message against the active run's identity or `startedAt`, ignore sentinel
   messages from earlier runs in the same thread, which a follow-up in that
-  thread leaves behind. Read the answer first, then `task_cancel`. Any item over 10 minutes
+  thread leaves behind, and check the newest activity for live background
+  work. Read the answer first; while background work runs, wait for it
+  instead of cancelling, then `task_cancel`. Any item over 10 minutes
   old without the sentinel is only a trigger to investigate, as above: a long
   command can run quietly for longer than that. Cancel after confirming a
   stall, or at a timeout selected for the task in advance, not on age alone.
