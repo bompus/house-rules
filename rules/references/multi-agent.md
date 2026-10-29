@@ -183,7 +183,10 @@ behavior.
   expected duration suggests, not continuously. A reasoning or tool item under
   about 3 minutes old means it is working. An assistant message ending in the
   sentinel that is over 2 minutes old with the run still `running` means it
-  finished. Read the answer first, then `task_cancel`. Any item over 10 minutes
+  finished, but only when the message belongs to the current run: check it
+  against the active run's identity or `startedAt`, and ignore sentinel
+  messages from earlier runs in the same thread, which a follow-up in that
+  thread leaves behind. Read the answer first, then `task_cancel`. Any item over 10 minutes
   old without the sentinel is only a trigger to investigate, as above: a long
   command can run quietly for longer than that. Cancel after confirming a
   stall, or at a timeout selected for the task in advance, not on age alone.
