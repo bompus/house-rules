@@ -4,6 +4,8 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Extend the multi-agent procedure with three delegated-work rules: bind a chosen model effort through the host's advertised control and verify the effective settings instead of trusting a suffix or requested value; record sender follow-through on a handoff as a Ledger item the named acceptance closes, so an accepted handoff cannot sit open on the sender side; and, on T3 Code hosts, reading a delegated task's progress in the same reference, including why a background child must not launch in a mode that can wait unseen for approval and how to take a result from a child that finished but still shows running. Recording acceptance authorizes no replay of a completed external effect and waives no attempt or frozen-evaluation limits.
+
 - Make `hr-code-review` match each changed behavior in the final diff to its supporting checks or observations and report unverified behavior. Passing static checks or mocks do not establish runtime behavior they never exercise. Existing evidence can cover several behaviors without a new test, screenshot or artifact for each one. Repository gate and waiver rules still decide whether a gap blocks landing.
 
 - Add an opt-in `maintainer-edits` modifier to enable maintainer edits on GitHub PRs from personal forks, with unsupported cases and workflow-secret access made explicit.

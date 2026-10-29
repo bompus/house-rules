@@ -50,3 +50,136 @@ offer an app-managed session's branch to its owner for deletion, unless the
 session is still on it. Before creating a task worktree, check the
 repository's worktree list and report unexplained leftovers; `git worktree
 prune --dry-run` shows stale registrations.
+
+Bind a chosen model effort explicitly through the live host's advertised
+control, for a session, a panel seat, a subagent, a reviewer or a benchmark
+arm. Verify the effective settings; a model suffix, catalog entry or
+requested value is not an effective-effort receipt. Fail closed if the route
+cannot honor the choice. Preserve frozen comparison inputs and historical
+runs; record a new cohort for any newly selected effort instead of relabeling
+prior results.
+
+A sender that retains follow-through until a handoff is accepted records it
+as an item inside its plan's Ledger, never only as a note: recipient, the
+work id the acceptance must name, and a near `recheck:` date, so open-work
+checks count it and surface it when overdue. The acceptance names that work
+id. An acceptance arriving in the sender's thread is work for whichever
+session receives it, not a notification: its first action, before other work
+or any handback, is to verify the receiver's canonical record and close the
+sender's Ledger item in place with a pointer to it. Delivery of the handoff
+or of the acceptance is not that recording, and the task is not finished
+while its acceptance item is open. Recording acceptance only retires the
+sender's tracking item: it authorizes no recipient operation, replay of a
+completed external effect, or waiver of access, attempt, publication or
+frozen-evaluation limits, and unknown external outcomes still need
+verification before any repetition.
+
+On a host whose delegated tasks run through T3 Code (`delegate_task`), the T3 section below covers telling working from waiting or stuck.
+
+### Reading a T3 delegated task's progress
+
+How a parent thread tells whether a task from `delegate_task` is working, waiting
+or stuck. Two events wake the parent: the task finishing, and a user question
+from the child, which also ends a `mode=wait` call early (`hasPendingQuestion`).
+An approval request does not send an asynchronous wake. A blocking `mode=wait`
+returns `pendingApproval` on servers with pingdotgg/t3code #20037. Read the
+fresh request in the child; that result grants no authority to approve it.
+Field names below were read from live `t3_thread_read` output; the stall rule is
+a heuristic, not a T3 contract.
+
+#### When the task is over
+
+`task_status(taskId)` is the end of the task. Its `workState` is `working`,
+`waiting_for_children` or `result_available`; a completed turn with live nested
+work is not a finished task. `summary` is the final result, including a provider
+error on failure. `hasPendingChildRuns` reports later queued or running turns in
+the backing thread. Completion also wakes the parent, so end the turn instead of
+polling. `t3_thread_wait` reports run status only, a timeout does not stop the
+child, and waiting does not acknowledge the result.
+
+On servers with pingdotgg/t3code #22709, completion is checked again when a
+child's background work or nested delegates settle. A run ending before that
+work finishes is expected; wait for the task result. The built-in Grok ACP
+adapter also recognizes completed background command output and successful
+kill results, so those commands no longer leave a finished task running.
+
+#### Do not launch a child that can wait for approval
+
+An async child runs in a hidden thread. In `approval-required` mode its first
+tool prompt waits for a click nobody sees: the parent shows `running`, the child
+shows `status: running` with `pendingRequestCount` above zero, and nothing moves.
+On 2026-10-11 two research advisors sat that way for about two hours before the
+user asked for progress.
+
+- Leave `runtimeMode` unset (inherit) on `delegate_task`; never pass
+  `approval-required` for a background child. Keep a child read-only by saying so
+  in its task prompt and naming the one folder it may write, not by choosing a
+  mode that blocks it.
+- Ask for a bounded result: a word limit and a stop condition in the prompt.
+- Check once about two minutes after launching: `t3_thread_read` must show
+  `pendingRequestCount` 0 and an `updatedAt` after the start. If not, interrupt
+  the child with `t3_thread_interrupt`, say so to the user, and relaunch only
+  after fixing the cause. This check is the only polling allowed; completion
+  still wakes the parent.
+- Tell the user within the same reply when a child is stuck. Never wait for
+  them to ask.
+
+#### While it runs
+
+Read the child's `childThreadId` with `t3_thread_read` and `view=activity`. Use a
+small `limit` and `maxCharsPerItem`, then continue with `afterPosition`; a full
+read of a long thread is very large. The thread header carries:
+
+- `status` and `activeRunId`: whether a run is in progress.
+- `updatedAt`: the latest change to the thread; each activity item has its own.
+- `recentRuns`: each run's status, `startedAt` and `completedAt`.
+- `pendingRequestCount`: the child is waiting on a request, not working. The
+  count includes approval requests as well as user questions. Read user questions
+  with `t3_pending_request` with `action: 'list'`; approval requests are not listed there, so a
+  count above zero with an empty list means the child waits for an approval click
+  in its own thread.
+
+#### Is it stuck?
+
+A running child whose `updatedAt` has not moved for a window you choose may be
+stalled. No threshold is documented. A model can reason silently for minutes, so
+a quiet interval alone is not failure: check `pendingRequestCount` first, then
+read the newest activity item, then decide whether to wait or `task_cancel`.
+`task_cancel` also stops queued turns in the backing thread. From nightly 3373
+(pingdotgg/t3code #21487) it removes the task's own queued run even while the
+thread's queue is held, leaves other queued work in place, and the parent task
+cards stop showing a stale status. Older servers left the held run queued.
+With pingdotgg/t3code #22653, Stop also clears stuck parent task cards even
+when the child is busy or its bound run has already finished. Cancelling can
+stop work still running in the child; read its current activity first.
+
+#### A child that finished but still shows running
+
+A Cursor child can post its full answer and stay
+`running`. T3 closes a Cursor run only when the SDK's `run.wait()` resolves; there
+is no idle timeout. On 2026-10-11 a Grok seat's SDK `turn-ended` event fired and
+T3 never logged a run completion. That observation is about the Cursor SDK,
+not the built-in Grok ACP adapter fixed by #22709. The same PR fixes the
+background-work settlement case reported in #17512; neither change establishes
+that the Cursor SDK now ends these runs. Check the current issue status before
+filing a report; #17565 was closed as not planned because it is the Cursor SDK's
+behavior.
+
+- End every brief for a panel seat with a fixed last line, such as
+  `END-OF-REPORT`, and say it is the last thing the seat writes.
+- Keep the `taskId` and the `childThreadId`. Read the child with
+  `t3_thread_read` and `view=activity`, a small `limit`, and `itemId` for the full
+  text of a long answer.
+- Rules of thumb, not T3 contract. A reasoning or tool item under about 3 minutes
+  old means it is working. An assistant message ending in the sentinel that is
+  over 2 minutes old with the run still `running` means it finished. Read the
+  answer first, then `task_cancel`. Any item over 10 minutes old without the
+  sentinel is a suspected stall: read once, then `task_cancel`.
+- Cancelling shows the task as cancelled or interrupted, not `result_available`.
+  Take the result from the thread read. On 2026-10-11 `t3_thread_interrupt` on such
+  a child closed it in about 10 seconds, the SDK's interrupt timeout.
+- Whether the Cursor agent keeps working after `turn-ended` is unverified.
+
+Do not start another independent review round by sending a message to `childThreadId`; start a
+new `delegate_task` with the full brief. A follow-up that needs the same child's conversation is
+the exception: send it with `t3_thread_send` on `childThreadId`.
