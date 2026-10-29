@@ -86,6 +86,29 @@ describe.skipIf(!hasMatplotlib)("benefit-chart.py", () => {
     expect(alt).toContain("Renders: Dev build only.");
   });
 
+  test("ends each alt-text sentence with one period whether or not the spec text has one", () => {
+    const rows = [{ label: "Type one letter", before: 1136, after: 319, unit: "ms" }];
+    const withPeriods = chart({
+      headline: "Typing takes 319 ms, was 1,136 ms.",
+      band: 0.03,
+      note: "Lower is better.",
+      workload: "1,300 threads.",
+      rows,
+    });
+    const without = chart({
+      headline: "Typing takes 319 ms, was 1,136 ms",
+      band: 0.03,
+      note: "Lower is better",
+      workload: "1,300 threads",
+      rows,
+    });
+    const expected =
+      "Typing takes 319 ms, was 1,136 ms. Lower is better. Workload: 1,300 threads. Type one letter:";
+    expect(withPeriods.alt).toContain(expected);
+    expect(without.alt).toContain(expected);
+    expect(withPeriods.alt).not.toContain("..");
+  });
+
   test("escapes pipes in table labels and prints the workload line", () => {
     const { alt } = chart(
       {

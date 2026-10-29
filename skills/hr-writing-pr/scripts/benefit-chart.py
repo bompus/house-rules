@@ -66,6 +66,12 @@ def fmt(value):
     return f"{value:,.3f}"
 
 
+def end_sentence(text):
+    """The text with exactly one closing period, unless it already ends a sentence."""
+    text = text.strip()
+    return text if text.endswith((".", "!", "?")) else text + "."
+
+
 def band_of(spec):
     if "band" not in spec:
         sys.exit(
@@ -192,10 +198,12 @@ def render(spec, out_path):
         ax.text(0.4, 0.3, spec["note"], color=MUTED, fontsize=9.5, va="center")
     fig.savefig(out_path, facecolor=BACKGROUND)
     plt.close(fig)
-    lead = spec["headline"] + (f". {spec['note']}" if spec.get("note") else "")
+    lead = end_sentence(spec["headline"])
+    if spec.get("note"):
+        lead += " " + end_sentence(spec["note"])
     if spec.get("workload"):
-        lead += f". Workload: {spec['workload']}"
-    return f"{lead}. " + "; ".join(alts) + "."
+        lead += " Workload: " + end_sentence(spec["workload"])
+    return f"{lead} " + "; ".join(alts) + "."
 
 
 def table(spec):
