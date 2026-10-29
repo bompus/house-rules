@@ -70,6 +70,8 @@ test("a bare waiting or status line is not a stated blocker", () => {
   for (const reply of [
     "The trigger handler is implemented. Waiting.",
     "I will recheck the build output next.",
+    "No blockers: 3 of 5 files complete. Waiting.",
+    "Blocker: none. Waiting.",
     "Still waiting for CI.",
     "Working on it, 3 of 5 files done.",
     "Waiting for the next event.",
@@ -94,6 +96,7 @@ test("an open item that carries a wait, or a plan with only deferred items, pass
 });
 
 test("work the plan's own owner holds, or whose re-check is already due, is ready work", () => {
+  assert.equal(check("Waiting.", plan("- [ ] Item; owner: test-review")).block, false);
   for (const item of [
     "Item; owner: test",
     "Item; owner: Test",
@@ -121,6 +124,10 @@ test("a reply that only quotes a satisfying phrase does not pass, and one that q
   assert.equal(check('Quote: "nothing left". Blocked on CI.').block, false);
   const example = "Example reply:\n```\n" + OFFER + "\n```\nWaiting.";
   assert.equal(check(example).block, true);
+  assert.equal(
+    check('Example: "Question 1: Continue? `1a` (Recommended): Go; reply `1a`". Waiting.').block,
+    true,
+  );
 });
 
 test("an empty reply, an unparseable plan and a missing plan pass", () => {

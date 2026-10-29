@@ -32,17 +32,19 @@ import { replyFacts } from "./continuity-boundary.mjs";
 // and quotes "nothing left" says nothing about its own work. A removed span keeps its sentence-ending punctuation
 // and line breaks, so a negation before a quote cannot reach the sentence after it.
 const FENCE = String.raw`^[ \t]*\x60{3}[^\n]*\n[\s\S]*?\n[ \t]*\x60{3}[ \t]*$`;
-const QUOTED = new RegExp(
-  String.raw`${FENCE}|\x60[^\x60\n]+\x60|(?<!\w)"(?=\S)[^"\n]*(?<=\S)"(?!\w)|\u201c[^\u201c\u201d\n]*\u201d`,
-  "gm",
-);
+const DOUBLE_QUOTED = String.raw`(?<!\w)"(?=\S)[^"\n]*(?<=\S)"(?!\w)|\u201c[^\u201c\u201d\n]*\u201d`;
+const QUOTED = new RegExp(String.raw`${FENCE}|\x60[^\x60\n]+\x60|${DOUBLE_QUOTED}`, "gm");
 
 /**
- * The reply without its fenced blocks, keeping line breaks. Inline code spans stay: a coded offer prints its codes in them.
+ * The reply without its fenced blocks and double-quoted spans, keeping line breaks. Inline code spans stay: a coded
+ * offer prints its codes in them.
  * @param {string} reply
  */
-export const unfenced = (reply) =>
-  reply.replace(new RegExp(FENCE, "gm"), (block) => ` ${block.replace(/[^\n]/g, "")} `);
+export const unquotedProse = (reply) =>
+  reply.replace(
+    new RegExp(`${FENCE}|${DOUBLE_QUOTED}`, "gm"),
+    (span) => ` ${span.replace(/[^.!?\n]/g, "")} `,
+  );
 
 /**
  * The reply without the text it only quotes (see QUOTED).

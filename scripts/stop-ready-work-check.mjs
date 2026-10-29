@@ -12,7 +12,7 @@
 // blocked-on-user, completed) is skipped, because the user or the record already stopped it.
 //
 // The reply passes when it holds any of: a coded offer (`Question 1` with options such as `1a`, a
-// "(Recommended" and a "reply `" line, outside any fenced example); a stated blocker or trigger ("blocked on",
+// "(Recommended" and a "reply `" line, outside any quoted example); a stated blocker or trigger ("blocked on",
 // "Blocker:", "Trigger:", "reopens when", "recheck on <date>", "cannot proceed", "needs your", "awaiting your");
 // or a handback claim (nothing left, session
 // complete, "handed back"). A bare "waiting" or a status line is none of these. Text the reply only quotes
@@ -29,14 +29,14 @@ import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 import { parsePlan, RECHECK } from "../skills/hr-what-next/scripts/plan-ledger.mjs";
 import { replyFacts } from "./continuity-boundary.mjs";
-import { entries, finalReply, planPaths, unfenced, unquoted } from "./stop-claim-check.mjs";
+import { entries, finalReply, planPaths, unquoted, unquotedProse } from "./stop-claim-check.mjs";
 
 const WAIT =
   /\b(?:trigger|blocked-by):|\b(?:waiting (?:on|for)|waits? on|awaiting|blocked (?:on|by))\b/i;
 const BLOCKER = new RegExp(
   [
     String.raw`\b(?:blocked (?:on|by)|(?:cannot|can't|can not) (?:proceed|continue)|reopens? (?:when|on|if)|needs? (?:your|the user)|only (?:the user|you) can)\b`,
-    String.raw`\b(?:blockers?|triggers?|re-?checks?)\s*:`,
+    String.raw`(?<!\bno )\b(?:blockers?|triggers?|re-?checks?)\s*:(?!\s*(?:none|n/a|no)\b)`,
     String.raw`\bre-?checks? (?:on|at|after)\b`,
     String.raw`\b(?:awaiting|waiting (?:on|for)) (?:your|you)\b`,
   ].join("|"),
@@ -64,8 +64,10 @@ function waits(text, planOwner, today) {
     .match(/\bowner:\s*([^;.,)]+)/i)?.[1]
     ?.trim()
     .toLowerCase();
+  // "SageGlen (Orchestrator thread mcp:…)" names one identity, SageGlen; split on the separators around it.
   const own = (planOwner ?? "").toLowerCase();
-  return owner !== undefined && owner !== "" && !own.includes(owner) && !owner.includes(own);
+  const identities = [own, ...own.split(/[,;()]/)].map((part) => part.trim());
+  return owner !== undefined && owner !== "" && !identities.includes(owner);
 }
 
 /**
@@ -90,10 +92,10 @@ export function decide({ reply, planPath, planText, today = localDate() }) {
   if (open.length === 0 || open.some((item) => waits(item.text, plan.owner, today))) {
     return { block: false };
   }
-  // The offer test keeps inline code spans (an offer prints its codes in them) and drops fenced examples.
+  // The offer test keeps inline code spans (an offer prints its codes in them) and drops fenced and double-quoted examples.
   const said = unquoted(reply);
   if (
-    replyFacts(unfenced(reply), true).offer ||
+    replyFacts(unquotedProse(reply), true).offer ||
     replyFacts(said).done ||
     BLOCKER.test(said) ||
     HANDBACK.test(said)
