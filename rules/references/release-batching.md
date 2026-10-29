@@ -59,6 +59,12 @@ each correction first. Landing the corrections is part of the audit; one made
 after publishing means the audit did not finish. This applies to every public
 repository, including ones created later.
 
+Run the audit before creating the version-bump or release commit, not only
+before the tag that follows it. A benchmark report is final only when its raw
+results, summaries, tables, charts and prose agree and the declared verdict rule
+is exercised by a check. A correction after the release commit means the release
+commit was cut too early.
+
 Audit the pending changelog entries at the same point on every version bump,
 public or private, and land the corrected changelog first. Check each entry
 against the code that will ship: names, commands, counts and figures are

@@ -11,5 +11,6 @@ Before preparing or publishing a release or public announcement, read
 [the release procedure](../references/release-batching.md), including its factual
 accuracy audit and changelog audit. Run the accuracy audit on every public
 repository's version bump and the changelog audit on every version bump, before
-the first publish step, and land their corrections first. Do not publish with
-unresolved accuracy blockers or expand scope to new benchmarks.
+the version-bump or release commit and the first publish step, and land their
+corrections first. Do not publish with unresolved accuracy blockers or expand
+scope to new benchmarks.
