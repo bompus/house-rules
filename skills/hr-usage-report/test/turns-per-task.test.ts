@@ -77,6 +77,19 @@ function fixture(): string {
       message: { content: [{ type: "tool_result", content: "ok" }] },
     },
     {
+      type: "user",
+      promptId: "p1",
+      isMeta: true,
+      timestamp: "2026-10-15T10:00:04Z",
+      message: { content: "Status update for the ledger" },
+    },
+    {
+      type: "user",
+      promptId: "p1",
+      timestamp: "2026-10-15T10:00:04Z",
+      message: { content: "<command-name>/compact</command-name>\n  " },
+    },
+    {
       type: "assistant",
       requestId: "r2",
       timestamp: "2026-10-15T10:00:05Z",
@@ -230,6 +243,27 @@ describe("humanPrompt", () => {
       }),
     ).toBe(true);
     expect(isMetadataEntry({ message: { content: "fix the bug" } })).toBe(false);
+    expect(
+      isMetadataEntry({
+        message: { content: "<local-command-caveat>c</local-command-caveat>\n\nNow fix the bug" },
+      }),
+    ).toBe(false);
+    expect(
+      isMetadataEntry({
+        message: {
+          content: [
+            { type: "text", text: "<system-reminder>be brief</system-reminder>" },
+            { type: "text", text: "then fix the bug" },
+          ],
+        },
+      }),
+    ).toBe(false);
+    expect(
+      humanPrompt({
+        promptId: "p",
+        message: { content: "<command-name>/x</command-name>\n do it" },
+      }),
+    ).toBe(true);
     expect(isMetadataEntry({ message: { content: [{ type: "text", text: "fix the bug" }] } })).toBe(
       false,
     );

@@ -72,28 +72,37 @@ export function looksLikePrompt(e: Entry): boolean {
 /**
  * Injected entries that arrive as `user` messages: command wrappers, local command output, system
  * reminders and entries the CLI flags as meta. They are not asks, so they neither end a task nor
- * start one.
+ * start one. A message is metadata only when stripping those elements leaves nothing: a person can
+ * prepend a command block and still ask something after it.
  */
-const META_TEXT =
-  /^\s*<(?:command-name|command-message|local-command-caveat|local-command-stdout|local-command-stderr|bash-input|bash-stdout|bash-stderr|system-reminder)>/;
+const META_ELEMENT =
+  /^<(command-name|command-message|local-command-caveat|local-command-stdout|local-command-stderr|bash-input|bash-stdout|bash-stderr|system-reminder)>[\s\S]*?<\/\1>\s*/i;
 
 export function isMetadataEntry(e: Entry): boolean {
   if (e.isMeta) {
     return true;
   }
-  const c = e.message?.content;
-  const first = typeof c === "string" ? c : Array.isArray(c) ? textOf(c) : "";
-  return META_TEXT.test(first);
+  let text = allText(e.message?.content).trim();
+  for (let m = META_ELEMENT.exec(text); m; m = META_ELEMENT.exec(text)) {
+    text = text.slice(m[0].length);
+  }
+  return text === "" && allText(e.message?.content).trim() !== "";
 }
 
-function textOf(content: unknown[]): string {
-  for (const block of content) {
-    const b = block as { type?: string; text?: string } | null;
-    if (b?.type === "text" && typeof b.text === "string") {
-      return b.text;
-    }
+/** Every text block of a message, in order. */
+function allText(content: unknown): string {
+  if (typeof content === "string") {
+    return content;
   }
-  return "";
+  if (!Array.isArray(content)) {
+    return "";
+  }
+  return content
+    .map((block) => {
+      const b = block as { type?: string; text?: string } | null;
+      return b?.type === "text" && typeof b.text === "string" ? b.text : "";
+    })
+    .join("\n");
 }
 
 const isAsk = (e: Entry) => looksLikePrompt(e) && !isMetadataEntry(e);
