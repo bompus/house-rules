@@ -59,20 +59,18 @@ cannot honor the choice. Preserve frozen comparison inputs and historical
 runs; record a new cohort for any newly selected effort instead of relabeling
 prior results.
 
-A sender that retains follow-through until a handoff is accepted records it
-as an item inside its plan's Ledger, never only as a note: recipient, the
-work id the acceptance must name, and a near `recheck:` date, so open-work
-checks count it and surface it when overdue. The acceptance names that work
-id. An acceptance arriving in the sender's thread is work for whichever
-session receives it, not a notification: its first action, before other work
-or any handback, is to verify the receiver's canonical record and close the
-sender's Ledger item in place with a pointer to it. Delivery of the handoff
-or of the acceptance is not that recording, and the task is not finished
-while its acceptance item is open. Recording acceptance only retires the
-sender's tracking item: it authorizes no recipient operation, replay of a
-completed external effect, or waiver of access, attempt, publication or
-frozen-evaluation limits, and unknown external outcomes still need
-verification before any repetition.
+A sender that keeps follow-through until a handoff is accepted records it in
+its plan's Ledger, never only as a note: recipient, the work id the acceptance
+must name, and a near `recheck:` date, so open-work checks surface it when
+overdue. The acceptance names that work id. An acceptance in the sender's
+thread is work for whoever receives it, not a notification: before other work
+or any handback, verify the receiver's canonical record and close the sender's
+Ledger item in place with a pointer to it. Delivery of the handoff or acceptance
+is not that recording, and the task is not finished while the item is open.
+Recording acceptance retires only the sender's tracking item: it authorizes no
+recipient operation, replay of a completed effect, or waiver of access,
+attempt, publication or frozen-evaluation limits; an unknown external outcome
+still needs verification before repetition.
 
 On a host whose delegated tasks run through T3 Code (`delegate_task`), the T3 section below covers telling working from waiting or stuck.
 
@@ -108,8 +106,8 @@ kill results, so those commands no longer leave a finished task running.
 An async child runs in a hidden thread. In `approval-required` mode its first
 tool prompt waits for a click nobody sees: the parent shows `running`, the child
 shows `status: running` with `pendingRequestCount` above zero, and nothing moves.
-On 2026-10-11 two research advisors sat that way for about two hours before the
-user asked for progress.
+Two research advisors sat that way for about two hours before the user asked
+for progress.
 
 - Leave `runtimeMode` unset (inherit) on `delegate_task`; never pass
   `approval-required` for a background child. Inherit only helps when your own
@@ -166,8 +164,8 @@ stop work still running in the child; read its current activity first.
 
 A Cursor child can post its full answer and stay
 `running`. T3 closes a Cursor run only when the SDK's `run.wait()` resolves; there
-is no idle timeout. On 2026-10-11 a Grok seat's SDK `turn-ended` event fired and
-T3 never logged a run completion. That observation is about the Cursor SDK,
+is no idle timeout. A Grok seat's SDK `turn-ended` event fired and T3 never
+logged a run completion. That observation is about the Cursor SDK,
 not the built-in Grok ACP adapter fixed by #22709. The same PR fixes the
 background-work settlement case reported in #17512; neither change establishes
 that the Cursor SDK now ends these runs. Check the current issue status before
@@ -195,8 +193,8 @@ behavior.
   command can run quietly for longer than that. Cancel after confirming a
   stall, or at a timeout selected for the task in advance, not on age alone.
 - Cancelling shows the task as cancelled or interrupted, not `result_available`.
-  Take the result from the thread read. On 2026-10-11 `t3_thread_interrupt` on such
-  a child closed it in about 10 seconds, the SDK's interrupt timeout.
+  Take the result from the thread read. `t3_thread_interrupt` on such a child
+  closed it in about 10 seconds, the SDK's interrupt timeout.
 - Whether the Cursor agent keeps working after `turn-ended` is unverified.
 
 Do not start another independent review round by sending a message to `childThreadId`; start a
