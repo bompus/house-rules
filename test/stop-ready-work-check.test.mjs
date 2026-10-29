@@ -141,6 +141,104 @@ test("a reply that only quotes a satisfying phrase does not pass, and one that q
   );
 });
 
+const STRICT_HEADER = "Stop-check: strict\n";
+// One ready item and one that waits: the installed reading passes this plan, the strict one does not.
+const MIXED = plan(
+  "- [ ] Write the next step\n- [ ] Land it; waiting on CI run 12, recheck: 2026-11-01",
+);
+const strictPlan = (/** @type {string} */ ledger, status = "active") =>
+  `${STRICT_HEADER}${plan(ledger, status)}`;
+const STRICT_MIXED = `${STRICT_HEADER}${MIXED}`;
+const LIGHT_OFFER =
+  "Two ways to go:\n\n- `1a`: Land it now.\n- `1b`: Hold it.\n\nRecommended: reply `1a` or `go`";
+
+test("a strict plan blocks when any open item is ready, and the same plan without the marker passes", () => {
+  const strict = check(WAITING_LINE, STRICT_MIXED);
+  assert.equal(strict.block, true);
+  assert.match(strict.reason ?? "", /1 ready open item\(s\) that name no wait/);
+  assert.match(strict.reason ?? "", /Write the next step/);
+  assert.doesNotMatch(strict.reason ?? "", /Land it/);
+  assert.equal(check(WAITING_LINE, MIXED).block, false);
+});
+
+test("a strict plan passes when every open item waits, is deferred, or is closed", () => {
+  assert.equal(
+    check(
+      WAITING_LINE,
+      `${STRICT_HEADER}${WAITING}`.replace("Write the next step", "Wait; trigger: x"),
+    ).block,
+    false,
+  );
+  assert.equal(check(WAITING_LINE, `${STRICT_HEADER}${DEFERRED_ONLY}`).block, false);
+  assert.equal(check(WAITING_LINE, strictPlan("- [x] Done; evidence: checked")).block, false);
+  assert.equal(check(WAITING_LINE, strictPlan("- [ ] Item", "paused")).block, false);
+});
+
+test("on a strict plan the light offer form counts as an offer; elsewhere it does not", () => {
+  assert.equal(check(LIGHT_OFFER, STRICT_MIXED).block, false);
+  assert.equal(check(LIGHT_OFFER, READY).block, true);
+  assert.equal(check(LIGHT_OFFER, strictPlan("- [ ] Write the next step")).block, false);
+  // The acceptance line alone, or options with no acceptance line, is not an offer.
+  assert.equal(check("Recommended: reply `1a` or `go`", STRICT_MIXED).block, true);
+  assert.equal(check("- `1a`: Land it.\n- `1b`: Hold it.", STRICT_MIXED).block, true);
+  assert.equal(check(OFFER, STRICT_MIXED).block, false);
+});
+
+test("a strict plan keeps the other reply exemptions", () => {
+  for (const reply of [
+    "Blocked on the user's login; I cannot proceed until it exists.",
+    "Landed. Nothing remains.",
+    "Handed back to the Manager for the adoption step.",
+  ]) {
+    assert.equal(check(reply, STRICT_MIXED).block, false, reply);
+  }
+  assert.equal(check("Working on it.", STRICT_MIXED).block, true);
+});
+
+test("the strict marker counts only in the plan header", () => {
+  const inLedger = plan(
+    "- [ ] Write the next step\n- [ ] Land it; waiting on CI\n- Stop-check: strict",
+  );
+  assert.equal(check(WAITING_LINE, inLedger).block, false);
+  const bold = `**Stop-check:** strict\n${MIXED}`;
+  assert.equal(check(WAITING_LINE, bold).block, true);
+  const lateHeader = `${"\n".repeat(41)}${STRICT_HEADER}${MIXED}`;
+  assert.equal(check(WAITING_LINE, lateHeader).block, false);
+});
+
+test("a strict plan survives lint errors on ledger lines; the installed reading still passes on them", () => {
+  const withBadDoneLine =
+    "- [x] Done without evidence\n- [ ] Write the next step\n- [ ] Land it; waiting on CI";
+  const strict = check(WAITING_LINE, strictPlan(withBadDoneLine));
+  assert.equal(strict.block, true);
+  const installed = check(WAITING_LINE, plan(withBadDoneLine));
+  assert.equal(installed.block, false);
+  assert.match(installed.note ?? "", /does not parse/);
+  // A header error still lets a strict plan through unchecked.
+  const noStatus = check(
+    WAITING_LINE,
+    `${STRICT_HEADER}Owner: test\n## Ledger\n- [ ] Write the next step\n`,
+  );
+  assert.equal(noStatus.block, false);
+  assert.match(noStatus.note ?? "", /does not parse/);
+});
+
+test("on a strict plan evaluate blocks once and lets the continuation through", () => {
+  const transcript = jsonl(
+    user,
+    assistant([tool("Edit", { file_path: "/x/plans/mine/plan.md" })]),
+    assistant([text(WAITING_LINE)]),
+  );
+  const files = reader({ "/t.jsonl": transcript, "/x/plans/mine/plan.md": STRICT_MIXED });
+  assert.equal(evaluate({ transcript_path: "/t.jsonl" }, files).block, true);
+  assert.equal(
+    evaluate({ transcript_path: "/t.jsonl", stop_hook_active: true }, files).block,
+    false,
+  );
+  const other = reader({ "/t.jsonl": transcript, "/x/plans/mine/plan.md": MIXED });
+  assert.equal(evaluate({ transcript_path: "/t.jsonl" }, other).block, false);
+});
+
 test("an empty reply, an unparseable plan and a missing plan pass", () => {
   assert.equal(check("").block, false);
   assert.equal(check("   \n").block, false);

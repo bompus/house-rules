@@ -19,6 +19,12 @@
 // (code spans, fenced blocks, double-quoted spans) is ignored first, so a reply that merely mentions a phrase
 // does not satisfy or trip the check. stop-claim-check.mjs separately holds back a false completion claim.
 //
+// Strict reading, per plan: a plan whose first 40 lines hold a `Stop-check: strict` field is blocked when ANY
+// open `[ ]` item is ready (names no wait), not only when none waits, and a "light" offer (an acceptance line,
+// "Recommended: reply `1a` or `go`", beside coded options but with no "Question N" heading) counts as an offer.
+// A strict plan also tolerates lint errors on its ledger lines (a done line without evidence); only a header
+// error (no Status or Owner) lets it through unchecked. Every other plan keeps the reading above unchanged.
+//
 // A block is sent once: the hook input's `stop_hook_active` is true on the continuation, which always passes,
 // so a stuck check cannot loop. Any read or parse failure also passes and says so on stderr. A session that
 // never touched a plan file has nothing to check, and its reply passes.
@@ -42,6 +48,20 @@ const BLOCKER = new RegExp(
   ].join("|"),
   "i",
 );
+const STRICT = /^\s*(?:\*\*)?Stop[- ]check(?:\*\*)?:(?:\*\*)?\s*strict\b/im;
+const LIGHT_ACCEPTANCE = /^[*_ ]*Recommended(?: combination)?:\s*reply\s+`/im;
+const OPTION_CODE = /`\d+[a-z]`/i;
+/**
+ * The light offer form: an acceptance line ("Recommended: reply `1a` or `go`") and a coded option on another line.
+ * @param {string} text
+ */
+const lightOffer = (text) => {
+  const lines = text.split("\n");
+  return (
+    lines.some((line) => LIGHT_ACCEPTANCE.test(line)) &&
+    lines.some((line) => !LIGHT_ACCEPTANCE.test(line) && OPTION_CODE.test(line))
+  );
+};
 const localDate = () => new Date().toLocaleDateString("en-CA");
 const HANDBACK =
   /(?<!\b(?:not|never|no|n't) (?:yet )?)\bhand(?:ed|ing)? (?:this |it |the work )?(?:back|off|over)\b|\bhandback\b/i;
@@ -89,35 +109,44 @@ export function decide({ reply, planPath, planText, today = localDate() }) {
     return { block: false };
   }
   const plan = parsePlan(planText);
-  if (plan.errors.length) {
-    return { block: false, note: `${planPath} does not parse: ${plan.errors[0]}` };
+  const strict = STRICT.test(planText.split(/\r?\n/).slice(0, 40).join("\n"));
+  // A strict plan fails open only on a header error; "L12: ..." errors name a ledger line.
+  const errors = strict ? plan.errors.filter((error) => !/^L\d+:/.test(error)) : plan.errors;
+  if (errors.length) {
+    return { block: false, note: `${planPath} does not parse: ${errors[0]}` };
   }
   if ((plan.status ?? "").trim().toLowerCase() !== "active") {
     return { block: false };
   }
   const open = plan.items.filter((item) => item.mark === " ");
-  if (open.length === 0 || open.some((item) => waits(item.text, plan.owner, today))) {
+  const ready = open.filter((item) => !waits(item.text, plan.owner, today));
+  if (strict ? ready.length === 0 : ready.length < open.length || open.length === 0) {
     return { block: false };
   }
   // The offer test keeps inline code spans (an offer prints its codes in them) and drops fenced and double-quoted examples.
   const said = unquoted(reply);
+  const offered = unquotedProse(reply);
   if (
-    replyFacts(unquotedProse(reply), true).offer ||
+    replyFacts(offered, true).offer ||
+    (strict && lightOffer(offered)) ||
     replyFacts(said).done ||
     BLOCKER.test(said) ||
     HANDBACK.test(said)
   ) {
     return { block: false };
   }
-  const first = open
+  const first = (strict ? ready : open)
     .slice(0, 3)
     .map((item) => `L${item.line} ${item.text.replace(/\s+/g, " ").slice(0, 80)}`)
     .join("; ");
+  const what = strict
+    ? `${ready.length} ready open item(s) that name no wait`
+    : `${open.length} open item(s) and none of them waits on anyone or anything`;
   return {
     block: true,
     reason:
-      `Your reply stops, but the plan ${planPath} still has ${open.length} open item(s) and none of them ` +
-      `waits on anyone or anything (${first}). If authorized work remains, do the next step now in this reply. ` +
+      `Your reply stops, but the plan ${planPath} still has ${what} (${first}). ` +
+      "If authorized work remains, do the next step now in this reply. " +
       "Otherwise end with a coded offer for the decision you need, or name the blocker or trigger that stops " +
       'the work. A bare status or "waiting" line is not one of these.',
   };
