@@ -82,11 +82,19 @@ export function isMetadataEntry(e: Entry): boolean {
   if (e.isMeta) {
     return true;
   }
-  let text = allText(e.message?.content).trim();
+  const content = e.message?.content;
+  // An image or file block is an ask even when its text is only a metadata wrapper.
+  if (
+    Array.isArray(content) &&
+    content.some((b) => (b as { type?: string } | null)?.type !== "text")
+  ) {
+    return false;
+  }
+  let text = allText(content).trim();
   for (let m = META_ELEMENT.exec(text); m; m = META_ELEMENT.exec(text)) {
     text = text.slice(m[0].length);
   }
-  return text === "" && allText(e.message?.content).trim() !== "";
+  return text === "" && allText(content).trim() !== "";
 }
 
 /** Every text block of a message, in order. */

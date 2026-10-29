@@ -208,12 +208,19 @@ function fixture(): string {
       message: {
         id: "m1",
         model: "claude-sonnet-5-5",
-        usage: {
-          output_tokens: 100,
-          cache_read_input_tokens: 500,
-          cache_creation_input_tokens: 40,
-        },
+        usage: { output_tokens: 3, cache_read_input_tokens: 1 },
         content: [{ type: "tool_use", id: "t1" }],
+      },
+    },
+    {
+      type: "assistant",
+      requestId: "r2",
+      timestamp: "2026-10-15T10:00:05Z",
+      message: {
+        id: "m2",
+        model: "claude-sonnet-5-5",
+        usage: { output_tokens: 2 },
+        content: [{ type: "text", text: "partial" }],
       },
     },
   ];
@@ -243,6 +250,13 @@ describe("humanPrompt", () => {
       }),
     ).toBe(true);
     expect(isMetadataEntry({ message: { content: "fix the bug" } })).toBe(false);
+    expect(
+      isMetadataEntry({
+        message: {
+          content: [{ type: "text", text: "<command-name>/x</command-name>" }, { type: "image" }],
+        },
+      }),
+    ).toBe(false);
     expect(
       isMetadataEntry({
         message: { content: "<local-command-caveat>c</local-command-caveat>\n\nNow fix the bug" },
