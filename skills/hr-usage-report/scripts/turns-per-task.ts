@@ -110,6 +110,10 @@ const CONTROL_COMMANDS = new Set([
 // Anchored: a command echoed inside local command output is not an invocation.
 const SLASH_COMMAND = /^\s*<command-name>\s*\/([^\s<]+)\s*<\/command-name>/i;
 
+// The blocks that can precede a command element in a real invocation, without being one.
+const PREFIX_ELEMENT =
+  /^<(command-message|command-args|local-command-caveat|local-command-stdout|local-command-stderr|bash-input|bash-stdout|bash-stderr|system-reminder)>[\s\S]*?<\/\1>\s*/i;
+
 const META_ELEMENT =
   /^<(command-name|command-message|command-args|local-command-caveat|local-command-stdout|local-command-stderr|bash-input|bash-stdout|bash-stderr|system-reminder)>[\s\S]*?<\/\1>\s*/i;
 
@@ -125,15 +129,24 @@ export function isMetadataEntry(e: Entry): boolean {
   ) {
     return false;
   }
-  let text = allText(content).trim();
-  const command = SLASH_COMMAND.exec(text);
+  const text = allText(content).trim();
+  if (text === "") {
+    return false;
+  }
+  // Look for the command after any leading sibling block: order varies between releases.
+  let head = text;
+  for (let m = PREFIX_ELEMENT.exec(head); m; m = PREFIX_ELEMENT.exec(head)) {
+    head = head.slice(m[0].length);
+  }
+  const command = SLASH_COMMAND.exec(head);
   if (command && !CONTROL_COMMANDS.has(command[1]!.toLowerCase())) {
     return false;
   }
-  for (let m = META_ELEMENT.exec(text); m; m = META_ELEMENT.exec(text)) {
-    text = text.slice(m[0].length);
+  let rest = text;
+  for (let m = META_ELEMENT.exec(rest); m; m = META_ELEMENT.exec(rest)) {
+    rest = rest.slice(m[0].length);
   }
-  return text === "" && allText(content).trim() !== "";
+  return rest === "";
 }
 
 /** Every text block of a message, in order. */

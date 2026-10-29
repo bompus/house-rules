@@ -257,6 +257,23 @@ describe("humanPrompt", () => {
     expect(
       isMetadataEntry({ message: { content: "<command-name>/hr-what-next</command-name>" } }),
     ).toBe(false);
+    // A message block may precede the command element; the order varies by release.
+    expect(
+      isMetadataEntry({
+        message: {
+          content:
+            "<command-message>grilling</command-message>\n<command-name>/grilling</command-name>",
+        },
+      }),
+    ).toBe(false);
+    expect(
+      isMetadataEntry({
+        message: {
+          content:
+            "<command-message>compact</command-message>\n<command-name>/compact</command-name>",
+        },
+      }),
+    ).toBe(true);
     // A command echoed inside local command output is not an invocation.
     expect(
       isMetadataEntry({
