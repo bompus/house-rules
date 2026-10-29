@@ -5,6 +5,8 @@
   "exclude": [
     "node_modules",
     // Sample pages the stock-UI scanner reads as input; they are not run.
-    "skills/*/test/fixtures"
+    "skills/*/test/fixtures",
+    // Run from a scratch folder with playwright-core, which the repository does not install (see its header).
+    "docs/assets/build-assets.ts"
   ]
 }
