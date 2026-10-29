@@ -165,6 +165,26 @@ test("decide passes a reply that makes no completion claim", () => {
   assert.equal(decide({ reply, planPath: "/x/plans/a/plan.md", planText: PLAN_OPEN }).block, false);
 });
 
+test("decide passes a reply that only quotes a completion phrase, and still blocks a claim beside a quote", () => {
+  const quoted = [
+    'I checked the hook with a reply that says "nothing left" and it blocked, as designed.',
+    "The test sentence was \u201cThis session is complete and can be closed.\u201d Five items stay open.",
+    "Running `nothing left` through the checker returns a block.",
+    "The fixture:\n```\nNothing remains.\n```\nOne item is still open.",
+  ];
+  for (const reply of quoted) {
+    assert.equal(decide({ reply, planPath: "/p", planText: PLAN_OPEN }).block, false, reply);
+  }
+  const claimed = [
+    'The test said "nothing left". The work is finished. Nothing remains.',
+    'Quoted "x" and "y", then: nothing left.',
+    'An unmatched " quote does not hide it. Nothing remains.',
+  ];
+  for (const reply of claimed) {
+    assert.equal(decide({ reply, planPath: "/p", planText: PLAN_OPEN }).block, true, reply);
+  }
+});
+
 test("decide passes when nothing is open, when there is no plan, and when the plan does not parse", () => {
   assert.equal(decide({ reply: CLAIM, planPath: "/p", planText: PLAN_DONE }).block, false);
   assert.equal(decide({ reply: CLAIM, planPath: undefined, planText: undefined }).block, false);

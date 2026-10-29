@@ -26,6 +26,14 @@ import { pathToFileURL } from "node:url";
 import { planSnapshot } from "../skills/hr-what-next/scripts/plan-ledger.mjs";
 import { replyFacts } from "./continuity-boundary.mjs";
 
+// Text a reply only quotes is not a claim: a fenced block, an inline code span, or a span in matching double
+// quotation marks (straight or curly, within one paragraph). A reply that describes a test and quotes "nothing
+// left" says nothing about its own work. An unmatched quotation mark removes nothing, so it cannot hide a claim.
+const QUOTED = /```[\s\S]*?```|`[^`\n]+`|"[^"\n]*"|\u201c[^\u201c\u201d\n]*\u201d/g;
+
+/** @param {string} reply */
+const claimsDone = (reply) => replyFacts(reply.replace(QUOTED, " ")).done;
+
 const PLAN_FILE = /(?:^|[\\/])plans[\\/][^\\/]+[\\/]plan\.md$/;
 const WRITE_TOOLS = new Set(["Write", "Edit", "MultiEdit"]);
 const SUBSHELL_OPEN = "\u0000(";
@@ -531,7 +539,7 @@ export function planPaths(list, base) {
  * @returns {{ block: boolean, reason?: string, note?: string }}
  */
 export function decide({ reply, planPath, planText }) {
-  if (!replyFacts(reply).done || planPath === undefined || planText === undefined) {
+  if (!claimsDone(reply) || planPath === undefined || planText === undefined) {
     return { block: false };
   }
   const snapshot = planSnapshot(planText);
@@ -568,7 +576,7 @@ export function evaluate(input, files) {
     typeof input.last_assistant_message === "string" && input.last_assistant_message.trim()
       ? input.last_assistant_message
       : finalReply(list);
-  if (!replyFacts(reply).done) {
+  if (!claimsDone(reply)) {
     return { block: false };
   }
   for (const planPath of planPaths(list, input.cwd ?? process.cwd()).toReversed()) {

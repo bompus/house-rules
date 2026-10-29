@@ -4,6 +4,7 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Stop `scripts/stop-claim-check.mjs` from blocking a reply that only quotes a completion phrase. Text inside matching double quotation marks, backticks or a fenced block is ignored when the hook looks for "nothing left" or "session is complete", so a reply that describes a test of the hook passes. A claim made outside the quotes still blocks, and an unmatched quotation mark hides nothing.
 - Tighten the multi-agent reference's Ledger paragraph and remove observation dates from its current-state text. The shortened paragraph keeps the recipient, work id, recheck date, in-place close and authorization limits; the observations keep their behavior without dates.
 
 - `hr-usage-report` gains `scripts/turns-per-task.ts`: it counts turns, output and tool calls per human prompt in Claude Code transcripts and compares windows matched on model or prompt origin, so a fall in output per request can be told apart from a rise in steps per task.
