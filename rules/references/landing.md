@@ -7,7 +7,7 @@ then, a task finishes committed on its branch with landing offered. Choosing an
 offer option that includes landing, or replying with the accept line when the
 recommended option includes it, is that direction.
 
-At task completion, unlanded or uncommitted task changes get one landing option, `Land PR #<n>` or `Commit and land <change>`, never a bare done; only an explicit user deferral (recorded with branch, commits and reason) leaves it out. The option covers this section and § Cleanup, merge included; name only departures from that. Land through the repository's required path without bypassing checks. Landing is done when a fresh fetch shows the change in the default branch.
+At task completion, unlanded or uncommitted task changes get one landing option, `Land PR #<n>` or `Commit and land <change>`, never a bare done; only an explicit user deferral (recorded with branch, commits and reason) leaves it out. The option covers this section and § Cleanup, merge included; name only departures from that. Land through the repository's required path without bypassing checks. Landing is done when a fresh fetch shows the change in the default branch. Where deploying is a separate step from the merge, the change is not done until it is live or the user defers the deploy: keep its ledger line open until the live revision contains the commit. A go to merge covers the deploy only where a standing rule says so.
 
 Never reset, stash, switch or merge-commit a checkout to make it match the default.
 A session or job running in it is not a reason to wait or ask. A checkout of the
