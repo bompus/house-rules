@@ -40,7 +40,32 @@ Read the output beside the provider's live quota readings:
 - **Unpriced models.** The summary lists models models.dev has no price for;
   report them rather than dropping them.
 
-## 2. Pick evidence by question
+## 2. Separate fewer tokens from more steps
+
+```bash
+bun scripts/turns-per-task.ts --since 2026-10-15 --compare 2026-10-25 [--by model|origin] [--json]
+```
+
+A task is one human prompt; a turn is one main-chain API response before the next
+prompt. It reads the same Claude Code transcript roots as `usage-by-model.ts`
+(`--claude-projects` replaces them) and ignores tool results and locally generated
+replies. A falling output-per-request total has two shapes: the model writes less per
+turn, or each ask takes more turns. Only the second means the work per task grew.
+
+Output and cache reads per turn average individual responses, not per-task averages, so a
+long run is not outvoted by short asks. A prompt replayed into a second transcript file,
+as a resumed session writes it, counts once. Subagent transcripts saved in their own `subagents/` files
+are counted and reported as excluded: each carries its own prompt, so its turns are that
+agent's task rather than extra turns of the ask it served.
+
+Read it beside the model mix. A shift toward a larger model raises output per task and
+lowers turns per task without any behavioral change, so compare slices matched on model
+(`--by model`) and prompt origin. Medians describe the typical ask; means and p95 show
+the long automated runs that dominate cost, so quote both. One prompt is not one project
+goal — three asks about one goal count as three tasks — so say which definition a number
+uses.
+
+## 3. Pick evidence by question
 
 | Question                              | Evidence                                                             | Read                                                                |
 | ------------------------------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------- |
@@ -55,7 +80,7 @@ table that sets one model's top effort against another's lower effort is not a
 matched comparison. Keep token speed and task time in separate charts; never
 infer one from the other.
 
-## 3. Render the report
+## 4. Render the report
 
 Write a data file, then:
 

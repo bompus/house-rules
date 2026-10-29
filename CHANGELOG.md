@@ -6,6 +6,8 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 - Tighten the multi-agent reference's Ledger paragraph and remove observation dates from its current-state text. The shortened paragraph keeps the recipient, work id, recheck date, in-place close and authorization limits; the observations keep their behavior without dates.
 
+- `hr-usage-report` gains `scripts/turns-per-task.ts`: it counts turns, output and tool calls per human prompt in Claude Code transcripts and compares windows matched on model or prompt origin, so a fall in output per request can be told apart from a rise in steps per task.
+
 - Require the release audit to finish before the version-bump or release commit, not only before its tag. A benchmark report counts as final only when its raw results, summaries, tables, charts and prose agree and a check exercises the declared verdict rule. A report correction after the release commit means the release commit was cut too early.
 
 - Extend the multi-agent procedure with three delegated-work rules: bind a chosen model effort through the host's advertised control and verify the effective settings instead of trusting a suffix or requested value; record sender follow-through on a handoff as a Ledger item the named acceptance closes, so an accepted handoff cannot sit open on the sender side; and, on T3 Code hosts, reading a delegated task's progress in the same reference, including why a background child must not launch in a mode that can wait unseen for approval and how to take a result from a child that finished but still shows running. Recording acceptance authorizes no replay of a completed external effect and waives no attempt or frozen-evaluation limits.
