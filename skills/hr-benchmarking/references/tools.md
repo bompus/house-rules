@@ -21,6 +21,13 @@ record available `zswpin`/`zswpout`/`zswpwb` deltas from the benchmark cgroup's
 `memory.stat` over the measured interval. Label host-wide deltas as system-wide;
 they cannot attribute activity to the workload.
 
+Host-wide swap page-ins (`pswpin`, `zswpin`) can move by a few pages while CPU,
+memory pressure and I/O are quiet. Record them as a diagnostic; do not reject a
+run on them alone. Reject a run on swap-outs or writeback (`pswpout`, `zswpout`,
+`zswpwb`), on growth of the workload cgroup's own `memory.swap.current` or
+`memory.zswap.current`, or on cgroup high, max or OOM events. A stricter
+criterion declared in the run plan still applies.
+
 Use [cgroup swap and zswap accounting](https://www.kernel.org/doc/html/latest/admin-guide/cgroup-v2.html)
 (`memory.swap.current`, `memory.zswap.current`) to distinguish the workload
 from other jobs. These occupancy values do not measure activity by themselves.
