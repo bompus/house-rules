@@ -35,8 +35,8 @@ const WAIT =
   /\b(?:trigger|blocked-by):|\b(?:waiting (?:on|for)|waits? on|awaiting|blocked (?:on|by))\b/i;
 const BLOCKER = new RegExp(
   [
-    String.raw`\b(?:blocked (?:on|by)|(?:cannot|can't|can not) (?:proceed|continue)|reopens? (?:when|on|if)|needs? (?:your|the user)|only (?:the user|you) can)\b`,
-    String.raw`(?<!\bno )\b(?:blockers?|triggers?|re-?checks?)\s*:(?!\s*(?:none|n/a|no)\b)`,
+    String.raw`(?<!\b(?:no longer|not|never|un) )\b(?:blocked (?:on|by)|(?:cannot|can't|can not) (?:proceed|continue)|reopens? (?:when|on|if)|needs? (?:your|the user)|only (?:the user|you) can)\b`,
+    String.raw`(?<!\bno )\b(?:blockers?|triggers?|re-?checks?)\s*:(?!\s*(?:none|n/a|nothing|no)\s*(?:[.!?\n]|$))`,
     String.raw`\bre-?checks? (?:on|at|after)\b`,
     String.raw`\b(?:awaiting|waiting (?:on|for)) (?:your|you)\b`,
   ].join("|"),
