@@ -55,7 +55,9 @@ For an agent running without a terminal, use the preview/apply workflow below.
    text options; no question tools are called), or **Clickable choices when
    available** (complete text options plus a question card). Recommend nothing;
    it is their preference. Map the answers to `--questions default`, `plain`
-   (or `coded`) and `cards`. For Text only, ask a separate yes/no: "Use short
+   (or `coded`) and `cards`.
+
+   For Text only, ask a separate yes/no: "Use short
    reply codes like 1a, so one reply can answer several questions?" Yes is
    `coded`, no is `plain`. Explain that host, provider and model behavior varies;
    card availability and presentation are unverified until checked. Text only
@@ -63,6 +65,7 @@ For an agent running without a terminal, use the preview/apply workflow below.
    personal rules still steer how questions are asked, resolve that conflict
    before changing those rules or composing. Call modifiers "optional rules"
    and the user's layer "your own rules" when talking to them.
+
    Ask separately how they want a backlog or remaining-work report shown, unless
    the config already records a choice they confirm: **Panel** (a dark panel
    grouped by what each item waits on; `backlog-visual`), **Outline** (the same
@@ -71,6 +74,7 @@ For an agent running without a terminal, use the preview/apply workflow below.
    one at most: the two cannot be combined. `config set` keeps modifiers it is
    not told to change, so pass `--enable-modifier` for the chosen one and
    `--disable-modifier` for the other, or for both when the answer is None.
+
    Done when the user selects relevant changes or keeps the current setup.
 
 3. Use `bun compose.mjs config set --config <path>` with the selected
