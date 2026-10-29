@@ -107,10 +107,11 @@ const CONTROL_COMMANDS = new Set([
   "release-notes",
 ]);
 
-const SLASH_COMMAND = /<command-name>\s*\/([^\s<]+)\s*<\/command-name>/i;
+// Anchored: a command echoed inside local command output is not an invocation.
+const SLASH_COMMAND = /^\s*<command-name>\s*\/([^\s<]+)\s*<\/command-name>/i;
 
 const META_ELEMENT =
-  /^<(command-name|command-message|local-command-caveat|local-command-stdout|local-command-stderr|bash-input|bash-stdout|bash-stderr|system-reminder)>[\s\S]*?<\/\1>\s*/i;
+  /^<(command-name|command-message|command-args|local-command-caveat|local-command-stdout|local-command-stderr|bash-input|bash-stdout|bash-stderr|system-reminder)>[\s\S]*?<\/\1>\s*/i;
 
 export function isMetadataEntry(e: Entry): boolean {
   if (e.isMeta) {

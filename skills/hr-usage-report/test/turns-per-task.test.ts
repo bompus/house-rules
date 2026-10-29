@@ -257,6 +257,23 @@ describe("humanPrompt", () => {
     expect(
       isMetadataEntry({ message: { content: "<command-name>/hr-what-next</command-name>" } }),
     ).toBe(false);
+    // A command echoed inside local command output is not an invocation.
+    expect(
+      isMetadataEntry({
+        message: {
+          content:
+            "<local-command-stdout><command-name>/grilling</command-name></local-command-stdout>",
+        },
+      }),
+    ).toBe(true);
+    expect(
+      isMetadataEntry({
+        message: {
+          content:
+            "<command-name>/compact</command-name>\n<command-message>compact</command-message>\n<command-args></command-args>",
+        },
+      }),
+    ).toBe(true);
     expect(
       humanPrompt({ promptId: "p", message: { content: "<command-name>/compact</command-name>" } }),
     ).toBe(false);
