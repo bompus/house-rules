@@ -34,9 +34,15 @@ import { replyFacts } from "./continuity-boundary.mjs";
 const QUOTED =
   /^[ \t]*```[^\n]*\n[\s\S]*?\n[ \t]*```[ \t]*$|`[^`\n]+`|(?<!\w)"(?=\S)[^"\n]*(?<=\S)"(?!\w)|\u201c[^\u201c\u201d\n]*\u201d/gm;
 
+/**
+ * The reply without the text it only quotes (see QUOTED).
+ * @param {string} reply
+ */
+export const unquoted = (reply) =>
+  reply.replace(QUOTED, (span) => ` ${span.replace(/[^.!?\n]/g, "")} `);
+
 /** @param {string} reply */
-const claimsDone = (reply) =>
-  replyFacts(reply.replace(QUOTED, (span) => ` ${span.replace(/[^.!?\n]/g, "")} `)).done;
+const claimsDone = (reply) => replyFacts(unquoted(reply)).done;
 
 const PLAN_FILE = /(?:^|[\\/])plans[\\/][^\\/]+[\\/]plan\.md$/;
 const WRITE_TOOLS = new Set(["Write", "Edit", "MultiEdit"]);

@@ -4,6 +4,7 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Add `scripts/stop-ready-work-check.mjs`, a second opt-in Claude Code Stop hook. It holds back a reply once when the session's active plan has open `[ ]` items that wait on nothing and the reply has no coded offer, no stated blocker or trigger and no handback claim, so a bare "waiting" or status line cannot end a turn with ready work. It reads no per-turn record, ignores quoted text, and fails open. `stop-claim-check.mjs` now exports its quoted-text filter.
 - Stop `scripts/stop-claim-check.mjs` from blocking a reply that only quotes a completion phrase. Text inside matching double quotation marks, backticks or a fenced block is ignored when the hook looks for "nothing left" or "session is complete", so a reply that describes a test of the hook passes. A claim made outside the quotes still blocks, and an unmatched quotation mark hides nothing.
 - Tighten the multi-agent reference's Ledger paragraph and remove observation dates from its current-state text. The shortened paragraph keeps the recipient, work id, recheck date, in-place close and authorization limits; the observations keep their behavior without dates.
 

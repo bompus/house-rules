@@ -462,6 +462,7 @@ test("each core section with a reference text carries every sentence of the shor
 test("shared utility entry points and ordinary test children keep the selected runtime", () => {
   const utilities = [
     "scripts/stop-claim-check.mjs",
+    "scripts/stop-ready-work-check.mjs",
     "skills/hr-what-next/scripts/check-open-work.mjs",
     "skills/hr-what-next/scripts/close-ledger-line.mjs",
     "skills/hr-what-next/scripts/consolidate-ledger.mjs",
@@ -479,6 +480,7 @@ test("shared utility entry points and ordinary test children keep the selected r
     "skills/hr-code-review/test/check-receipts.test.mjs",
     "skills/hr-diagnosing-bugs/test/check-pr-offer.test.js",
     "test/stop-claim-check.test.mjs",
+    "test/stop-ready-work-check.test.mjs",
   ]) {
     assert.doesNotMatch(
       readFileSync(join(root, file), "utf8"),
