@@ -418,6 +418,19 @@ test("an open box outside the ledger is a finding that exits 2; a prose label on
   expect(run.stdout).toContain("1 finding(s)");
 });
 
+test("boxes and labels inside a fenced example are not lost items", () => {
+  const { plan } = setup({
+    status: "completed",
+    ledger: ["- [x] a: shipped - evidence: x"],
+    extra:
+      "## Example\n```markdown\n- [ ] example task\n- pending: an example label\n```\n- [ ] real stray box\n",
+  });
+  const { code, report } = check(plan);
+  expect(code).toBe(2);
+  expect(report.findings).toEqual([expect.stringContaining("real stray box")]);
+  expect(report.warnings).toEqual([]);
+});
+
 test("a prose label alone leaves the result at nothing open", () => {
   const { plan } = setup({
     status: "completed",

@@ -100,9 +100,16 @@ export function parsePlan(text) {
   }
   /** @type {NarrativeLine[]} */
   const narrative = [];
+  // Lines inside a fenced code block are examples, not plan content.
+  let fenced = false;
   lines.forEach((line, i) => {
+    if (/^\s*(?:`{3,}|~{3,})/.test(line)) {
+      fenced = !fenced;
+      return;
+    }
     const inLedger = start >= 0 && i > start && i < end;
     if (
+      !fenced &&
       !inLedger &&
       i > 0 &&
       (NARRATIVE.test(line) || PROSE_MARKER.test(line) || /^\s*[-*]\s+\[[ ~]\]/.test(line))
