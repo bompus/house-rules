@@ -179,6 +179,9 @@ test("decide passes a reply that only quotes a completion phrase, and still bloc
     'The test said "nothing left". The work is finished. Nothing remains.',
     'Quoted "x" and "y", then: nothing left.',
     'An unmatched " quote does not hide it. Nothing remains.',
+    'A 5" pipe, said "x" later. Nothing remains.',
+    'I did not say "finished." This session is complete.',
+    'Example:\n```js\nconst fence = "```";\n```\nNothing remains.\n```txt\nexample\n```',
   ];
   for (const reply of claimed) {
     assert.equal(decide({ reply, planPath: "/p", planText: PLAN_OPEN }).block, true, reply);

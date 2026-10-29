@@ -26,13 +26,17 @@ import { pathToFileURL } from "node:url";
 import { planSnapshot } from "../skills/hr-what-next/scripts/plan-ledger.mjs";
 import { replyFacts } from "./continuity-boundary.mjs";
 
-// Text a reply only quotes is not a claim: a fenced block, an inline code span, or a span in matching double
-// quotation marks (straight or curly, within one paragraph). A reply that describes a test and quotes "nothing
-// left" says nothing about its own work. An unmatched quotation mark removes nothing, so it cannot hide a claim.
-const QUOTED = /```[\s\S]*?```|`[^`\n]+`|"[^"\n]*"|\u201c[^\u201c\u201d\n]*\u201d/g;
+// Text a reply only quotes is not a claim: a fenced block (fence lines at the start of a line), an inline code
+// span, or a span in double quotation marks on one line. A straight quote opens only before a non-space and closes
+// only after one, so a lone mark with spaces around it (an inch sign) hides nothing. A reply that describes a test
+// and quotes "nothing left" says nothing about its own work. A removed span keeps its sentence-ending punctuation
+// and line breaks, so a negation before a quote cannot reach the sentence after it.
+const QUOTED =
+  /^[ \t]*```[^\n]*\n[\s\S]*?\n[ \t]*```[ \t]*$|`[^`\n]+`|(?<!\w)"(?=\S)[^"\n]*(?<=\S)"(?!\w)|\u201c[^\u201c\u201d\n]*\u201d/gm;
 
 /** @param {string} reply */
-const claimsDone = (reply) => replyFacts(reply.replace(QUOTED, " ")).done;
+const claimsDone = (reply) =>
+  replyFacts(reply.replace(QUOTED, (span) => ` ${span.replace(/[^.!?\n]/g, "")} `)).done;
 
 const PLAN_FILE = /(?:^|[\\/])plans[\\/][^\\/]+[\\/]plan\.md$/;
 const WRITE_TOOLS = new Set(["Write", "Edit", "MultiEdit"]);
