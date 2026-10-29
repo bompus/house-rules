@@ -40,6 +40,7 @@ export type ResponseStat = { output: number; cacheRead: number; tools: number };
 type Entry = {
   type?: string;
   isSidechain?: boolean;
+  isMeta?: boolean;
   promptId?: string;
   requestId?: string;
   timestamp?: string;
@@ -68,8 +69,37 @@ export function looksLikePrompt(e: Entry): boolean {
   return false;
 }
 
+/**
+ * Injected entries that arrive as `user` messages: command wrappers, local command output, system
+ * reminders and entries the CLI flags as meta. They are not asks, so they neither end a task nor
+ * start one.
+ */
+const META_TEXT =
+  /^\s*<(?:command-name|command-message|local-command-caveat|local-command-stdout|local-command-stderr|bash-input|bash-stdout|bash-stderr|system-reminder)>/;
+
+export function isMetadataEntry(e: Entry): boolean {
+  if (e.isMeta) {
+    return true;
+  }
+  const c = e.message?.content;
+  const first = typeof c === "string" ? c : Array.isArray(c) ? textOf(c) : "";
+  return META_TEXT.test(first);
+}
+
+function textOf(content: unknown[]): string {
+  for (const block of content) {
+    const b = block as { type?: string; text?: string } | null;
+    if (b?.type === "text" && typeof b.text === "string") {
+      return b.text;
+    }
+  }
+  return "";
+}
+
+const isAsk = (e: Entry) => looksLikePrompt(e) && !isMetadataEntry(e);
+
 /** A prompt counts once its entry also carries the prompt id. */
-export const humanPrompt = (e: Entry) => Boolean(e.promptId) && looksLikePrompt(e);
+export const humanPrompt = (e: Entry) => Boolean(e.promptId) && isAsk(e);
 
 /**
  * Whether a transcript file is one of a session's separate subagent transcripts. Windows joins
@@ -102,7 +132,7 @@ export function unattributedPrompts(roots: string[], since: number): number {
         }
         try {
           const e = JSON.parse(line) as Entry;
-          if (e.type === "user" && !e.isSidechain && !e.promptId && looksLikePrompt(e)) {
+          if (e.type === "user" && !e.isSidechain && !e.promptId && isAsk(e)) {
             count += inWindow(e, since) ? 1 : 0;
           }
         } catch {
@@ -255,7 +285,7 @@ export function claudeTasks(roots: string[], since: number): Task[] {
         // Resuming or continuing a session can replay its prompts into a new file; keep the
         // copy that carries more of the task rather than counting the same prompt twice.
         const prev = byPrompt.get(task.promptId);
-        if (!prev || task.turns > prev.turns) {
+        if (!prev || richer(task, prev)) {
           byPrompt.set(task.promptId, task);
         }
       };
@@ -271,7 +301,7 @@ export function claudeTasks(roots: string[], since: number): Task[] {
         }
         // Any human-looking prompt ends the current task, even one without a prompt id: its
         // replies must not be counted as extra turns of the ask before it.
-        if (e.type === "user" && !e.isSidechain && looksLikePrompt(e)) {
+        if (e.type === "user" && !e.isSidechain && isAsk(e)) {
           finish();
           cur = humanPrompt(e)
             ? {
@@ -322,6 +352,15 @@ export function claudeTasks(roots: string[], since: number): Task[] {
   }
   return [...byPrompt.values()].sort((a, b) => a.t - b.t);
 }
+
+/**
+ * Which copy of a replayed prompt to keep: more turns, and at equal turns the one carrying more
+ * usage, so a partially written replay cannot discard the fuller copy.
+ */
+const richer = (next: Task, prev: Task) =>
+  next.turns !== prev.turns
+    ? next.turns > prev.turns
+    : next.output + next.cacheRead > prev.output + prev.cacheRead;
 
 function toolIds(content: unknown): string[] {
   if (!Array.isArray(content)) {

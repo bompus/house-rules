@@ -5,6 +5,7 @@ import { join } from "node:path";
 import {
   claudeTasks,
   humanPrompt,
+  isMetadataEntry,
   isSubagentTranscript,
   looksLikePrompt,
   splitAt,
@@ -218,6 +219,22 @@ describe("humanPrompt", () => {
     ).toBe(false);
   });
 
+  test("separates metadata entries from asks", () => {
+    expect(isMetadataEntry({ isMeta: true, message: { content: "status" } })).toBe(true);
+    expect(
+      isMetadataEntry({ message: { content: "<local-command-stdout>x</local-command-stdout>" } }),
+    ).toBe(true);
+    expect(
+      isMetadataEntry({
+        message: { content: [{ type: "text", text: "<system-reminder>x</system-reminder>" }] },
+      }),
+    ).toBe(true);
+    expect(isMetadataEntry({ message: { content: "fix the bug" } })).toBe(false);
+    expect(isMetadataEntry({ message: { content: [{ type: "text", text: "fix the bug" }] } })).toBe(
+      false,
+    );
+  });
+
   test("skips entries without a prompt id but still sees them as prompts", () => {
     expect(humanPrompt({ message: { content: "hi" } })).toBe(false);
     expect(looksLikePrompt({ message: { content: "hi" } })).toBe(true);
@@ -228,8 +245,17 @@ describe("claudeTasks", () => {
   const tasks = claudeTasks([fixture()], 0);
   const find = (origin: string) => tasks.find((t) => t.origin === origin) as Task;
 
-  test("counts a prompt replayed into a second file once", () => {
-    expect(tasks.filter((t) => t.promptId === "p1")).toHaveLength(1);
+  test("counts a prompt replayed into a second file once, keeping the fuller copy", () => {
+    const copies = tasks.filter((t) => t.promptId === "p1");
+    expect(copies).toHaveLength(1);
+    expect(copies[0]?.output).toBe(120);
+  });
+
+  test("ignores injected entries without ending the task they arrive in", () => {
+    const t = find("user");
+    expect(t.turns).toBe(2);
+    expect(t.output).toBe(120);
+    expect(tasks).toHaveLength(2);
   });
 
   test("makes one task per human prompt", () => {
