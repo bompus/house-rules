@@ -95,6 +95,12 @@ not reviewed. Report gaps rather than claiming a complete audit from a sample.
   Propose deleting what no consumer needs. When a consumer depends on one, the
   real behavior is missing: report it under **Other assessments** as a
   correctness concern, without guessing at the contract the code never showed.
+- **Comments on the project's own code.** A comment earns its place for a
+  license header, behavior forced by an external dependency, platform or
+  protocol, a formatter directive, a public API doc comment, or a link to an
+  issue or RFC that explains a constraint the code cannot express. A comment
+  that explains surprising code the project wrote is a signal to restructure
+  it: rename, extract, add a type or simplify, then delete the comment.
 
 ## Look for code that disappears
 
