@@ -31,8 +31,18 @@ import { replyFacts } from "./continuity-boundary.mjs";
 // only after one, so a lone mark with spaces around it (an inch sign) hides nothing. A reply that describes a test
 // and quotes "nothing left" says nothing about its own work. A removed span keeps its sentence-ending punctuation
 // and line breaks, so a negation before a quote cannot reach the sentence after it.
-const QUOTED =
-  /^[ \t]*```[^\n]*\n[\s\S]*?\n[ \t]*```[ \t]*$|`[^`\n]+`|(?<!\w)"(?=\S)[^"\n]*(?<=\S)"(?!\w)|\u201c[^\u201c\u201d\n]*\u201d/gm;
+const FENCE = String.raw`^[ \t]*\x60{3}[^\n]*\n[\s\S]*?\n[ \t]*\x60{3}[ \t]*$`;
+const QUOTED = new RegExp(
+  String.raw`${FENCE}|\x60[^\x60\n]+\x60|(?<!\w)"(?=\S)[^"\n]*(?<=\S)"(?!\w)|\u201c[^\u201c\u201d\n]*\u201d`,
+  "gm",
+);
+
+/**
+ * The reply without its fenced blocks, keeping line breaks. Inline code spans stay: a coded offer prints its codes in them.
+ * @param {string} reply
+ */
+export const unfenced = (reply) =>
+  reply.replace(new RegExp(FENCE, "gm"), (block) => ` ${block.replace(/[^\n]/g, "")} `);
 
 /**
  * The reply without the text it only quotes (see QUOTED).

@@ -251,11 +251,14 @@ Register it in Claude Code settings, with the path to this checkout:
 
 `scripts/stop-ready-work-check.mjs` is a second Stop hook with the same input, plan discovery, quoted-text
 handling, once-only block and fail-open behavior. It targets a turn that stops while work is ready. It blocks once
-when the session's plan has `Status: active` and open `[ ]` items, none of those items names a wait (a `trigger:`
-or `recheck:` field, `blocked-by:`, `owner:`, or "waiting on", "awaiting", "blocked on"), and the reply has no
-coded offer, no stated blocker or trigger ("blocked on", "Blocker:", "reopens when", "recheck", "needs your")
-and no handback claim (nothing left, session complete, "handed back"). A bare "waiting" or status line passes
-none of these. Deferred `[~]` items and plans that are paused, blocked-on-user or completed pass. It needs no
+when the session's plan has `Status: active` and open `[ ]` items, none of those items names a wait (a `trigger:` field,
+a `recheck:` date still ahead, `blocked-by:`, an `owner:` other than the plan's own, or "waiting on",
+"awaiting", "blocked on"), and the reply has no coded offer outside a fenced example, no stated blocker or
+trigger ("blocked on", "Blocker:", "Trigger:", "reopens when", "recheck on <date>", "needs your", "awaiting
+your") and no handback claim (nothing left, session complete, "handed back"). A bare "waiting" or status line passes
+none of these.
+
+Deferred `[~]` items and plans that are paused, blocked-on-user or completed pass. It needs no
 per-turn record. Register it beside the other hook:
 
 ```json

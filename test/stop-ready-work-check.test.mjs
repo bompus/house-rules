@@ -38,8 +38,9 @@ const reader = (files) => {
   return { read: (/** @type {string} */ path) => byPath.get(resolve(path)) };
 };
 
+const TODAY = "2026-10-29";
 const check = (/** @type {string} */ reply, planText = READY) =>
-  decide({ reply, planPath: PATH, planText });
+  decide({ reply, planPath: PATH, planText, today: TODAY });
 
 test("a waiting-line reply with ready work blocks and names the open items", () => {
   const result = check(WAITING_LINE);
@@ -55,6 +56,9 @@ test("a coded offer, a stated blocker or trigger, and a handback claim each pass
     "Blocker: the upstream fix is not released. Reopens when it ships.",
     "The next step needs your decision on the branch name.",
     "Trigger: the 2026-11-01 recheck.",
+    "Blocker: CI run 12 is still running.",
+    "Awaiting your answer about the deployment region.",
+    "Recheck on 2026-11-01 when the release is out.",
     "Landed. Nothing remains.",
     "Handed back to the Manager for the adoption step.",
   ]) {
@@ -64,6 +68,8 @@ test("a coded offer, a stated blocker or trigger, and a handback claim each pass
 
 test("a bare waiting or status line is not a stated blocker", () => {
   for (const reply of [
+    "The trigger handler is implemented. Waiting.",
+    "I will recheck the build output next.",
     "Still waiting for CI.",
     "Working on it, 3 of 5 files done.",
     "Waiting for the next event.",
@@ -87,6 +93,17 @@ test("an open item that carries a wait, or a plan with only deferred items, pass
   }
 });
 
+test("work the plan's own owner holds, or whose re-check is already due, is ready work", () => {
+  for (const item of [
+    "Item; owner: test",
+    "Item; owner: Test",
+    "Item; recheck: 2026-10-29",
+    "Item; recheck: 2020-01-01",
+  ]) {
+    assert.equal(check("Working on it.", plan(`- [ ] ${item}`)).block, true, item);
+  }
+});
+
 test("a plan that is not active passes", () => {
   for (const status of ["paused", "blocked-on-user", "completed"]) {
     assert.equal(
@@ -102,6 +119,8 @@ test("a reply that only quotes a satisfying phrase does not pass, and one that q
   assert.equal(check('The checker sees "Question 1" in `1a (Recommended)` text.').block, true);
   assert.equal(check('Quote: "nothing left". Still waiting.').block, true);
   assert.equal(check('Quote: "nothing left". Blocked on CI.').block, false);
+  const example = "Example reply:\n```\n" + OFFER + "\n```\nWaiting.";
+  assert.equal(check(example).block, true);
 });
 
 test("an empty reply, an unparseable plan and a missing plan pass", () => {
@@ -147,6 +166,31 @@ test("evaluate prefers the hook input's message and passes when the plan cannot 
     false,
   );
   assert.equal(evaluate({ last_assistant_message: WAITING_LINE }, reader({})).block, false);
+  assert.throws(() =>
+    evaluate(
+      { transcript_path: "/t.jsonl" },
+      {
+        read: () => {
+          throw new Error("EIO");
+        },
+      },
+    ),
+  );
+});
+
+test("evaluate treats an empty message in the hook input as an empty reply", () => {
+  const transcript = jsonl(
+    user,
+    assistant([tool("Edit", { file_path: "/x/plans/mine/plan.md" })]),
+    assistant([text("Checking the next step.")]),
+    assistant([text("")]),
+  );
+  const files = reader({ "/t.jsonl": transcript, "/x/plans/mine/plan.md": READY });
+  assert.equal(
+    evaluate({ transcript_path: "/t.jsonl", last_assistant_message: "" }, files).block,
+    false,
+  );
+  assert.equal(evaluate({ transcript_path: "/t.jsonl" }, files).block, true);
 });
 
 test("evaluate checks the plan the session touched last and ignores a plan it only read", () => {
@@ -200,6 +244,13 @@ test("run as a program it blocks once, then passes the continuation, a corrupt t
     const corrupt = call(hook({ last_assistant_message: WAITING_LINE }));
     assert.equal(corrupt.stdout, "");
     assert.match(corrupt.stderr, /passed without checking/);
+
+    const unreadable = call(
+      JSON.stringify({ transcript_path: dir, last_assistant_message: WAITING_LINE }),
+    );
+    assert.equal(unreadable.status, 0);
+    assert.equal(unreadable.stdout, "");
+    assert.match(unreadable.stderr, /passed without checking/);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

@@ -6,13 +6,15 @@
 // way stop-claim-check.mjs finds it.
 //
 // A wait on an open item is a `trigger:` or `recheck:` field, `blocked-by:`, `owner:`, or the words "waiting
-// on/for", "waits on", "awaiting" or "blocked on/by" in the item. Deferred `[~]` items do not count: they were
+// on/for", "waits on", "awaiting" or "blocked on/by" in the item. A `recheck:` date counts while it is still ahead,
+// and `owner:` only when it names someone other than the plan's own owner. Deferred `[~]` items do not count: they were
 // parked on purpose and carry their own trigger. A plan whose `Status:` is not `active` (paused,
 // blocked-on-user, completed) is skipped, because the user or the record already stopped it.
 //
 // The reply passes when it holds any of: a coded offer (`Question 1` with options such as `1a`, a
-// "(Recommended" and a "reply `" line, read as written); a stated blocker or trigger ("blocked on", "Blocker:", "trigger",
-// "reopens when", "recheck", "cannot proceed", "needs your"); or a handback claim (nothing left, session
+// "(Recommended" and a "reply `" line, outside any fenced example); a stated blocker or trigger ("blocked on",
+// "Blocker:", "Trigger:", "reopens when", "recheck on <date>", "cannot proceed", "needs your", "awaiting your");
+// or a handback claim (nothing left, session
 // complete, "handed back"). A bare "waiting" or a status line is none of these. Text the reply only quotes
 // (code spans, fenced blocks, double-quoted spans) is ignored first, so a reply that merely mentions a phrase
 // does not satisfy or trip the check. stop-claim-check.mjs separately holds back a false completion claim.
@@ -27,26 +29,50 @@ import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 import { parsePlan, RECHECK } from "../skills/hr-what-next/scripts/plan-ledger.mjs";
 import { replyFacts } from "./continuity-boundary.mjs";
-import { entries, finalReply, planPaths, unquoted } from "./stop-claim-check.mjs";
+import { entries, finalReply, planPaths, unfenced, unquoted } from "./stop-claim-check.mjs";
 
 const WAIT =
-  /\b(?:trigger|blocked-by|owner):|\b(?:waiting (?:on|for)|waits? on|awaiting|blocked (?:on|by))\b/i;
-const BLOCKER =
-  /\b(?:blocked (?:on|by)|blockers?\s*:|triggers?\b|reopens? (?:when|on|if)|re-?check|(?:cannot|can't|can not) (?:proceed|continue)|needs? (?:your|the user)|only (?:the user|you) can)\b/i;
+  /\b(?:trigger|blocked-by):|\b(?:waiting (?:on|for)|waits? on|awaiting|blocked (?:on|by))\b/i;
+const BLOCKER = new RegExp(
+  [
+    String.raw`\b(?:blocked (?:on|by)|(?:cannot|can't|can not) (?:proceed|continue)|reopens? (?:when|on|if)|needs? (?:your|the user)|only (?:the user|you) can)\b`,
+    String.raw`\b(?:blockers?|triggers?|re-?checks?)\s*:`,
+    String.raw`\bre-?checks? (?:on|at|after)\b`,
+    String.raw`\b(?:awaiting|waiting (?:on|for)) (?:your|you)\b`,
+  ].join("|"),
+  "i",
+);
+const localDate = () => new Date().toLocaleDateString("en-CA");
 const HANDBACK = /\bhand(?:ed|ing)? (?:this |it |the work )?(?:back|off|over)\b|\bhandback\b/i;
 
 /**
- * An open `[ ]` item carries a wait when it names a trigger, a re-check date, another owner or something it
- * waits on.
+ * An open `[ ]` item carries a wait when it names a trigger, a `recheck:` date that is still ahead, an owner other
+ * than the plan's own, or something it waits on. A due re-check date is work to do, not a wait.
  * @param {string} text
+ * @param {string | undefined} planOwner
+ * @param {string} today
  */
-const waits = (text) => WAIT.test(text) || RECHECK.test(text);
+function waits(text, planOwner, today) {
+  if (WAIT.test(text)) {
+    return true;
+  }
+  const recheck = text.match(RECHECK)?.[1];
+  if (recheck !== undefined && recheck > today) {
+    return true;
+  }
+  const owner = text
+    .match(/\bowner:\s*([^;.,)]+)/i)?.[1]
+    ?.trim()
+    .toLowerCase();
+  const own = (planOwner ?? "").toLowerCase();
+  return owner !== undefined && owner !== "" && !own.includes(owner) && !owner.includes(own);
+}
 
 /**
- * @param {{ reply: string, planPath: string | undefined, planText: string | undefined }} state
+ * @param {{ reply: string, planPath: string | undefined, planText: string | undefined, today?: string }} state
  * @returns {{ block: boolean, reason?: string, note?: string }}
  */
-export function decide({ reply, planPath, planText }) {
+export function decide({ reply, planPath, planText, today = localDate() }) {
   if (planPath === undefined || planText === undefined) {
     return { block: false };
   }
@@ -61,13 +87,13 @@ export function decide({ reply, planPath, planText }) {
     return { block: false };
   }
   const open = plan.items.filter((item) => item.mark === " ");
-  if (open.length === 0 || open.some((item) => waits(item.text))) {
+  if (open.length === 0 || open.some((item) => waits(item.text, plan.owner, today))) {
     return { block: false };
   }
-  // The offer test reads the reply as written: an offer's codes are inline code spans.
+  // The offer test keeps inline code spans (an offer prints its codes in them) and drops fenced examples.
   const said = unquoted(reply);
   if (
-    replyFacts(reply, true).offer ||
+    replyFacts(unfenced(reply), true).offer ||
     replyFacts(said).done ||
     BLOCKER.test(said) ||
     HANDBACK.test(said)
@@ -98,8 +124,9 @@ export function evaluate(input, files) {
   }
   const transcript = input.transcript_path ? files.read(input.transcript_path) : undefined;
   const list = transcript === undefined ? [] : entries(transcript);
+  // A message the hook input carries is the reply, even when empty: an empty one passes.
   const reply =
-    typeof input.last_assistant_message === "string" && input.last_assistant_message.trim()
+    typeof input.last_assistant_message === "string"
       ? input.last_assistant_message
       : finalReply(list);
   for (const planPath of planPaths(list, input.cwd ?? process.cwd()).toReversed()) {
