@@ -112,15 +112,23 @@ On 2026-10-11 two research advisors sat that way for about two hours before the
 user asked for progress.
 
 - Leave `runtimeMode` unset (inherit) on `delegate_task`; never pass
-  `approval-required` for a background child. Keep a child read-only by saying so
+  `approval-required` for a background child. Inherit only helps when your own
+  mode does not require approval: check it first, and when your own mode is
+  `approval-required`, do not launch a hidden async child at all, because it
+  inherits the blocking mode. Use a visible route the user already authorized,
+  or ask. Keep a child read-only by saying so
   in its task prompt and naming the one folder it may write, not by choosing a
   mode that blocks it.
 - Ask for a bounded result: a word limit and a stop condition in the prompt.
 - Check once about two minutes after launching: `t3_thread_read` must show
-  `pendingRequestCount` 0 and an `updatedAt` after the start. If not, interrupt
-  the child with `t3_thread_interrupt`, say so to the user, and relaunch only
-  after fixing the cause. This check is the only polling allowed; completion
-  still wakes the parent.
+  `pendingRequestCount` 0 and an `updatedAt` after the start. A count above zero
+  is not by itself a blockage: read the pending requests first (see
+  `pendingRequestCount` below) and handle a legitimate question instead of
+  interrupting. Interrupt with `t3_thread_interrupt` only when the child waits
+  on an approval nobody will see, or nothing has moved; say so to the user and
+  relaunch only after fixing the cause. Do not poll beyond this check while
+  completion wakes the parent; the cases below that never send that wake get
+  bounded follow-up checks instead.
 - Tell the user within the same reply when a child is stuck. Never wait for
   them to ask.
 
@@ -170,11 +178,15 @@ behavior.
 - Keep the `taskId` and the `childThreadId`. Read the child with
   `t3_thread_read` and `view=activity`, a small `limit`, and `itemId` for the full
   text of a long answer.
-- Rules of thumb, not T3 contract. A reasoning or tool item under about 3 minutes
-  old means it is working. An assistant message ending in the sentinel that is
-  over 2 minutes old with the run still `running` means it finished. Read the
-  answer first, then `task_cancel`. Any item over 10 minutes old without the
-  sentinel is a suspected stall: read once, then `task_cancel`.
+- Rules of thumb, not T3 contract. Because these children send no completion
+  wake, bounded follow-up reads replace it: check at the intervals the task's
+  expected duration suggests, not continuously. A reasoning or tool item under
+  about 3 minutes old means it is working. An assistant message ending in the
+  sentinel that is over 2 minutes old with the run still `running` means it
+  finished. Read the answer first, then `task_cancel`. Any item over 10 minutes
+  old without the sentinel is only a trigger to investigate, as above: a long
+  command can run quietly for longer than that. Cancel after confirming a
+  stall, or at a timeout selected for the task in advance, not on age alone.
 - Cancelling shows the task as cancelled or interrupted, not `result_available`.
   Take the result from the thread read. On 2026-10-11 `t3_thread_interrupt` on such
   a child closed it in about 10 seconds, the SDK's interrupt timeout.
