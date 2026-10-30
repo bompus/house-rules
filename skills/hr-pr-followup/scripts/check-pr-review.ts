@@ -200,7 +200,10 @@ export function text(value: unknown): value is string {
 }
 /** Nodes of a connection-shaped value, empty when the field is absent or malformed. */
 function nodes(value: unknown): unknown[] {
-  const list = record(value).nodes;
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return [];
+  }
+  const list = (value as Record<string, unknown>).nodes;
   return Array.isArray(list) ? list : [];
 }
 export function date(value: unknown): boolean {
