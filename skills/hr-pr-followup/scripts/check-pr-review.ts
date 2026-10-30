@@ -394,7 +394,26 @@ export function requiredCheckNames(baseRef: unknown): string[] {
  * unreadable answer is treated as "not active", so a search failure cannot block every landing.
  */
 function reviewedByApp(owner: string, name: string): boolean {
-  const query = encodeURIComponent(`repo:${owner}/${name} is:pr reviewed-by:app/bompus-ai-review`);
+  // A default invocation leaves {owner}/{repo} for gh to resolve inside GraphQL; a search URL
+  // needs the concrete name, so ask for it once rather than searching a literal placeholder.
+  let repoOwner = owner;
+  let repoName = name;
+  if (owner.includes("{") || name.includes("{")) {
+    const resolved = spawnSync(
+      "gh",
+      ["repo", "view", "--json", "nameWithOwner", "-q", ".nameWithOwner"],
+      {
+        encoding: "utf8",
+      },
+    );
+    if (resolved.status !== 0 || !resolved.stdout.includes("/")) {
+      return false;
+    }
+    [repoOwner, repoName] = resolved.stdout.trim().split("/") as [string, string];
+  }
+  const query = encodeURIComponent(
+    `repo:${repoOwner}/${repoName} is:pr reviewed-by:app/bompus-ai-review`,
+  );
   const run = spawnSync("gh", ["api", `search/issues?q=${query}&per_page=1`], { encoding: "utf8" });
   if (run.status !== 0) {
     return false;

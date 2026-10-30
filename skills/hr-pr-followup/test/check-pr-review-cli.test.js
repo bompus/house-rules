@@ -43,6 +43,10 @@ const f = await Bun.file(process.env.REVIEW_FIXTURE).json();
 const args = process.argv.slice(2);
 const val = name => args.find(a => a.startsWith(name + "="))?.slice(name.length + 1);
 const query = val("query");
+if (args[0] === "repo" && args[1] === "view") {
+  process.stdout.write("owner/app");
+  process.exit(0);
+}
 if (args.some(a => a.startsWith("search/issues"))) {
   process.stdout.write(JSON.stringify({ total_count: f.appActive ? 1 : 0 }));
   process.exit(0);
@@ -106,6 +110,13 @@ mock.module("node:child_process", () => ({spawnSync: (command, args, options) =>
 
 test("CLI refuses a landing while the App's review of this head is pending", () => {
   const r = run({ appActive: true, reviews: [page([], false, null)] });
+  expect(r.code).toBe(1);
+  expect(r.out + r.err).toContain("app review pending");
+});
+
+test("the default invocation resolves the repository before the App search", () => {
+  // No --repo: gh resolves {owner}/{repo} for GraphQL, but the search needs the concrete name.
+  const r = run({ appActive: true, defaultRepo: true, reviews: [page([], false, null)] });
   expect(r.code).toBe(1);
   expect(r.out + r.err).toContain("app review pending");
 });
