@@ -220,8 +220,19 @@ test("only an exact marker line in the header switches a plan to strict", () => 
   assert.equal(check("Working on it.", fenced).block, false);
   const fencedPreamble = `${body}\`\`\`\nStop-check: strict\n\`\`\`\n${ledger}`;
   assert.equal(check("Working on it.", fencedPreamble).block, false);
+  const taggedInside = `${body}\`\`\`text\n\`\`\`js\nStop-check: strict\n\`\`\`\n${ledger}`;
+  assert.equal(check("Working on it.", taggedInside).block, false);
   assert.equal(check("Working on it.", `${body}Stop-check: strict\n${ledger}`).block, true);
   assert.equal(check("Working on it.", `${body}Stop check: strict\n${ledger}`).block, true);
+});
+
+test("a fenced example is not a light offer on a strict plan", () => {
+  for (const fence of ["~~~", "````"]) {
+    const reply = `Example output:\n${fence}\n${LIGHT_OFFER}\n${fence}\nWorking on it.`;
+    assert.equal(check(reply, STRICT_MIXED).block, true, fence);
+  }
+  // Unmarked plans keep the legacy text, which counts a tilde-fenced coded offer.
+  assert.equal(check(`~~~\n${OFFER}\n~~~\nWorking on it.`, READY).block, false);
 });
 
 test("a light offer needs its acceptance code to be one of the coded options", () => {

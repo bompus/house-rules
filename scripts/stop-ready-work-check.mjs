@@ -73,33 +73,43 @@ const lightOffer = (text) => {
       return accept.split(",").some((code) => options.has(code.trim().toLowerCase()));
     });
 };
+// A fence opener may carry an info string; a closer is the delimiter alone (plus trailing whitespace).
+const FENCE_OPEN = /^[ \t]*(`{3,}|~{3,})/;
+const FENCE_CLOSE = /^[ \t]*(`{3,}|~{3,})[ \t]*$/;
+/**
+ * Remove fenced code blocks, including tilde fences and delimiters longer than three backticks.
+ * An unclosed fence runs to the end, so its content stays hidden.
+ * @param {string} text
+ */
+const withoutFences = (text) => {
+  const kept = [];
+  /** @type {string | undefined} */
+  let fence;
+  for (const line of text.split("\n")) {
+    if (fence !== undefined) {
+      const close = line.match(FENCE_CLOSE)?.[1];
+      if (close !== undefined && close[0] === fence[0] && close.length >= fence.length) {
+        fence = undefined;
+      }
+      continue;
+    }
+    const open = line.match(FENCE_OPEN)?.[1];
+    if (open !== undefined) {
+      fence = open;
+      continue;
+    }
+    kept.push(line);
+  }
+  return kept.join("\n");
+};
 /**
  * The plan's header: its first 40 lines up to the first heading, without fenced examples.
  * @param {string} planText
  */
 const headerOf = (planText) => {
-  const lines = planText.split(/\r?\n/).slice(0, 40);
-  const header = [];
-  /** @type {string | undefined} */
-  let fence;
-  for (const line of lines) {
-    const opened = line.match(/^[ \t]*(`{3,}|~{3,})/)?.[1];
-    if (fence !== undefined) {
-      if (opened !== undefined && opened[0] === fence[0] && opened.length >= fence.length) {
-        fence = undefined;
-      }
-      continue;
-    }
-    if (opened !== undefined) {
-      fence = opened;
-      continue;
-    }
-    if (line.startsWith("#")) {
-      break;
-    }
-    header.push(line);
-  }
-  return header.join("\n");
+  const lines = withoutFences(planText.split(/\r?\n/).slice(0, 40).join("\n")).split("\n");
+  const heading = lines.findIndex((line) => line.startsWith("#"));
+  return lines.slice(0, heading < 0 ? lines.length : heading).join("\n");
 };
 const localDate = () => new Date().toLocaleDateString("en-CA");
 const HANDBACK =
@@ -165,9 +175,11 @@ export function decide({ reply, planPath, planText, today = localDate() }) {
   // The offer test keeps inline code spans (an offer prints its codes in them) and drops fenced and double-quoted examples.
   const said = unquoted(reply);
   const offered = unquotedProse(reply);
+  // The strict light-offer reading also drops tilde and longer-backtick examples; unmarked plans keep the legacy text.
+  const lightProse = strict ? unquotedProse(withoutFences(reply)) : offered;
   if (
     replyFacts(offered, true).offer ||
-    (strict && lightOffer(offered)) ||
+    (strict && lightOffer(lightProse)) ||
     replyFacts(said).done ||
     BLOCKER.test(said) ||
     HANDBACK.test(said)
