@@ -908,9 +908,7 @@ const reviewRunning = (open: string[]) =>
       line.startsWith(RUNNING) || line.startsWith(CHECK_RUNNING) || line.startsWith(APP_PENDING),
   );
 
-/**
- * Re-reads until a review finishes or time runs out; a known App requirement stays required.
- */
+/** Re-reads until a review finishes or time runs out; a known App requirement stays required. */
 export async function waitForReview(
   read: () => ReviewState,
   {
@@ -966,10 +964,11 @@ if (import.meta.main) {
   }
   const [owner, name] = values.repo ? values.repo.split("/") : ["{owner}", "{repo}"];
   let state: ReviewState | undefined;
+  let open: string[] | undefined;
   try {
     const read = () => (state = readReviewState(owner!, name!, pr));
     if (values.wait) {
-      await waitForReview(read, { timeoutMs: waitMinutes * 60_000 });
+      open = await waitForReview(read, { timeoutMs: waitMinutes * 60_000 });
     } else {
       read();
     }
@@ -979,7 +978,8 @@ if (import.meta.main) {
     );
     process.exit(2);
   }
-  const { open, skipped } = reviewFeedback(state!);
+  const { open: current, skipped } = reviewFeedback(state!);
+  open ??= current;
   for (const line of skipped) {
     console.log(`skipped review bot ${line}`);
   }

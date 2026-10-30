@@ -346,6 +346,8 @@ test("waitForReview keeps a known App requirement when a later read does not rep
     }),
   ).toEqual([`app review pending: the private reviewer has not reviewed ${"a".repeat(7)}`]);
   expect(clock).toBe(90_000);
+  // The raw final read still says null; the CLI must keep the wait's blockers, not re-read its own.
+  expect(reviewFeedback(pr({ appActive: null })).open).toEqual([]);
 
   // A repository with no App evidence is unchanged: no wait, whether the search says no or is unknown.
   for (const appActive of [false, null]) {
