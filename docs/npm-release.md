@@ -29,6 +29,10 @@ integrity with the verified one and skips publishing when they match. Different
 bytes at the same version fail the workflow, so fix the problem and release a
 new version instead of republishing.
 
+The last step waits up to five minutes for `npm view` to show the version, since
+the registry can lag behind a publish that succeeded, and fails naming the
+package and version if it never appears.
+
 The workflow uses a GitHub-hosted runner and npm's OIDC trusted publishing,
 which the package's npm settings must name: GitHub user `bompus`, repository
 `house-rules`, workflow filename `npm-publish.yml`, with direct `npm publish`

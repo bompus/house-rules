@@ -75,3 +75,18 @@ jobs:
       - name: Publish verified tarball
         if: steps.registry.outputs.published != 'true'
         run: npm publish "$RUNNER_TEMP/npm-artifact/house-rules.tgz" --access public
+      - name: Verify the version is on the registry
+        run: |
+          name=$(jq -r .name package.json)
+          version=$(jq -r .version package.json)
+          # The registry can take a few minutes to show a version that npm publish accepted.
+          for i in $(seq 1 30); do
+            if npm view "$name@$version" version >/dev/null 2>&1; then
+              echo "verified $name@$version"
+              exit 0
+            fi
+            echo "waiting for $name@$version to appear ($i of 30)"
+            sleep 10
+          done
+          echo "::error::$name@$version never appeared on the registry"
+          exit 1
