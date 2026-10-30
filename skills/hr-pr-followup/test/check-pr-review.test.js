@@ -12,7 +12,7 @@ const user = { __typename: "User", login: "maintainer" };
 // Resolved threads can coexist with an unanswered outside-diff review finding.
 // Returns `any`: tests pass partial nodes that omit fields the real query always returns.
 /**
- * @param {{ threads?: any[], reviews?: any[], comments?: any[], contexts?: any[], files?: string[], requiredChecks?: string[], appActive?: boolean }} [parts]
+ * @param {{ threads?: any[], reviews?: any[], comments?: any[], contexts?: any[], files?: string[], requiredChecks?: string[], appActive?: boolean | null }} [parts]
  * @returns {any}
  */
 function pr({
@@ -82,6 +82,7 @@ test("blocks an outside-diff finding with no human reply after it", () => {
 });
 
 test("an unknown App search still requires a review when the App already reviewed this PR", () => {
+  /** @param {string} oid @param {string} [typename] */
   const appReview = (oid, typename = "Bot") => ({
     author: { __typename: typename, login: "bompus-ai-review[bot]" },
     body: "**Bompus AI Review**: 1 finding(s).",
