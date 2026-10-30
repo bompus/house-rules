@@ -125,11 +125,7 @@ type Context = {
 };
 export type ReviewState = {
   headRefOid: string;
-  /**
-   * Whether the private reviewer App reviews this repository: true, false, or null when the
-   * search that answers it failed. Unknown is not "inactive": with an App review already on this
-   * pull request the current-head requirement still applies.
-   */
+  /** Whether the App reviews this repository, or null when the search failed. Unknown is not "inactive". */
   appActive: boolean | null;
   viewer: Author;
   viewerPermission: string | null;
@@ -430,6 +426,10 @@ function reviewedByApp(owner: string, name: string): boolean | null {
   }
 }
 
+const validReviewCommit = (node: unknown) => {
+  const commit = record(node).commit;
+  return commit == null || /^(?:[a-f0-9]{40}|[a-f0-9]{64})$/.test(String(record(commit).oid ?? ""));
+};
 /** Reads complete connections; rejects partial responses and head changes during pagination. */
 function readReviewState(owner: string, name: string, n: number): ReviewState {
   const collected: Record<Connection, unknown[]> = {
@@ -450,9 +450,7 @@ function readReviewState(owner: string, name: string, n: number): ReviewState {
   let viewer: Author = null;
   let viewerPermission: string | null = null;
   let requiredChecks: string[] = [];
-  // Complete, cheap and independent of any sample: GitHub's own index of pull requests this App
-  // reviewed in this repository. A sample of recent pull requests can miss activity and let a
-  // landing pass before the App's first review of a new pull request.
+  // The App index is complete; a recent-PR sample can miss activity before a first review.
   const appActive = reviewedByApp(owner, name);
   let tree: ReviewState["commits"]["nodes"][number]["commit"]["tree"];
   let committedDate: string;
@@ -521,6 +519,9 @@ function readReviewState(owner: string, name: string, n: number): ReviewState {
       }
     }
     pending = next;
+  }
+  if (!collected.reviews.every(validReviewCommit)) {
+    throw new Error("malformed review commit");
   }
   const commit = {
     committedDate: committedDate!,
@@ -928,7 +929,7 @@ export async function waitForReview(
     reviewRunning(open) ||
     (now() - start < NO_CHECK_GRACE_MS &&
       open.some((line) => line.startsWith(NO_CHECK) || line.startsWith(REQUIRED_MISSING)));
-  let appSeen = false; // Sticky: a later read that omits the App must not end the wait.
+  let appSeen = false;
   const readOpen = (s = read()) => {
     appSeen = appSeen || s.appActive === true;
     return openFeedback(appSeen ? { ...s, appActive: true } : s);
@@ -963,8 +964,7 @@ if (import.meta.main) {
     process.exit(2);
   }
   const [owner, name] = values.repo ? values.repo.split("/") : ["{owner}", "{repo}"];
-  let state: ReviewState | undefined;
-  let open: string[] | undefined;
+  let state: ReviewState | undefined, open: string[] | undefined;
   try {
     const read = () => (state = readReviewState(owner!, name!, pr));
     if (values.wait) {

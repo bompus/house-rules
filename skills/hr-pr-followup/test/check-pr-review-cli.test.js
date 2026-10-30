@@ -179,6 +179,24 @@ test("CLI refuses partial, malformed, incomplete and inconsistent API reads", ()
   }
 });
 
+test("CLI reports a malformed review commit as a contract violation, not open feedback", () => {
+  /** @param {any} commit */
+  const review = (commit) => ({
+    author: { __typename: "Bot", login: "bompus-ai-review[bot]" },
+    body: "**Bompus AI Review**: 0 finding(s).",
+    submittedAt: "2026-10-03T17:00:00Z",
+    lastEditedAt: null,
+    url: "https://example.test/review/1",
+    commit,
+  });
+  expect(run({ appActive: true, reviews: [page([review({ oid: head })])] }).code).toBe(0);
+  for (const commit of [{}, { oid: "a".repeat(17) }]) {
+    const r = run({ appActive: true, reviews: [page([review(commit)])] });
+    expect(r.code).toBe(2);
+    expect(r.err).toContain("malformed review commit");
+  }
+});
+
 test("CLI permits complete empty feedback, including a head without status rollup", () => {
   expect(run().code).toBe(0);
   expect(run({ nullContexts: true }).code).toBe(0);
