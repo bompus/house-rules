@@ -197,6 +197,22 @@ test("does not expect CodeRabbit in a repository without .coderabbit.yaml", () =
   expect(openFeedback(pr({ files: ["README.md"] }))).toEqual([]);
 });
 
+test("treats a suspended CodeRabbit as skipped, not a missing check", () => {
+  process.env.HR_CODERABBIT_SUSPENDED = "1";
+  try {
+    const state = pr({
+      files: [".coderabbit.yaml", "README.md"],
+      contexts: [{ name: "check", status: "COMPLETED", conclusion: "SUCCESS" }],
+    });
+    expect(openFeedback(state)).toEqual([]);
+    expect(reviewFeedback(state).skipped).toContain(
+      "CodeRabbit: suspended (HR_CODERABBIT_SUSPENDED=1)",
+    );
+  } finally {
+    delete process.env.HR_CODERABBIT_SUSPENDED;
+  }
+});
+
 // A skipped review reports success; only the completion description proves review.
 test("blocks a CodeRabbit status that is not a completed review", () => {
   const skipped = "Review skipped: reviews are disabled for this base branch";

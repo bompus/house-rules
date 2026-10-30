@@ -3,8 +3,7 @@
 // review bot (CodeRabbit or cubic) whose check is still running, or a bot review whose body carries findings
 // GitHub cannot show as threads ("Outside diff range comments", "Nitpick comments", "Duplicate comments") with no human
 // explicit acknowledgement for that review and the current head. Run only when the repository
-// selects this gate. It also refuses when CodeRabbit's status on the
-// head commit says anything but "Review completed": CodeRabbit marks a skipped review (for example
+// selects this gate. It also refuses when CodeRabbit's status on the head commit says anything but "Review completed": CodeRabbit marks a skipped review (for example
 // on a non-default base) as success with "Review skipped: …". When the head commit has
 // `.coderabbit.yaml` but no CodeRabbit check, it refuses too. A cubic check ("cubic · AI code
 // reviewer") on the head commit must also complete with SUCCESS: a running one refuses, and so does
@@ -12,8 +11,7 @@
 // head ("Incremental review could not start", "Automatic AI review not started after branch rewrite").
 // That PR stays blocked until someone comments `@cubic review`. A head commit with no cubic check is
 // not blocked, since cubic's `cubic.yaml` is optional and its absence does not show that cubic
-// is expected, and --wait does not wait for one to appear. Missing or incomplete reviews
-// require inspection of the review integration and the repository's selected review policy.
+// is expected, and --wait does not wait for one to appear. Missing or incomplete reviews require inspection of the review integration and the repository's selected review policy.
 // A review bot that reports it has no quota or capacity for the pull request is skipped instead,
 // with no end date, and the gate prints which bot it skipped and why: a NEUTRAL cubic check titled
 // "AI review line limit reached", or a NEUTRAL cubic check followed, after it completed, by a cubic
@@ -21,12 +19,10 @@
 // rate limited" or "Review limit reached", or a completed NEUTRAL check with an authenticated
 // current-head quota notice or a rate-limit reply after the head commit, or a SKIPPED CodeRabbit
 // check titled "Review skipped" when CodeRabbit's latest reply to a review command said "Review
-// rate limited" and it has not reviewed since. A
-// successful file-limit skipped CodeRabbit status also qualifies when its authenticated, visible
+// rate limited" and it has not reviewed since. A successful file-limit skipped CodeRabbit status also qualifies when its authenticated, visible
 // current-head summary explicitly reports insufficient credits or capacity and no later failure
 // supersedes it; a file limit alone does not.
-// A bot that is still running is waited for, and a failed
-// result, any other skipped review, an open thread or an unanswered review body still refuses.
+// A bot that is still running is waited for, and a failed result, any other skipped review, an open thread or an unanswered review body still refuses.
 // A CodeRabbit reply that is only "Review failed." (no reason) on a head commit it has not reviewed
 // refuses once and names the single re-trigger, `@coderabbitai full review`; when a second bare failure
 // lands at least an hour after that re-trigger, CodeRabbit is skipped as out of capacity, like the
@@ -40,9 +36,9 @@
 // API shows the viewer is read: classic branch protection can be hidden from a viewer without
 // write access.
 //   bun scripts/check-pr-review.ts <pr> [--repo <owner>/<name>] [--wait [--timeout <minutes>]]
+// With the CodeRabbit app suspended, HR_CODERABBIT_SUSPENDED=1 records its missing check as skipped, not open.
 // Exit 1 while feedback is open, 2 when gh fails. Without --repo, gh resolves the repository from
-// the current checkout. --wait polls every 30 s while CodeRabbit's or cubic's review or any other check is still running, and for
-// up to 3 minutes while the head commit has no CodeRabbit check yet (CodeRabbit posts it a little
+// the current checkout. --wait polls every 30 s while CodeRabbit's or cubic's review or any other check is still running, and for up to 3 minutes while the head commit has no CodeRabbit check yet (CodeRabbit posts it a little
 // after a push), then reports as usual; after --timeout minutes (default 30) it reports what is
 // still open.
 //
@@ -800,7 +796,10 @@ export function reviewFeedback(pr: ReviewState): { open: string[]; skipped: stri
   }
   const hasConfig = head?.tree.entries.some((e) => e.name === REVIEW_BOT_CONFIG) ?? false;
   if (hasConfig && !contexts.some((ctx) => CODERABBIT.test(ctx.context ?? ctx.name ?? ""))) {
-    open.push(`${NO_CHECK}: ${FOLLOW_UP}`);
+    const suspended = process.env.HR_CODERABBIT_SUSPENDED === "1";
+    (suspended ? skipped : open).push(
+      suspended ? "CodeRabbit: suspended (HR_CODERABBIT_SUSPENDED=1)" : `${NO_CHECK}: ${FOLLOW_UP}`,
+    );
   }
   for (const ctx of contexts) {
     const name = ctx.context ?? ctx.name ?? "";
