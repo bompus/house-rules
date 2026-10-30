@@ -425,7 +425,12 @@ function readReviewState(owner: string, name: string, n: number): ReviewState {
     // Repository-wide: a pull request opened before the App's first review here must still wait.
     for (const pull of nodes(repo.recentAppReviews)) {
       for (const review of nodes(record(pull).reviews)) {
-        const login = record(record(review).author).login;
+        // A review author is nullable, and a malformed entry must not fail the read.
+        const author = record(review).author;
+        if (!author || typeof author !== "object" || Array.isArray(author)) {
+          continue;
+        }
+        const login = record(author).login;
         if (typeof login === "string" && PRIVATE_REVIEWER.test(login)) {
           appActive = true;
         }
@@ -758,7 +763,7 @@ export function reviewFeedback(pr: ReviewState): { open: string[]; skipped: stri
   const appReviews = pr.reviews.nodes.filter(
     (review) => review.author && PRIVATE_REVIEWER.test(review.author.login),
   );
-  if (appReviews.length > 0 && !appReviews.some((review) => review.commit?.oid === pr.headRefOid)) {
+  if (pr.appActive && !appReviews.some((review) => review.commit?.oid === pr.headRefOid)) {
     open.push(
       `app review pending: the private reviewer has not reviewed ${pr.headRefOid.slice(0, 7)}`,
     );
