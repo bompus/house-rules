@@ -1,6 +1,6 @@
 ---
 name: hr-handoff
-description: Create a resumable handoff when the user requests one or the low-quota handoff rule triggers. Do not invoke merely because a conversation is long.
+description: Create a resumable handoff when the user requests one, or when the enabled low-quota-handoff modifier calls for one. Do not invoke merely because a conversation is long.
 argument-hint: "What will the next session be used for?"
 disable-model-invocation: false
 ---
