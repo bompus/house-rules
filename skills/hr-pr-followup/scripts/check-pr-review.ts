@@ -909,8 +909,7 @@ const reviewRunning = (open: string[]) =>
   );
 
 /**
- * Re-reads the pull request while a review is still running, or briefly while its check has not
- * appeared, until the review finishes or time runs out.
+ * Re-reads until a review finishes or time runs out; a known App requirement stays required.
  */
 export async function waitForReview(
   read: () => ReviewState,
@@ -931,10 +930,15 @@ export async function waitForReview(
     reviewRunning(open) ||
     (now() - start < NO_CHECK_GRACE_MS &&
       open.some((line) => line.startsWith(NO_CHECK) || line.startsWith(REQUIRED_MISSING)));
-  let open = openFeedback(read());
+  let appSeen = false; // Sticky: a later read that omits the App must not end the wait.
+  const readOpen = (s = read()) => {
+    appSeen = appSeen || s.appActive === true;
+    return openFeedback(appSeen ? { ...s, appActive: true } : s);
+  };
+  let open = readOpen();
   while (pending(open) && now() - start < timeoutMs) {
     await sleep(pollMs);
-    open = openFeedback(read());
+    open = readOpen();
   }
   return open;
 }

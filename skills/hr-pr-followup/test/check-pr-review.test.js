@@ -311,6 +311,52 @@ test("waitForReview polls while the review runs and stops when it finishes or ti
   expect(clock).toBe(0);
 });
 
+test("waitForReview keeps a known App requirement when a later read does not report it", async () => {
+  /** @param {string} oid */
+  const appReview = (oid) => ({
+    author: { __typename: "Bot", login: "bompus-ai-review[bot]" },
+    body: "**Bompus AI Review**: 0 finding(s).",
+    submittedAt: "2026-10-29T23:00:00Z",
+    lastEditedAt: null,
+    url: "r-app",
+    commit: { oid },
+  });
+  let clock = 0;
+  const opts = {
+    pollMs: 30_000,
+    sleep: async (/** @type {number} */ ms) => (clock += ms),
+    now: () => clock,
+  };
+  // The first read knows the App is active; the second does not report it and has no review yet.
+  const reads = [
+    pr({ appActive: true }),
+    pr({ appActive: null }),
+    pr({ appActive: null, reviews: [appReview("a".repeat(40))] }),
+  ];
+  expect(await waitForReview(() => reads.shift(), { ...opts, timeoutMs: 600_000 })).toEqual([]);
+  expect(clock).toBe(60_000);
+
+  // If no review arrives, the retained requirement still refuses at the timeout.
+  clock = 0;
+  const pending = [pr({ appActive: true }), pr({ appActive: null })];
+  expect(
+    await waitForReview(() => (pending.length > 1 ? pending.shift() : pr({ appActive: null })), {
+      ...opts,
+      timeoutMs: 90_000,
+    }),
+  ).toEqual([`app review pending: the private reviewer has not reviewed ${"a".repeat(7)}`]);
+  expect(clock).toBe(90_000);
+
+  // A repository with no App evidence is unchanged: no wait, whether the search says no or is unknown.
+  for (const appActive of [false, null]) {
+    clock = 0;
+    expect(await waitForReview(() => pr({ appActive }), { ...opts, timeoutMs: 600_000 })).toEqual(
+      [],
+    );
+    expect(clock).toBe(0);
+  }
+});
+
 // Right after a push CodeRabbit has not posted its check yet; --wait used to give up at once.
 test("waitForReview waits a few minutes for a CodeRabbit check that has not appeared yet", async () => {
   const files = [".coderabbit.yaml"];
