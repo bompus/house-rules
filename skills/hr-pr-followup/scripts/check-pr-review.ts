@@ -198,14 +198,6 @@ export function record(value: unknown): Record<string, unknown> {
 export function text(value: unknown): value is string {
   return typeof value === "string";
 }
-/** Nodes of a connection-shaped value, empty when the field is absent or malformed. */
-function nodes(value: unknown): unknown[] {
-  if (!value || typeof value !== "object" || Array.isArray(value)) {
-    return [];
-  }
-  const list = (value as Record<string, unknown>).nodes;
-  return Array.isArray(list) ? list : [];
-}
 export function date(value: unknown): boolean {
   return text(value) && Number.isFinite(Date.parse(value));
 }
@@ -303,7 +295,7 @@ function requestReviewPage(
     .filter((k) => k !== "contexts")
     .map((k) => CONNECTIONS[k])
     .join("\n");
-  const query = `query($owner:String!,$name:String!,$n:Int!${declarations ? "," + declarations : ""}){viewer{__typename login} repository(owner:$owner,name:$name){viewerPermission recentAppReviews:pullRequests(last:10){nodes{reviews(last:5){nodes{author{login}}}}} pullRequest(number:$n){headRefOid ${REQUIRED_CHECKS_FIELDS} ${fields} commits(last:1){nodes{commit{oid committedDate tree{entries{name}} ${pending.includes("contexts") ? CONNECTIONS.contexts : ""}}}}}}}`;
+  const query = `query($owner:String!,$name:String!,$n:Int!${declarations ? "," + declarations : ""}){viewer{__typename login} repository(owner:$owner,name:$name){viewerPermission pullRequest(number:$n){headRefOid ${REQUIRED_CHECKS_FIELDS} ${fields} commits(last:1){nodes{commit{oid committedDate tree{entries{name}} ${pending.includes("contexts") ? CONNECTIONS.contexts : ""}}}}}}}`;
   const variables: Record<string, string | number> = { owner, name, n };
   for (const key of pending) {
     if (cursors[key]) {
@@ -395,6 +387,26 @@ export function requiredCheckNames(baseRef: unknown): string[] {
   return [...names].sort();
 }
 
+/**
+ * Whether this App has ever reviewed a pull request in the repository, from GitHub's search index.
+ * One request, and complete - unlike a sample of recent pull requests, which can miss earlier
+ * activity and let a landing pass before the App's first review of a new pull request. An
+ * unreadable answer is treated as "not active", so a search failure cannot block every landing.
+ */
+function reviewedByApp(owner: string, name: string): boolean {
+  const query = encodeURIComponent(`repo:${owner}/${name} is:pr reviewed-by:app/bompus-ai-review`);
+  const run = spawnSync("gh", ["api", `search/issues?q=${query}&per_page=1`], { encoding: "utf8" });
+  if (run.status !== 0) {
+    return false;
+  }
+  try {
+    const total = record(JSON.parse(run.stdout)).total_count;
+    return typeof total === "number" && total > 0;
+  } catch {
+    return false;
+  }
+}
+
 /** Reads complete connections; rejects partial responses and head changes during pagination. */
 function readReviewState(owner: string, name: string, n: number): ReviewState {
   const collected: Record<Connection, unknown[]> = {
@@ -415,27 +427,16 @@ function readReviewState(owner: string, name: string, n: number): ReviewState {
   let viewer: Author = null;
   let viewerPermission: string | null = null;
   let requiredChecks: string[] = [];
-  let appActive = false;
+  // Complete, cheap and independent of any sample: GitHub's own index of pull requests this App
+  // reviewed in this repository. A sample of recent pull requests can miss activity and let a
+  // landing pass before the App's first review of a new pull request.
+  const appActive = reviewedByApp(owner, name);
   let tree: ReviewState["commits"]["nodes"][number]["commit"]["tree"];
   let committedDate: string;
   for (;;) {
     const data = requestReviewPage(owner, name, n, pending, cursors);
     const repo = record(data.repository);
     const pr = record(repo.pullRequest);
-    // Repository-wide: a pull request opened before the App's first review here must still wait.
-    for (const pull of nodes(repo.recentAppReviews)) {
-      for (const review of nodes(record(pull).reviews)) {
-        // A review author is nullable, and a malformed entry must not fail the read.
-        const author = record(review).author;
-        if (!author || typeof author !== "object" || Array.isArray(author)) {
-          continue;
-        }
-        const login = record(author).login;
-        if (typeof login === "string" && PRIVATE_REVIEWER.test(login)) {
-          appActive = true;
-        }
-      }
-    }
     if (
       !text(pr.headRefOid) ||
       !/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/.test(pr.headRefOid) ||

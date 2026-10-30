@@ -43,6 +43,10 @@ const f = await Bun.file(process.env.REVIEW_FIXTURE).json();
 const args = process.argv.slice(2);
 const val = name => args.find(a => a.startsWith(name + "="))?.slice(name.length + 1);
 const query = val("query");
+if (args.some(a => a.startsWith("search/issues"))) {
+  process.stdout.write(JSON.stringify({ total_count: f.appActive ? 1 : 0 }));
+  process.exit(0);
+}
 const connection = key => {
   const pages = f[key] ?? [{nodes:[],pageInfo:{hasNextPage:false,endCursor:null}}];
   const page = pages[val(key + "Cursor") ? 1 : 0];
@@ -99,6 +103,12 @@ mock.module("node:child_process", () => ({spawnSync: (command, args, options) =>
   );
   return { code: r.exitCode, err: r.stderr.toString(), out: r.stdout.toString() };
 }
+
+test("CLI refuses a landing while the App's review of this head is pending", () => {
+  const r = run({ appActive: true, reviews: [page([], false, null)] });
+  expect(r.code).toBe(1);
+  expect(r.out + r.err).toContain("app review pending");
+});
 
 test("CLI finds unresolved threads beyond the first page", () => {
   const r = run({ reviewThreads: [page([thread(true)], true, "next"), page([thread(false)])] });
