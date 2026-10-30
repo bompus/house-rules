@@ -4,7 +4,7 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
-- Make the npm publish workflow wait, after publishing, for the registry to show the new version (up to 30 checks, 10 seconds apart) and fail naming the package and version if it never does, so a registry that lags behind a successful publish no longer fails the run or hides a publish that did not persist.
+- Make the npm publish workflow end by waiting for the registry to show the new version (up to 30 checks, 10 seconds apart) and fail naming the package and version if it never does, so a publish that did not persist no longer passes unnoticed and later steps can rely on the registry.
 - Stop the core rules naming a modifier that may be off (the stop-rule example now says "a handoff rule") and stop the script rule from setting a three-file threshold for analysis: an analysis script is written when it repeats across many files or records. A change that touches more than three places still gets a script.
 - Split the `compression-codecs` modifier into a short always-loaded rule (codec order, runtime check, browser negotiation, gzip exceptions) and an on-demand reference (starting levels, the single-run measurements, negotiation edge cases, browser support, how to measure). The modifier now loads about 1.4 KB instead of 3.4 KB and links the reference.
 - Say in `hr-handoff`'s description that a low-quota handoff applies only when the `low-quota-handoff` modifier is enabled.

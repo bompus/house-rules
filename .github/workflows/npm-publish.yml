@@ -80,8 +80,9 @@ jobs:
           name=$(jq -r .name package.json)
           version=$(jq -r .version package.json)
           # The registry can take a few minutes to show a version that npm publish accepted.
+          # No retries and a 5 s timeout per call keep even a failing registry under 8 minutes, inside the job timeout.
           for i in $(seq 1 30); do
-            if npm view "$name@$version" version >/dev/null 2>&1; then
+            if npm view "$name@$version" version --fetch-retries=0 --fetch-timeout=5000 >/dev/null 2>&1; then
               echo "verified $name@$version"
               exit 0
             fi
