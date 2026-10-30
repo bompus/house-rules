@@ -62,10 +62,12 @@ that addresses a measured or operational need.
 
 ### Publishing to a package registry
 
-A workflow that publishes to a package registry follows the registry rule in
-Release batching: skip a version the registry already has, wait after publishing
-until the version is visible, and run every later step that reads the registry
-after that wait. For npm, end the publish job with:
+A package registry can show a version late after a publish that succeeded. A
+workflow that publishes to one skips a version the registry already has (once
+its bytes match the artifact), waits after publishing until the version is
+visible, and runs every later step that reads the registry after that wait.
+Release batching, where it is installed, states the same rule for any publish
+method. For npm, end the publish job with:
 
 ```yaml
 - name: Verify the version is on the registry
