@@ -789,7 +789,9 @@ export function reviewFeedback(pr: ReviewState): { open: string[]; skipped: stri
   const appReviews = pr.reviews.nodes.filter(
     (review) => review.author?.__typename === "Bot" && PRIVATE_REVIEWER.test(review.author.login),
   );
-  const appRequired = pr.appActive === true || (pr.appActive === null && appReviews.length > 0);
+  // An App review already on this pull request is evidence the App is in use here, whatever the
+  // repository search says; a search that reports no matches must not clear the requirement.
+  const appRequired = pr.appActive === true || appReviews.length > 0;
   if (appRequired && !appReviews.some((review) => review.commit?.oid === pr.headRefOid)) {
     open.push(
       `app review pending: the private reviewer has not reviewed ${pr.headRefOid.slice(0, 7)}`,

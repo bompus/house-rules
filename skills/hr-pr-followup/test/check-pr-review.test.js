@@ -94,6 +94,9 @@ test("an unknown App search still requires a review when the App already reviewe
   // Search failed (null) and an older App review exists here: the current head still waits.
   const unknownOlder = pr({ appActive: null, reviews: [appReview("b".repeat(40))] });
   expect(openFeedback(unknownOlder).join("\n")).toContain("app review pending");
+  // The search says "no App here" but this pull request already has an App review: still required.
+  const falseOlder = pr({ appActive: false, reviews: [appReview("b".repeat(40))] });
+  expect(openFeedback(falseOlder).join("\n")).toContain("app review pending");
   // A review of this head clears it even when the search is unknown.
   const unknownCurrent = pr({ appActive: null, reviews: [appReview("a".repeat(40))] });
   expect(openFeedback(unknownCurrent).join("\n")).not.toContain("app review pending");
