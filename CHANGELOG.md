@@ -4,6 +4,7 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Stop the core rules naming a modifier that may be off (the stop-rule example now says "a handoff rule") and stop the script rule from setting a three-file threshold for analysis: an analysis script is written when it repeats across many files or records. A change that touches more than three places still gets a script.
 - Split the `compression-codecs` modifier into a short always-loaded rule (codec order, runtime check, browser negotiation, gzip exceptions) and an on-demand reference (starting levels, the single-run measurements, negotiation edge cases, browser support, how to measure). The modifier now loads about 1.4 KB instead of 3.4 KB and links the reference.
 - Say in `hr-handoff`'s description that a low-quota handoff applies only when the `low-quota-handoff` modifier is enabled.
 - Let a plan opt in to a stricter `stop-ready-work-check.mjs` with a `Stop-check: strict` line alone on a header line (the first 40 lines, before the first heading). The hook then blocks when any open `[ ]` item names no wait (not only when none does), counts a "Recommended: reply `1a` or `go`" line beside coded options as an offer, and ignores lint errors on ledger lines. Plans without the line behave as before.

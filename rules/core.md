@@ -26,7 +26,7 @@ A completed step, a status answer or a notification does not skip that check:
    claiming nothing remains or that the session can close.
 
 Case 1 stops only when nothing left can advance without the user, when a rule
-you are following tells you to stop (such as a low-quota handoff), or when the
+you are following tells you to stop (such as a handoff rule), or when the
 blocker is something you are not allowed to change. Risky or irreversible
 actions, such as publishing or pushing to a shared branch, still need the
 user's confirmation unless they already directed them.
@@ -341,8 +341,8 @@ Keep small or tightly coupled tasks local. Use subagents for bounded investigati
   loudly when it misses. Ordinary defaults and a second source the product
   needs on purpose are not fallbacks.
   When you cannot tell whether something still has a user, ask.
-- When a change touches more than three places, or an analysis covers more
-  than three files or records, write the script that does or proves it. Do
+- When a change touches more than three places, or an analysis repeats across
+  many files or records, write the script that does or proves it. Do
   the first unit by hand and confirm the script reproduces it. A second run of
   the script must change nothing and repeat no external action, such as a
   push or a sent message.
