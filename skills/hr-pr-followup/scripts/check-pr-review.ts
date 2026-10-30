@@ -125,8 +125,12 @@ type Context = {
 };
 export type ReviewState = {
   headRefOid: string;
-  /** Whether the private reviewer App has reviewed any recent pull request in this repository. */
-  appActive: boolean;
+  /**
+   * Whether the private reviewer App reviews this repository: true, false, or null when the
+   * search that answers it failed. Unknown is not "inactive": with an App review already on this
+   * pull request the current-head requirement still applies.
+   */
+  appActive: boolean | null;
   viewer: Author;
   viewerPermission: string | null;
   /** Check names the base branch requires, from branch protection and active rulesets. */
@@ -393,7 +397,7 @@ export function requiredCheckNames(baseRef: unknown): string[] {
  * activity and let a landing pass before the App's first review of a new pull request. An
  * unreadable answer is treated as "not active", so a search failure cannot block every landing.
  */
-function reviewedByApp(owner: string, name: string): boolean {
+function reviewedByApp(owner: string, name: string): boolean | null {
   // A default invocation leaves {owner}/{repo} for gh to resolve inside GraphQL; a search URL
   // needs the concrete name, so ask for it once rather than searching a literal placeholder.
   let repoOwner = owner;
@@ -407,7 +411,7 @@ function reviewedByApp(owner: string, name: string): boolean {
       },
     );
     if (resolved.status !== 0 || !resolved.stdout.includes("/")) {
-      return false;
+      return null;
     }
     [repoOwner, repoName] = resolved.stdout.trim().split("/") as [string, string];
   }
@@ -416,13 +420,13 @@ function reviewedByApp(owner: string, name: string): boolean {
   );
   const run = spawnSync("gh", ["api", `search/issues?q=${query}&per_page=1`], { encoding: "utf8" });
   if (run.status !== 0) {
-    return false;
+    return null;
   }
   try {
     const total = record(JSON.parse(run.stdout)).total_count;
-    return typeof total === "number" && total > 0;
+    return typeof total === "number" ? total > 0 : null;
   } catch {
-    return false;
+    return null;
   }
 }
 
@@ -780,10 +784,13 @@ export function reviewFeedback(pr: ReviewState): { open: string[]; skipped: stri
   const contexts = head?.statusCheckRollup?.contexts.nodes ?? [];
   // Once the private reviewer has reviewed this repository, a landing must wait for its review of
   // the current head. Its review is the only record that a model actually read this diff.
+  // Only a Bot account can satisfy this: a user login that happens to match the App's slug is a
+  // different namespace and must not clear the requirement.
   const appReviews = pr.reviews.nodes.filter(
-    (review) => review.author && PRIVATE_REVIEWER.test(review.author.login),
+    (review) => review.author?.__typename === "Bot" && PRIVATE_REVIEWER.test(review.author.login),
   );
-  if (pr.appActive && !appReviews.some((review) => review.commit?.oid === pr.headRefOid)) {
+  const appRequired = pr.appActive === true || (pr.appActive === null && appReviews.length > 0);
+  if (appRequired && !appReviews.some((review) => review.commit?.oid === pr.headRefOid)) {
     open.push(
       `app review pending: the private reviewer has not reviewed ${pr.headRefOid.slice(0, 7)}`,
     );

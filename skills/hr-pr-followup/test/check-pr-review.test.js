@@ -81,6 +81,34 @@ test("blocks an outside-diff finding with no human reply after it", () => {
   ]);
 });
 
+test("an unknown App search still requires a review when the App already reviewed this PR", () => {
+  const appReview = (oid, typename = "Bot") => ({
+    author: { __typename: typename, login: "bompus-ai-review[bot]" },
+    body: "**Bompus AI Review**: 1 finding(s).",
+    submittedAt: "2026-10-29T23:00:00Z",
+    lastEditedAt: null,
+    url: "r-app",
+    commit: { oid },
+  });
+  // Search failed (null) and an older App review exists here: the current head still waits.
+  const unknownOlder = pr({ appActive: null, reviews: [appReview("b".repeat(40))] });
+  expect(openFeedback(unknownOlder).join("\n")).toContain("app review pending");
+  // A review of this head clears it even when the search is unknown.
+  const unknownCurrent = pr({ appActive: null, reviews: [appReview("a".repeat(40))] });
+  expect(openFeedback(unknownCurrent).join("\n")).not.toContain("app review pending");
+  // A human account with the App's slug is not the App.
+  const human = pr({
+    appActive: true,
+    reviews: [
+      {
+        ...appReview("a".repeat(40), "User"),
+        author: { __typename: "User", login: "bompus-ai-review" },
+      },
+    ],
+  });
+  expect(openFeedback(human).join("\n")).toContain("app review pending");
+});
+
 test("a landing waits for the private reviewer's review of the current head", () => {
   /** @param {string} oid */
   const appReview = (oid) => ({
