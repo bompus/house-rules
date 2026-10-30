@@ -89,7 +89,9 @@ method. For npm, end the publish job with:
 The loop waits about five minutes, and under 8 even when the registry keeps
 failing, because each call has no retries and a 5-second timeout (npm's default
 retries can take over a minute per call); raise the job's timeout when the steps
-before it leave less than that.
+before it leave less than that. Query the registry the publish used: a
+`publishConfig.registry` or a `--registry` given to `npm publish` does not apply
+to `npm view`, so pass it there too.
 
 ### Forks and notifications
 
