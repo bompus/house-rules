@@ -19,7 +19,7 @@
 // (code spans, fenced blocks, double-quoted spans) is ignored first, so a reply that merely mentions a phrase
 // does not satisfy or trip the check. stop-claim-check.mjs separately holds back a false completion claim.
 //
-// Strict reading, per plan: a plan whose first 40 lines hold a `Stop-check: strict` field is blocked when ANY
+// Strict reading, per plan: a plan whose header (first 40 lines, before the first heading) holds a `Stop-check: strict` line is blocked when ANY
 // open `[ ]` item is ready (names no wait), not only when none waits, and a "light" offer (an acceptance line,
 // "Recommended: reply `1a` or `go`", beside coded options but with no "Question N" heading) counts as an offer.
 // A strict plan also tolerates lint errors on its ledger lines (a done line without evidence); only a header
@@ -48,19 +48,40 @@ const BLOCKER = new RegExp(
   ].join("|"),
   "i",
 );
-const STRICT = /^\s*(?:\*\*)?Stop[- ]check(?:\*\*)?:(?:\*\*)?\s*strict\b/im;
-const LIGHT_ACCEPTANCE = /^[*_ ]*Recommended(?: combination)?:\s*reply\s+`/im;
-const OPTION_CODE = /`\d+[a-z]`/i;
+// The opt-in line: at the start of a header line (before the first heading), alone on its line.
+const STRICT = /^(?:\*\*)?Stop[- ]check(?:\*\*)?:(?:\*\*)?[ \t]*strict[ \t]*$/im;
+const LIGHT_ACCEPTANCE = /^[*_ ]*Recommended(?: combination)?:[*_]*\s*reply\s+`/im;
+const OPTION_LINE = /^[ \t]*(?:[-*][ \t]+)?`(\d+[a-z])`/i;
 /**
- * The light offer form: an acceptance line ("Recommended: reply `1a` or `go`") and a coded option on another line.
+ * The light offer form: an acceptance line ("Recommended: reply `1a` or `go`") whose code is one of the coded
+ * options that open the other lines.
  * @param {string} text
  */
 const lightOffer = (text) => {
   const lines = text.split("\n");
-  return (
-    lines.some((line) => LIGHT_ACCEPTANCE.test(line)) &&
-    lines.some((line) => !LIGHT_ACCEPTANCE.test(line) && OPTION_CODE.test(line))
-  );
+  const options = new Set();
+  for (const line of lines) {
+    const code = line.match(OPTION_LINE)?.[1];
+    if (code !== undefined && !LIGHT_ACCEPTANCE.test(line)) {
+      options.add(code.toLowerCase());
+    }
+  }
+  return lines
+    .filter((line) => LIGHT_ACCEPTANCE.test(line))
+    .some((line) =>
+      [...line.matchAll(/`(\d+[a-z](?:\s*,\s*\d+[a-z])*)`/gi)].some((match) =>
+        (match[1] ?? "").split(",").some((code) => options.has(code.trim().toLowerCase())),
+      ),
+    );
+};
+/**
+ * The plan's header: its first 40 lines up to the first heading.
+ * @param {string} planText
+ */
+const headerOf = (planText) => {
+  const lines = planText.split(/\r?\n/).slice(0, 40);
+  const heading = lines.findIndex((line) => line.startsWith("#"));
+  return lines.slice(0, heading < 0 ? lines.length : heading).join("\n");
 };
 const localDate = () => new Date().toLocaleDateString("en-CA");
 const HANDBACK =
@@ -109,7 +130,7 @@ export function decide({ reply, planPath, planText, today = localDate() }) {
     return { block: false };
   }
   const plan = parsePlan(planText);
-  const strict = STRICT.test(planText.split(/\r?\n/).slice(0, 40).join("\n"));
+  const strict = STRICT.test(headerOf(planText));
   // A strict plan fails open only on a header error; "L12: ..." errors name a ledger line.
   const errors = strict ? plan.errors.filter((error) => !/^L\d+:/.test(error)) : plan.errors;
   if (errors.length) {

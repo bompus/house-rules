@@ -206,6 +206,42 @@ test("the strict marker counts only in the plan header", () => {
   assert.equal(check(WAITING_LINE, lateHeader).block, false);
 });
 
+test("only an exact marker line in the header switches a plan to strict", () => {
+  const body = "Owner: test\nStatus: active\n";
+  const ledger = "## Ledger\n- [ ] Write the next step\n- [ ] Land it; waiting on CI\n";
+  for (const marker of [
+    "Stop-check: strict-disabled",
+    "Stop-check: strictly",
+    "  Stop-check: strict",
+  ]) {
+    assert.equal(check("Working on it.", `${body}${marker}\n${ledger}`).block, false, marker);
+  }
+  const fenced = `${body}## Notes\n\`\`\`\nStop-check: strict\n\`\`\`\n${ledger}`;
+  assert.equal(check("Working on it.", fenced).block, false);
+  assert.equal(check("Working on it.", `${body}Stop-check: strict\n${ledger}`).block, true);
+  assert.equal(check("Working on it.", `${body}Stop check: strict\n${ledger}`).block, true);
+});
+
+test("a light offer needs its acceptance code to be one of the coded options", () => {
+  const offerWith = (/** @type {string} */ accept) =>
+    `- \`1a\`: Land it.\n- \`1b\`: Hold it.\n\n${accept}`;
+  for (const accept of [
+    "Recommended: reply `1a` or `go`",
+    "**Recommended:** reply `1B` or `go`",
+    "Recommended combination: reply `1a, 1b` or `go`",
+  ]) {
+    assert.equal(check(offerWith(accept), STRICT_MIXED).block, false, accept);
+  }
+  for (const reply of [
+    offerWith("Recommended: reply `later`"),
+    offerWith("Recommended: reply `2a` or `go`"),
+    "The previous test used `1a`.\nRecommended: reply `later`.",
+    "- `1a`: Land it.\n\nRecommended: reply `go`",
+  ]) {
+    assert.equal(check(reply, STRICT_MIXED).block, true, reply);
+  }
+});
+
 test("a strict plan survives lint errors on ledger lines; the installed reading still passes on them", () => {
   const withBadDoneLine =
     "- [x] Done without evidence\n- [ ] Write the next step\n- [ ] Land it; waiting on CI";
