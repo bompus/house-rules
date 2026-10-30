@@ -11,6 +11,9 @@
 # open PR targets (deleting the head would close that PR; retarget it first with
 # `gh pr edit <n> --base <base>`). The merge passes
 # --match-head-commit, so a push after the head was read fails the merge instead of landing it.
+# Another open PR that has the same branch as its head, in any repository (a fork's mirror of an
+# upstream PR shares one branch), also closes when the branch is deleted. The landing still goes
+# ahead, but the branch is kept and the PRs that use it are named.
 #
 # Then runs the repository's own check at the pull request head, in a throwaway detached worktree
 # under the repository's Git directory, so local edits can neither pass nor fail it. The check is
@@ -226,6 +229,31 @@ else
   remove_check_dir
 fi
 
+# Deleting the head closes every other open PR that has it as its head, in any repository, so such a
+# PR keeps the branch. A fork's head is never deleted here; only a head in $REPO can be shared. The
+# lookup runs after the checks, which can take minutes, so a PR opened meanwhile is still seen. A
+# missing ref or an empty answer is an error, not "nobody shares it": the head exists in $REPO.
+KEEP_HEAD=""
+if [ "$FORK" != true ]; then
+  SELF="https://github.com/$REPO/pull/$PR"
+  # shellcheck disable=SC2016  # $owner, $name and $ref are GraphQL variables, not shell
+  if ! SHARING="$(gh api graphql -f owner="${REPO%%/*}" -f name="${REPO#*/}" -f ref="refs/heads/$HEAD" \
+    -f query='query($owner: String!, $name: String!, $ref: String!) {
+      repository(owner: $owner, name: $name) {
+        ref(qualifiedName: $ref) { associatedPullRequests(states: OPEN, first: 50) { nodes { url } } }
+      }
+    }' --jq '.data.repository.ref.associatedPullRequests.nodes[].url')"; then
+    echo "refused: could not list the open PRs that use $HEAD as their head; PR $PR is not merged" >&2
+    exit 1
+  fi
+  while IFS= read -r URL; do
+    if [ -n "$URL" ] && [ "${URL,,}" != "${SELF,,}" ]; then
+      KEEP_HEAD="${KEEP_HEAD:+$KEEP_HEAD }$URL"
+    fi
+  done <<<"$SHARING"
+fi
+KEPT_MESSAGE="kept: $REMOTE/$HEAD is the head of open PRs ($KEEP_HEAD), and deleting it would close them"
+
 if [[ "$PUSH_LANDED" == *" $REPO "* ]]; then
   # The reviewed and checked commit itself becomes the base: a plain push, which refuses a non-fast-forward.
   if ! git fetch --quiet --no-tags "$REMOTE" "refs/heads/$BASE"; then
@@ -244,13 +272,22 @@ if [[ "$PUSH_LANDED" == *" $REPO "* ]]; then
     fi
     PUSH=("$OID:refs/heads/$BASE")
   else
-    PUSH=(--atomic --force-with-lease="refs/heads/$HEAD:$OID" "$OID:refs/heads/$BASE" ":refs/heads/$HEAD")
+    # Leasing the head in the same atomic push keeps a head pushed after the review from landing. A
+    # kept head is pushed at its own value, so the lease still guards it and nothing changes.
+    PUSH=(--atomic --force-with-lease="refs/heads/$HEAD:$OID" "$OID:refs/heads/$BASE")
+    if [ -n "$KEEP_HEAD" ]; then
+      PUSH+=("$OID:refs/heads/$HEAD")
+    else
+      PUSH+=(":refs/heads/$HEAD")
+    fi
   fi
   if ! git push --quiet "$REMOTE" "${PUSH[@]}"; then
     echo "refused: the fast-forward push of ${OID:0:12} to $BASE failed (a moved base or head refuses it); PR $PR is not landed" >&2
     exit 1
   fi
-  [ "$FORK" = true ] || echo "deleted: $REMOTE/$HEAD"
+  if [ "$FORK" != true ] && [ -z "$KEEP_HEAD" ]; then
+    echo "deleted: $REMOTE/$HEAD"
+  fi
   SHA="$OID"
   echo "landed: PR $PR as $SHA by fast-forward push to $BASE"
 else
@@ -269,7 +306,9 @@ fi
 # A fork's head lives in another repository; a repository may also delete merged heads itself.
 # Delete only a branch that still sits at the pull request's head commit, so a same-named branch on
 # an unrelated remote survives.
-if [ "$FORK" != true ]; then
+if [ -n "$KEEP_HEAD" ]; then
+  echo "$KEPT_MESSAGE" >&2
+elif [ "$FORK" != true ]; then
   REMOTE_HEAD="$(git ls-remote --heads "$REMOTE" "refs/heads/$HEAD" | awk '{print $1}')"
   if [ "$REMOTE_HEAD" = "$OID" ]; then
     # --no-verify: pre-push hooks guard what a push adds, and a deletion adds nothing. The head was
@@ -288,7 +327,9 @@ fi
 
 # Exit 3 (local sync pending) is not a failure: finish the worktree report, then pass it on.
 STATUS=0
-bash "$(dirname "${BASH_SOURCE[0]}")/verify-landed.sh" --commit "$SHA" --branch "$HEAD" \
+BRANCH_ARGS=(--branch "$HEAD")
+[ -z "$KEEP_HEAD" ] || BRANCH_ARGS=()
+bash "$(dirname "${BASH_SOURCE[0]}")/verify-landed.sh" --commit "$SHA" ${BRANCH_ARGS[@]+"${BRANCH_ARGS[@]}"} \
   --default "$BASE" --remote "$REMOTE" "${SYNC_ARGS[@]}" || STATUS=$?
 
 git worktree list --porcelain | awk -v want="branch refs/heads/$HEAD" '

@@ -73,7 +73,8 @@ function stub(bin, name, body) {
  * @param {{ dependents?: string, threads?: object[], repo?: string, staleDefault?: boolean,
  *   fromTask?: boolean, queued?: boolean, history?: number, check?: string | null,
  *   packageJson?: string | null, pnpmInstallExit?: number, files?: Record<string, string>,
- *   racingFetch?: boolean, baseCurrent?: boolean, errexitOff?: boolean, advanceHead?: boolean }} [options]
+ *   racingFetch?: boolean, baseCurrent?: boolean, errexitOff?: boolean, advanceHead?: boolean,
+ *   sharing?: string[], sharingFails?: boolean }} [options]
  */
 function fixture({
   dependents = "",
@@ -99,6 +100,11 @@ function fixture({
   errexitOff = false,
   // Someone pushes to the head branch after the checks pass, just before the landing push.
   advanceHead = false,
+  // Other open PRs (their URLs) that have the head branch as their head, as the GraphQL lookup
+  // names them; the stub adds the PR under merge itself, as GitHub does.
+  sharing = [],
+  // The lookup of those PRs fails.
+  sharingFails = false,
 } = {}) {
   const root = mkdtempSync(join(process.env.HOUSE_RULES_TEST_TMP ?? tmpdir(), "merge-pr-"));
   roots.push(root);
@@ -148,6 +154,7 @@ case "$*" in
   "pr view"*) printf 'feature\\t${oid}\\tmain\\tOPEN\\tfalse\\n';;
   "pr list"*) printf '%s' "${dependents}";;
   "repo view"*) echo "${repo}";;
+  "api graphql"*associatedPullRequests*) ${sharingFails ? "exit 1" : `printf '%s\\n' ${[`https://github.com/${repo}/pull/7`, ...sharing].map((url) => `'${url}'`).join(" ")}`};;
   "api graphql"*) printf '%s' '${JSON.stringify({ data: { viewer: { __typename: "User", login: "maintainer" }, repository: { viewerPermission: "ADMIN", pullRequest: { headRefOid: oid, baseRef: { branchProtectionRule: null, rules: { pageInfo: { hasNextPage: false }, nodes: [] } }, reviewThreads: { nodes: threads, pageInfo: { hasNextPage: false, endCursor: null } }, reviews: { nodes: [], pageInfo: { hasNextPage: false, endCursor: null } }, comments: { nodes: [], pageInfo: { hasNextPage: false, endCursor: null } }, commits: { nodes: [{ commit: { oid, committedDate: "2026-10-01T00:00:00Z", tree: { entries: [] }, statusCheckRollup: null } }] } } } } })}';;
 esac
 `,
@@ -284,6 +291,56 @@ test("--merge lands with a merge commit instead of a squash", () => {
   const calls = readFileSync(log, "utf8");
   expect(calls).toContain(`pr merge 7 --merge --match-head-commit ${oid}`);
   expect(calls).not.toContain("--squash");
+});
+
+test("another open PR with the same head keeps the branch, and the landing still succeeds", () => {
+  const upstream = "https://github.com/upstream/app/pull/9";
+  const { remote, log, run } = fixture({ sharing: [upstream] });
+  const r = run();
+  expect(r.code).toBe(0);
+  expect(r.err).toContain(`kept: origin/feature is the head of open PRs (${upstream})`);
+  expect(r.err).not.toContain("leftover");
+  expect(readFileSync(log, "utf8")).toContain("pr merge 7 --squash");
+  expect(sh(remote, "git", "branch", "--list", "feature")).toContain("feature");
+});
+
+test("a fast-forward landing keeps a head that another open PR uses", () => {
+  const upstream = "https://github.com/upstream/app/pull/9";
+  const { remote, oid, run } = fixture({
+    repo: "bompus/house-rules",
+    baseCurrent: true,
+    sharing: [upstream],
+  });
+  const r = run();
+  expect(r.code).toBe(0);
+  expect(r.out).toContain(`landed: PR 7 as ${oid} by fast-forward push to main`);
+  expect(r.out).not.toContain("deleted:");
+  expect(r.err).toContain(`kept: origin/feature is the head of open PRs (${upstream})`);
+  expect(sh(remote, "git", "rev-parse", "main")).toBe(oid);
+  expect(sh(remote, "git", "rev-parse", "feature")).toBe(oid);
+});
+
+test("a head moved after the checks refuses a fast-forward landing that keeps the branch", () => {
+  const fx = fixture({
+    repo: "bompus/house-rules",
+    baseCurrent: true,
+    advanceHead: true,
+    sharing: ["https://github.com/upstream/app/pull/9"],
+  });
+  const before = sh(fx.remote, "git", "rev-parse", "main");
+  const r = fx.run();
+  expect(r.code).toBe(1);
+  expect(r.err).toContain("fast-forward push of");
+  expect(sh(fx.remote, "git", "rev-parse", "main")).toBe(before);
+});
+
+test("a failed lookup of the PRs that share the head refuses before any merge", () => {
+  const { remote, log, run } = fixture({ sharingFails: true });
+  const r = run();
+  expect(r.code).toBe(1);
+  expect(r.err).toContain("could not list the open PRs that use feature as their head");
+  expect(readFileSync(log, "utf8")).not.toContain("pr merge");
+  expect(sh(remote, "git", "branch", "--list", "feature")).toContain("feature");
 });
 
 test("refuses while another open PR targets the head", () => {

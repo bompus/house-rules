@@ -178,7 +178,10 @@ reset, switch or delete a checkout.
   pre-push hook cannot stop the landing report; a delete that fails anyway leaves the branch
   for `verify-landed.sh` to report (exit 1). It
   refuses while review feedback is open (`check-pr-review.ts`), while another open pull
-  request targets the head. A repository listed in `HR_PUSH_LANDED` (space-separated
+  request targets the head. When another open pull request in any repository has the same
+  branch as its head (a fork's mirror of an upstream pull request), deleting the branch would
+  close it, so the landing goes ahead, the branch is kept and the script names those pull
+  requests. A repository listed in `HR_PUSH_LANDED` (space-separated
   `owner/repo`) lands by fast-forward push instead of a merge: after the same checks
   the script pushes the head commit to the base, without force, and refuses when the
   base is not an ancestor of the head. Each refusal tests the failing command's exit
