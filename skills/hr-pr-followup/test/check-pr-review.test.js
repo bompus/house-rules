@@ -79,6 +79,38 @@ test("blocks an outside-diff finding with no human reply after it", () => {
   ]);
 });
 
+test("a landing waits for the private reviewer's review of the current head", () => {
+  /** @param {string} oid */
+  const appReview = (oid) => ({
+    author: { __typename: "Bot", login: "bompus-ai-review[bot]" },
+    body: "**Bompus AI Review** (GPT-6.1 Sol, xhigh reasoning): 1 finding(s).",
+    submittedAt: "2026-10-29T23:00:00Z",
+    lastEditedAt: null,
+    url: "r-app",
+    commit: { oid },
+  });
+  // The App has reviewed this repository before, but only an older head: the gate waits.
+  const older = pr({ reviews: [appReview("b".repeat(40))] });
+  expect(openFeedback(older).join("\n")).toContain("app review pending");
+  // A review of the current head clears it.
+  const current = pr({ reviews: [appReview("a".repeat(40))] });
+  expect(openFeedback(current).join("\n")).not.toContain("app review pending");
+  // A repository the App has never reviewed is unaffected.
+  const none = pr({
+    reviews: [
+      {
+        author: { __typename: "Bot", login: "coderabbitai[bot]" },
+        body: "",
+        submittedAt: null,
+        lastEditedAt: null,
+        url: "r1",
+        commit: null,
+      },
+    ],
+  });
+  expect(openFeedback(none).join("\n")).not.toContain("app review pending");
+});
+
 test("blocks nitpicks and unrelated later human reviews", () => {
   const nitpick = { ...outsideDiff, body: "🧹 Nitpick comments (2)" };
   expect(openFeedback(pr({ reviews: [nitpick] }))).toHaveLength(1);

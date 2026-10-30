@@ -63,7 +63,11 @@ import { parseArgs } from "node:util";
 
 const CODERABBIT = /coderabbit/i;
 const CUBIC = /^cubic · AI code reviewer$/i;
-const isReviewBot = (name: string) => CODERABBIT.test(name) || CUBIC.test(name);
+// The private reviewer posts as its own App bot, so its review and any check named for it are
+// review-bot output rather than ordinary CI that must pass.
+const PRIVATE_REVIEWER = /^bompus-ai-review(?:\[bot\])?$/i;
+const isReviewBot = (name: string) =>
+  CODERABBIT.test(name) || CUBIC.test(name) || PRIVATE_REVIEWER.test(name);
 const REVIEW_BOT_CONFIG = ".coderabbit.yaml";
 const BODY_FINDINGS = /Outside diff range comments|Nitpick comments|Duplicate comments/;
 const REVIEWED = /^Review completed/;
@@ -133,6 +137,8 @@ export type ReviewState = {
       submittedAt: string | null;
       lastEditedAt: string | null;
       url: string;
+      /** Head the review was submitted against; null when GitHub omits it. */
+      commit: { oid: string } | null;
     }[];
   };
   comments: {
@@ -172,7 +178,7 @@ export type ReviewState = {
 const PAGE_INFO = "pageInfo{hasNextPage endCursor}";
 const CONNECTIONS = {
   reviewThreads: `reviewThreads(first:100,after:$reviewThreadsCursor){${PAGE_INFO} nodes{isResolved comments(first:1){nodes{url}}}}`,
-  reviews: `reviews(first:100,after:$reviewsCursor){${PAGE_INFO} nodes{author{__typename login} body submittedAt lastEditedAt url}}`,
+  reviews: `reviews(first:100,after:$reviewsCursor){${PAGE_INFO} nodes{author{__typename login} body submittedAt lastEditedAt url commit{oid}}}`,
   comments: `comments(first:100,after:$commentsCursor){${PAGE_INFO} nodes{author{__typename login} editor{__typename login} body createdAt lastEditedAt isMinimized}}`,
   contexts: `statusCheckRollup{contexts(first:100,after:$contextsCursor){${PAGE_INFO} nodes{... on StatusContext{context state description} ... on CheckRun{name status conclusion title completedAt}}}}`,
 };
@@ -726,6 +732,16 @@ export function reviewFeedback(pr: ReviewState): { open: string[]; skipped: stri
   }
   const head = pr.commits.nodes[0]?.commit;
   const contexts = head?.statusCheckRollup?.contexts.nodes ?? [];
+  // Once the private reviewer has reviewed this repository, a landing must wait for its review of
+  // the current head. Its review is the only record that a model actually read this diff.
+  const appReviews = pr.reviews.nodes.filter(
+    (review) => review.author && PRIVATE_REVIEWER.test(review.author.login),
+  );
+  if (appReviews.length > 0 && !appReviews.some((review) => review.commit?.oid === pr.headRefOid)) {
+    open.push(
+      `app review pending: the private reviewer has not reviewed ${pr.headRefOid.slice(0, 7)}`,
+    );
+  }
   const hasConfig = head?.tree.entries.some((e) => e.name === REVIEW_BOT_CONFIG) ?? false;
   if (hasConfig && !contexts.some((ctx) => CODERABBIT.test(ctx.context ?? ctx.name ?? ""))) {
     open.push(`${NO_CHECK}: ${FOLLOW_UP}`);
