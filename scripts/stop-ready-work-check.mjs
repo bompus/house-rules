@@ -68,20 +68,38 @@ const lightOffer = (text) => {
   }
   return lines
     .filter((line) => LIGHT_ACCEPTANCE.test(line))
-    .some((line) =>
-      [...line.matchAll(/`(\d+[a-z](?:\s*,\s*\d+[a-z])*)`/gi)].some((match) =>
-        (match[1] ?? "").split(",").some((code) => options.has(code.trim().toLowerCase())),
-      ),
-    );
+    .some((line) => {
+      const accept = line.match(/reply\s+`([^`]*)`/i)?.[1] ?? "";
+      return accept.split(",").some((code) => options.has(code.trim().toLowerCase()));
+    });
 };
 /**
- * The plan's header: its first 40 lines up to the first heading.
+ * The plan's header: its first 40 lines up to the first heading, without fenced examples.
  * @param {string} planText
  */
 const headerOf = (planText) => {
   const lines = planText.split(/\r?\n/).slice(0, 40);
-  const heading = lines.findIndex((line) => line.startsWith("#"));
-  return lines.slice(0, heading < 0 ? lines.length : heading).join("\n");
+  const header = [];
+  /** @type {string | undefined} */
+  let fence;
+  for (const line of lines) {
+    const opened = line.match(/^[ \t]*(`{3,}|~{3,})/)?.[1];
+    if (fence !== undefined) {
+      if (opened !== undefined && opened[0] === fence[0] && opened.length >= fence.length) {
+        fence = undefined;
+      }
+      continue;
+    }
+    if (opened !== undefined) {
+      fence = opened;
+      continue;
+    }
+    if (line.startsWith("#")) {
+      break;
+    }
+    header.push(line);
+  }
+  return header.join("\n");
 };
 const localDate = () => new Date().toLocaleDateString("en-CA");
 const HANDBACK =

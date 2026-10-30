@@ -218,6 +218,8 @@ test("only an exact marker line in the header switches a plan to strict", () => 
   }
   const fenced = `${body}## Notes\n\`\`\`\nStop-check: strict\n\`\`\`\n${ledger}`;
   assert.equal(check("Working on it.", fenced).block, false);
+  const fencedPreamble = `${body}\`\`\`\nStop-check: strict\n\`\`\`\n${ledger}`;
+  assert.equal(check("Working on it.", fencedPreamble).block, false);
   assert.equal(check("Working on it.", `${body}Stop-check: strict\n${ledger}`).block, true);
   assert.equal(check("Working on it.", `${body}Stop check: strict\n${ledger}`).block, true);
 });
@@ -234,6 +236,7 @@ test("a light offer needs its acceptance code to be one of the coded options", (
   }
   for (const reply of [
     offerWith("Recommended: reply `later`"),
+    offerWith("Recommended: reply `later` (not `1a`)"),
     offerWith("Recommended: reply `2a` or `go`"),
     "The previous test used `1a`.\nRecommended: reply `later`.",
     "- `1a`: Land it.\n\nRecommended: reply `go`",
