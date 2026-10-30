@@ -73,7 +73,7 @@ after that wait. For npm, end the publish job with:
     name=$(jq -r .name package.json)
     version=$(jq -r .version package.json)
     for i in $(seq 1 30); do
-      if npm view "$name@$version" version >/dev/null 2>&1; then
+      if npm view "$name@$version" version --fetch-retries=0 --fetch-timeout=5000 >/dev/null 2>&1; then
         echo "verified $name@$version"
         exit 0
       fi
@@ -84,8 +84,10 @@ after that wait. For npm, end the publish job with:
     exit 1
 ```
 
-The loop allows five minutes; raise the job's timeout when the steps before it
-leave less than that.
+The loop waits about five minutes, and under 8 even when the registry keeps
+failing, because each call has no retries and a 5-second timeout (npm's default
+retries can take over a minute per call); raise the job's timeout when the steps
+before it leave less than that.
 
 ### Forks and notifications
 

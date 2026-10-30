@@ -97,7 +97,7 @@ the registry right away fails on a release that shipped or hides one that did
 not persist. This holds for any publish, whether by hand, from a script or in
 CI. Skip a version the registry already has, after checking that its bytes match
 the artifact. After publishing, confirm the version is visible (for npm,
-`npm view <name>@<version> version`, retried, 30 tries 10 seconds apart) and
-fail loudly naming the package and version if it never appears. Run every step
+`npm view <name>@<version> version`, 30 tries 10 seconds apart, each call without
+npm's own retries) and fail loudly naming the package and version if it never appears. Run every step
 that depends on the registry (registry entries, install checks, release notes
 that point at the package) only after that confirmation.
