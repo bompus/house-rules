@@ -36,7 +36,7 @@
 // API shows the viewer is read: classic branch protection can be hidden from a viewer without
 // write access.
 //   bun scripts/check-pr-review.ts <pr> [--repo <owner>/<name>] [--wait [--timeout <minutes>]]
-// With the CodeRabbit app suspended, HR_CODERABBIT_SUSPENDED=1 records its missing check as skipped, not open.
+// With the CodeRabbit app suspended, HR_CODERABBIT_SUSPENDED=1 records its check or status, missing or stale, as skipped.
 // Exit 1 while feedback is open, 2 when gh fails. Without --repo, gh resolves the repository from
 // the current checkout. --wait polls every 30 s while CodeRabbit's or cubic's review or any other check is still running, and for up to 3 minutes while the head commit has no CodeRabbit check yet (CodeRabbit posts it a little
 // after a push), then reports as usual; after --timeout minutes (default 30) it reports what is
@@ -795,15 +795,16 @@ export function reviewFeedback(pr: ReviewState): { open: string[]; skipped: stri
     );
   }
   const hasConfig = head?.tree.entries.some((e) => e.name === REVIEW_BOT_CONFIG) ?? false;
-  if (hasConfig && !contexts.some((ctx) => CODERABBIT.test(ctx.context ?? ctx.name ?? ""))) {
-    const suspended = process.env.HR_CODERABBIT_SUSPENDED === "1";
+  const suspended = process.env.HR_CODERABBIT_SUSPENDED === "1";
+  const seen = contexts.some((ctx) => CODERABBIT.test(ctx.context ?? ctx.name ?? ""));
+  if (suspended ? hasConfig || seen : hasConfig && !seen) {
     (suspended ? skipped : open).push(
       suspended ? "CodeRabbit: suspended (HR_CODERABBIT_SUSPENDED=1)" : `${NO_CHECK}: ${FOLLOW_UP}`,
     );
   }
   for (const ctx of contexts) {
     const name = ctx.context ?? ctx.name ?? "";
-    if (ADVISORY_CHECKS.has(name)) {
+    if (ADVISORY_CHECKS.has(name) || (suspended && CODERABBIT.test(name))) {
       continue;
     }
     const running =

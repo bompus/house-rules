@@ -213,6 +213,34 @@ test("treats a suspended CodeRabbit as skipped, not a missing check", () => {
   }
 });
 
+test("treats any CodeRabbit status or check as skipped while it is suspended", () => {
+  const stale = "Review skipped: manual review required for this OSS repository";
+  const contexts = [
+    { context: "CodeRabbit", state: "SUCCESS", description: stale },
+    { context: "CodeRabbit", state: "PENDING", description: "Review in progress" },
+    { context: "CodeRabbit", state: "FAILURE", description: "Review failed" },
+    { name: "CodeRabbit", status: "IN_PROGRESS" },
+    { name: "CodeRabbit", status: "COMPLETED", conclusion: "FAILURE" },
+  ];
+  const broken = { name: "build", status: "COMPLETED", conclusion: "FAILURE" };
+  process.env.HR_CODERABBIT_SUSPENDED = "1";
+  try {
+    for (const ctx of contexts) {
+      const feedback = reviewFeedback(pr({ files: [".coderabbit.yaml"], contexts: [ctx] }));
+      expect(feedback.open).toEqual([]);
+      expect(feedback.skipped).toEqual(["CodeRabbit: suspended (HR_CODERABBIT_SUSPENDED=1)"]);
+    }
+    expect(openFeedback(pr({ contexts: [contexts[0], broken] }))).toEqual([
+      "check build concluded FAILURE",
+    ]);
+  } finally {
+    delete process.env.HR_CODERABBIT_SUSPENDED;
+  }
+  expect(openFeedback(pr({ contexts: [contexts[0]] }))).toEqual([
+    `CodeRabbit did not review the head commit ("${stale}"): check the review integration and repository review policy`,
+  ]);
+});
+
 // A skipped review reports success; only the completion description proves review.
 test("blocks a CodeRabbit status that is not a completed review", () => {
   const skipped = "Review skipped: reviews are disabled for this base branch";

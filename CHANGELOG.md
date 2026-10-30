@@ -4,6 +4,7 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Make `HR_CODERABBIT_SUSPENDED=1` in `check-pr-review.ts` record any CodeRabbit check or commit status on the head commit as skipped, not only a missing one, so a status left from an earlier review (for example "Review skipped: manual review required") no longer refuses a pull request while the app is suspended. Other checks and every other review bot are judged as before.
 - Make the npm publish workflow end by waiting for the registry to show the new version (up to 30 checks, 10 seconds apart) and fail naming the package and version if it never does, so a publish that did not persist no longer passes unnoticed and later steps can rely on the registry.
 - Add a registry-lag rule to Release batching: after any publish (by hand, from a script or in CI), confirm the version is visible on the registry (for npm, `npm view <name>@<version> version`, 30 tries 10 seconds apart) and fail naming the package and version if it never appears, before any step that depends on the registry; skip a version the registry already has. The GitHub Actions reference carries the workflow form of the check.
 - Stop the core rules naming a modifier that may be off (the stop-rule example now says "a handoff rule") and stop the script rule from setting a three-file threshold for analysis: an analysis script is written when it repeats across many files or records. A change that touches more than three places still gets a script.
