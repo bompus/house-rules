@@ -12,7 +12,7 @@ const user = { __typename: "User", login: "maintainer" };
 // Resolved threads can coexist with an unanswered outside-diff review finding.
 // Returns `any`: tests pass partial nodes that omit fields the real query always returns.
 /**
- * @param {{ threads?: any[], reviews?: any[], comments?: any[], contexts?: any[], files?: string[], requiredChecks?: string[] }} [parts]
+ * @param {{ threads?: any[], reviews?: any[], comments?: any[], contexts?: any[], files?: string[], requiredChecks?: string[], appActive?: boolean }} [parts]
  * @returns {any}
  */
 function pr({
@@ -22,10 +22,12 @@ function pr({
   contexts = [],
   files = [],
   requiredChecks = [],
+  appActive = false,
 } = {}) {
   const tree = { entries: files.map((name) => ({ name })) };
   return {
     headRefOid: "a".repeat(40),
+    appActive,
     viewer: user,
     viewerPermission: "ADMIN",
     requiredChecks,
@@ -90,10 +92,10 @@ test("a landing waits for the private reviewer's review of the current head", ()
     commit: { oid },
   });
   // The App has reviewed this repository before, but only an older head: the gate waits.
-  const older = pr({ reviews: [appReview("b".repeat(40))] });
+  const older = pr({ appActive: true, reviews: [appReview("b".repeat(40))] });
   expect(openFeedback(older).join("\n")).toContain("app review pending");
   // A review of the current head clears it.
-  const current = pr({ reviews: [appReview("a".repeat(40))] });
+  const current = pr({ appActive: true, reviews: [appReview("a".repeat(40))] });
   expect(openFeedback(current).join("\n")).not.toContain("app review pending");
   // A repository the App has never reviewed is unaffected.
   const none = pr({

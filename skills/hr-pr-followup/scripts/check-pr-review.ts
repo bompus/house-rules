@@ -125,6 +125,8 @@ type Context = {
 };
 export type ReviewState = {
   headRefOid: string;
+  /** Whether the private reviewer App has reviewed any recent pull request in this repository. */
+  appActive: boolean;
   viewer: Author;
   viewerPermission: string | null;
   /** Check names the base branch requires, from branch protection and active rulesets. */
@@ -195,6 +197,11 @@ export function record(value: unknown): Record<string, unknown> {
 }
 export function text(value: unknown): value is string {
   return typeof value === "string";
+}
+/** Nodes of a connection-shaped value, empty when the field is absent or malformed. */
+function nodes(value: unknown): unknown[] {
+  const list = record(value).nodes;
+  return Array.isArray(list) ? list : [];
 }
 export function date(value: unknown): boolean {
   return text(value) && Number.isFinite(Date.parse(value));
@@ -293,7 +300,7 @@ function requestReviewPage(
     .filter((k) => k !== "contexts")
     .map((k) => CONNECTIONS[k])
     .join("\n");
-  const query = `query($owner:String!,$name:String!,$n:Int!${declarations ? "," + declarations : ""}){viewer{__typename login} repository(owner:$owner,name:$name){viewerPermission pullRequest(number:$n){headRefOid ${REQUIRED_CHECKS_FIELDS} ${fields} commits(last:1){nodes{commit{oid committedDate tree{entries{name}} ${pending.includes("contexts") ? CONNECTIONS.contexts : ""}}}}}}}`;
+  const query = `query($owner:String!,$name:String!,$n:Int!${declarations ? "," + declarations : ""}){viewer{__typename login} repository(owner:$owner,name:$name){viewerPermission recentAppReviews:pullRequests(last:10){nodes{reviews(last:5){nodes{author{login}}}}} pullRequest(number:$n){headRefOid ${REQUIRED_CHECKS_FIELDS} ${fields} commits(last:1){nodes{commit{oid committedDate tree{entries{name}} ${pending.includes("contexts") ? CONNECTIONS.contexts : ""}}}}}}}`;
   const variables: Record<string, string | number> = { owner, name, n };
   for (const key of pending) {
     if (cursors[key]) {
@@ -405,12 +412,22 @@ function readReviewState(owner: string, name: string, n: number): ReviewState {
   let viewer: Author = null;
   let viewerPermission: string | null = null;
   let requiredChecks: string[] = [];
+  let appActive = false;
   let tree: ReviewState["commits"]["nodes"][number]["commit"]["tree"];
   let committedDate: string;
   for (;;) {
     const data = requestReviewPage(owner, name, n, pending, cursors);
     const repo = record(data.repository);
     const pr = record(repo.pullRequest);
+    // Repository-wide: a pull request opened before the App's first review here must still wait.
+    for (const pull of nodes(repo.recentAppReviews)) {
+      for (const review of nodes(record(pull).reviews)) {
+        const login = record(record(review).author).login;
+        if (typeof login === "string" && PRIVATE_REVIEWER.test(login)) {
+          appActive = true;
+        }
+      }
+    }
     if (
       !text(pr.headRefOid) ||
       !/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/.test(pr.headRefOid) ||
@@ -480,6 +497,7 @@ function readReviewState(owner: string, name: string, n: number): ReviewState {
   };
   return {
     headRefOid: expectedHead!,
+    appActive,
     viewer,
     viewerPermission,
     requiredChecks,
@@ -846,8 +864,12 @@ export function reviewFeedback(pr: ReviewState): { open: string[]; skipped: stri
   return { open, skipped };
 }
 
+const APP_PENDING = "app review pending: ";
 const reviewRunning = (open: string[]) =>
-  open.some((line) => line.startsWith(RUNNING) || line.startsWith(CHECK_RUNNING));
+  open.some(
+    (line) =>
+      line.startsWith(RUNNING) || line.startsWith(CHECK_RUNNING) || line.startsWith(APP_PENDING),
+  );
 
 /**
  * Re-reads the pull request while a review is still running, or briefly while its check has not
