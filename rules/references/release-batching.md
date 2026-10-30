@@ -90,3 +90,14 @@ changes included in its artifact, including an urgent release. Choose the
 version for the combined changes according to the repository's scheme.
 Publishing still requires its normal authorization and checks; this modifier
 adds no permission to tag, publish or change release automation.
+
+A package registry can show a version late: `npm publish` may succeed while
+`npm view` still returns not found for a minute or more, so a step that reads
+the registry right away fails on a release that shipped or hides one that did
+not persist. This holds for any publish, whether by hand, from a script or in
+CI. Skip a version the registry already has, after checking that its bytes match
+the artifact. After publishing, confirm the version is visible (for npm,
+`npm view <name>@<version> version`, retried, 30 tries 10 seconds apart) and
+fail loudly naming the package and version if it never appears. Run every step
+that depends on the registry (registry entries, install checks, release notes
+that point at the package) only after that confirmation.

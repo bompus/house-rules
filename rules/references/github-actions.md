@@ -60,6 +60,33 @@ Keep failure propagation and required evidence intact. More parallelism can
 increase contention or duplicate work. Prefer the smallest independent group
 that addresses a measured or operational need.
 
+### Publishing to a package registry
+
+A workflow that publishes to a package registry follows the registry rule in
+Release batching: skip a version the registry already has, wait after publishing
+until the version is visible, and run every later step that reads the registry
+after that wait. For npm, end the publish job with:
+
+```yaml
+- name: Verify the version is on the registry
+  run: |
+    name=$(jq -r .name package.json)
+    version=$(jq -r .version package.json)
+    for i in $(seq 1 30); do
+      if npm view "$name@$version" version >/dev/null 2>&1; then
+        echo "verified $name@$version"
+        exit 0
+      fi
+      echo "waiting for $name@$version to appear ($i of 30)"
+      sleep 10
+    done
+    echo "::error::$name@$version never appeared on the registry"
+    exit 1
+```
+
+The loop allows five minutes; raise the job's timeout when the steps before it
+leave less than that.
+
 ### Forks and notifications
 
 Establish whether a fork is maintained independently or only hosts contributions
