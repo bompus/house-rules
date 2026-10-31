@@ -1,7 +1,15 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawn, spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  renameSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -184,11 +192,14 @@ test(
         [
           800,
           (f) => {
-            rmSync(f.dir, { recursive: true });
-            mkdirSync(f.dir);
+            // a new directory is made while the old one still exists, so its inode differs
+            const replacement = `${f.dir}.new`;
+            mkdirSync(replacement);
             for (const [name, text] of Object.entries(f.files)) {
-              writeFileSync(join(f.dir, name), text);
+              writeFileSync(join(replacement, name), text);
             }
+            renameSync(f.dir, `${f.dir}.old`);
+            renameSync(replacement, f.dir);
           },
         ],
       ],
