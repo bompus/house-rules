@@ -457,3 +457,14 @@ test("backticks inside a real condition's path stay part of the path", () => {
     { conditions: [{ kind: "path-absent", path: "/work/a`b`c" }] },
   ]);
 });
+
+test("a later field written inside a code span after a path is refused", () => {
+  const dir = root0();
+  const { plan } = setup([`- [ ] a: done-when: path-absent ${dir} \`recheck: 2026-11-01\``]);
+  const result = run(process.env, plan, "--apply");
+  expect(result.code).toBe(1);
+  expect(result.out).toContain(
+    "L6 error: done-when must be the last field, but `recheck:` follows it",
+  );
+  expect(readFileSync(plan, "utf8")).toContain("- [ ] a:");
+});

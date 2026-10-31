@@ -141,6 +141,8 @@ function ledgerRecords(raw) {
   let inside = false;
   /** @type {string | null} */
   let fence = null;
+  // How many block quotes deep the open fence began; a line with fewer `>` ends it with the quote.
+  let fenceDepth = 0;
   let tableRows = 0;
   let oddMarks = 0;
   let inTable = false;
@@ -152,12 +154,17 @@ function ledgerRecords(raw) {
       inside = false;
     }
     const text = unquote(line);
+    const depth = (line.slice(0, line.length - text.length).match(/>/g) ?? []).length;
+    if (fence !== null && depth < fenceDepth) {
+      fence = null;
+    }
     let marker = FENCE.exec(text);
     if (marker?.[1]?.startsWith("`") && marker[2]?.includes("`")) {
       marker = null;
     }
     if (fence === null && marker) {
       fence = /** @type {string} */ (marker[1]);
+      fenceDepth = depth;
       inTable = false;
     } else if (
       fence !== null &&

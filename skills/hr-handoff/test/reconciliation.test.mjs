@@ -783,3 +783,14 @@ test("a table or task inside a blockquote is counted like one outside it", () =>
   expect(quotedTask.code).toBe(1);
   expect(quotedTask.report.covered).toBe("2/3");
 });
+
+test("a fence opened inside a block quote ends with the quote", () => {
+  const rows = ["> ```", "task | state", "--- | ---", "forgotten | open", "> ```"];
+  const result = run(
+    withPlan((r) => {
+      r.coverage = "partial";
+    }, planWith(rows)).file,
+  );
+  expect(result.code).toBe(2);
+  expect(result.report.covered).toBe("2/3");
+});
