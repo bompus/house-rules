@@ -7,7 +7,9 @@
 // or last named by a shell statement that runs the floor scripts (`check-open-work.mjs`, `close-ledger-line.mjs`)
 // or writes to it (`>`, `>>`, `tee`, `sed -i`). A `cd` earlier in the same command and a bare `plan.md` are
 // followed. Reading a plan does not count. A path that is not a file on disk is skipped. A session that never
-// touched a plan file has nothing to check, and its reply passes.
+// touched a plan file has nothing to check, and its reply passes. A transcript with no `user` or `assistant`
+// records (a Codex rollout) has no such structure, so the plan paths its tool-call text names count instead,
+// read or written, the latest mention being the plan checked; a path with a space or a comma in it is not found.
 //
 // The shell reading is a best effort, not a shell. It counts a stored command (`C="node …/close-ledger-line.mjs
 // plan.md"`) as naming that plan whether or not it is run, cannot tell which side of `||` or `&&` ran, does not carry a `cd` through the rest of a list that ends in `&`, treats a backtick substitution as plain text, lets a `cd` inside a brace group that feeds a pipe leak to later commands, does not skip the values of `node` or `bun` options (`--eval=…`, `--require x`) before the script, reads `<&` as a background marker, and resolves `..` in a plan path lexically, not through symlinks.
@@ -556,6 +558,77 @@ export function planPaths(list, base) {
   return paths;
 }
 
+// Characters that end a path token in command text; a path with one of them is not found by the fallback.
+const PATH_END = /[\s"'`\\<>|;&(),=]/;
+const PLAN_TOKEN = /^(?:~|\$HOME|\$\{HOME\}|)(?:\/[^/]+)*\/plans\/[A-Za-z0-9._-]+\/plan\.md$/;
+const PLAN_TAIL = "/plan.md";
+const MAX_TOKEN = 512;
+
+/**
+ * The plan paths one string of command text names, in order. It finds each `/plan.md`, takes the token around it
+ * (at most MAX_TOKEN characters back to a delimiter) and keeps it when the token is a `plans/<topic>/plan.md`
+ * path starting with `~`, `$HOME` or `/` that ends at the file name. It never scans more than MAX_TOKEN
+ * characters per occurrence, so a long run of path characters costs time in proportion to its length.
+ * @param {string} text
+ */
+function planTokens(text) {
+  /** @type {string[]} */
+  const tokens = [];
+  for (let at = text.indexOf(PLAN_TAIL); at !== -1; at = text.indexOf(PLAN_TAIL, at + 1)) {
+    const end = at + PLAN_TAIL.length;
+    if (/[A-Za-z0-9._/-]/.test(text.charAt(end))) {
+      continue;
+    }
+    let start = at;
+    while (start > 0 && at - start < MAX_TOKEN && !PATH_END.test(text.charAt(start - 1))) {
+      start--;
+    }
+    const token = text.slice(start, end);
+    if (PLAN_TOKEN.test(token)) {
+      tokens.push(token);
+    }
+  }
+  return tokens;
+}
+
+/** The strings of a Codex rollout's tool-call records: the code or arguments the model sent, not their output. */
+const toolCallText = (/** @type {any} */ entry) =>
+  entry?.type === "response_item" && entry.payload && String(entry.payload.type).endsWith("_call")
+    ? [entry.payload.input, entry.payload.arguments].filter((value) => typeof value === "string")
+    : [];
+
+/**
+ * The plan files named in the tool calls of a transcript whose records are not Claude Code's (a Codex rollout),
+ * oldest mention first. The records' own structure is not parsed beyond finding the call text, so it cannot tell a
+ * plan the session wrote from one it only read: both count.
+ * @param {any[]} list
+ * @param {string} base the directory relative paths resolve against
+ */
+export function planPathsInCalls(list, base) {
+  /** @type {Map<string, number>} */
+  const last = new Map();
+  for (const [index, entry] of list.entries()) {
+    for (const text of toolCallText(entry)) {
+      for (const token of planTokens(text)) {
+        last.set(absolute(token, base), index);
+      }
+    }
+  }
+  return [...last].sort((a, b) => a[1] - b[1]).map(([path]) => path);
+}
+
+/**
+ * The plan files the session used, oldest first. A Claude Code transcript yields the ones its tool calls wrote or
+ * named, and reading a plan does not count. Any other transcript (no `user` or `assistant` records) yields the
+ * ones its tool calls name, read or written.
+ * @param {any[]} list the parsed transcript lines
+ * @param {string} base
+ */
+export function sessionPlanPaths(list, base) {
+  const claude = list.some((entry) => entry?.type === "assistant" || entry?.type === "user");
+  return claude ? planPaths(list, base) : planPathsInCalls(list, base);
+}
+
 /**
  * @param {{ reply: string, planPath: string | undefined, planText: string | undefined }} state
  * @returns {{ block: boolean, reason?: string, note?: string }}
@@ -601,7 +674,7 @@ export function evaluate(input, files) {
   if (!claimsDone(reply)) {
     return { block: false };
   }
-  for (const planPath of planPaths(list, input.cwd ?? process.cwd()).toReversed()) {
+  for (const planPath of sessionPlanPaths(list, input.cwd ?? process.cwd()).toReversed()) {
     const planText = files.read(planPath);
     if (planText !== undefined) {
       return decide({ reply, planPath, planText });

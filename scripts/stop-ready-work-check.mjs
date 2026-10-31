@@ -8,8 +8,10 @@
 // A wait on an open item is a `trigger:` or `recheck:` field, `blocked-by:`, `owner:`, or the words "waiting
 // on/for", "waits on", "awaiting" or "blocked on/by" in the item. A `recheck:` date counts while it is still ahead,
 // and `owner:` only when it names someone other than the plan's own owner. Deferred `[~]` items do not count: they were
-// parked on purpose and carry their own trigger. A plan whose `Status:` is not `active` (paused,
-// blocked-on-user, completed) is skipped, because the user or the record already stopped it.
+// parked on purpose and carry their own trigger. A plan whose `Status:` begins with paused,
+// blocked, waiting, on hold, held, complete, completed, done, archived, abandoned, cancelled, superseded or closed is skipped,
+// because the user or the record already stopped it; any other text (`active`, or a sentence about progress) counts
+// as active.
 //
 // The reply passes when it holds any of: a coded offer (`Question 1` with options such as `1a`, a
 // "(Recommended" and a "reply `" line, outside any quoted example); a stated blocker or trigger ("blocked on",
@@ -19,7 +21,7 @@
 // (code spans, fenced blocks, double-quoted spans) is ignored first, so a reply that merely mentions a phrase
 // does not satisfy or trip the check. stop-claim-check.mjs separately holds back a false completion claim.
 //
-// Strict reading, per plan: a plan whose header (first 40 lines, before the first heading) holds a `Stop-check: strict` line is blocked when ANY
+// Strict reading, per plan: a plan whose header (first 40 lines, before the first heading after an optional title line) holds a `Stop-check: strict` line is blocked when ANY
 // open `[ ]` item is ready (names no wait), not only when none waits, and a "light" offer (an acceptance line,
 // "Recommended: reply `1a` or `go`", beside coded options but with no "Question N" heading) counts as an offer.
 // A strict plan also tolerates lint errors on its ledger lines (a done line without evidence); only a header
@@ -35,7 +37,13 @@ import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 import { parsePlan, RECHECK } from "../skills/hr-what-next/scripts/plan-ledger.mjs";
 import { replyFacts } from "./continuity-boundary.mjs";
-import { entries, finalReply, planPaths, unquoted, unquotedProse } from "./stop-claim-check.mjs";
+import {
+  entries,
+  finalReply,
+  sessionPlanPaths,
+  unquoted,
+  unquotedProse,
+} from "./stop-claim-check.mjs";
 
 const WAIT =
   /\b(?:trigger|blocked-by):(?!\s*(?:none|n\/a|nothing)\s*(?:[.!?\n;]|$))|\b(?:waiting (?:on|for)|waits? on|awaiting|blocked (?:on|by))\b/i;
@@ -108,9 +116,15 @@ const withoutFences = (text) => {
  */
 const headerOf = (planText) => {
   const lines = withoutFences(planText.split(/\r?\n/).slice(0, 40).join("\n")).split("\n");
-  const heading = lines.findIndex((line) => line.startsWith("#"));
-  return lines.slice(0, heading < 0 ? lines.length : heading).join("\n");
+  // A level-1 title on the first non-blank line belongs to the header: it runs to the first heading after it.
+  const first = lines.findIndex((line) => line.trim() !== "");
+  const start = first >= 0 && /^#\s/.test(lines[first] ?? "") ? first + 1 : 0;
+  const heading = lines.findIndex((line, index) => index >= start && line.startsWith("#"));
+  return lines.slice(start, heading < 0 ? lines.length : heading).join("\n");
 };
+// A Status that says the work stopped. Any other text, such as a sentence about progress, is an active plan.
+const STOPPED =
+  /^(?:paused|blocked|waiting|on[- ]hold|held|completed?|done|archived|abandoned|cancell?ed|superseded|closed)\b/i;
 const localDate = () => new Date().toLocaleDateString("en-CA");
 const HANDBACK =
   /(?<!\b(?:not|never|no|n't) (?:yet )?)\bhand(?:ed|ing)? (?:this |it |the work )?(?:back|off|over)\b|\bhandback\b/i;
@@ -164,7 +178,7 @@ export function decide({ reply, planPath, planText, today = localDate() }) {
   if (errors.length) {
     return { block: false, note: `${planPath} does not parse: ${errors[0]}` };
   }
-  if ((plan.status ?? "").trim().toLowerCase() !== "active") {
+  if (STOPPED.test((plan.status ?? "").trim())) {
     return { block: false };
   }
   const open = plan.items.filter((item) => item.mark === " ");
@@ -218,7 +232,7 @@ export function evaluate(input, files) {
     typeof input.last_assistant_message === "string"
       ? input.last_assistant_message
       : finalReply(list);
-  for (const planPath of planPaths(list, input.cwd ?? process.cwd()).toReversed()) {
+  for (const planPath of sessionPlanPaths(list, input.cwd ?? process.cwd()).toReversed()) {
     const planText = files.read(planPath);
     if (planText !== undefined) {
       return decide({ reply, planPath, planText });

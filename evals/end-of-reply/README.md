@@ -258,10 +258,10 @@ trigger ("blocked on", "Blocker:", "Trigger:", "reopens when", "recheck on <date
 your") and no handback claim (nothing left, session complete, "handed back"). A bare "waiting" or status line passes
 none of these.
 
-Deferred `[~]` items and plans that are paused, blocked-on-user or completed pass. It needs no
+Deferred `[~]` items and plans whose Status begins with paused, blocked, waiting, on hold, held, complete, completed, done, archived, abandoned, cancelled, superseded or closed pass; any other Status text counts as active. It needs no
 per-turn record. Register it beside the other hook:
 
-A plan can opt in to a stricter reading with a `Stop-check: strict` line alone on a header line (the first 40 lines, before the first heading). The hook then
+A plan can opt in to a stricter reading with a `Stop-check: strict` line alone on a header line (the first 40 lines, before the first heading after an optional title line). The hook then
 blocks when any open `[ ]` item names no wait, even if other items do, and counts the light offer form (a
 "Recommended: reply `1a` or `go`" line beside coded options, with no "Question N" heading) as an offer. A strict
 plan also ignores lint errors on its ledger lines; a missing Status or Owner line or an empty ledger still lets it through unchecked. Plans without the line keep

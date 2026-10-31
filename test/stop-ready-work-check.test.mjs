@@ -421,3 +421,89 @@ test("run as a program it blocks once, then passes the continuation, a corrupt t
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+const TITLED = (/** @type {string} */ header, status = "active") =>
+  `# Release plan\n\nOwner: test\nStatus: ${status}\n${header}\n## Ledger\n- [ ] Write the next step\n- [ ] Land it; waiting on CI\n`;
+
+test("a title line does not end the plan header, so a strict marker under it counts", () => {
+  assert.equal(check(WAITING_LINE, TITLED("Stop-check: strict")).block, true);
+  assert.equal(check(WAITING_LINE, TITLED("")).block, false);
+});
+
+test("a Status that is a sentence about progress counts as active; a stopped word still skips the plan", () => {
+  const progress = "PR 49 landed; release preparation remains open";
+  assert.equal(check(WAITING_LINE, TITLED("Stop-check: strict", progress)).block, true);
+  for (const status of [
+    "paused",
+    "blocked-on-user",
+    "Completed 2026-10-29",
+    "waiting for the user",
+    "done",
+  ]) {
+    assert.equal(check(WAITING_LINE, TITLED("Stop-check: strict", status)).block, false, status);
+  }
+});
+
+test("a Codex rollout, whose records are not Claude's, still finds the plan the transcript names", () => {
+  const rollout = jsonl(
+    { type: "session_meta", payload: { id: "t" } },
+    {
+      type: "response_item",
+      payload: {
+        type: "custom_tool_call",
+        name: "exec",
+        input:
+          'tools.exec_command({cmd: "cd /work && python3 close.py /work/notes/plans/topic/plan.md"})',
+      },
+    },
+  );
+  const planPath = "/work/notes/plans/topic/plan.md";
+  const files = reader({ "/t.jsonl": rollout, [planPath]: TITLED("Stop-check: strict") });
+  const input = { transcript_path: "/t.jsonl", last_assistant_message: WAITING_LINE };
+  assert.equal(evaluate(input, files).block, true);
+  const none = reader({ "/t.jsonl": jsonl({ type: "session_meta", payload: {} }) });
+  assert.equal(evaluate(input, none).block, false);
+});
+
+test("the transcript-text fallback is limited to non-Claude records and exact plan paths", () => {
+  const planPath = "/work/notes/plans/topic/plan.md";
+  const input = { transcript_path: "/t.jsonl", last_assistant_message: WAITING_LINE };
+  const call = (/** @type {string} */ text) =>
+    jsonl({ type: "response_item", payload: { type: "custom_tool_call", input: text } });
+  const withPlan = (/** @type {string} */ rollout) =>
+    evaluate(input, reader({ "/t.jsonl": rollout, [planPath]: TITLED("Stop-check: strict") }))
+      .block;
+  assert.equal(withPlan(call(`cat ${planPath}`)), true);
+  // a backup file, a longer name, a path with no plans/<topic>/ parent, and tool output are not the plan
+  assert.equal(withPlan(call(`cat ${planPath}.bak`)), false);
+  assert.equal(withPlan(call("cat /work/notes/plans/topic/plan.md2")), false);
+  assert.equal(withPlan(call("cat /work/plan.md")), false);
+  const output = jsonl({
+    type: "response_item",
+    payload: { type: "custom_tool_call_output", output: planPath },
+  });
+  assert.equal(withPlan(output), false);
+  // a Claude transcript that only reads the plan keeps passing, as before
+  const read = jsonl(user, assistant([tool("Read", { file_path: planPath })]));
+  assert.equal(withPlan(read), false);
+});
+
+test("a run of path characters is scanned in linear time", () => {
+  const started = performance.now();
+  const call = jsonl({
+    type: "response_item",
+    payload: { type: "custom_tool_call", input: "/".repeat(2_000_000) },
+  });
+  evaluate(
+    { transcript_path: "/t.jsonl", last_assistant_message: WAITING_LINE },
+    reader({ "/t.jsonl": call }),
+  );
+  assert.ok(performance.now() - started < 1000);
+});
+
+test("a title after a blank line still ends no header, and held or complete skip the plan", () => {
+  assert.equal(check(WAITING_LINE, `\n${TITLED("Stop-check: strict")}`).block, true);
+  for (const status of ["held", "complete", "on-hold", "on hold"]) {
+    assert.equal(check(WAITING_LINE, TITLED("Stop-check: strict", status)).block, false, status);
+  }
+});
