@@ -295,7 +295,7 @@ test(
         const summary = JSON.parse(readFileSync(output, "utf8"));
         assert.equal(summary.clean, false);
         assert.ok(
-          summary.reasons.some((x) => /not a directory/.test(x)),
+          summary.reasons.some((x) => x.includes("not a directory")),
           String(summary.reasons),
         );
         assert.ok(!existsSync(`${output}.ready`), "no ready marker when the setup failed");
