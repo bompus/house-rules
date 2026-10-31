@@ -323,3 +323,46 @@ test(
     assert.ok(interval >= 0 && lifetime >= interval, `${lifetime} ${interval}`);
   },
 );
+
+// The budget arithmetic with controlled counters: no sleeping, no process timing.
+/**
+ * @param {number} lifetime process CPU in seconds, from os.times()
+ * @param {number} first observer CPU at the first sample
+ * @param {number} last observer CPU at the last sample
+ * @param {number} span seconds between the samples
+ */
+function budgetReasons(lifetime, first, last, span) {
+  const root = mkdtempSync(join(tmpdir(), "unit-observer-budget-"));
+  try {
+    const script = `
+import importlib.util, json, os, sys
+spec = importlib.util.spec_from_file_location("observer", ${JSON.stringify(observer)})
+m = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(m)
+os.times = lambda: (${lifetime}, 0.0, 0.0, 0.0, 0.0)
+class A:
+    output = ${JSON.stringify(join(root, "out.json"))}
+    max_observer_cores = 0.2
+    max_observer_rss_mib = 1e9
+samples = [{"t": 0.0, "wall": 1.0, "cpu": ${first}}, {"t": ${span}, "wall": 2.0, "cpu": ${last}}]
+m.write_summary(A, samples, [], {"scope": "host-only", "workload_cgroup": None}, "ok")
+print(json.dumps(json.load(open(A.output))))
+`;
+    const run = spawnSync("python3", ["-c", script], { encoding: "utf8" });
+    assert.equal(run.status, 0, run.stderr);
+    return JSON.parse(run.stdout);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+}
+
+test("observer CPU budget uses the CPU between the first and last sample", { skip }, () => {
+  // 0.5 s of start-up CPU before the first sample, 0.15 s between samples with 0.01 s spent.
+  const quiet = budgetReasons(0.5, 0.4, 0.41, 0.15);
+  assert.ok(!quiet.reasons.includes("observer CPU over budget"), String(quiet.reasons));
+  assert.equal(quiet.observer_cpu_s, 0.5);
+  assert.equal(quiet.observer_cpu_interval_s, 0.01);
+  // The same lifetime CPU but 0.1 s spent inside the interval is 0.67 cores: over the 0.2 budget.
+  const busy = budgetReasons(0.5, 0.4, 0.5, 0.15);
+  assert.ok(busy.reasons.includes("observer CPU over budget"));
+});

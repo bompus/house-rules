@@ -482,3 +482,14 @@ test("a code span after a space following a path is refused, not read as part of
   expect(result.out).toContain("L7 closeable");
   expect(lines(plan)[5]).toMatch(/^- \[ \] a:/);
 });
+
+test("an unmatched backtick run is literal and does not expose a marker inside a later span", () => {
+  const { items } = parsePlan(
+    planText([
+      "- [ ] a: keep``unmatched `done-when: path-absent /etc` after",
+      "- [ ] b: keep`one ``two`` three` `done-when: path-absent /etc`",
+      "- [ ] c: a ```` b ```x``` `done-when: path-absent /etc` d",
+    ]),
+  );
+  expect(items.map((item) => item.doneWhen)).toEqual([undefined, undefined, undefined]);
+});

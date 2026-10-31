@@ -38,6 +38,52 @@ const DONE_WHEN = /(?:^|\s)done-when:\s*(.*)$/i;
 const GITHUB_REF = /^([\w.-]+\/[\w.-]+)#(\d+)$/;
 
 /**
+ * Blanks Markdown code spans to spaces of the same length. A span opens with a run of backticks and closes
+ * at the next run of exactly the same length; a run with no closing run is literal text and is skipped whole.
+ * @param {string} text
+ */
+function maskCodeSpans(text) {
+  let out = "";
+  let at = 0;
+  while (at < text.length) {
+    if (text[at] !== "`") {
+      out += text[at];
+      at++;
+      continue;
+    }
+    let end = at;
+    while (text[end] === "`") {
+      end++;
+    }
+    const run = end - at;
+    let close = -1;
+    for (let next = end; next < text.length;) {
+      if (text[next] !== "`") {
+        next++;
+        continue;
+      }
+      let stop = next;
+      while (text[stop] === "`") {
+        stop++;
+      }
+      if (stop - next === run) {
+        close = stop;
+        break;
+      }
+      next = stop;
+    }
+    if (close < 0) {
+      out += text.slice(at, end);
+      at = end;
+    } else {
+      out += " ".repeat(close - at);
+      at = close;
+    }
+  }
+  return out;
+}
+
+/**
  * Reads an item's `done-when:` clause: `pr-merged owner/repo#n`, `issue-closed owner/repo#n` and
  * `path-absent <absolute or ~/ path>`, all of which must hold. A clause that cannot be read is an error.
  * @param {string} text
@@ -46,7 +92,7 @@ const GITHUB_REF = /^([\w.-]+\/[\w.-]+)#(\d+)$/;
 export function parseDoneWhen(text) {
   // Code spans are blanked, to the same length, only to find the marker; the clause itself is read from the
   // original text, so backticks inside a path stay part of the path.
-  const masked = text.replace(/(`+)(.+?)(?<!`)\1(?!`)/g, (span) => " ".repeat(span.length));
+  const masked = maskCodeSpans(text);
   const match = DONE_WHEN.exec(masked);
   if (!match) {
     return undefined;
