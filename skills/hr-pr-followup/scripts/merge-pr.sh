@@ -233,6 +233,10 @@ else
   elif [ "$REVIEW_CODE" != 0 ]; then
     OTHER="check-pr-review.ts could not read the PR: ${REVIEW_ERR%%$'\n'*}"
   fi
+  # A refusal whose lines match none of the above must still read as unmet.
+  if [ "$REVIEW_CODE" != 0 ] && [ -z "$THREADS$BOT$CHECKS$OTHER" ]; then
+    OTHER="check-pr-review.ts exited $REVIEW_CODE: ${REVIEW_ERR:-no output}"
+  fi
   for ROW in "THREADS|review threads and review-body findings are resolved" \
     "BOT|bot review of the current head is in place or not required" \
     "CHECKS|other checks on the head commit have passed" \

@@ -75,7 +75,7 @@ function stub(bin, name, body) {
  *   packageJson?: string | null, pnpmInstallExit?: number, files?: Record<string, string>,
  *   racingFetch?: boolean, baseCurrent?: boolean, errexitOff?: boolean, advanceHead?: boolean,
  *   sharing?: string[], sharingFails?: boolean, upstream?: boolean, originUrl?: string,
- *   botReviews?: number, alias?: boolean }} [options]
+ *   botReviews?: number, alias?: boolean, silentReviewFailure?: boolean }} [options]
  */
 function fixture({
   dependents = "",
@@ -115,6 +115,8 @@ function fixture({
   alias = false,
   // Reviews by bot accounts already posted on the pull request.
   botReviews = 0,
+  // The review checker refuses with exit status 1 and no line --explain can sort.
+  silentReviewFailure = false,
 } = {}) {
   const root = mkdtempSync(join(process.env.HOUSE_RULES_TEST_TMP ?? tmpdir(), "merge-pr-"));
   roots.push(root);
@@ -189,6 +191,10 @@ case "$*" in
 esac
 `,
   );
+  if (silentReviewFailure) {
+    const bun = Bun.which("bun");
+    stub(bin, "bun", `case "$1" in *check-pr-review.ts) exit 1;; esac\nexec "${bun}" "$@"\n`);
+  }
   const pmLog = join(root, "pnpm.log");
   stub(
     bin,
@@ -654,6 +660,14 @@ test("--explain names each unmet condition, exits 1 and still lands nothing", ()
   expect(r.out).not.toContain("all conditions met");
   expect(readFileSync(fx.log, "utf8")).not.toContain("pr merge");
   expect(sh(fx.remote, "git", "rev-parse", "main")).toBe(mainBefore);
+});
+
+test("--explain reads a review checker refusal it cannot sort as unmet", () => {
+  const fx = fixture({ silentReviewFailure: true });
+  const r = fx.run("--explain");
+  expect(r.code).toBe(1);
+  expect(r.out).toContain("UNMET  no other review feedback is open: check-pr-review.ts exited 1");
+  expect(r.out).not.toContain("all conditions met");
 });
 
 test("--explain reports a head branch pushed after the review as a broken lease", () => {
