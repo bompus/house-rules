@@ -2,6 +2,9 @@
 // Offline accounting check. See ../references/reconciliation.md for the input
 // format and limits. No writes, host queries, or semantic-completeness claim.
 // Exit 0: mechanically complete; 1: invalid/unreadable; 2: valid but partial.
+// `covered N/M` counts the open and deferred plan lines mapped to items (N) over every such line the plan
+// files hold (M), including lines outside the `## Ledger` section and table rows that are not read as items.
+// A receipt that read no plan file is partial unless its `plan` field says "none: <reason>".
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 
@@ -104,6 +107,7 @@ function unique(entries, label) {
 // other text in the section, wrapped continuation lines included, is not read.
 // Open (`- [ ]`) and deferred (`- [~]`) lines are remembered: they must carry over as items.
 // Item lines elsewhere in the file are not records either, but they are counted and reported as a gap.
+// Table rows inside the section (a header row and the separator excluded) are counted as unread lines too.
 /** @param {string} raw */
 function ledgerRecords(raw) {
   const lines = raw.split(/\r?\n/);
@@ -120,12 +124,22 @@ function ledgerRecords(raw) {
   /** @type {OutsideLine[]} */
   const outside = [];
   let inside = false;
+  let tableRows = 0;
+  const separator = /^\s*\|[\s:|-]+\|?\s*$/;
   for (let i = 0; i < lines.length; i++) {
     const line = /** @type {string} */ (lines[i]);
     if (i === start) {
       inside = true;
     } else if (inside && new RegExp(`^#{1,${level}}\\s`).test(line)) {
       inside = false;
+    }
+    if (
+      inside &&
+      /^\s*\|/.test(line) &&
+      !separator.test(line) &&
+      !separator.test(lines[i + 1] ?? "")
+    ) {
+      tableRows++;
     }
     const match = line.match(/^\s*[-*]\s+\[([ x~-])\]\s+(.*)$/i);
     if (!match) {
@@ -139,7 +153,7 @@ function ledgerRecords(raw) {
       outside.push({ id: `L${i + 1}`, mark });
     }
   }
-  return { records, outside };
+  return { records, outside, tableRows };
 }
 
 /**
@@ -179,6 +193,8 @@ function check(receipt, directory) {
   const records = new Map();
   /** @type {Set<string>} */
   const openLines = new Set();
+  let planRead = false;
+  let unreadPlanLines = 0;
   /** @type {Map<unknown, OutcomeEvent[]>} */
   const outcomes = new Map();
   if (sources.size === 0) {
@@ -233,8 +249,22 @@ function check(receipt, directory) {
       errors.push(`${label}: snapshot must be an object`);
       continue;
     }
-    if (source.file.endsWith(".md") && data.outside.length > 0) {
-      gaps.push(outsideGap(label, data.outside));
+    if (source.file.endsWith(".md")) {
+      planRead = true;
+      if (data.records.length === 0) {
+        errors.push(`${label}: the \`## Ledger\` section has no item lines`);
+      }
+      if (data.outside.length > 0) {
+        gaps.push(outsideGap(label, data.outside));
+      }
+      if (data.tableRows > 0) {
+        gaps.push(
+          `${label}: ${data.tableRows} table row(s) in the \`## Ledger\` section were not read; write each as an item line`,
+        );
+      }
+      unreadPlanLines +=
+        data.tableRows +
+        data.outside.filter((/** @type {OutsideLine} */ line) => /[ ~]/.test(line.mark)).length;
     }
     const rows = unique(entries(data.records, `${label}.records`), `${label} record`);
     if (Number.isSafeInteger(source.expectedRecords) && source.expectedRecords !== rows.size) {
@@ -430,16 +460,27 @@ function check(receipt, directory) {
       evidence(commit.evidence, label);
     }
   }
+  if (!planRead) {
+    if (receipt.plan === undefined) {
+      gaps.push(
+        'no plan ledger was read (covered 0/0 is not coverage): name the plan as a `.md` source, or set `plan` to "none: <reason>"',
+      );
+    } else if (typeof receipt.plan !== "string" || !/^none:\s*\S/.test(receipt.plan)) {
+      errors.push('plan: expected "none: <reason>" when no plan file is a source');
+    }
+  }
+  const mapped = [...openLines].filter((ref) => (accounting.get(ref) ?? []).length > 0).length;
+  const covered = `${mapped}/${openLines.size + unreadPlanLines}`;
   if (receipt.coverage === "complete" && gaps.length > 0) {
     errors.push("complete coverage claimed despite source gaps");
   }
   if (receipt.coverage === "partial" && gaps.length === 0) {
     gaps.push("receipt declares partial coverage");
   }
-  return { sources: sources.size, records: records.size, items: items.size };
+  return { covered, sources: sources.size, records: records.size, items: items.size };
 }
 
-let counts = { sources: 0, records: 0, items: 0 };
+let counts = { covered: "0/0", sources: 0, records: 0, items: 0 };
 try {
   if (process.argv.length !== 3) {
     throw new Error("usage: check-reconciliation.mjs <receipt.json>");

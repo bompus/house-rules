@@ -510,3 +510,122 @@ test("item lines after a deeper heading inside the ledger section stay in the le
   }, nested);
   expect(run(paths.file).report).toMatchObject({ status: "complete", errors: [], gaps: [] });
 });
+
+// The checker says how much of the plan it read: `covered N/M` is the open and deferred item lines it
+// mapped to items over every such line in the plan files it was given. Anything short of all of them,
+// or a plan it was not given, is never a clean result.
+test("a plan read in full reports covered N/N and passes", () => {
+  const result = run(withPlan().file);
+  expect(result.code).toBe(0);
+  expect(result.report.covered).toBe("2/2");
+});
+
+test("an open line left unaccounted is reported in covered and fails", () => {
+  const result = run(withPlan((r) => r.accounting.pop()).file);
+  expect(result.code).toBe(1);
+  expect(result.report.covered).toBe("1/2");
+  expect(result.report.errors).toContain('unaccounted record ["previous","L7"]');
+});
+
+test("lines outside the ledger count against covered, as in the 16 of 101 case", () => {
+  const ledger = Array.from({ length: 16 }, (_, index) => `- [ ] step ${index}`);
+  const outside = Array.from({ length: 85 }, (_, index) => `- [ ] later ${index}`);
+  const plan = [
+    "Owner: x",
+    "Status: paused",
+    "",
+    "## Ledger",
+    ...ledger,
+    "",
+    "## Log",
+    ...outside,
+  ].join("\n");
+  const paths = setup((receipt) => {
+    receipt.coverage = "partial";
+    receipt.sources.push({
+      id: "previous",
+      file: "previous-plan.md",
+      snapshot: "Plan at handoff",
+      expectedRecords: 16,
+      gaps: [],
+    });
+    ledger.forEach((_, index) => {
+      receipt.accounting.push({ source: "previous", record: `L${index + 5}`, items: ["merged"] });
+    });
+    receipt.items.push({
+      id: "merged",
+      owner: "session-example",
+      state: "open",
+      merges: "all sixteen are one effort",
+      evidence: [{ source: "previous", record: "L5" }],
+      next: "Carry on.",
+    });
+  });
+  writeFileSync(join(paths.directory, "previous-plan.md"), plan);
+  const result = run(paths.file);
+  expect(result.code).toBe(2);
+  expect(result.report.status).toBe("partial");
+  expect(result.report.covered).toBe("16/101");
+});
+
+test("a receipt that reads no plan is partial, not complete, unless it says there is none", () => {
+  const claimed = run(
+    setup((receipt) => {
+      delete receipt.plan;
+    }).file,
+  );
+  expect(claimed.code).toBe(1);
+  expect(claimed.report.errors).toContain("complete coverage claimed despite source gaps");
+  const unnamed = run(
+    setup((receipt) => {
+      delete receipt.plan;
+      receipt.coverage = "partial";
+    }).file,
+  );
+  expect(unnamed.code).toBe(2);
+  expect(unnamed.report.status).toBe("partial");
+  expect(unnamed.report.covered).toBe("0/0");
+  expect(unnamed.report.gaps).toEqual([expect.stringContaining("no plan ledger was read")]);
+  const none = run(setup().file);
+  expect(none.code).toBe(0);
+  expect(none.report.covered).toBe("0/0");
+  const bad = run(
+    setup((receipt) => {
+      receipt.plan = "see the other file";
+    }).file,
+  );
+  expect(bad.code).toBe(1);
+  expect(bad.report.errors).toContain(
+    'plan: expected "none: <reason>" when no plan file is a source',
+  );
+});
+
+test("a ledger section that parses to no item lines is an error", () => {
+  const result = run(
+    withPlan(() => {}, "Owner: x\nStatus: paused\n\n## Ledger\n\nnothing here\n").file,
+  );
+  expect(result.code).toBe(1);
+  expect(result.report.errors).toContain(
+    "source previous: the `## Ledger` section has no item lines",
+  );
+});
+
+test("table rows in the ledger section are counted as unread lines", () => {
+  const plan = [
+    previousPlan.split("\n## Log")[0],
+    "| step | state |",
+    "| --- | --- |",
+    "| table step one | open |",
+    "| table step two | open |",
+  ].join("\n");
+  const result = run(
+    withPlan((r) => {
+      r.coverage = "partial";
+    }, plan).file,
+  );
+  expect(result.code).toBe(2);
+  expect(result.report.covered).toBe("2/4");
+  expect(result.report.gaps).toEqual([
+    expect.stringContaining("2 table row(s) in the `## Ledger` section were not read"),
+  ]);
+});

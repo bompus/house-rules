@@ -2,6 +2,7 @@
   "version": 1,
   "owner": "session-example",
   "coverage": "complete",
+  "plan": "none: the fictional example session kept no plan",
   "sources": [
     {
       "id": "current",

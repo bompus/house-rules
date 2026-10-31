@@ -28,6 +28,13 @@ checker counts them and reports a gap that names the first five lines (the open
 or deferred ones, when there are any), so the receipt is partial and cannot claim complete
 coverage until they move into the ledger section.
 
+The checker reports `covered N/M`: M counts every open or deferred item line in the
+plan files it was given, those outside the `## Ledger` section and table rows
+included, and N counts the ones mapped to an item. Anything short of all of them
+is a gap or an error, and a ledger section with no item lines is an error. A
+receipt that names no plan file is partial and reports `covered 0/0`; a session
+that kept no plan says `"plan": "none: <reason>"`.
+
 Take a copy of the plan as it stood at the handoff,
 because later edits renumber the lines. Each open or deferred line must map to
 an item; a context-only reason such as "the rest, reopen only if asked" is
@@ -56,6 +63,8 @@ Copy the fictional [receipt example](../assets/receipt.example.json) and its
 their contents with this session's evidence. Source `file` paths resolve
 relative to the receipt; the checker reads only explicitly named snapshots.
 
+- `plan` is `"none: <reason>"` when no plan file is among the sources; leave it
+  out otherwise.
 - `version` is `1`; `owner` names this session. `coverage` is `complete` or
   `partial`. Claim complete only for the declared source ranges with known
   counts and no known gaps.
@@ -105,7 +114,7 @@ From this skill's directory, replace the receipt path with its saved location:
 bun scripts/check-reconciliation.mjs <receipt.json>
 ```
 
-Bun runs the same script. It prints JSON with status, counts, missing IDs,
+Bun runs the same script. It prints JSON with status, `covered N/M`, counts, missing IDs,
 errors, coverage gaps and limits. It does not write files or query hosts.
 Repeating the command on unchanged inputs repeats no external action.
 
