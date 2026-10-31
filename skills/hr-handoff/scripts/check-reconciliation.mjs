@@ -109,11 +109,15 @@ function unique(entries, label) {
 // Open (`- [ ]`) and deferred (`- [~]`) lines are remembered: they must carry over as items.
 // Item lines elsewhere in the file are not records either, but they are counted and reported as a gap.
 // Lines that look like plan items but are not read as records are counted, so they cannot vanish from the
-// total: a checklist line with another mark (`- [?]`, `1. [ ]` and `+ [ ]` are read like `- [ ]`), and the
-// body rows of a Markdown table inside the section (its header row and first separator row excluded).
-// Fenced code is skipped for tables.
+// total: a checklist line with another mark (`- [?]`; `+ [ ]` and `1. [ ]` are read like `- [ ]`), and the
+// body rows of a Markdown table anywhere in the file (its header row and first separator row excluded). A
+// table runs until a blank line, a heading or a list item, and a row may omit its pipes. Fenced code is
+// skipped for tables; a fence closes only with the same character, at least as long, and no text after it.
 const ITEM = /^\s*(?:[-*+]|\d+[.)])\s+\[(.)\](?:\s+(.*))?$/;
 const SEPARATOR = /^\s*\|?\s*:?-+:?\s*(?:\|\s*:?-+:?\s*)*\|?\s*$/;
+const FENCE = /^\s*(`{3,}|~{3,})(.*)$/;
+/** @param {string | undefined} line */
+const isSeparator = (line) => line !== undefined && line.includes("|") && SEPARATOR.test(line);
 /** @param {string} raw */
 function ledgerRecords(raw) {
   const lines = raw.split(/\r?\n/);
@@ -130,7 +134,8 @@ function ledgerRecords(raw) {
   /** @type {OutsideLine[]} */
   const outside = [];
   let inside = false;
-  let fenced = false;
+  /** @type {string | null} */
+  let fence = null;
   let tableRows = 0;
   let oddMarks = 0;
   let inTable = false;
@@ -141,31 +146,35 @@ function ledgerRecords(raw) {
     } else if (inside && new RegExp(`^#{1,${level}}\\s`).test(line)) {
       inside = false;
     }
-    if (/^\s*(?:`{3,}|~{3,})/.test(line)) {
-      fenced = !fenced;
+    const marker = FENCE.exec(line);
+    if (fence === null && marker) {
+      fence = /** @type {string} */ (marker[1]);
       inTable = false;
+    } else if (
+      fence !== null &&
+      marker &&
+      /** @type {string} */ (marker[1])[0] === fence[0] &&
+      /** @type {string} */ (marker[1]).length >= fence.length &&
+      /** @type {string} */ (marker[2]).trim() === ""
+    ) {
+      fence = null;
     }
-    if (inside && !fenced) {
-      const isSeparator = line.includes("|") && SEPARATOR.test(line);
+    const match = line.match(ITEM);
+    if (fence === null && !marker) {
+      if (inTable && (line.trim() === "" || /^#{1,6}\s/.test(line) || match)) {
+        inTable = false;
+      }
       if (inTable) {
-        if (line.trim() === "" || !line.includes("|")) {
-          inTable = false;
-        } else {
-          tableRows++;
-        }
-      } else if (
-        line.includes("|") &&
-        !isSeparator &&
-        SEPARATOR.test(lines[i + 1] ?? "") &&
-        (lines[i + 1] ?? "").includes("|")
-      ) {
-        // The header row; the separator after it is skipped on the next pass.
+        tableRows++;
+        continue;
+      }
+      if (!match && line.includes("|") && !isSeparator(line) && isSeparator(lines[i + 1])) {
+        // The header row; the separator after it is skipped with it.
         inTable = true;
         i++;
         continue;
       }
     }
-    const match = line.match(ITEM);
     if (!match) {
       continue;
     }
@@ -285,7 +294,7 @@ function check(receipt, directory) {
       }
       if (data.tableRows > 0) {
         gaps.push(
-          `${label}: ${data.tableRows} table row(s) in the \`## Ledger\` section were not read; write each as an item line`,
+          `${label}: ${data.tableRows} table row(s) in the plan were not read; write each open or deferred one as an item line in the ledger`,
         );
       }
       if (data.oddMarks > 0) {

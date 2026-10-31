@@ -626,7 +626,7 @@ test("table rows in the ledger section are counted as unread lines", () => {
   expect(result.code).toBe(2);
   expect(result.report.covered).toBe("2/4");
   expect(result.report.gaps).toEqual([
-    expect.stringContaining("2 table row(s) in the `## Ledger` section were not read"),
+    expect.stringContaining("2 table row(s) in the plan were not read"),
   ]);
 });
 
@@ -699,4 +699,49 @@ test("covered survives a later failure to validate the receipt", () => {
   );
   expect(result.code).toBe(1);
   expect(result.report.covered).toBe("2/2");
+});
+
+test("a table outside the ledger section counts, and so does a row without pipes", () => {
+  const withLog = (/** @type {string[]} */ rows) =>
+    previousPlan.replace("- plain text outside the ledger is not a record", rows.join("\n"));
+  /** @type {[string[], string][]} */
+  const cases = [
+    [["| task | state |", "| --- | --- |", "| forgotten | open |"], "2/3"],
+    [["task | state", "--- | ---", "[ ] forgotten work"], "2/3"],
+  ];
+  for (const [rows, expected] of cases) {
+    const result = run(
+      withPlan((r) => {
+        r.coverage = "partial";
+      }, withLog(rows)).file,
+    );
+    expect(result.code).toBe(2);
+    expect(result.report.covered).toBe(expected);
+  }
+});
+
+test("a fence closes only with its own delimiter, so a table after it is still read", () => {
+  const tricky = [
+    "~~~md",
+    "```",
+    "~~~",
+    "",
+    "| task | state |",
+    "| --- | --- |",
+    "| forgotten | open |",
+  ];
+  const result = run(
+    withPlan((r) => {
+      r.coverage = "partial";
+    }, planWith(tricky)).file,
+  );
+  expect(result.code).toBe(2);
+  expect(result.report.covered).toBe("2/3");
+});
+
+test("a checklist line that looks like a table header is still a checklist line", () => {
+  const result = run(withPlan(() => {}, planWith(["- [ ] forgotten | open", "--- | ---"])).file);
+  expect(result.code).toBe(1);
+  expect(result.report.covered).toBe("2/3");
+  expect(result.report.errors).toContain('unaccounted record ["previous","L9"]');
 });

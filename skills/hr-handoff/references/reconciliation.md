@@ -31,7 +31,8 @@ coverage until they move into the ledger section.
 The checker reports `covered N/M`: M counts every open or deferred item line in the
 plan files it was given, those outside the `## Ledger` section and table rows
 included, and N counts the ones mapped to an item. Checklist lines in `+` or
-numbered form are read like `- [ ]`; one with another mark counts as unread. Anything short of all of them
+numbered form are read like `- [ ]`; one with another mark counts as unread. A Markdown table anywhere in the
+plan counts one unread line per body row, since a row cannot be told from an open item. Anything short of all of them
 is a gap or an error, and a ledger section with no item lines is an error. A
 receipt that names no plan file is partial and reports `covered 0/0`; a session
 that kept no plan says `"plan": "none: <reason>"`.
