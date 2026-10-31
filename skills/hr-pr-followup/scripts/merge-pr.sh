@@ -140,15 +140,22 @@ remote_slug() {
   url="${url%/}"
   printf '%s' "${url%.git}"
 }
+# A remote qualifies only when every URL it fetches from or pushes to is the named repository's: git
+# fetches the first URL and pushes to all of them, so one unrelated URL would land in another repository.
 if [ -z "$REMOTE" ]; then
   WANT="github.com/${REPO,,}"
+  declare -A GOOD=() BAD=()
   while read -r KEY URL; do
     NAME="${KEY#remote.}"
     NAME="${NAME%.url}"
-    if [ "$(remote_slug "$URL")" = "$WANT" ] && { [ -z "$REMOTE" ] || [ "$NAME" = origin ]; }; then
+    NAME="${NAME%.pushurl}"
+    if [ "$(remote_slug "$URL")" = "$WANT" ]; then GOOD[$NAME]=1; else BAD[$NAME]=1; fi
+  done < <(git config --get-regexp '^remote\..+\.(push)?url$' 2>/dev/null || true)
+  while IFS= read -r NAME; do
+    if [ -n "$NAME" ] && [ -z "${BAD[$NAME]:-}" ] && { [ -z "$REMOTE" ] || [ "$NAME" = origin ]; }; then
       REMOTE="$NAME"
     fi
-  done < <(git config --get-regexp '^remote\..+\.url$' 2>/dev/null || true)
+  done < <(printf '%s\n' "${!GOOD[@]}" | sort)
   if [ -z "$REMOTE" ]; then
     echo "refused: this checkout has no remote for $REPO; PR $PR is not merged" >&2
     exit 1
@@ -230,13 +237,6 @@ else
     fi
   else
     unmet "bot review rounds" "could not count the bot reviews on PR $PR"
-  fi
-  if [ -z "${ROUNDS:-}" ]; then
-    :
-  elif [ "$ROUNDS" -le "$CAP" ]; then
-    met "bot review rounds: $ROUNDS of $CAP"
-  else
-    unmet "bot review rounds: $ROUNDS of $CAP" "past the cap; show the user the open findings before pushing again (advisory: a landing does not refuse on it)"
   fi
 fi
 

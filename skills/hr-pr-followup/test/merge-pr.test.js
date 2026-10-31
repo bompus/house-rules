@@ -492,10 +492,40 @@ test("the remote is matched to the repository by URL, whatever the case or the s
 });
 
 test("--remote names the remote without a URL match", () => {
-  const { run } = fixture();
-  const r = run("--remote", "origin");
+  const unmatched = "https://github.com/unrelated/mirror.git";
+  const fx = fixture({ originUrl: unmatched });
+  expect(fx.run().code).toBe(1);
+  const r = fx.run("--remote", "origin");
   expect(r.err).toBe("");
   expect(r.code).toBe(0);
+});
+
+// Git fetches a remote's first URL and pushes to all of them, so a second URL for another
+// repository would land the change there too.
+test("a remote with a URL for another repository is not used", () => {
+  const fx = fixture({ repo: "bompus/house-rules", baseCurrent: true });
+  const other = join(dirname(fx.remote), "other.git");
+  sh(dirname(fx.remote), "git", "-c", "init.defaultBranch=main", "init", "--bare", other);
+  const mainBefore = sh(fx.remote, "git", "rev-parse", "main");
+  sh(
+    fx.work,
+    "git",
+    "config",
+    "--add",
+    "remote.origin.url",
+    "https://github.com/unrelated/mirror.git",
+  );
+  let r = fx.run();
+  expect(r.code).toBe(1);
+  expect(r.err).toContain("this checkout has no remote for bompus/house-rules");
+  sh(fx.work, "git", "config", "--unset-all", "remote.origin.url", "unrelated");
+  sh(fx.work, "git", "config", "remote.origin.pushurl", other);
+  r = fx.run();
+  expect(r.code).toBe(1);
+  expect(r.err).toContain("this checkout has no remote for bompus/house-rules");
+  expect(sh(fx.remote, "git", "rev-parse", "main")).toBe(mainBefore);
+  expect(sh(other, "git", "branch", "--list")).toBe("");
+  expect(existsSync(fx.log)).toBe(false);
 });
 
 test("a repository named in another case still lands by fast-forward push", () => {
@@ -529,6 +559,9 @@ test("--explain reports every condition met, lands nothing and exits 0", () => {
   }
   expect(r.out).toContain("all conditions met");
   expect(r.out).not.toContain("UNMET");
+  // One line for each condition.
+  expect(r.out.split("bot review rounds").length).toBe(2);
+  expect(r.out.split("met    ").length).toBe(13);
   expect(readFileSync(log, "utf8")).not.toContain("pr merge");
   expect(sh(remote, "git", "rev-parse", "main")).toBe(mainBefore);
   expect(sh(remote, "git", "branch", "--list", "feature")).toContain("feature");
