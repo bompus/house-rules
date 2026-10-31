@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { homedir, tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { decide, evaluate } from "../scripts/stop-ready-work-check.mjs";
@@ -532,8 +532,8 @@ test("the plan named last in a call is the one checked, even when an earlier pla
 });
 
 test("a plan path written with a braced HOME keeps its prefix in the fallback", () => {
-  const home = process.env.HOME ?? "";
-  const planPath = `${home}/notes/plans/topic/plan.md`;
+  // the hook expands `${HOME}` with os.homedir(), which is not process.env.HOME on Windows
+  const planPath = `${homedir()}/notes/plans/topic/plan.md`;
   const rollout = jsonl({
     type: "response_item",
     payload: { type: "custom_tool_call", input: "cat ${HOME}/notes/plans/topic/plan.md" },
