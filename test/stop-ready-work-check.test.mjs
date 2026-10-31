@@ -530,3 +530,15 @@ test("the plan named last in a call is the one checked, even when an earlier pla
   const input = { transcript_path: "/t.jsonl", last_assistant_message: WAITING_LINE };
   assert.equal(evaluate(input, files).block, true);
 });
+
+test("a plan path written with a braced HOME keeps its prefix in the fallback", () => {
+  const home = process.env.HOME ?? "";
+  const planPath = `${home}/notes/plans/topic/plan.md`;
+  const rollout = jsonl({
+    type: "response_item",
+    payload: { type: "custom_tool_call", input: "cat ${HOME}/notes/plans/topic/plan.md" },
+  });
+  const files = reader({ "/t.jsonl": rollout, [planPath]: TITLED("Stop-check: strict") });
+  const input = { transcript_path: "/t.jsonl", last_assistant_message: WAITING_LINE };
+  assert.equal(evaluate(input, files).block, true);
+});

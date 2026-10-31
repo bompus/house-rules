@@ -586,6 +586,10 @@ function planTokens(text) {
     while (start > 0 && at - start < MAX_TOKEN && !PATH_END.test(text.charAt(start - 1))) {
       start--;
     }
+    // `}` ends a token (JSON and shell text), but `${HOME}` before the path is part of it.
+    if (text.slice(Math.max(0, start - 7), start) === "${HOME}") {
+      start -= 7;
+    }
     const token = text.slice(start, end);
     if (PLAN_TOKEN.test(token)) {
       tokens.push(token);
