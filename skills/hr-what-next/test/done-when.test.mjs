@@ -468,3 +468,17 @@ test("a later field written inside a code span after a path is refused", () => {
   );
   expect(readFileSync(plan, "utf8")).toContain("- [ ] a:");
 });
+
+test("a code span after a space following a path is refused, not read as part of the path", () => {
+  const dir = root0();
+  const { plan } = setup([
+    `- [ ] a: done-when: path-absent ${dir} \`see PR#9\``,
+    `- [ ] b: done-when: path-absent ${join(dir, "x")}\`1\``,
+  ]);
+  const result = run(process.env, plan, "--apply");
+  expect(result.code).toBe(1);
+  expect(result.out).toContain("L6 error: a code span follows the path after a space");
+  // A backtick glued into the path is still part of it: this path does not exist, so it is closeable.
+  expect(result.out).toContain("L7 closeable");
+  expect(lines(plan)[5]).toMatch(/^- \[ \] a:/);
+});

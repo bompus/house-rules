@@ -76,6 +76,10 @@ export function parseDoneWhen(text) {
       if (!absolute.test(argument)) {
         return { error: `path must be absolute or start with ~/: "${argument}"` };
       }
+      // Notes in backticks after the path are not part of it; a span glued into the path is.
+      if (/\s`/.test(argument)) {
+        return { error: `a code span follows the path after a space: "${argument}"` };
+      }
       // Other whitespace could change between an evaluation and the close, which compares collapsed text.
       if (/[^\S ]| {2}/.test(argument)) {
         return { error: `path has a tab or consecutive spaces: "${argument}"` };
