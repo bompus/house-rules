@@ -412,3 +412,35 @@ posixOnly("~ expands to the home directory as literal text", () => {
   const result = run({ ...process.env, HOME: home }, plan);
   expect(result.out).toContain("L6 pending: path-absent ~/scratch: still exists");
 });
+
+test("a later field in parentheses is refused too", () => {
+  const dir = root0();
+  const { plan } = setup([
+    `- [ ] a: done-when: path-absent ${dir} (recheck: 2026-11-01)`,
+    `- [ ] b: done-when: path-absent ${dir} [trigger: later]`,
+  ]);
+  const result = run(process.env, plan, "--apply");
+  expect(result.code).toBe(1);
+  expect(result.out).toContain(
+    "L6 error: done-when must be the last field, but `recheck:` follows it",
+  );
+  expect(result.out).toContain(
+    "L7 error: done-when must be the last field, but `trigger:` follows it",
+  );
+  expect(readFileSync(plan, "utf8")).not.toContain("[x]");
+});
+
+test("done-when inside a code span of any backtick length is prose", () => {
+  const { items } = parsePlan(
+    planText([
+      "- [ ] a: write ``done-when: pr-merged owner/repo#n`` after the item",
+      "- [ ] b: write ```done-when: path-absent ~/x``` or `done-when: x` after it",
+      "- [ ] c: a ``code with ` inside`` then done-when: pr-merged acme/tool#1",
+    ]),
+  );
+  expect(items.map((item) => item.doneWhen)).toEqual([
+    undefined,
+    undefined,
+    { conditions: [{ kind: "pr-merged", repo: "acme/tool", number: 1 }] },
+  ]);
+});
