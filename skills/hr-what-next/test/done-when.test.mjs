@@ -256,7 +256,7 @@ posixOnly("a pull request and an issue are not interchangeable", () => {
   expect(readFileSync(plan, "utf8")).not.toContain("[x]");
 });
 
-test("path-absent counts only a missing path as absent", () => {
+posixOnly("path-absent counts only a missing path as absent", () => {
   const dir = root0();
   writeFileSync(join(dir, "file"), "x");
   symlinkSync(join(dir, "a"), join(dir, "b"));
@@ -351,7 +351,7 @@ test("the clause must be the last field, so a later field cannot become part of 
   expect(readFileSync(plan, "utf8")).toBe(before);
 });
 
-test("a path keeps its trailing dot", () => {
+posixOnly("a path keeps its trailing dot", () => {
   const dir = root0();
   mkdirSync(join(dir, "kept."));
   const { plan } = setup([
@@ -374,7 +374,7 @@ test("a path with a tab or consecutive spaces is refused, so the close cannot be
   expect(result.out).toContain("L7 error: path has a tab or consecutive spaces");
 });
 
-test("a Windows path is not a path this check can read", () => {
+posixOnly("a Windows drive path is not a path this check can read off Windows", () => {
   const { plan } = setup(["- [ ] a: done-when: path-absent C:\\Windows\\Temp"]);
   const result = run(process.env, plan, "--apply");
   expect(result.code).toBe(1);

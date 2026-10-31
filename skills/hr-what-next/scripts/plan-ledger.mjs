@@ -68,7 +68,9 @@ export function parseDoneWhen(text) {
       }
       conditions.push({ kind, repo: ref[1] ?? "", number: Number(ref[2]) });
     } else if (kind === "path-absent" && argument) {
-      if (!/^(?:\/|~\/)/.test(argument)) {
+      // A drive path is absolute only on Windows; on another system it would be looked up relative to the cwd.
+      const absolute = process.platform === "win32" ? /^(?:\/|~\/|[A-Za-z]:[\\/])/ : /^(?:\/|~\/)/;
+      if (!absolute.test(argument)) {
         return { error: `path must be absolute or start with ~/: "${argument}"` };
       }
       // Other whitespace could change between an evaluation and the close, which compares collapsed text.
