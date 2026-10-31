@@ -74,29 +74,42 @@ application latency.
 ## Continuous observer for one unit
 
 `scripts/unit-observer.py` watches one measured unit (a timed run or a phase) that runs inside a
-single cgroup, and says whether the unit may count. Start the unit in a transient scope, start the
-observer from a process in that scope, wait for `<output>.ready`, run the unit, then send the
-observer SIGTERM and read its exit status (0 clean, 1 not) and summary:
+single cgroup and reports whether the host and the unit's own cgroup stayed within the admission
+limits throughout. Start the unit in a transient scope, start the observer from a process in that
+scope, wait for `<output>.ready`, run the unit, then send the observer SIGTERM and read its exit
+status (0 clean, 1 not) and summary:
 
 ```sh
 systemd-run --user --scope -p MemoryMax=2G bash -c '
-  python3 scripts/unit-observer.py --workload-cgroup auto --output /disk/path/unit.json & obs=$!
-  while [ ! -e /disk/path/unit.json.ready ]; do sleep 0.2; done
-  ./run-the-unit
-  kill -TERM $obs; wait $obs'
+  out=/disk/path/unit.json; rm -f "$out" "$out.ready"
+  python3 scripts/unit-observer.py --workload-cgroup auto --output "$out" & obs=$!
+  while [ ! -e "$out.ready" ]; do
+    kill -0 $obs 2>/dev/null || { echo "observer failed"; exit 1; }
+    sleep 0.2
+  done
+  ./run-the-unit; unit=$?
+  kill -TERM $obs; wait $obs; clean=$?
+  exit $((unit != 0 ? unit : clean))'
 ```
 
-It samples once a second and applies the host admission limits through the whole unit: available
-memory, host and workload memory and I/O pressure, host swap-out and zswap activity, unbroken
-coverage (monotonic clock, no gap over 2.5 s), and competing CPU as host busy cores minus the
-workload cgroup's own CPU (mean over the run, at most 4). For the workload cgroup it also rejects
-growth of `memory.swap.current` or `memory.zswap.current`, any change of `zswpin`, `zswpout` or
-`zswpwb`, any increment of `memory.events` high, max, oom or oom_kill, a replaced directory and
-unreadable counters. Without PSI the unit is not clean. `--host-only` checks the host limits alone
-and records `"scope": "host-only"`. The summary records the observer's identity, own CPU time and
-the first and last sample times; its cost is part of the unit's CPU, so report it beside the
-results and make no negligible-impact claim from a clean summary. A unit that spans several
-transient scopes (one per child) has no single cgroup to watch; put the whole phase in one scope.
+It samples once a second, takes one more sample the moment it is stopped, and writes every sample to
+`<output>.samples.jsonl`. It rejects: available memory under 8 GiB; host or workload memory or I/O
+full PSI over 10 ms or 100 ms in an observation interval (unreadable PSI also rejects); a gap over
+2.5 s, a non-positive interval or fewer than two samples; competing CPU, the mean over the run of
+host busy cores minus the workload cgroup's own CPU, over 4 (`--host-only` has no workload to
+subtract, so the unit's own CPU counts); and, comparing every sample with the first, growth of
+`memory.swap.current` or `memory.zswap.current`, any change of `zswpin`, `zswpout`, `zswpwb` or of
+`memory.events` high, max, oom or oom_kill, a replaced directory, a counter that goes backward, an
+unreadable required counter or a changed set of optional counters. Host-wide swap-out and zswap
+activity is recorded per interval and rejects only with `--storage-phase`. Observer cost (CPU,
+resident peak, output bytes) is recorded and checked against `--max-observer-cores` (default 0.05)
+and `--max-observer-rss-mib` (default 128); a protocol declares its own.
+
+A clean summary does not qualify a run by itself. The protocol still declares the observers, budgets,
+stop rules and retries beforehand, and keeps every receipt; the cost of the observer is part of the
+unit's CPU, so report it beside the results and make no negligible-impact claim from a clean summary.
+A unit that spans several transient scopes (one per child) has no single cgroup to watch; put the
+whole phase in one scope. `auto` reads the observer's parent's cgroup on a unified cgroup v2 mount.
 
 ## Scheduling controls
 
