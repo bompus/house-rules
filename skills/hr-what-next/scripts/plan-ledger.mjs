@@ -50,7 +50,7 @@ export function parseDoneWhen(text) {
   }
   const clause = (match[1] ?? "").trim();
   // The clause is the item's last field: a later `recheck: ...` would otherwise read as part of a path.
-  const field = /\s([A-Za-z][\w-]*):(?:\s|$)/.exec(clause);
+  const field = /\s([A-Za-z][\w-]+):/.exec(clause);
   if (field) {
     return { error: `done-when must be the last field, but \`${field[1]}:\` follows it` };
   }

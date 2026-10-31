@@ -392,3 +392,23 @@ posixOnly("a reference both checks name is looked up once", () => {
   expect(report.doneWhen).toHaveLength(1);
   expect(calls()).toHaveLength(1);
 });
+
+test("a later field is refused even when its value follows the colon directly", () => {
+  const dir = root0();
+  const { plan } = setup([`- [ ] a: done-when: path-absent ${dir} recheck:2026-11-01`]);
+  const result = run(process.env, plan, "--apply");
+  expect(result.code).toBe(1);
+  expect(result.out).toContain(
+    "L6 error: done-when must be the last field, but `recheck:` follows it",
+  );
+  expect(readFileSync(plan, "utf8")).toContain("- [ ] a:");
+});
+
+posixOnly("~ expands to the home directory as literal text", () => {
+  // `$&` in a replacement string would be read as the matched text.
+  const home = join(root0(), "h$&h");
+  mkdirSync(join(home, "scratch"), { recursive: true });
+  const { plan } = setup(["- [ ] a: done-when: path-absent ~/scratch"]);
+  const result = run({ ...process.env, HOME: home }, plan);
+  expect(result.out).toContain("L6 pending: path-absent ~/scratch: still exists");
+});

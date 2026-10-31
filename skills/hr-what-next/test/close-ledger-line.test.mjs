@@ -244,6 +244,33 @@ test("a note with a line break is refused", () => {
   expect(readFileSync(plan, "utf8")).toBe(before);
 });
 
+test("--expect-exact also refuses a change in the whitespace inside the line", () => {
+  const plan = setup(["- [ ] a: remove /work/a  b", "- [ ] b"]);
+  const changed = close(
+    plan,
+    "--line",
+    "6",
+    "--evidence",
+    "gone",
+    "--expect-exact",
+    "a: remove /work/a b",
+  );
+  expect(changed.status).toBe(1);
+  expect(changed.stderr).toContain("no longer reads as expected");
+  expect(lines(plan)[5]).toBe("- [ ] a: remove /work/a  b");
+  const same = close(
+    plan,
+    "--line",
+    "6",
+    "--evidence",
+    "gone",
+    "--expect-exact",
+    "a: remove /work/a  b",
+  );
+  expect(same.status).toBe(0);
+  expect(lines(plan)[5]).toMatch(/^- \[x\] a: remove \/work\/a {2}b … evidence: gone/);
+});
+
 test("--expect closes the line only while it still reads as the caller saw it", () => {
   const plan = setup(["- [ ] a:  wait for the release", "- [ ] b"]);
   const changed = close(

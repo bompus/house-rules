@@ -7,7 +7,8 @@
 // as `by: user, asked in <where>`: a bulk close-out is not an answer about each item.
 // The line is chosen by `--line <n>` (its number in the file) or `--match <text>` (a piece of text exactly
 // one open or deferred ledger line contains). A wrapped item gets the note on its last line.
-// `--expect <text>` refuses unless the line still reads exactly that (whitespace collapsed), for a caller that
+// `--expect-exact <text>` refuses unless the line still reads exactly that, whitespace included; `--expect <text>` does
+// the same with whitespace collapsed. Both are for a caller that
 // chose the line from an earlier reading.
 // Running the same command again changes nothing: a line already closed with that evidence, or dropped by
 // that person, is reported as already done. Exit 0: closed or already done; 1: invalid input or refused.
@@ -19,7 +20,7 @@ import { parsePlan } from "./plan-ledger.mjs";
 /** @typedef {ReturnType<typeof parseArguments>} Options */
 
 const usage =
-  "usage: close-ledger-line.mjs <plan.md> (--line <n> | --match <text>) (--evidence <text> | --drop --by <who> [--asked <offer ID or message>]) [--time <text>] [--expect <text>]";
+  "usage: close-ledger-line.mjs <plan.md> (--line <n> | --match <text>) (--evidence <text> | --drop --by <who> [--asked <offer ID or message>]) [--time <text>] [--expect <text>] [--expect-exact <text>]";
 
 /** @param {string[]} argv */
 function parseArguments(argv) {
@@ -33,15 +34,23 @@ function parseArguments(argv) {
     asked: /** @type {string | null} */ (null),
     time: /** @type {string | null} */ (null),
     expect: /** @type {string | null} */ (null),
+    expectExact: /** @type {string | null} */ (null),
   };
   for (let index = 0; index < argv.length; index++) {
     const argument = argv[index] ?? "";
     if (argument === "--drop") {
       options.drop = true;
     } else if (
-      ["--line", "--match", "--evidence", "--by", "--asked", "--time", "--expect"].includes(
-        argument,
-      )
+      [
+        "--line",
+        "--match",
+        "--evidence",
+        "--by",
+        "--asked",
+        "--time",
+        "--expect",
+        "--expect-exact",
+      ].includes(argument)
     ) {
       const value = argv[++index];
       if (value === undefined || (argument === "--asked" && value.startsWith("--"))) {
@@ -52,8 +61,8 @@ function parseArguments(argv) {
         throw new Error(`${argument} must be one line\n${usage}`);
       }
       const key =
-        /** @type {"line" | "match" | "evidence" | "by" | "asked" | "time" | "expect"} */ (
-          argument.slice(2)
+        /** @type {"line" | "match" | "evidence" | "by" | "asked" | "time" | "expect" | "expectExact"} */ (
+          argument.slice(2).replace(/-(\w)/, (_, letter) => letter.toUpperCase())
         );
       options[key] = value.trim();
     } else if (argument.startsWith("--") || options.plan) {
@@ -159,7 +168,10 @@ function close(options) {
     );
   }
   // The caller decided on this line's text; a line rewritten since is a different item.
-  if (options.expect !== null && item.text.replace(/\s+/g, " ").trim() !== options.expect) {
+  if (
+    (options.expect !== null && item.text.replace(/\s+/g, " ").trim() !== options.expect) ||
+    (options.expectExact !== null && item.text.trim() !== options.expectExact)
+  ) {
     throw new Error(`refused: L${item.line} no longer reads as expected; nothing changed`);
   }
   // The item's last physical line: the indented continuation lines parsePlan joined onto it.

@@ -20,7 +20,7 @@ import { parsePlan } from "./plan-ledger.mjs";
 
 /** @typedef {import("./plan-ledger.mjs").LedgerItem} LedgerItem */
 /** @typedef {import("./plan-ledger.mjs").DoneCondition} DoneCondition */
-/** @typedef {{ line: number, text: string, status: "closeable" | "pending" | "error", evidence: string }} Row */
+/** @typedef {{ line: number, text: string, raw: string, status: "closeable" | "pending" | "error", evidence: string }} Row */
 
 const usage = "usage: done-when.mjs <plan.md> [--apply]";
 
@@ -30,7 +30,7 @@ const usage = "usage: done-when.mjs <plan.md> [--apply]";
  */
 export function pathExists(path) {
   try {
-    lstatSync(path.replace(/^~(?=\/|$)/, homedir()));
+    lstatSync(path.replace(/^~(?=\/|$)/, () => homedir()));
     return true;
   } catch (error) {
     const code = /** @type {NodeJS.ErrnoException} */ (error).code;
@@ -70,9 +70,10 @@ export async function evaluateDoneWhen(items, { offline = false, exists = pathEx
   const rows = [];
   for (const item of pending) {
     const doneWhen = item.doneWhen;
-    const text = item.text.replace(/\s+/g, " ").trim();
+    const raw = item.text.trim();
+    const text = raw.replace(/\s+/g, " ");
     if (!doneWhen || "error" in doneWhen) {
-      rows.push({ line: item.line, text, status: "error", evidence: doneWhen?.error ?? "" });
+      rows.push({ line: item.line, text, raw, status: "error", evidence: doneWhen?.error ?? "" });
       continue;
     }
     /** @type {{ ok: boolean | null, text: string }[]} */
@@ -124,6 +125,7 @@ export async function evaluateDoneWhen(items, { offline = false, exists = pathEx
     rows.push({
       line: item.line,
       text,
+      raw,
       status,
       evidence: results.map((result) => result.text).join("; "),
     });
@@ -173,8 +175,8 @@ async function main() {
           options.plan,
           "--line",
           String(row.line),
-          "--expect",
-          row.text,
+          "--expect-exact",
+          row.raw,
           "--evidence",
           `done-when held: ${row.evidence}`,
         ],
