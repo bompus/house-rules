@@ -559,7 +559,7 @@ export function planPaths(list, base) {
 }
 
 // Characters that end a path token in command text; a path with one of them is not found by the fallback.
-const PATH_END = /[\s"'`\\<>|;&(),=]/;
+const PATH_END = /[\s"'`\\<>|;&(),={}[\]]/;
 const PLAN_TOKEN = /^(?:~|\$HOME|\$\{HOME\}|)(?:\/[^/]+)*\/plans\/[A-Za-z0-9._-]+\/plan\.md$/;
 const PLAN_TAIL = "/plan.md";
 const MAX_TOKEN = 512;
@@ -576,7 +576,10 @@ function planTokens(text) {
   const tokens = [];
   for (let at = text.indexOf(PLAN_TAIL); at !== -1; at = text.indexOf(PLAN_TAIL, at + 1)) {
     const end = at + PLAN_TAIL.length;
-    if (/[A-Za-z0-9._/-]/.test(text.charAt(end))) {
+    // The file name must end the token: the end of the text or a delimiter, so `plan.md~`, `plan.md.bak` and
+    // `plan.md2` are other files.
+    const after = text.charAt(end);
+    if (after !== "" && !PATH_END.test(after)) {
       continue;
     }
     let start = at;
@@ -607,10 +610,12 @@ const toolCallText = (/** @type {any} */ entry) =>
 export function planPathsInCalls(list, base) {
   /** @type {Map<string, number>} */
   const last = new Map();
-  for (const [index, entry] of list.entries()) {
+  // One counter step per mention, so two plans named in the same call keep the order they appear in.
+  let order = 0;
+  for (const entry of list) {
     for (const text of toolCallText(entry)) {
       for (const token of planTokens(text)) {
-        last.set(absolute(token, base), index);
+        last.set(absolute(token, base), order++);
       }
     }
   }

@@ -476,6 +476,7 @@ test("the transcript-text fallback is limited to non-Claude records and exact pl
   assert.equal(withPlan(call(`cat ${planPath}`)), true);
   // a backup file, a longer name, a path with no plans/<topic>/ parent, and tool output are not the plan
   assert.equal(withPlan(call(`cat ${planPath}.bak`)), false);
+  assert.equal(withPlan(call(`cat ${planPath}~`)), false);
   assert.equal(withPlan(call("cat /work/notes/plans/topic/plan.md2")), false);
   assert.equal(withPlan(call("cat /work/plan.md")), false);
   const output = jsonl({
@@ -506,4 +507,26 @@ test("a title after a blank line still ends no header, and held or complete skip
   for (const status of ["held", "complete", "on-hold", "on hold"]) {
     assert.equal(check(WAITING_LINE, TITLED("Stop-check: strict", status)).block, false, status);
   }
+});
+
+test("the plan named last in a call is the one checked, even when an earlier plan shares the call", () => {
+  const active = "/work/notes/plans/active/plan.md";
+  const done = "/work/notes/plans/done/plan.md";
+  const call = jsonl(
+    {
+      type: "response_item",
+      payload: { type: "custom_tool_call", input: `cat ${active}` },
+    },
+    {
+      type: "response_item",
+      payload: { type: "custom_tool_call", input: `cat ${done} ${active}` },
+    },
+  );
+  const files = reader({
+    "/t.jsonl": call,
+    [active]: TITLED("Stop-check: strict"),
+    [done]: TITLED("Stop-check: strict", "completed"),
+  });
+  const input = { transcript_path: "/t.jsonl", last_assistant_message: WAITING_LINE };
+  assert.equal(evaluate(input, files).block, true);
 });
