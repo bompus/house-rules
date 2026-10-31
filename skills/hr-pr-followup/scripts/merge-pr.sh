@@ -272,8 +272,10 @@ if [[ "$PUSH_LANDED" == *" $REPO "* ]]; then
     fi
     PUSH=("$OID:refs/heads/$BASE")
   else
-    # Leasing the head in the same atomic push keeps a head pushed after the review from landing. A
-    # kept head is pushed at its own value, so the lease still guards it and nothing changes.
+    # The lease on the head refuses a head pushed after the review, as long as it was pushed before
+    # Git read the remote refs. A kept head is pushed at its own value, so Git leaves it out of the
+    # server's transaction: a push in the moments between that read and the base update is not
+    # refused. The commit that lands is still the reviewed one; the newer commit stays on the open PR.
     PUSH=(--atomic --force-with-lease="refs/heads/$HEAD:$OID" "$OID:refs/heads/$BASE")
     if [ -n "$KEEP_HEAD" ]; then
       PUSH+=("$OID:refs/heads/$HEAD")
