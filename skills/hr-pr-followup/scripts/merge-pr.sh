@@ -214,6 +214,7 @@ else
         "  unresolved thread:"* | "  unanswered findings in a review body:"*) THREADS="$THREADS${THREADS:+; }${LINE#  }" ;;
         "  app review pending:"* | "  review still running:"* | *" did not review the head commit"* | *" review concluded "* | "  no CodeRabbit check"*) BOT="$BOT${BOT:+; }${LINE#  }" ;;
         "  check "* | "  required check has not reported:"*) CHECKS="$CHECKS${CHECKS:+; }${LINE#  }" ;;
+        "  rerun with --wait"*) ;;
         "  "*) OTHER="$OTHER${OTHER:+; }${LINE#  }" ;;
       esac
     done <<<"$REVIEW_ERR"
