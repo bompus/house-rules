@@ -74,7 +74,8 @@ function stub(bin, name, body) {
  *   fromTask?: boolean, queued?: boolean, history?: number, check?: string | null,
  *   packageJson?: string | null, pnpmInstallExit?: number, files?: Record<string, string>,
  *   racingFetch?: boolean, baseCurrent?: boolean, errexitOff?: boolean, advanceHead?: boolean,
- *   sharing?: string[], sharingFails?: boolean }} [options]
+ *   sharing?: string[], sharingFails?: boolean, upstream?: boolean, originUrl?: string,
+ *   botReviews?: number }} [options]
  */
 function fixture({
   dependents = "",
@@ -105,6 +106,13 @@ function fixture({
   sharing = [],
   // The lookup of those PRs fails.
   sharingFails = false,
+  // A fork checkout: a second remote for another repository, and a `gh repo view` that answers
+  // with that repository, as the shared upstream remote makes it do in every checkout of a fork.
+  upstream = false,
+  // How the checkout's remote for this repository is spelled; it reaches the bare remote below.
+  originUrl = `https://github.com/${repo}.git`,
+  // Reviews by bot accounts already posted on the pull request.
+  botReviews = 0,
 } = {}) {
   const root = mkdtempSync(join(process.env.HOUSE_RULES_TEST_TMP ?? tmpdir(), "merge-pr-"));
   roots.push(root);
@@ -112,6 +120,12 @@ function fixture({
   sh(root, "git", "-c", "init.defaultBranch=main", "init", "--bare", remote);
   const work = join(root, "work");
   sh(root, "git", "clone", remote, work);
+  // The remote is spelled as a GitHub URL, as in a real checkout, and rewritten to the bare repository.
+  sh(work, "git", "config", `url.${remote}.insteadOf`, originUrl);
+  sh(work, "git", "remote", "set-url", "origin", originUrl);
+  if (upstream) {
+    sh(work, "git", "remote", "add", "upstream", "https://github.com/pingdotgg/t3code.git");
+  }
   sh(work, "git", "commit", "--allow-empty", "-m", "base");
   for (let n = 0; n < history; n++) {
     sh(work, "git", "commit", "--allow-empty", "-m", `history ${n}`);
@@ -153,7 +167,8 @@ case "$*" in
   *mergeCommit*) echo "${queued ? "" : squash}";;
   "pr view"*) printf 'feature\\t${oid}\\tmain\\tOPEN\\tfalse\\n';;
   "pr list"*) printf '%s' "${dependents}";;
-  "repo view"*) echo "${repo}";;
+  "repo view"*) echo "${upstream ? "pingdotgg/t3code" : repo}";;
+  "api repos"*reviews*) echo "${botReviews}";;
   "api graphql"*associatedPullRequests*) ${sharingFails ? "exit 1" : `printf '%s\\n' ${[`https://github.com/${repo}/pull/7`, ...sharing].map((url) => `'${url}'`).join(" ")}`};;
   "api graphql"*) printf '%s' '${JSON.stringify({ data: { viewer: { __typename: "User", login: "maintainer" }, repository: { viewerPermission: "ADMIN", pullRequest: { headRefOid: oid, baseRef: { branchProtectionRule: null, rules: { pageInfo: { hasNextPage: false }, nodes: [] } }, reviewThreads: { nodes: threads, pageInfo: { hasNextPage: false, endCursor: null } }, reviews: { nodes: [], pageInfo: { hasNextPage: false, endCursor: null } }, comments: { nodes: [], pageInfo: { hasNextPage: false, endCursor: null } }, commits: { nodes: [{ commit: { oid, committedDate: "2026-10-01T00:00:00Z", tree: { entries: [] }, statusCheckRollup: null } }] } } } } })}';;
 esac
@@ -419,13 +434,13 @@ test("a bare pull request number is refused before gh is asked about any pull re
   expect(existsSync(log)).toBe(false);
 });
 
-test("a pull request of another repository is refused from this checkout", () => {
+test("a pull request of a repository the checkout has no remote for is refused", () => {
   const { log, remote, runTarget } = fixture({ repo: "bompus/house-rules" });
   const before = sh(remote, "git", "rev-parse", "main");
   const r = runTarget("owner/other#7");
   expect(r.code).toBe(1);
-  expect(r.err).toContain("run this from a checkout of owner/other");
-  expect(readFileSync(log, "utf8")).not.toContain("pr ");
+  expect(r.err).toContain("this checkout has no remote for owner/other");
+  expect(existsSync(log)).toBe(false);
   expect(sh(remote, "git", "rev-parse", "main")).toBe(before);
 });
 
@@ -447,6 +462,119 @@ test("the URL form and --repo name the repository, and every gh pr call carries 
   const conflict = mixed.runTarget("owner/app#7", "--repo", "owner/other");
   expect(conflict.code).toBe(2);
   expect(existsSync(mixed.log)).toBe(false);
+});
+
+// A fork checkout also has the upstream remote, so `gh repo view` names the upstream in every
+// checkout of the fork. The repository comes from the argument and the remote from its URL.
+test("a fork checkout lands its own repository's pull request, whatever gh repo view names", () => {
+  const { remote, log, run } = fixture({ repo: "bompus/t3code", upstream: true });
+  const r = run();
+  expect(r.err).toBe("");
+  expect(r.code).toBe(0);
+  const calls = readFileSync(log, "utf8");
+  expect(calls).not.toContain("repo view");
+  expect(calls).toContain("pr merge 7 --squash");
+  expect(calls).toContain("--repo bompus/t3code");
+  expect(sh(remote, "git", "branch", "--list", "feature")).toBe("");
+});
+
+test("the remote is matched to the repository by URL, whatever the case or the scheme", () => {
+  for (const originUrl of [
+    "git@github.com:Owner/App.git",
+    "ssh://git@github.com/owner/app",
+    "https://GitHub.com/OWNER/app/",
+  ]) {
+    const fx = fixture({ originUrl });
+    const r = fx.run();
+    expect(r.err).toBe("");
+    expect(r.code).toBe(0);
+  }
+});
+
+test("--remote names the remote without a URL match", () => {
+  const { run } = fixture();
+  const r = run("--remote", "origin");
+  expect(r.err).toBe("");
+  expect(r.code).toBe(0);
+});
+
+test("a repository named in another case still lands by fast-forward push", () => {
+  const { remote, oid, runTarget } = fixture({ repo: "bompus/house-rules", baseCurrent: true });
+  const r = runTarget("Bompus/House-Rules#7");
+  expect(r.err).toBe("");
+  expect(r.code).toBe(0);
+  expect(r.out).toContain(`landed: PR 7 as ${oid} by fast-forward push to main`);
+  expect(sh(remote, "git", "rev-parse", "main")).toBe(oid);
+});
+
+// --explain runs the landing conditions read-only and says which hold.
+test("--explain reports every condition met, lands nothing and exits 0", () => {
+  const { remote, log, run } = fixture({ repo: "bompus/house-rules", baseCurrent: true });
+  const mainBefore = sh(remote, "git", "rev-parse", "main");
+  const r = run("--explain");
+  expect(r.code).toBe(0);
+  for (const line of [
+    "met    PR is open",
+    "met    no open PR targets the head branch",
+    "met    review threads and review-body findings are resolved",
+    "met    bot review of the current head is in place or not required",
+    "met    bot review rounds: 0 of 6",
+    "met    other checks on the head commit have passed",
+    "met    PR head equals the fetched commit",
+    "met    repository check passed: bun run check",
+    "met    base is an ancestor of the head",
+    "met    head branch is still at the reviewed commit",
+  ]) {
+    expect(r.out).toContain(line);
+  }
+  expect(r.out).toContain("all conditions met");
+  expect(r.out).not.toContain("UNMET");
+  expect(readFileSync(log, "utf8")).not.toContain("pr merge");
+  expect(sh(remote, "git", "rev-parse", "main")).toBe(mainBefore);
+  expect(sh(remote, "git", "branch", "--list", "feature")).toContain("feature");
+});
+
+test("--explain names each unmet condition, exits 1 and still lands nothing", () => {
+  const threads = [
+    { isResolved: false, comments: { nodes: [{ url: "https://example.test/t1" }] } },
+  ];
+  const fx = fixture({
+    repo: "bompus/house-rules",
+    dependents: "8\n",
+    threads,
+    check: "exit 7",
+    botReviews: 7,
+  });
+  const mainBefore = sh(fx.remote, "git", "rev-parse", "main");
+  const r = fx.run("--explain");
+  expect(r.code).toBe(1);
+  expect(r.out).toContain("UNMET  no open PR targets the head branch: open PRs target feature: 8");
+  expect(r.out).toContain("UNMET  review threads and review-body findings are resolved");
+  expect(r.out).toContain("unresolved thread: https://example.test/t1");
+  expect(r.out).toContain("UNMET  bot review rounds: 7 of 6");
+  expect(r.out).toContain("UNMET  repository check passed: refused: `bun run check` exited 7");
+  expect(r.out).toContain("UNMET  base is an ancestor of the head");
+  expect(r.out).not.toContain("all conditions met");
+  expect(readFileSync(fx.log, "utf8")).not.toContain("pr merge");
+  expect(sh(fx.remote, "git", "rev-parse", "main")).toBe(mainBefore);
+});
+
+test("--explain reports a head branch pushed after the review as a broken lease", () => {
+  const fx = fixture({ repo: "bompus/house-rules", baseCurrent: true });
+  sh(fx.wt, "git", "commit", "--allow-empty", "-m", "later work");
+  sh(fx.wt, "git", "push", "origin", "feature");
+  const r = fx.run("--explain");
+  expect(r.code).toBe(1);
+  expect(r.out).toContain("UNMET  head branch is still at the reviewed commit");
+  expect(r.out).not.toContain("UNMET  PR head equals the fetched commit");
+});
+
+test("--explain in a repository that merges through GitHub reports the pinned merge", () => {
+  const { log, run } = fixture();
+  const r = run("--explain");
+  expect(r.code).toBe(0);
+  expect(r.out).toContain("met    landing is a GitHub merge pinned to the head commit");
+  expect(readFileSync(log, "utf8")).not.toContain("pr merge");
 });
 
 test("landing from a task fast-forwards the primary with no flag, even with a session running in it", () => {

@@ -170,10 +170,15 @@ It does not clear that gate's review-body findings or change the landing workflo
 Three scripts in `scripts/` implement the landing steps § Landing describes. They never
 reset, switch or delete a checkout.
 
-- `merge-pr.sh <owner/repo#n | PR URL | n --repo owner/repo> [--merge] [--remote <name>]` squash-merges
-  (or merge-commits) an open pull request. It refuses a bare number, which gh would resolve against the
-  current directory's repository, and refuses when the current directory is not a checkout of the named
-  repository. It deletes the remote head without `gh pr merge --delete-branch`, which
+- `merge-pr.sh <owner/repo#n | PR URL | n --repo owner/repo> [--merge] [--remote <name>] [--explain]`
+  squash-merges (or merge-commits) an open pull request. It refuses a bare number, which gh would
+  resolve against the current directory's repository. The named repository is the only one it
+  uses: every gh call carries it, and it never asks gh which repository the current directory
+  belongs to, since a fork checkout's upstream remote makes gh answer with the upstream. It
+  fetches and pushes through the checkout's remote whose URL (https or ssh, any case) is that
+  repository's, `origin` first, unless `--remote` names one, and refuses when none matches.
+  `--explain` runs the same conditions read-only, lands nothing, prints one `met` or `UNMET`
+  line for each and exits 0 only when all are met. It deletes the remote head without `gh pr merge --delete-branch`, which
   removes other sessions' linked worktrees, and with `git push --no-verify`, so a failing
   pre-push hook cannot stop the landing report; a delete that fails anyway leaves the branch
   for `verify-landed.sh` to report (exit 1). It

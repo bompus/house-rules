@@ -50,21 +50,36 @@
 #
 # The pull request names its repository: `owner/repo#<n>`, its URL, or `<n> --repo owner/repo`. A
 # bare number is refused, because gh would resolve it against whatever repository the current
-# directory belongs to and could merge another repository's pull request of the same number. The
-# current directory must be a checkout of that repository, since the check and the push run here.
+# directory belongs to and could merge another repository's pull request of the same number. Every
+# gh call carries that name, and the repository is never asked of the current directory: a
+# checkout of a fork also has the upstream remote, so `gh repo view` names the upstream there. The
+# check and the push run in this checkout, so it needs a remote whose URL (https or ssh, any case)
+# is that repository's; the script uses that remote, `origin` first, unless --remote names one.
+# With no such remote it refuses.
+#
+# --explain runs the same conditions read-only, lands nothing and prints one line per condition,
+# `met` or `UNMET`: the pull request is open, no open PR targets its head branch, review threads
+# and review-body findings are resolved, the private reviewer has reviewed the current head, the
+# bot review rounds so far against HR_REVIEW_ROUND_CAP (default 6; advisory, a landing never
+# refuses on it), the other checks on the head, the head equals the fetched commit, the
+# repository's own check passes, and, where the repository lands by push, the base is an ancestor
+# of the head and the head branch is still at the reviewed commit (the lease the push holds). It
+# runs the repository's check as a landing does. Exit 0 when every condition is met, 1 otherwise.
 #
 # Exit status: 0 landed and every local default current; 1 refused or failed; 2 usage; 3 landed, local sync pending.
 #
-# Usage: bash scripts/merge-pr.sh <owner/repo#n | PR URL | n --repo owner/repo> [--merge] [--remote <name>]
+# Usage: bash scripts/merge-pr.sh <owner/repo#n | PR URL | n --repo owner/repo> [--merge] [--remote <name>] [--explain]
 set -euo pipefail
 
 PUSH_LANDED=" ${HR_PUSH_LANDED:-} "
-USAGE="usage: merge-pr.sh <owner/repo#n | PR URL | n --repo owner/repo> [--merge] [--remote <name>]"
+USAGE="usage: merge-pr.sh <owner/repo#n | PR URL | n --repo owner/repo> [--merge] [--remote <name>] [--explain]"
 
 TARGET="${1:?$USAGE}"
 shift
 NAMED_REPO=""
-REMOTE=origin
+REMOTE=""
+EXPLAIN=0
+UNMET=0
 STRATEGY=--squash
 SYNC_ARGS=(--ff)
 while [ $# -gt 0 ]; do
@@ -76,6 +91,10 @@ while [ $# -gt 0 ]; do
     --remote)
       REMOTE="${2:?}"
       shift 2
+      ;;
+    --explain)
+      EXPLAIN=1
+      shift
       ;;
     --repo)
       NAMED_REPO="${2:?}"
@@ -103,36 +122,122 @@ else
   echo "$USAGE" >&2
   exit 2
 fi
-if ! REPO="$(gh repo view --json nameWithOwner --jq .nameWithOwner)"; then
-  echo "refused: the current directory is not a GitHub checkout gh can read; PR $NAMED_REPO#$PR is not merged" >&2
+REPO="$NAMED_REPO"
+if ! git rev-parse --git-dir >/dev/null 2>&1; then
+  echo "refused: the current directory is not a git checkout; PR $REPO#$PR is not merged" >&2
   exit 1
 fi
-if [ "${REPO,,}" != "${NAMED_REPO,,}" ]; then
-  echo "refused: PR $NAMED_REPO#$PR, but the current directory is a checkout of $REPO; run this from a checkout of $NAMED_REPO" >&2
-  exit 1
+
+# host/owner/repo of a git remote URL (https or ssh form), lower case.
+remote_slug() {
+  local url="${1,,}"
+  url="${url#https://}"
+  url="${url#http://}"
+  url="${url#ssh://}"
+  url="${url#git://}"
+  url="${url#*@}"
+  url="${url/://}"
+  url="${url%/}"
+  printf '%s' "${url%.git}"
+}
+if [ -z "$REMOTE" ]; then
+  WANT="github.com/${REPO,,}"
+  while read -r KEY URL; do
+    NAME="${KEY#remote.}"
+    NAME="${NAME%.url}"
+    if [ "$(remote_slug "$URL")" = "$WANT" ] && { [ -z "$REMOTE" ] || [ "$NAME" = origin ]; }; then
+      REMOTE="$NAME"
+    fi
+  done < <(git config --get-regexp '^remote\..+\.url$' 2>/dev/null || true)
+  if [ -z "$REMOTE" ]; then
+    echo "refused: this checkout has no remote for $REPO; PR $PR is not merged" >&2
+    exit 1
+  fi
 fi
+
+# One landing condition. Refused, it prints the reason and exits; under --explain it prints UNMET and goes on.
+unmet() {
+  if [ "$EXPLAIN" = 1 ]; then
+    echo "UNMET  $1: $2"
+    UNMET=1
+    return 0
+  fi
+  echo "$2" >&2
+  exit 1
+}
+met() {
+  if [ "$EXPLAIN" = 1 ]; then echo "met    $1${2:+: $2}"; fi
+  return 0
+}
 
 IFS=$'\t' read -r HEAD OID BASE STATE FORK < <(gh pr view "$PR" --repo "$REPO" \
   --json headRefName,headRefOid,baseRefName,state,isCrossRepository \
   --jq '[.headRefName, .headRefOid, .baseRefName, .state, .isCrossRepository] | @tsv')
-[ "$STATE" = OPEN ] || {
-  echo "PR $PR is $STATE, not OPEN" >&2
-  exit 1
-}
+if [ "$STATE" = OPEN ]; then
+  met "PR is open"
+else
+  unmet "PR is open" "PR $PR is $STATE, not OPEN"
+fi
 
 if ! DEPENDENTS="$(gh pr list --repo "$REPO" --state open --base "$HEAD" --json number --jq '.[].number')"; then
-  echo "refused: could not list the open PRs that target $HEAD; PR $PR is not merged" >&2
-  exit 1
-fi
-DEPENDENTS="$(echo "$DEPENDENTS" | tr '\n' ' ')"
-if [ -n "${DEPENDENTS// /}" ]; then
-  echo "open PRs target $HEAD: ${DEPENDENTS% }; retarget them first: gh pr edit <n> --base $BASE" >&2
-  exit 1
+  unmet "no open PR targets the head branch" "refused: could not list the open PRs that target $HEAD; PR $PR is not merged"
+else
+  DEPENDENTS="$(echo "$DEPENDENTS" | tr '\n' ' ')"
+  if [ -n "${DEPENDENTS// /}" ]; then
+    unmet "no open PR targets the head branch" "open PRs target $HEAD: ${DEPENDENTS% }; retarget them first: gh pr edit <n> --base $BASE"
+  else
+    met "no open PR targets the head branch"
+  fi
 fi
 
-if ! bun "$(dirname "${BASH_SOURCE[0]}")/check-pr-review.ts" "$PR" --repo "$REPO"; then
-  echo "refused: review feedback is open (check-pr-review.ts); PR $PR is not merged" >&2
-  exit 1
+CHECKER="$(dirname "${BASH_SOURCE[0]}")/check-pr-review.ts"
+if [ "$EXPLAIN" != 1 ]; then
+  if ! bun "$CHECKER" "$PR" --repo "$REPO"; then
+    echo "refused: review feedback is open (check-pr-review.ts); PR $PR is not merged" >&2
+    exit 1
+  fi
+else
+  # The checker prints each open item as an indented line on stderr. Sort them into the conditions they break.
+  REVIEW_CODE=0
+  REVIEW_ERR="$(bun "$CHECKER" "$PR" --repo "$REPO" 2>&1 >/dev/null)" || REVIEW_CODE=$?
+  THREADS="" BOT="" CHECKS="" OTHER=""
+  if [ "$REVIEW_CODE" = 1 ]; then
+    while IFS= read -r LINE; do
+      case "$LINE" in
+        "  unresolved thread:"* | "  unanswered findings in a review body:"*) THREADS="$THREADS${THREADS:+; }${LINE#  }" ;;
+        "  app review pending:"* | "  review still running:"* | *" did not review the head commit"* | *" review concluded "* | "  no CodeRabbit check"*) BOT="$BOT${BOT:+; }${LINE#  }" ;;
+        "  check "* | "  required check has not reported:"*) CHECKS="$CHECKS${CHECKS:+; }${LINE#  }" ;;
+        "  "*) OTHER="$OTHER${OTHER:+; }${LINE#  }" ;;
+      esac
+    done <<<"$REVIEW_ERR"
+  elif [ "$REVIEW_CODE" != 0 ]; then
+    OTHER="check-pr-review.ts could not read the PR: ${REVIEW_ERR%%$'\n'*}"
+  fi
+  for ROW in "THREADS|review threads and review-body findings are resolved" \
+    "BOT|bot review of the current head is in place or not required" \
+    "CHECKS|other checks on the head commit have passed" \
+    "OTHER|no other review feedback is open"; do
+    VAR="${ROW%%|*}"
+    if [ -n "${!VAR}" ]; then unmet "${ROW#*|}" "${!VAR}"; else met "${ROW#*|}"; fi
+  done
+  CAP="${HR_REVIEW_ROUND_CAP:-6}"
+  if ROUNDS="$(gh api "repos/$REPO/pulls/$PR/reviews" --paginate --jq '[.[] | select(.user.type == "Bot")] | length' 2>/dev/null)"; then
+    ROUNDS="$(echo "$ROUNDS" | awk '{ n += $1 } END { print n + 0 }')"
+    if [ "$ROUNDS" -le "$CAP" ]; then
+      met "bot review rounds" "$ROUNDS of $CAP"
+    else
+      unmet "bot review rounds" "$ROUNDS of $CAP, past the cap; show the user the open findings before pushing again (advisory: a landing does not refuse on it)"
+    fi
+  else
+    unmet "bot review rounds" "could not count the bot reviews on PR $PR"
+  fi
+  if [ -z "${ROUNDS:-}" ]; then
+    :
+  elif [ "$ROUNDS" -le "$CAP" ]; then
+    met "bot review rounds: $ROUNDS of $CAP"
+  else
+    unmet "bot review rounds: $ROUNDS of $CAP" "past the cap; show the user the open findings before pushing again (advisory: a landing does not refuse on it)"
+  fi
 fi
 
 # The repository's own check, at the reviewed head. refs/pull/<n>/head also covers a fork's head.
@@ -145,38 +250,47 @@ remove_check_dir() {
   git update-ref -d "$CHECK_REF" 2>/dev/null || true
 }
 trap remove_check_dir EXIT
+FETCHED_OK=0
 if ! git fetch --quiet --no-tags "$REMOTE" "+refs/pull/$PR/head:$CHECK_REF"; then
-  echo "refused: could not fetch PR $PR's head; PR $PR is not merged" >&2
-  exit 1
-fi
-FETCHED="$(git rev-parse "$CHECK_REF")" || exit 1
-[ "$FETCHED" = "$OID" ] || {
-  echo "PR $PR head moved to $FETCHED after it was read as $OID; rerun" >&2
-  exit 1
-}
-# One line from the head's package.json: the named package manager (or -), its major version (or
-# -), 1 when scripts.check is a string, and 1 when it declares dependencies or workspaces. An
-# unreadable package.json refuses.
-read -r NAMED MAJOR HAS_CHECK NEEDS_INSTALL < <(
-  if git cat-file -e "$OID:package.json" 2>/dev/null; then
-    git show "$OID:package.json" | bun -e '
-      const p = JSON.parse(await Bun.stdin.text());
-      const deps = Object.keys({ ...p.dependencies, ...p.devDependencies, ...p.optionalDependencies });
-      const install = deps.length > 0 || p.workspaces !== undefined;
-      const [name, version] = String(p.packageManager ?? "-").split("@");
-      const major = /^\d+/.exec(version ?? "")?.[0] ?? "-";
-      console.log(name || "-", major, typeof p.scripts?.check === "string" ? 1 : 0, install ? 1 : 0);
-    ' || echo "invalid"
-  else
-    echo "- - 0 0"
-  fi
-)
-if [ "$NAMED" = invalid ]; then
-  echo "refused: package.json at ${OID:0:12} is not valid JSON; PR $PR is not merged" >&2
-  exit 1
-elif [ "$HAS_CHECK" != 1 ]; then
-  echo "warning: no check command at ${OID:0:12} (package.json has no scripts.check); merging without one. A later release will refuse this." >&2
+  unmet "PR head equals the fetched commit" "refused: could not fetch PR $PR's head; PR $PR is not merged"
 else
+  FETCHED="$(git rev-parse "$CHECK_REF")" || exit 1
+  if [ "$FETCHED" = "$OID" ]; then
+    FETCHED_OK=1
+    met "PR head equals the fetched commit" "${OID:0:12}"
+  else
+    unmet "PR head equals the fetched commit" "PR $PR head moved to $FETCHED after it was read as $OID; rerun"
+  fi
+fi
+
+# The repository's own check at the head, in a throwaway worktree. Fails by setting CHECK_FAILED to the
+# refusal text; prints its progress either way.
+CHECK_FAILED=""
+run_repo_check() {
+  # One line from the head's package.json: the named package manager (or -), its major version (or
+  # -), 1 when scripts.check is a string, and 1 when it declares dependencies or workspaces. An
+  # unreadable package.json refuses.
+  read -r NAMED MAJOR HAS_CHECK NEEDS_INSTALL < <(
+    if git cat-file -e "$OID:package.json" 2>/dev/null; then
+      git show "$OID:package.json" | bun -e '
+        const p = JSON.parse(await Bun.stdin.text());
+        const deps = Object.keys({ ...p.dependencies, ...p.devDependencies, ...p.optionalDependencies });
+        const install = deps.length > 0 || p.workspaces !== undefined;
+        const [name, version] = String(p.packageManager ?? "-").split("@");
+        const major = /^\d+/.exec(version ?? "")?.[0] ?? "-";
+        console.log(name || "-", major, typeof p.scripts?.check === "string" ? 1 : 0, install ? 1 : 0);
+      ' || echo "invalid"
+    else
+      echo "- - 0 0"
+    fi
+  )
+  if [ "$NAMED" = invalid ]; then
+    CHECK_FAILED="refused: package.json at ${OID:0:12} is not valid JSON; PR $PR is not merged"
+    return 1
+  elif [ "$HAS_CHECK" != 1 ]; then
+    echo "warning: no check command at ${OID:0:12} (package.json has no scripts.check); merging without one. A later release will refuse this." >&2
+    return 0
+  fi
   in_head() { git cat-file -e "$OID:$1" 2>/dev/null; }
   case "$NAMED" in
     bun | pnpm | yarn | npm) PM="$NAMED" ;;
@@ -219,14 +333,23 @@ else
     (cd "$CHECK_DIR" && RAYON_NUM_THREADS="${RAYON_NUM_THREADS:-$HALF}" \
       UV_THREADPOOL_SIZE="${UV_THREADPOOL_SIZE:-$HALF}" ${NICE[@]+"${NICE[@]}"} "$@") 2>&1 || code=$?
     if [ "$code" != 0 ]; then
-      echo "refused: \`$*\` exited $code at ${OID:0:12}; PR $PR is not merged" >&2
-      exit 1
+      CHECK_FAILED="refused: \`$*\` exited $code at ${OID:0:12}; PR $PR is not merged"
+      return 1
     fi
   }
-  if [ "$NEEDS_INSTALL" = 1 ]; then run_step "${INSTALL[@]}"; fi
-  run_step "$PM" run check
+  if [ "$NEEDS_INSTALL" = 1 ]; then run_step "${INSTALL[@]}" || return 1; fi
+  run_step "$PM" run check || return 1
   echo "check passed: $PM run check at ${OID:0:12}"
   remove_check_dir
+}
+if [ "$FETCHED_OK" = 1 ]; then
+  if ! run_repo_check; then
+    unmet "repository check passed" "$CHECK_FAILED"
+  elif [ "$HAS_CHECK" = 1 ]; then
+    met "repository check passed" "$PM run check at ${OID:0:12}"
+  else
+    met "repository check passed" "no check command defined; the merge goes ahead without one"
+  fi
 fi
 
 # Deleting the head closes every other open PR that has it as its head, in any repository, so such a
@@ -243,8 +366,8 @@ if [ "$FORK" != true ]; then
         ref(qualifiedName: $ref) { associatedPullRequests(states: OPEN, first: 50) { nodes { url } } }
       }
     }' --jq '.data.repository.ref.associatedPullRequests.nodes[].url')"; then
-    echo "refused: could not list the open PRs that use $HEAD as their head; PR $PR is not merged" >&2
-    exit 1
+    unmet "head branch is not used by another open PR" "refused: could not list the open PRs that use $HEAD as their head; PR $PR is not merged"
+    SHARING=""
   fi
   while IFS= read -r URL; do
     if [ -n "$URL" ] && [ "${URL,,}" != "${SELF,,}" ]; then
@@ -254,24 +377,33 @@ if [ "$FORK" != true ]; then
 fi
 KEPT_MESSAGE="kept: $REMOTE/$HEAD is the head of open PRs ($KEEP_HEAD), and deleting it would close them"
 
-if [[ "$PUSH_LANDED" == *" $REPO "* ]]; then
+if [[ "${PUSH_LANDED,,}" == *" ${REPO,,} "* ]]; then
   # The reviewed and checked commit itself becomes the base: a plain push, which refuses a non-fast-forward.
   if ! git fetch --quiet --no-tags "$REMOTE" "refs/heads/$BASE"; then
-    echo "refused: could not fetch $REMOTE/$BASE; PR $PR is not landed" >&2
-    exit 1
-  fi
-  if ! git merge-base --is-ancestor FETCH_HEAD "$OID"; then
-    echo "refused: $BASE is not an ancestor of ${OID:0:12}; rebase PR $PR onto $BASE and push it first" >&2
-    exit 1
+    unmet "base is an ancestor of the head" "refused: could not fetch $REMOTE/$BASE; PR $PR is not landed"
+  elif ! git merge-base --is-ancestor FETCH_HEAD "$OID"; then
+    unmet "base is an ancestor of the head" "refused: $BASE is not an ancestor of ${OID:0:12}; rebase PR $PR onto $BASE and push it first"
+  else
+    met "base is an ancestor of the head" "a fast-forward to ${OID:0:12} is possible"
   fi
   if [ "$FORK" = true ]; then
     LATEST="$(git ls-remote "$REMOTE" "refs/pull/$PR/head" | awk '{print $1}')"
     if [ "$LATEST" != "$OID" ]; then
-      echo "refused: PR $PR head moved to ${LATEST:-nothing} after it was reviewed as $OID; rerun" >&2
-      exit 1
+      unmet "head branch is still at the reviewed commit" "refused: PR $PR head moved to ${LATEST:-nothing} after it was reviewed as $OID; rerun"
+    else
+      met "head branch is still at the reviewed commit" "the PR head is ${OID:0:12}"
     fi
     PUSH=("$OID:refs/heads/$BASE")
   else
+    # --explain reads what the push lease below compares: the head branch on the remote.
+    if [ "$EXPLAIN" = 1 ]; then
+      LEASED="$(git ls-remote --heads "$REMOTE" "refs/heads/$HEAD" | awk '{print $1}')"
+      if [ "$LEASED" = "$OID" ]; then
+        met "head branch is still at the reviewed commit" "$REMOTE/$HEAD is ${OID:0:12}, so the push lease holds"
+      else
+        unmet "head branch is still at the reviewed commit" "$REMOTE/$HEAD is ${LEASED:-missing}, not ${OID:0:12}; the push lease would refuse"
+      fi
+    fi
     # The lease on the head refuses a head pushed after the review, as long as it was pushed before
     # Git read the remote refs. A kept head is pushed at its own value, so Git leaves it out of the
     # server's transaction: a push in the moments between that read and the base update is not
@@ -283,15 +415,19 @@ if [[ "$PUSH_LANDED" == *" $REPO "* ]]; then
       PUSH+=(":refs/heads/$HEAD")
     fi
   fi
-  if ! git push --quiet "$REMOTE" "${PUSH[@]}"; then
-    echo "refused: the fast-forward push of ${OID:0:12} to $BASE failed (a moved base or head refuses it); PR $PR is not landed" >&2
-    exit 1
+  if [ "$EXPLAIN" != 1 ]; then
+    if ! git push --quiet "$REMOTE" "${PUSH[@]}"; then
+      echo "refused: the fast-forward push of ${OID:0:12} to $BASE failed (a moved base or head refuses it); PR $PR is not landed" >&2
+      exit 1
+    fi
+    if [ "$FORK" != true ] && [ -z "$KEEP_HEAD" ]; then
+      echo "deleted: $REMOTE/$HEAD"
+    fi
+    SHA="$OID"
+    echo "landed: PR $PR as $SHA by fast-forward push to $BASE"
   fi
-  if [ "$FORK" != true ] && [ -z "$KEEP_HEAD" ]; then
-    echo "deleted: $REMOTE/$HEAD"
-  fi
-  SHA="$OID"
-  echo "landed: PR $PR as $SHA by fast-forward push to $BASE"
+elif [ "$EXPLAIN" = 1 ]; then
+  met "landing is a GitHub merge pinned to the head commit" "gh pr merge --match-head-commit ${OID:0:12}"
 else
   if ! gh pr merge "$PR" "$STRATEGY" --match-head-commit "$OID" --repo "$REPO"; then
     echo "refused: gh pr merge failed; PR $PR is not merged" >&2
@@ -303,6 +439,22 @@ else
     exit 1
   fi
   echo "merged: PR $PR as $SHA"
+fi
+
+if [ "$EXPLAIN" = 1 ]; then
+  if [ "$FORK" = true ]; then
+    met "head branch after landing" "a fork's head is left alone"
+  elif [ -n "$KEEP_HEAD" ]; then
+    met "head branch after landing" "kept, used by other open PRs: $KEEP_HEAD"
+  else
+    met "head branch after landing" "$REMOTE/$HEAD is deleted"
+  fi
+  if [ "$UNMET" = 0 ]; then
+    echo "all conditions met: PR $PR would land; nothing was changed"
+    exit 0
+  fi
+  echo "UNMET conditions above refuse PR $PR; nothing was changed" >&2
+  exit 1
 fi
 
 # A fork's head lives in another repository; a repository may also delete merged heads itself.
