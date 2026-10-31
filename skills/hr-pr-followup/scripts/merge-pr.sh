@@ -160,7 +160,10 @@ if [ -z "$REMOTE" ]; then
         GOOD=0
         break
       fi
-    done < <(git remote get-url --all "$NAME" 2>/dev/null; git remote get-url --push --all "$NAME" 2>/dev/null)
+    done < <(
+      git remote get-url --all "$NAME" 2>/dev/null
+      git remote get-url --push --all "$NAME" 2>/dev/null
+    )
     if [ "$GOOD" = 1 ] && { [ -z "$REMOTE" ] || [ "$NAME" = origin ]; }; then
       REMOTE="$NAME"
     fi
