@@ -128,34 +128,43 @@ if ! git rev-parse --git-dir >/dev/null 2>&1; then
   exit 1
 fi
 
-# host/owner/repo of a git remote URL (https or ssh form), lower case.
+# host/owner/repo of a git remote URL (https, ssh:// or scp-style), lower case, without credentials,
+# port or `.git`; empty for anything else, such as a local path.
 remote_slug() {
-  local url="${1,,}"
-  url="${url#https://}"
-  url="${url#http://}"
-  url="${url#ssh://}"
-  url="${url#git://}"
-  url="${url#*@}"
-  url="${url/://}"
-  url="${url%/}"
-  printf '%s' "${url%.git}"
+  local url="${1,,}" host path
+  if [[ "$url" =~ ^[a-z][a-z0-9+.-]*://([^/@]*@)?([^/:@]+)(:[0-9]*)?/(.*)$ ]]; then
+    host="${BASH_REMATCH[2]}"
+    path="${BASH_REMATCH[4]}"
+  elif [[ "$url" =~ ^([^/@]*@)?([^/:@]+):(.*)$ ]]; then
+    host="${BASH_REMATCH[2]}"
+    path="${BASH_REMATCH[3]}"
+  else
+    return 0
+  fi
+  path="${path#/}"
+  path="${path%/}"
+  printf '%s/%s' "$host" "${path%.git}"
 }
-# A remote qualifies only when every URL it fetches from or pushes to is the named repository's: git
-# fetches the first URL and pushes to all of them, so one unrelated URL would land in another repository.
+# A remote qualifies only when every URL git will use for it, after url.<base>.insteadOf and
+# pushInsteadOf rewrites, names the repository: git fetches the first URL and pushes to all of them,
+# so one URL elsewhere would land the change in another repository too.
 if [ -z "$REMOTE" ]; then
   WANT="github.com/${REPO,,}"
-  declare -A GOOD=() BAD=()
-  while read -r KEY URL; do
-    NAME="${KEY#remote.}"
-    NAME="${NAME%.url}"
-    NAME="${NAME%.pushurl}"
-    if [ "$(remote_slug "$URL")" = "$WANT" ]; then GOOD[$NAME]=1; else BAD[$NAME]=1; fi
-  done < <(git config --get-regexp '^remote\..+\.(push)?url$' 2>/dev/null || true)
   while IFS= read -r NAME; do
-    if [ -n "$NAME" ] && [ -z "${BAD[$NAME]:-}" ] && { [ -z "$REMOTE" ] || [ "$NAME" = origin ]; }; then
+    [ -n "$NAME" ] || continue
+    GOOD=0
+    while IFS= read -r URL; do
+      if [ "$(remote_slug "$URL")" = "$WANT" ]; then
+        GOOD=1
+      else
+        GOOD=0
+        break
+      fi
+    done < <(git remote get-url --all "$NAME" 2>/dev/null; git remote get-url --push --all "$NAME" 2>/dev/null)
+    if [ "$GOOD" = 1 ] && { [ -z "$REMOTE" ] || [ "$NAME" = origin ]; }; then
       REMOTE="$NAME"
     fi
-  done < <(printf '%s\n' "${!GOOD[@]}" | sort)
+  done < <(git remote 2>/dev/null | sort)
   if [ -z "$REMOTE" ]; then
     echo "refused: this checkout has no remote for $REPO; PR $PR is not merged" >&2
     exit 1

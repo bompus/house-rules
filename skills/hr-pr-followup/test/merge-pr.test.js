@@ -75,7 +75,7 @@ function stub(bin, name, body) {
  *   packageJson?: string | null, pnpmInstallExit?: number, files?: Record<string, string>,
  *   racingFetch?: boolean, baseCurrent?: boolean, errexitOff?: boolean, advanceHead?: boolean,
  *   sharing?: string[], sharingFails?: boolean, upstream?: boolean, originUrl?: string,
- *   botReviews?: number }} [options]
+ *   botReviews?: number, alias?: boolean }} [options]
  */
 function fixture({
   dependents = "",
@@ -110,7 +110,9 @@ function fixture({
   // with that repository, as the shared upstream remote makes it do in every checkout of a fork.
   upstream = false,
   // How the checkout's remote for this repository is spelled; it reaches the bare remote below.
-  originUrl = `https://github.com/${repo}.git`,
+  originUrl = `git@github.com:${repo}.git`,
+  // Git rewrites an https URL of GitHub to its ssh form, as a `url.<base>.insteadOf` rule does.
+  alias = false,
   // Reviews by bot accounts already posted on the pull request.
   botReviews = 0,
 } = {}) {
@@ -120,8 +122,21 @@ function fixture({
   sh(root, "git", "-c", "init.defaultBranch=main", "init", "--bare", remote);
   const work = join(root, "work");
   sh(root, "git", "clone", remote, work);
-  // The remote is spelled as a GitHub URL, as in a real checkout, and rewritten to the bare repository.
-  sh(work, "git", "config", `url.${remote}.insteadOf`, originUrl);
+  // The remote is spelled as a GitHub URL, as in a real checkout, and ssh reaches the bare
+  // repository: a stand-in ssh command runs the server side of git against it.
+  const ssh = join(root, "fake-ssh");
+  writeFileSync(
+    ssh,
+    `#!/usr/bin/env bash
+exec bash -c "$(printf '%s' "\${@: -1}" | sed -e "s#^git-#git #" -e "s#'[^']*'#'${remote}'#")"
+`,
+  );
+  chmodSync(ssh, 0o755);
+  sh(work, "git", "config", "core.sshCommand", ssh);
+  sh(work, "git", "config", "ssh.variant", "ssh");
+  if (alias) {
+    sh(work, "git", "config", "url.git@github.com:.insteadOf", "https://github.com/");
+  }
   sh(work, "git", "remote", "set-url", "origin", originUrl);
   if (upstream) {
     sh(work, "git", "remote", "add", "upstream", "https://github.com/pingdotgg/t3code.git");
@@ -482,17 +497,50 @@ test("the remote is matched to the repository by URL, whatever the case or the s
   for (const originUrl of [
     "git@github.com:Owner/App.git",
     "ssh://git@github.com/owner/app",
-    "https://GitHub.com/OWNER/app/",
+    "ssh://git@GitHub.com:22/OWNER/app/",
   ]) {
     const fx = fixture({ originUrl });
     const r = fx.run();
     expect(r.err).toBe("");
     expect(r.code).toBe(0);
   }
+  const rewritten = fixture({ originUrl: "https://github.com/owner/app.git", alias: true });
+  expect(rewritten.run().code).toBe(0);
+});
+
+// The matcher normalises https, ssh and scp-style URLs alike; a path or another host is not a match.
+test("remote_slug names host, owner and repository, ignoring case, credentials, ports and .git", () => {
+  const text = readFileSync(script, "utf8");
+  const fn = /^remote_slug\(\) \{\n[\s\S]*?^\}$/m.exec(text)?.[0] ?? "";
+  const urls = [
+    "https://github.com/Owner/App.git",
+    "http://github.com/owner/app",
+    "git@github.com:owner/app",
+    "ssh://git@github.com:22/owner/app.git",
+    "https://user:tok@github.com:443/owner/app/",
+    "/srv/git/owner/app.git",
+    "https://gitlab.com/owner/app",
+  ];
+  const run = Bun.spawnSync([
+    "bash",
+    "-c",
+    `${fn}\nfor u in "$@"; do remote_slug "$u"; echo; done`,
+    "slug",
+    ...urls,
+  ]);
+  expect(run.stdout.toString().split("\n").slice(0, urls.length)).toEqual([
+    "github.com/owner/app",
+    "github.com/owner/app",
+    "github.com/owner/app",
+    "github.com/owner/app",
+    "github.com/owner/app",
+    "",
+    "gitlab.com/owner/app",
+  ]);
 });
 
 test("--remote names the remote without a URL match", () => {
-  const unmatched = "https://github.com/unrelated/mirror.git";
+  const unmatched = "git@gitlab.com:unrelated/mirror.git";
   const fx = fixture({ originUrl: unmatched });
   expect(fx.run().code).toBe(1);
   const r = fx.run("--remote", "origin");
@@ -525,6 +573,22 @@ test("a remote with a URL for another repository is not used", () => {
   expect(r.err).toContain("this checkout has no remote for bompus/house-rules");
   expect(sh(fx.remote, "git", "rev-parse", "main")).toBe(mainBefore);
   expect(sh(other, "git", "branch", "--list")).toBe("");
+  expect(existsSync(fx.log)).toBe(false);
+});
+
+// Git rewrites the push URL after the config is read, so the URL in the config is not the one used.
+test("a remote whose push URL is rewritten to another repository is not used", () => {
+  const fx = fixture({ repo: "bompus/house-rules", baseCurrent: true });
+  sh(
+    fx.work,
+    "git",
+    "config",
+    "url.git@github.com:other/app.git.pushInsteadOf",
+    "git@github.com:bompus/house-rules.git",
+  );
+  const r = fx.run();
+  expect(r.code).toBe(1);
+  expect(r.err).toContain("this checkout has no remote for bompus/house-rules");
   expect(existsSync(fx.log)).toBe(false);
 });
 
