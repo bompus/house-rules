@@ -103,7 +103,7 @@ subtract, so the unit's own CPU counts); and, comparing every sample with the fi
 unreadable required counter or a changed set of optional counters. Host-wide swap-out and zswap
 activity is recorded per interval and rejects only with `--storage-phase`. Observer cost (CPU,
 resident peak, output bytes) is recorded and checked against `--max-observer-cores` (default 0.05)
-and `--max-observer-rss-mib` (default 128); a protocol declares its own.
+and `--max-observer-rss-mib` (default 128); a protocol declares its own. The workload's `memory.current` peak and `io.stat` byte deltas are recorded for attribution; a counter the kernel does not provide is `unknown`.
 
 A clean summary does not qualify a run by itself. The protocol still declares the observers, budgets,
 stop rules and retries beforehand, and keeps every receipt; the cost of the observer is part of the
