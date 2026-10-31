@@ -6,9 +6,15 @@ description: Benchmark equivalent work with repeated timing, CPU and memory meas
 # Benchmarking
 
 Follow the repository and host's commands, resource limits, authorization and
-landing rules. Reuse an existing workload and runner before building a harness.
-Read [the tool reference](references/tools.md) when selecting a benchmark,
-profiler or correctness check, or interpreting its measurements.
+landing rules. Reuse an existing workload. Take the runner from
+[the tool reference](references/tools.md): never time with a loop you write
+(`performance.now()`, `Date.now()`, `process.hrtime`, shell `time` around a
+script). Read the reference before creating or extending any benchmark, and when
+selecting a profiler or correctness check or interpreting measurements. A project
+that already times with a hand-written loop, or with a runner outside the three
+there, names it in the plan before the first run, then moves the timing onto a
+listed runner, or says what the listed runners cannot measure and gets the
+user's agreement to keep it.
 
 ## Define the comparison
 
@@ -26,7 +32,7 @@ or deployed differs, say so in the results, and ask which to test if the
 request does not settle it. When told to use an older version, use it and
 offer the newest as an alternative.
 
-Before running, list the selected engines, workloads, metrics, controls and
+Before running, list the runner and its version, the selected engines, workloads, metrics, controls and
 repetitions. Count the planned runs explicitly, including controls and stages;
 state which decision each retained dimension helps make. Choose combinations
 for that decision rather than automatically running every combination. Use a
