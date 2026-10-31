@@ -794,3 +794,14 @@ test("a fence opened inside a block quote ends with the quote", () => {
   expect(result.code).toBe(2);
   expect(result.report.covered).toBe("2/3");
 });
+
+test("a deeper-quoted fence marker inside a fence is fence content, not its end", () => {
+  const rows = ["```", "> ```", "```", "", "task | state", "--- | ---", "forgotten | open"];
+  const result = run(
+    withPlan((r) => {
+      r.coverage = "partial";
+    }, planWith(rows)).file,
+  );
+  expect(result.code).toBe(2);
+  expect(result.report.covered).toBe("2/3");
+});

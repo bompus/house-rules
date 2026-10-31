@@ -168,6 +168,7 @@ function ledgerRecords(raw) {
       inTable = false;
     } else if (
       fence !== null &&
+      depth === fenceDepth &&
       marker &&
       /** @type {string} */ (marker[1])[0] === fence[0] &&
       /** @type {string} */ (marker[1]).length >= fence.length &&
