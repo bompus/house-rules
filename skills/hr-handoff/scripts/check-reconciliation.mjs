@@ -113,9 +113,10 @@ function unique(entries, label) {
 // body rows of a Markdown table anywhere in the file (its header row and first separator row excluded). A
 // table runs until a blank line, a heading or a list item, and a row may omit its pipes. Fenced code is
 // skipped for tables; a fence closes only with the same character, at least as long, and no text after it.
-const ITEM = /^\s*(?:[-*+]|\d+[.)])\s+\[(.)\](?:\s+(.*))?$/;
+const ITEM = /^\s*(?:[-*+]|\d+[.)])\s+\[(.)\](?:\s+(.*))?$/u;
 const SEPARATOR = /^\s*\|?\s*:?-+:?\s*(?:\|\s*:?-+:?\s*)*\|?\s*$/;
-const FENCE = /^\s*(`{3,}|~{3,})(.*)$/;
+// Up to three spaces of indent; the text after a backtick fence cannot contain a backtick.
+const FENCE = /^ {0,3}(`{3,}|~{3,})(.*)$/;
 /** @param {string | undefined} line */
 const isSeparator = (line) => line !== undefined && line.includes("|") && SEPARATOR.test(line);
 /** @param {string} raw */
@@ -146,7 +147,10 @@ function ledgerRecords(raw) {
     } else if (inside && new RegExp(`^#{1,${level}}\\s`).test(line)) {
       inside = false;
     }
-    const marker = FENCE.exec(line);
+    let marker = FENCE.exec(line);
+    if (marker?.[1]?.startsWith("`") && marker[2]?.includes("`")) {
+      marker = null;
+    }
     if (fence === null && marker) {
       fence = /** @type {string} */ (marker[1]);
       inTable = false;
@@ -168,7 +172,7 @@ function ledgerRecords(raw) {
         tableRows++;
         continue;
       }
-      if (!match && line.includes("|") && !isSeparator(line) && isSeparator(lines[i + 1])) {
+      if (!match && !isSeparator(line) && isSeparator(lines[i + 1])) {
         // The header row; the separator after it is skipped with it.
         inTable = true;
         i++;

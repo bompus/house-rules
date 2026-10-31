@@ -745,3 +745,21 @@ test("a checklist line that looks like a table header is still a checklist line"
   expect(result.report.covered).toBe("2/3");
   expect(result.report.errors).toContain('unaccounted record ["previous","L9"]');
 });
+
+test("a one-column table, an inline code span that looks like a fence and an emoji mark are all counted", () => {
+  /** @type {[string[], string][]} */
+  const cases = [
+    [["task", "| --- |", "forgotten work"], "2/3"],
+    [["```inline``` is not a fence", "| task |", "| --- |", "| forgotten |"], "2/3"],
+    [["- [\u{1F4A9}] forgotten"], "2/3"],
+  ];
+  for (const [rows, expected] of cases) {
+    const result = run(
+      withPlan((r) => {
+        r.coverage = "partial";
+      }, planWith(rows)).file,
+    );
+    expect(result.code).toBe(2);
+    expect(result.report.covered).toBe(expected);
+  }
+});
