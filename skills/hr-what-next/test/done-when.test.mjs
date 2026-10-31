@@ -489,7 +489,9 @@ test("an unmatched backtick run is literal and does not expose a marker inside a
       "- [ ] a: keep``unmatched `done-when: path-absent /etc` after",
       "- [ ] b: keep`one ``two`` three` `done-when: path-absent /etc`",
       "- [ ] c: a ```` b ```x``` `done-when: path-absent /etc` d",
+      // A backslash escapes the first backtick outside a span; the second one opens the span.
+      "- [ ] d: write \\`` done-when: path-absent /etc`",
     ]),
   );
-  expect(items.map((item) => item.doneWhen)).toEqual([undefined, undefined, undefined]);
+  expect(items.map((item) => item.doneWhen)).toEqual([undefined, undefined, undefined, undefined]);
 });
