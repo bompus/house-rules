@@ -339,6 +339,8 @@ def main():
             cg = args.workload_cgroup.rstrip("/")
             if cg == "auto":
                 cg = own_cgroup(os.getppid())
+            if not cg or not os.path.isdir(cg):
+                raise OSError(f"the workload cgroup is not a directory: {cg!r}")
             out.update(scope="workload-cgroup", workload_cgroup=cg)
         elif not args.host_only:
             reasons.append("no workload cgroup given")

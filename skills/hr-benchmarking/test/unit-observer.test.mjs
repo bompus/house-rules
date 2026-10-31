@@ -274,3 +274,35 @@ test(
     assert.ok(reason(r, /storage phase/), String(r.summary.reasons));
   },
 );
+
+test(
+  "a workload cgroup that is empty, slash-only or not a directory fails at once, with a summary and no ready marker",
+  opts,
+  () => {
+    const root = mkdtempSync(join(tmpdir(), "unit-observer-"));
+    try {
+      for (const bad of ["/", "//", join(root, "missing")]) {
+        const output = join(root, "bad.json");
+        const result = spawnSync(
+          "python3",
+          [observer, "--output", output, "--workload-cgroup", bad],
+          {
+            timeout: 20000,
+          },
+        );
+        assert.equal(result.status, 1, bad);
+        /** @type {Summary} */
+        const summary = JSON.parse(readFileSync(output, "utf8"));
+        assert.equal(summary.clean, false);
+        assert.ok(
+          summary.reasons.some((x) => /not a directory/.test(x)),
+          String(summary.reasons),
+        );
+        assert.ok(!existsSync(`${output}.ready`), "no ready marker when the setup failed");
+        rmSync(output);
+      }
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  },
+);
