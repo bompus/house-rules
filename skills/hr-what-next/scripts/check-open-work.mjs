@@ -34,6 +34,7 @@
 // hr-forgotten-work-audit writes: a missing, unreadable or older-than-30-days record is a warning. A plan
 // without that line gets no audit warning.
 import { pathToFileURL } from "node:url";
+import { evaluateDoneWhen } from "./done-when.mjs";
 import { githubStates } from "./github-state.mjs";
 import { MARKS, RECHECK, droppedByUserUnasked, parsePlan, planSnapshot } from "./plan-ledger.mjs";
 import { spawnSync } from "node:child_process";
@@ -62,6 +63,7 @@ import { basename, dirname, join, resolve, sep } from "node:path";
  * @property {string[]} stale
  * @property {string[]} recheckDue
  * @property {string[]} resolvedLater
+ * @property {string[]} doneWhen
  * @property {string[]} skipped
  * @property {string[]} findings
  * @property {string[]} warnings
@@ -702,6 +704,7 @@ async function run(options) {
     stale: [],
     recheckDue: [],
     resolvedLater: [],
+    doneWhen: [],
     skipped: [],
     findings: [],
     warnings: [],
@@ -838,6 +841,9 @@ async function run(options) {
   }
   if (!invalid) {
     report.stale = await possiblyFinished(open, options, report);
+    report.doneWhen = (await evaluateDoneWhen(open, { offline: options.offline })).map(
+      (entry) => `L${entry.line} ${entry.status}: ${entry.evidence}`,
+    );
   }
   if (options.archive && !report.errors.length) {
     if (!COMPLETED_STATUS.test(plan.status ?? "")) {
@@ -893,6 +899,7 @@ async function main() {
       ["awaiting your yes/no", report.awaitingUser],
       ["unanswered offer", report.unansweredOffers],
       ["possibly finished", report.stale],
+      ["done-when", report.doneWhen],
       ["re-check due", report.recheckDue],
       ["possibly resolved by a later done line", report.resolvedLater],
       ["skipped", report.skipped],

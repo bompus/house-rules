@@ -3,7 +3,9 @@
 import { createHash } from "node:crypto";
 
 /** @typedef {" " | "~" | "x" | "-"} Mark */
-/** @typedef {{ line: number, mark: Mark, text: string }} LedgerItem */
+/** @typedef {{ kind: "pr-merged" | "issue-closed", repo: string, number: number } | { kind: "path-absent", path: string }} DoneCondition */
+/** @typedef {{ conditions: DoneCondition[] } | { error: string }} DoneWhen */
+/** @typedef {{ line: number, mark: Mark, text: string, doneWhen?: DoneWhen }} LedgerItem */
 /** @typedef {{ line: number, text: string, box: boolean }} NarrativeLine */
 /**
  * @typedef {object} Plan
@@ -30,6 +32,46 @@ const NARRATIVE =
 const PROSE_MARKER =
   /(?:^|[.;!?]\s+|\*\*)\s*(?:follow-?ups?|deferred|todo|(?:still )?open for later)\**\s*:/i;
 export const RECHECK = /\brecheck:\s*(\d{4}-\d{2}-\d{2})/i;
+// `done-when: <condition>[; <condition>]` ends an open or deferred item. Text in backticks is prose about the
+// convention, not a clause.
+const DONE_WHEN = /(?:^|\s)done-when:\s*(.*)$/i;
+const GITHUB_REF = /^([\w.-]+\/[\w.-]+)#(\d+)$/;
+
+/**
+ * Reads an item's `done-when:` clause: `pr-merged owner/repo#n`, `issue-closed owner/repo#n` and
+ * `path-absent <absolute or ~/ path>`, all of which must hold. A clause that cannot be read is an error.
+ * @param {string} text
+ * @returns {DoneWhen | undefined}
+ */
+export function parseDoneWhen(text) {
+  const match = DONE_WHEN.exec(text.replace(/`[^`]*`/g, ""));
+  if (!match) {
+    return undefined;
+  }
+  const clause = (match[1] ?? "").trim().replace(/\.$/, "");
+  /** @type {DoneCondition[]} */
+  const conditions = [];
+  for (const part of clause.split(";")) {
+    const split = /^(\S+)(?:\s+(.*))?$/.exec(part.trim());
+    const kind = split?.[1];
+    const argument = (split?.[2] ?? "").trim();
+    if (kind === "pr-merged" || kind === "issue-closed") {
+      const ref = GITHUB_REF.exec(argument);
+      if (!ref) {
+        return { error: `bad ${kind === "pr-merged" ? "pull request" : "issue"} "${argument}"` };
+      }
+      conditions.push({ kind, repo: ref[1] ?? "", number: Number(ref[2]) });
+    } else if (kind === "path-absent" && argument) {
+      if (!/^(?:\/|~\/|[A-Za-z]:[\\/])/.test(argument)) {
+        return { error: `path must be absolute or start with ~/: "${argument}"` };
+      }
+      conditions.push({ kind, path: argument });
+    } else {
+      return { error: part.trim() ? `unknown condition "${part.trim()}"` : "empty condition" };
+    }
+  }
+  return { conditions };
+}
 
 /**
  * @param {string} text
@@ -87,6 +129,12 @@ export function parsePlan(text) {
       last.text += ` ${line.trim()}`;
     }
   }
+  for (const item of items) {
+    const doneWhen = item.mark === " " || item.mark === "~" ? parseDoneWhen(item.text) : undefined;
+    if (doneWhen) {
+      item.doneWhen = doneWhen;
+    }
+  }
   if (start >= 0 && !items.length) {
     errors.push("the ledger has no items (`- [ ] ...`, `- [~] ...`, `- [x] ...`, `- [-] ...`)");
   }
@@ -136,7 +184,7 @@ export function planSnapshot(planText) {
     errors: plan.errors,
     openItems: plan.items
       .filter((item) => item.mark === " " || item.mark === "~")
-      .map((item) => ({
+      .map(({ doneWhen: _doneWhen, ...item }) => ({
         id: `L${item.line}:${sha256(item.mark + item.text)}`,
         ...item,
         recheck: item.text.match(RECHECK)?.[1] ?? null,

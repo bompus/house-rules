@@ -31,7 +31,7 @@ function gh(...args) {
 /**
  * @param {string[]} refs
  * @param {boolean} offline
- * @returns {Promise<{ states: Map<string, string>, unmerged: Set<string>, skipped?: string }>}
+ * @returns {Promise<{ states: Map<string, string>, unmerged: Set<string>, pulls: Set<string>, when: Map<string, string>, skipped?: string }>}
  */
 export async function githubStates(refs, offline) {
   /** @type {Map<string, string>} */
@@ -39,11 +39,16 @@ export async function githubStates(refs, offline) {
   // Pull requests that were closed without being merged: "closed", but not finished work.
   /** @type {Set<string>} */
   const unmerged = new Set();
+  // References that are pull requests, and when a merged or closed one finished.
+  /** @type {Set<string>} */
+  const pulls = new Set();
+  /** @type {Map<string, string>} */
+  const when = new Map();
   if (!refs.length) {
-    return { states, unmerged };
+    return { states, unmerged, pulls, when };
   }
   if (offline) {
-    return { states, unmerged, skipped: "GitHub check skipped: --offline" };
+    return { states, unmerged, pulls, when, skipped: "GitHub check skipped: --offline" };
   }
   /** @param {string} ref */
   const lookup = async (ref) => {
@@ -59,6 +64,13 @@ export async function githubStates(refs, offline) {
     }
     const issue = JSON.parse(/** @type {string} */ (result.stdout));
     states.set(ref, issue.pull_request?.merged_at ? "merged" : issue.state);
+    if (issue.pull_request) {
+      pulls.add(ref);
+    }
+    const finished = issue.pull_request?.merged_at ?? issue.closed_at;
+    if (finished) {
+      when.set(ref, finished);
+    }
     if (issue.pull_request && !issue.pull_request.merged_at && issue.state === "closed") {
       unmerged.add(ref);
     }
@@ -78,8 +90,10 @@ export async function githubStates(refs, offline) {
     return {
       states: new Map(),
       unmerged: new Set(),
+      pulls: new Set(),
+      when: new Map(),
       skipped: `GitHub check skipped: ${/** @type {Error} */ (error).message}`,
     };
   }
-  return { states, unmerged };
+  return { states, unmerged, pulls, when };
 }

@@ -38,6 +38,13 @@ completed state before the completion message; a report alone does not do so.
    issues are all merged or closed (add `--repo <owner/repo>` for bare numbers),
    unless a named commit sits outside a `--checkout`'s default branch,
    and "re-check due" lists `recheck:` dates that are past or within a week.
+   Its "done-when" group evaluates a `done-when: <condition>[; <condition>]` clause
+   that ends an open or deferred item (`pr-merged owner/repo#n`, `issue-closed
+   owner/repo#n` or `path-absent <absolute or ~/ path>`; every condition must hold)
+   and prints it closeable, pending or error. `scripts/done-when.mjs <plan>` prints the
+   same and writes nothing; with `--apply` it closes the closeable lines in place, with
+   the evidence it found. A lookup that fails or a clause it cannot read is an error,
+   never closeable.
    Its "possibly resolved by a later done line" group lists open or deferred
    items whose pull request, issue, commit, thread id, offer ID or work id
    (such as `docs-fix-20261016`) a later done line also names. It is a weak
