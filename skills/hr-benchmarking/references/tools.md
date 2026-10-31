@@ -71,6 +71,33 @@ miss processes that start and exit between them; unreadable processes are counte
 as missing. CPU contributors explain observed activity, not whether it changed
 application latency.
 
+## Continuous observer for one unit
+
+`scripts/unit-observer.py` watches one measured unit (a timed run or a phase) that runs inside a
+single cgroup, and says whether the unit may count. Start the unit in a transient scope, start the
+observer from a process in that scope, wait for `<output>.ready`, run the unit, then send the
+observer SIGTERM and read its exit status (0 clean, 1 not) and summary:
+
+```sh
+systemd-run --user --scope -p MemoryMax=2G bash -c '
+  python3 scripts/unit-observer.py --workload-cgroup auto --output /disk/path/unit.json & obs=$!
+  while [ ! -e /disk/path/unit.json.ready ]; do sleep 0.2; done
+  ./run-the-unit
+  kill -TERM $obs; wait $obs'
+```
+
+It samples once a second and applies the host admission limits through the whole unit: available
+memory, host and workload memory and I/O pressure, host swap-out and zswap activity, unbroken
+coverage (monotonic clock, no gap over 2.5 s), and competing CPU as host busy cores minus the
+workload cgroup's own CPU (mean over the run, at most 4). For the workload cgroup it also rejects
+growth of `memory.swap.current` or `memory.zswap.current`, any change of `zswpin`, `zswpout` or
+`zswpwb`, any increment of `memory.events` high, max, oom or oom_kill, a replaced directory and
+unreadable counters. Without PSI the unit is not clean. `--host-only` checks the host limits alone
+and records `"scope": "host-only"`. The summary records the observer's identity, own CPU time and
+the first and last sample times; its cost is part of the unit's CPU, so report it beside the
+results and make no negligible-impact claim from a clean summary. A unit that spans several
+transient scopes (one per child) has no single cgroup to watch; put the whole phase in one scope.
+
 ## Scheduling controls
 
 These Linux controls change resource allocation under competition; they do not
