@@ -1,6 +1,14 @@
 import { afterEach, expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { parsePlan, planSnapshot } from "../scripts/plan-ledger.mjs";
@@ -48,8 +56,9 @@ function fakeGh(states) {
     join(bin, "gh"),
     [
       `#!${process.execPath}`,
-      'const { readFileSync } = require("node:fs");',
+      'const { appendFileSync, readFileSync } = require("node:fs");',
       'const { join } = require("node:path");',
+      'appendFileSync(join(__dirname, "calls.log"), process.argv.slice(2).join(" ") + "\\n");',
       'const states = JSON.parse(readFileSync(join(__dirname, "states.json"), "utf8"));',
       'if (states.fail) { console.error("error connecting to api.github.com"); process.exit(1); }',
       "const [, owner, repo, , number] = process.argv[3].split('/');",
@@ -67,7 +76,11 @@ function fakeGh(states) {
     ].join("\n"),
     { mode: 0o755 },
   );
-  return { ...process.env, PATH: `${bin}:${process.env.PATH}` };
+  const calls = () =>
+    existsSync(join(bin, "calls.log"))
+      ? readFileSync(join(bin, "calls.log"), "utf8").split("\n").filter(Boolean)
+      : [];
+  return { env: { ...process.env, PATH: `${bin}:${process.env.PATH}` }, calls };
 }
 
 /** @param {NodeJS.ProcessEnv} env @param {string} plan @param {...string} args */
@@ -145,7 +158,7 @@ posixOnly("without --apply it reports each line and changes nothing", () => {
     "- [ ] d: no clause",
   ]);
   const before = readFileSync(plan, "utf8");
-  const env = fakeGh({ "acme/tool#1": "merged", "acme/tool#2": "open" });
+  const { env } = fakeGh({ "acme/tool#1": "merged", "acme/tool#2": "open" });
   const result = run(env, plan);
   expect(result.code).toBe(0);
   expect(result.out).toContain("L6 closeable: pr-merged acme/tool#1: merged 2026-10-30T12:00:00Z");
@@ -168,7 +181,7 @@ posixOnly("--apply closes only the closeable lines, with the evidence found", ()
     "- [~] b: park ... trigger: x done-when: issue-closed acme/tool#3",
     "- [ ] c: land done-when: pr-merged acme/tool#2",
   ]);
-  const env = fakeGh({
+  const { env } = fakeGh({
     "acme/tool#1": "merged",
     "acme/tool#2": "open",
     "acme/tool#3": "closed-issue",
@@ -196,7 +209,7 @@ posixOnly("every condition must hold: one that does not leaves the line open", (
     `- [ ] a: land done-when: pr-merged acme/tool#1; path-absent ${dir}`,
     `- [ ] b: land done-when: pr-merged acme/tool#1; path-absent ${join(dir, "gone")}`,
   ]);
-  const env = fakeGh({ "acme/tool#1": "merged" });
+  const { env } = fakeGh({ "acme/tool#1": "merged" });
   const result = run(env, plan, "--apply");
   expect(result.out).toContain(
     `L6 pending: pr-merged acme/tool#1: merged 2026-10-30T12:00:00Z; path-absent ${dir}: still exists`,
@@ -212,13 +225,13 @@ posixOnly("a lookup that fails is an error row and is never closed", () => {
     "- [ ] b: land done-when: pr-merged acme/tool#9",
   ]);
   const before = readFileSync(plan, "utf8");
-  const unreachable = run(fakeGh({ fail: true }), plan, "--apply");
+  const unreachable = run(fakeGh({ fail: true }).env, plan, "--apply");
   expect(unreachable.code).toBe(1);
   expect(unreachable.out).toMatch(/L6 error: .*GitHub check skipped/);
   expect(unreachable.out).toMatch(/L7 error: .*GitHub check skipped/);
   expect(readFileSync(plan, "utf8")).toBe(before);
   // Reachable, but one reference GitHub does not know.
-  const missing = run(fakeGh({ "acme/tool#1": "merged" }), plan, "--apply");
+  const missing = run(fakeGh({ "acme/tool#1": "merged" }).env, plan, "--apply");
   expect(missing.code).toBe(1);
   expect(missing.out).toContain("L7 error: pr-merged acme/tool#9: not found");
   expect(lines(plan)[5]).toMatch(/^- \[x\] a:/);
@@ -232,7 +245,8 @@ posixOnly("a pull request and an issue are not interchangeable", () => {
     "- [ ] c: done-when: pr-merged acme/tool#3",
   ]);
   const result = run(
-    fakeGh({ "acme/tool#1": "merged", "acme/tool#2": "closed-issue", "acme/tool#3": "closed-pr" }),
+    fakeGh({ "acme/tool#1": "merged", "acme/tool#2": "closed-issue", "acme/tool#3": "closed-pr" })
+      .env,
     plan,
     "--apply",
   );
@@ -298,7 +312,7 @@ posixOnly("the open-work check lists each clause and still exits 2 for the open 
     "- [ ] b: land done-when: pr-merged acme/tool#2",
   ]);
   const before = readFileSync(plan, "utf8");
-  const env = fakeGh({ "acme/tool#1": "merged", "acme/tool#2": "open" });
+  const { env } = fakeGh({ "acme/tool#1": "merged", "acme/tool#2": "open" });
   const result = spawnSync(process.execPath, [checker, plan, "--json"], { encoding: "utf8", env });
   expect(result.status).toBe(2);
   const report = JSON.parse(result.stdout);
@@ -317,4 +331,64 @@ posixOnly("the open-work check lists each clause and still exits 2 for the open 
       /^L\d+ error: /.test(row),
     ),
   ).toBe(true);
+});
+
+test("the clause must be the last field, so a later field cannot become part of a path", () => {
+  const dir = root0();
+  const { plan } = setup([
+    `- [ ] a: done-when: path-absent ${dir} recheck: 2026-11-01`,
+    "- [ ] b: done-when: pr-merged acme/tool#5 trigger: later",
+  ]);
+  const before = readFileSync(plan, "utf8");
+  const result = run(process.env, plan, "--apply");
+  expect(result.code).toBe(1);
+  expect(result.out).toContain(
+    "L6 error: done-when must be the last field, but `recheck:` follows it",
+  );
+  expect(result.out).toContain(
+    "L7 error: done-when must be the last field, but `trigger:` follows it",
+  );
+  expect(readFileSync(plan, "utf8")).toBe(before);
+});
+
+test("a path keeps its trailing dot", () => {
+  const dir = root0();
+  mkdirSync(join(dir, "kept."));
+  const { plan } = setup([
+    `- [ ] a: done-when: path-absent ${join(dir, "kept.")}`,
+    `- [ ] b: done-when: path-absent ${join(dir, "kept")}`,
+  ]);
+  const result = run(process.env, plan);
+  expect(result.out).toContain("L6 pending");
+  expect(result.out).toContain("L7 closeable");
+});
+
+test("a path with a tab or consecutive spaces is refused, so the close cannot be redirected", () => {
+  const { plan } = setup([
+    "- [ ] a: done-when: path-absent /work/a  b",
+    "- [ ] b: done-when: path-absent /work/a\tb",
+  ]);
+  const result = run(process.env, plan, "--apply");
+  expect(result.code).toBe(1);
+  expect(result.out).toContain("L6 error: path has a tab or consecutive spaces");
+  expect(result.out).toContain("L7 error: path has a tab or consecutive spaces");
+});
+
+test("a Windows path is not a path this check can read", () => {
+  const { plan } = setup(["- [ ] a: done-when: path-absent C:\\Windows\\Temp"]);
+  const result = run(process.env, plan, "--apply");
+  expect(result.code).toBe(1);
+  expect(result.out).toContain("L6 error: path must be absolute or start with ~/");
+});
+
+posixOnly("a reference both checks name is looked up once", () => {
+  const { plan } = setup([
+    "- [ ] a: land acme/tool#1 then update the roadmap page for the next planning cycle done-when: pr-merged acme/tool#1",
+  ]);
+  const { env, calls } = fakeGh({ "acme/tool#1": "merged" });
+  const result = spawnSync(process.execPath, [checker, plan, "--json"], { encoding: "utf8", env });
+  const report = JSON.parse(result.stdout);
+  expect(report.stale).toHaveLength(1);
+  expect(report.doneWhen).toHaveLength(1);
+  expect(calls()).toHaveLength(1);
 });

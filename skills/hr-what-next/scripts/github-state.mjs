@@ -2,6 +2,11 @@
 // consolidate-ledger.mjs share it.
 import { spawn } from "node:child_process";
 
+// What GitHub said about a reference, kept for the life of the process so a second question about it
+// (check-open-work.mjs asks twice about a reference both of its checks name) gets the same answer.
+/** @type {Map<string, { state: string, unmerged: boolean, pull: boolean, when?: string }>} */
+const known = new Map();
+
 /**
  * @param {...string} args
  * @returns {Promise<{ stdout?: string, error?: string }>}
@@ -55,6 +60,20 @@ export async function githubStates(refs, offline) {
     const [, owner, name, number] = /** @type {RegExpMatchArray} */ (
       ref.match(/^(.+)\/(.+)#(\d+)$/)
     );
+    const recorded = known.get(ref);
+    if (recorded) {
+      states.set(ref, recorded.state);
+      if (recorded.unmerged) {
+        unmerged.add(ref);
+      }
+      if (recorded.pull) {
+        pulls.add(ref);
+      }
+      if (recorded.when) {
+        when.set(ref, recorded.when);
+      }
+      return;
+    }
     const result = await gh("api", `repos/${owner}/${name}/issues/${number}`);
     if (result.error) {
       if (/\b404\b|not found/i.test(result.error) && result.error !== "gh not found") {
@@ -63,16 +82,26 @@ export async function githubStates(refs, offline) {
       throw new Error(result.error.split("\n")[0]);
     }
     const issue = JSON.parse(/** @type {string} */ (result.stdout));
-    states.set(ref, issue.pull_request?.merged_at ? "merged" : issue.state);
-    if (issue.pull_request) {
+    const state = issue.pull_request?.merged_at ? "merged" : issue.state;
+    const finished = issue.pull_request?.merged_at ?? issue.closed_at;
+    const record = {
+      state,
+      unmerged: Boolean(
+        issue.pull_request && !issue.pull_request.merged_at && issue.state === "closed",
+      ),
+      pull: Boolean(issue.pull_request),
+      ...(finished ? { when: finished } : {}),
+    };
+    known.set(ref, record);
+    states.set(ref, state);
+    if (record.unmerged) {
+      unmerged.add(ref);
+    }
+    if (record.pull) {
       pulls.add(ref);
     }
-    const finished = issue.pull_request?.merged_at ?? issue.closed_at;
     if (finished) {
       when.set(ref, finished);
-    }
-    if (issue.pull_request && !issue.pull_request.merged_at && issue.state === "closed") {
-      unmerged.add(ref);
     }
   };
   try {

@@ -48,7 +48,12 @@ export function parseDoneWhen(text) {
   if (!match) {
     return undefined;
   }
-  const clause = (match[1] ?? "").trim().replace(/\.$/, "");
+  const clause = (match[1] ?? "").trim();
+  // The clause is the item's last field: a later `recheck: ...` would otherwise read as part of a path.
+  const field = /\s([A-Za-z][\w-]*):(?:\s|$)/.exec(clause);
+  if (field) {
+    return { error: `done-when must be the last field, but \`${field[1]}:\` follows it` };
+  }
   /** @type {DoneCondition[]} */
   const conditions = [];
   for (const part of clause.split(";")) {
@@ -56,14 +61,19 @@ export function parseDoneWhen(text) {
     const kind = split?.[1];
     const argument = (split?.[2] ?? "").trim();
     if (kind === "pr-merged" || kind === "issue-closed") {
-      const ref = GITHUB_REF.exec(argument);
+      // A sentence may end with a period after the last reference.
+      const ref = GITHUB_REF.exec(argument.replace(/\.$/, ""));
       if (!ref) {
         return { error: `bad ${kind === "pr-merged" ? "pull request" : "issue"} "${argument}"` };
       }
       conditions.push({ kind, repo: ref[1] ?? "", number: Number(ref[2]) });
     } else if (kind === "path-absent" && argument) {
-      if (!/^(?:\/|~\/|[A-Za-z]:[\\/])/.test(argument)) {
+      if (!/^(?:\/|~\/)/.test(argument)) {
         return { error: `path must be absolute or start with ~/: "${argument}"` };
+      }
+      // Other whitespace could change between an evaluation and the close, which compares collapsed text.
+      if (/[^\S ]| {2}/.test(argument)) {
+        return { error: `path has a tab or consecutive spaces: "${argument}"` };
       }
       conditions.push({ kind, path: argument });
     } else {
