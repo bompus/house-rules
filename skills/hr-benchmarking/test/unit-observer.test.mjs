@@ -11,7 +11,7 @@ const hz = Number(spawnSync("getconf", ["CLK_TCK"], { encoding: "utf8" }).stdout
 /** @param {number} ms */
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 /** @typedef {{ dir: string, files: Record<string, string>, proc: string }} Fake */
-/** @typedef {{ clean: boolean, scope: string, samples: number, pid: number, start_ticks: string, reasons: string[], window_s: number, last_sample: number, host_busy_cores_mean: number }} Summary */
+/** @typedef {{ clean: boolean, scope: string, samples: number, pid: number, start_ticks: string, reasons: string[], window_s: number, workload_memory_current_peak_bytes: number, workload_io_bytes_delta: object, last_sample: number, host_busy_cores_mean: number }} Summary */
 /** @typedef {{ code: number | null, summary: Summary, killedAt: number }} Result */
 /** @typedef {[number, (f: Fake) => void]} Step */
 
@@ -35,6 +35,8 @@ function fakeWorld(root) {
     "cpu.stat": "usage_usec 1000\nuser_usec 900\nsystem_usec 100\n",
     "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\n",
     "memory.stat": "anon 1\nzswpin 0\nzswpout 0\nzswpwb 0\n",
+    "memory.current": "123456\n",
+    "io.stat": "8:0 rbytes=100 wbytes=200\n",
     "memory.swap.current": "0\n",
     "memory.zswap.current": "0\n",
     "memory.pressure": QUIET,
@@ -106,6 +108,8 @@ test(
     assert.equal(r.code, 0, String(r.summary.reasons));
     assert.equal(r.summary.scope, "workload-cgroup");
     assert.ok(r.summary.samples >= 3 && r.summary.pid > 0 && r.summary.start_ticks);
+    assert.equal(r.summary.workload_memory_current_peak_bytes, 123456);
+    assert.deepEqual(r.summary.workload_io_bytes_delta, { rbytes: 0, wbytes: 0 });
   },
 );
 

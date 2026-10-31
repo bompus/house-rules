@@ -119,6 +119,27 @@ def own_cgroup(pid):
     raise OSError("no unified cgroup v2 mount found")
 
 
+def optional_int(path):
+    try:
+        return int(read(path)[0])
+    except (FileNotFoundError, ValueError, IndexError):
+        return None
+
+
+def io_bytes(path):
+    """Read and written bytes summed over the cgroup's devices; None without io.stat."""
+    try:
+        total = {"rbytes": 0, "wbytes": 0}
+        for line in read(path):
+            for field in line.split()[1:]:
+                key, _, value = field.partition("=")
+                if key in total:
+                    total[key] += int(value)
+        return total
+    except (FileNotFoundError, ValueError):
+        return None
+
+
 def workload_sample(path):
     """The workload cgroup's counters, or None when a required one is unreadable."""
     try:
@@ -131,6 +152,8 @@ def workload_sample(path):
         if os.path.exists(f"{path}/memory.zswap.current"):
             zswap = int(read(f"{path}/memory.zswap.current")[0])
         return {
+            "memory_current": optional_int(f"{path}/memory.current"),
+            "io_bytes": io_bytes(f"{path}/io.stat"),
             "id": [st.st_dev, st.st_ino],
             "cpu_usec": keyed(f"{path}/cpu.stat")["usage_usec"],
             "events": events,
@@ -239,6 +262,12 @@ def workload_reasons(w, gaps, total, out):
     if any(x["events"] != first["events"] for x in w):
         reasons.append("workload memory.events high, max, oom or oom_kill changed")
     out["workload_zswap"] = "absent" if first["zswap"] is None else "present"
+    currents = [x["memory_current"] for x in w]
+    out["workload_memory_current_peak_bytes"] = max(currents) if None not in currents else "unknown"
+    io_first, io_last = first["io_bytes"], w[-1]["io_bytes"]
+    out["workload_io_bytes_delta"] = (
+        {k: io_last[k] - io_first[k] for k in io_first} if io_first and io_last else "unknown"
+    )
     reasons += pressure_reasons(
         [(x["mem_psi"], x["io_psi"]) for x in w], gaps, out, "workload", "workload"
     )
