@@ -13,6 +13,7 @@ import { dirname, resolve } from "node:path";
 /** @typedef {{ id: string, mark: string }} OutsideLine */
 /** @typedef {Json & { at: number }} OutcomeEvent */
 
+let counts = { covered: "0/0", sources: 0, records: 0, items: 0 };
 /** @type {string[]} */
 const errors = [];
 /** @type {string[]} */
@@ -107,7 +108,12 @@ function unique(entries, label) {
 // other text in the section, wrapped continuation lines included, is not read.
 // Open (`- [ ]`) and deferred (`- [~]`) lines are remembered: they must carry over as items.
 // Item lines elsewhere in the file are not records either, but they are counted and reported as a gap.
-// Table rows inside the section (a header row and the separator excluded) are counted as unread lines too.
+// Lines that look like plan items but are not read as records are counted, so they cannot vanish from the
+// total: a checklist line with another mark (`- [?]`, `1. [ ]` and `+ [ ]` are read like `- [ ]`), and the
+// body rows of a Markdown table inside the section (its header row and first separator row excluded).
+// Fenced code is skipped for tables.
+const ITEM = /^\s*(?:[-*+]|\d+[.)])\s+\[(.)\](?:\s+(.*))?$/;
+const SEPARATOR = /^\s*\|?\s*:?-+:?\s*(?:\|\s*:?-+:?\s*)*\|?\s*$/;
 /** @param {string} raw */
 function ledgerRecords(raw) {
   const lines = raw.split(/\r?\n/);
@@ -124,8 +130,10 @@ function ledgerRecords(raw) {
   /** @type {OutsideLine[]} */
   const outside = [];
   let inside = false;
+  let fenced = false;
   let tableRows = 0;
-  const separator = /^\s*\|[\s:|-]+\|?\s*$/;
+  let oddMarks = 0;
+  let inTable = false;
   for (let i = 0; i < lines.length; i++) {
     const line = /** @type {string} */ (lines[i]);
     if (i === start) {
@@ -133,27 +141,45 @@ function ledgerRecords(raw) {
     } else if (inside && new RegExp(`^#{1,${level}}\\s`).test(line)) {
       inside = false;
     }
-    if (
-      inside &&
-      /^\s*\|/.test(line) &&
-      !separator.test(line) &&
-      !separator.test(lines[i + 1] ?? "")
-    ) {
-      tableRows++;
+    if (/^\s*(?:`{3,}|~{3,})/.test(line)) {
+      fenced = !fenced;
+      inTable = false;
     }
-    const match = line.match(/^\s*[-*]\s+\[([ x~-])\]\s+(.*)$/i);
+    if (inside && !fenced) {
+      const isSeparator = line.includes("|") && SEPARATOR.test(line);
+      if (inTable) {
+        if (line.trim() === "" || !line.includes("|")) {
+          inTable = false;
+        } else {
+          tableRows++;
+        }
+      } else if (
+        line.includes("|") &&
+        !isSeparator &&
+        SEPARATOR.test(lines[i + 1] ?? "") &&
+        (lines[i + 1] ?? "").includes("|")
+      ) {
+        // The header row; the separator after it is skipped on the next pass.
+        inTable = true;
+        i++;
+        continue;
+      }
+    }
+    const match = line.match(ITEM);
     if (!match) {
       continue;
     }
-    // Both groups always participate in a match.
+    // The mark always participates in a match; the body may be absent.
     const [, mark = "", body = ""] = match;
-    if (inside) {
+    if (!/^[ x~-]$/i.test(mark)) {
+      oddMarks++;
+    } else if (inside) {
       records.push({ id: `L${i + 1}`, text: body, mark });
     } else {
       outside.push({ id: `L${i + 1}`, mark });
     }
   }
-  return { records, outside, tableRows };
+  return { records, outside, tableRows, oddMarks };
 }
 
 /**
@@ -262,7 +288,13 @@ function check(receipt, directory) {
           `${label}: ${data.tableRows} table row(s) in the \`## Ledger\` section were not read; write each as an item line`,
         );
       }
+      if (data.oddMarks > 0) {
+        gaps.push(
+          `${label}: ${data.oddMarks} checklist line(s) with a mark other than space, x, ~ or - were not read; use one of those marks`,
+        );
+      }
       unreadPlanLines +=
+        data.oddMarks +
         data.tableRows +
         data.outside.filter((/** @type {OutsideLine} */ line) => /[ ~]/.test(line.mark)).length;
     }
@@ -341,6 +373,10 @@ function check(receipt, directory) {
       errors.push(`unaccounted record ${ref}`);
     }
   }
+  // Kept in the module as soon as it is known, so a later validation failure cannot discard it.
+  const mapped = [...openLines].filter((ref) => (accounting.get(ref) ?? []).length > 0).length;
+  const covered = `${mapped}/${openLines.size + unreadPlanLines}`;
+  counts.covered = covered;
 
   /**
    * @param {unknown} value
@@ -469,8 +505,6 @@ function check(receipt, directory) {
       errors.push('plan: expected "none: <reason>" when no plan file is a source');
     }
   }
-  const mapped = [...openLines].filter((ref) => (accounting.get(ref) ?? []).length > 0).length;
-  const covered = `${mapped}/${openLines.size + unreadPlanLines}`;
   if (receipt.coverage === "complete" && gaps.length > 0) {
     errors.push("complete coverage claimed despite source gaps");
   }
@@ -480,13 +514,12 @@ function check(receipt, directory) {
   return { covered, sources: sources.size, records: records.size, items: items.size };
 }
 
-let counts = { covered: "0/0", sources: 0, records: 0, items: 0 };
 try {
   if (process.argv.length !== 3) {
     throw new Error("usage: check-reconciliation.mjs <receipt.json>");
   }
   const file = resolve(/** @type {string} */ (process.argv[2]));
-  counts = check(JSON.parse(readFileSync(file, "utf8")), dirname(file));
+  counts = { ...counts, ...check(JSON.parse(readFileSync(file, "utf8")), dirname(file)) };
 } catch (error) {
   // Avoid printing an input excerpt from JSON.parse or filesystem paths.
   const failure = /** @type {NodeJS.ErrnoException} */ (error);

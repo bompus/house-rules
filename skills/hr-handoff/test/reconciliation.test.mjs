@@ -629,3 +629,74 @@ test("table rows in the ledger section are counted as unread lines", () => {
     expect.stringContaining("2 table row(s) in the `## Ledger` section were not read"),
   ]);
 });
+
+/** @param {string[]} extra */
+const planWith = (extra) => previousPlan.replace("\n## Log", `\n${extra.join("\n")}\n\n## Log`);
+
+test("checklist lines in other bullet styles are read as items, not dropped", () => {
+  for (const line of ["+ [ ] forgotten", "1. [ ] forgotten", "2) [~] forgotten"]) {
+    const result = run(withPlan(() => {}, planWith([line])).file);
+    expect(result.code).toBe(1);
+    expect(result.report.covered).toBe("2/3");
+    expect(result.report.errors).toContain('unaccounted record ["previous","L9"]');
+  }
+});
+
+test("a checklist line with another mark is an unread line, never a clean result", () => {
+  const result = run(
+    withPlan(
+      (r) => {
+        r.coverage = "partial";
+      },
+      planWith(["- [?] forgotten", "- [] also forgotten"]),
+    ).file,
+  );
+  expect(result.code).toBe(2);
+  expect(result.report.covered).toBe("2/3");
+  expect(result.report.gaps).toEqual([
+    expect.stringContaining("1 checklist line(s) with a mark other than space, x, ~ or -"),
+  ]);
+});
+
+test("tables without leading pipes, and rows that follow a separator-like row, are counted", () => {
+  const plain = ["task | state", "--- | ---", "forgotten | open"];
+  const established = [
+    "| task | state |",
+    "| --- | --- |",
+    "| one | open |",
+    "| --- | --- |",
+    "| two | open |",
+  ];
+  /** @type {[string[], string][]} */
+  const cases = [
+    [plain, "2/3"],
+    [established, "2/5"],
+  ];
+  for (const [rows, expected] of cases) {
+    const result = run(
+      withPlan((r) => {
+        r.coverage = "partial";
+      }, planWith(rows)).file,
+    );
+    expect(result.code).toBe(2);
+    expect(result.report.covered).toBe(expected);
+    expect(result.report.gaps).toEqual([expect.stringContaining("table row(s)")]);
+  }
+});
+
+test("a table example in a fenced block of the ledger is not unread work", () => {
+  const fenced = ["```", "| step | state |", "| --- | --- |", "| example | open |", "```"];
+  const result = run(withPlan(() => {}, planWith(fenced)).file);
+  expect(result.code).toBe(0);
+  expect(result.report.covered).toBe("2/2");
+});
+
+test("covered survives a later failure to validate the receipt", () => {
+  const result = run(
+    withPlan((r) => {
+      r.items[0].evidence = { some: "bad" };
+    }).file,
+  );
+  expect(result.code).toBe(1);
+  expect(result.report.covered).toBe("2/2");
+});
