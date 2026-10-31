@@ -46,8 +46,9 @@ function maskCodeSpans(text) {
   let out = "";
   let at = 0;
   while (at < text.length) {
-    // A backslash outside a span makes the next backtick literal, so it cannot open a span.
-    if (text[at] === "\\" && text[at + 1] === "`") {
+    // A backslash outside a span makes the next backtick literal, so it cannot open a span; an escaped
+    // backslash is consumed with its pair so it does not escape what follows.
+    if (text[at] === "\\" && (text[at + 1] === "`" || text[at + 1] === "\\")) {
       out += text.slice(at, at + 2);
       at += 2;
       continue;
