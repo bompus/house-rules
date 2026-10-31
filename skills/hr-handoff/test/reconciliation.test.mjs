@@ -763,3 +763,23 @@ test("a one-column table, an inline code span that looks like a fence and an emo
     expect(result.report.covered).toBe(expected);
   }
 });
+
+test("a table or task inside a blockquote is counted like one outside it", () => {
+  /** @type {[string[], string][]} */
+  const cases = [
+    [["> | task | state |", "> | --- | --- |", "> | forgotten | open |"], "2/3"],
+    [["> > task | state", "> > --- | ---", "> > forgotten work"], "2/3"],
+  ];
+  for (const [rows, expected] of cases) {
+    const result = run(
+      withPlan((r) => {
+        r.coverage = "partial";
+      }, planWith(rows)).file,
+    );
+    expect(result.code).toBe(2);
+    expect(result.report.covered).toBe(expected);
+  }
+  const quotedTask = run(withPlan(() => {}, planWith(["> - [ ] forgotten"])).file);
+  expect(quotedTask.code).toBe(1);
+  expect(quotedTask.report.covered).toBe("2/3");
+});

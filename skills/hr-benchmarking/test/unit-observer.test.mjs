@@ -306,3 +306,20 @@ test(
     }
   },
 );
+
+test(
+  "observer CPU is budgeted over the collection interval, not the process lifetime",
+  opts,
+  async () => {
+    // Interpreter start-up and setup CPU come before the first sample; a short unit must not be
+    // rejected for it. The lifetime figure is still reported beside the budgeted one.
+    const r = await observe(["--workload-cgroup", "{cg}", "--max-observer-cores", "0.2"], {
+      stopAfter: 100,
+    });
+    assert.ok(!reason(r, /observer CPU over budget/), String(r.summary.reasons));
+    const summary = /** @type {Record<string, unknown>} */ (/** @type {unknown} */ (r.summary));
+    const lifetime = Number(summary.observer_cpu_s);
+    const interval = Number(summary.observer_cpu_interval_s);
+    assert.ok(interval >= 0 && lifetime >= interval, `${lifetime} ${interval}`);
+  },
+);

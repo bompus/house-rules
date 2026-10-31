@@ -44,13 +44,16 @@ const GITHUB_REF = /^([\w.-]+\/[\w.-]+)#(\d+)$/;
  * @returns {DoneWhen | undefined}
  */
 export function parseDoneWhen(text) {
-  const match = DONE_WHEN.exec(text.replace(/(`+)(.+?)(?<!`)\1(?!`)/g, ""));
+  // Code spans are blanked, to the same length, only to find the marker; the clause itself is read from the
+  // original text, so backticks inside a path stay part of the path.
+  const masked = text.replace(/(`+)(.+?)(?<!`)\1(?!`)/g, (span) => " ".repeat(span.length));
+  const match = DONE_WHEN.exec(masked);
   if (!match) {
     return undefined;
   }
-  const clause = (match[1] ?? "").trim();
+  const clause = text.slice(match.index + match[0].length - (match[1] ?? "").length).trim();
   // The clause is the item's last field: a later `recheck: ...` would otherwise read as part of a path.
-  const field = /(?:^|[\s([{,])([A-Za-z][\w-]+):/.exec(clause);
+  const field = /(?:^|[\s([{,`])([A-Za-z][\w-]+):/.exec(clause);
   if (field) {
     return { error: `done-when must be the last field, but \`${field[1]}:\` follows it` };
   }

@@ -444,3 +444,16 @@ test("done-when inside a code span of any backtick length is prose", () => {
     { conditions: [{ kind: "pr-merged", repo: "acme/tool", number: 1 }] },
   ]);
 });
+
+test("backticks inside a real condition's path stay part of the path", () => {
+  const { items } = parsePlan(
+    planText([
+      "- [ ] a: done-when: path-absent /work/project`1`",
+      "- [ ] b: see `done-when: x` then done-when: path-absent /work/a`b`c",
+    ]),
+  );
+  expect(items.map((item) => item.doneWhen)).toEqual([
+    { conditions: [{ kind: "path-absent", path: "/work/project`1`" }] },
+    { conditions: [{ kind: "path-absent", path: "/work/a`b`c" }] },
+  ]);
+});

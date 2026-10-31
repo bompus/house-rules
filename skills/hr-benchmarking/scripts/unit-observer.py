@@ -23,7 +23,8 @@ Host-wide swap-out and zswap activity (pswpout, zswpout, zswpwb) is recorded for
 and rejects the unit only with --storage-phase, the phases the rules name.
 
 Observer cost is recorded (CPU, resident peak, output bytes) and checked against budgets
-(--max-observer-cores, default 0.05; --max-observer-rss-mib, default 128); a protocol declares its
+(--max-observer-cores, default 0.05, over the collection interval from the first to the last
+sample; --max-observer-rss-mib, default 128); a protocol declares its
 own. A clean summary does not by itself qualify a run: the protocol still has to declare the
 observers, budgets, stop rules and retries, and keep the receipts. A zswap counter the kernel does
 not provide is recorded as absent.
@@ -171,6 +172,7 @@ def take(cg):
     return {
         "t": time.monotonic(),
         "wall": time.time(),
+        "cpu": sum(os.times()[:2]),
         "busy_ticks": host_busy_ticks(),
         "mem_psi": psi_full(f"{PROC}/pressure/memory"),
         "io_psi": psi_full(f"{PROC}/pressure/io"),
@@ -290,11 +292,16 @@ def write_summary(args, samples, reasons, out, status):
         with open(args.output + ".samples.jsonl", "w") as f:
             for s in samples:
                 f.write(json.dumps(s) + "\n")
+        # The budget is the CPU spent between the first and last sample, over that interval.
+        # Start-up CPU comes before the first sample and output CPU after the last; the lifetime
+        # figure is reported beside it.
         cpu_s = sum(os.times()[:2])
+        interval_cpu_s = samples[-1]["cpu"] - samples[0]["cpu"]
         span = max(samples[-1]["t"] - samples[0]["t"], 1e-9)
         summary.update(
             observer_cpu_s=round(cpu_s, 2),
-            observer_cpu_cores_mean=round(cpu_s / span, 3),
+            observer_cpu_interval_s=round(interval_cpu_s, 3),
+            observer_cpu_cores_mean=round(interval_cpu_s / span, 3),
             observer_rss_peak_mib=round(self_status("VmHWM") / 1024, 1),
             samples_bytes=os.path.getsize(args.output + ".samples.jsonl"),
         )

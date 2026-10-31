@@ -117,6 +117,10 @@ const ITEM = /^\s*(?:[-*+]|\d+[.)])\s+\[(.)\](?:\s+(.*))?$/u;
 const SEPARATOR = /^\s*\|?\s*:?-+:?\s*(?:\|\s*:?-+:?\s*)*\|?\s*$/;
 // Up to three spaces of indent; the text after a backtick fence cannot contain a backtick.
 const FENCE = /^ {0,3}(`{3,}|~{3,})(.*)$/;
+// Block quotes hold plan content too: classify a line without its `>` prefixes.
+const QUOTE = /^(?:\s{0,3}>[ \t]?)+/;
+/** @param {string} line */
+const unquote = (line) => line.replace(QUOTE, "");
 /** @param {string | undefined} line */
 const isSeparator = (line) => line !== undefined && line.includes("|") && SEPARATOR.test(line);
 /** @param {string} raw */
@@ -147,7 +151,8 @@ function ledgerRecords(raw) {
     } else if (inside && new RegExp(`^#{1,${level}}\\s`).test(line)) {
       inside = false;
     }
-    let marker = FENCE.exec(line);
+    const text = unquote(line);
+    let marker = FENCE.exec(text);
     if (marker?.[1]?.startsWith("`") && marker[2]?.includes("`")) {
       marker = null;
     }
@@ -163,16 +168,16 @@ function ledgerRecords(raw) {
     ) {
       fence = null;
     }
-    const match = line.match(ITEM);
+    const match = text.match(ITEM);
     if (fence === null && !marker) {
-      if (inTable && (line.trim() === "" || /^#{1,6}\s/.test(line) || match)) {
+      if (inTable && (text.trim() === "" || /^#{1,6}\s/.test(text) || match)) {
         inTable = false;
       }
       if (inTable) {
         tableRows++;
         continue;
       }
-      if (!match && !isSeparator(line) && isSeparator(lines[i + 1])) {
+      if (!match && !isSeparator(text) && isSeparator(unquote(lines[i + 1] ?? ""))) {
         // The header row; the separator after it is skipped with it.
         inTable = true;
         i++;
