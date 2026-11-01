@@ -42,7 +42,9 @@ work done by a daemon, such as a container build, needs the daemon's own limits.
 Separate scopes cannot stop two jobs that start at the same moment from each sizing a cap
 against the same free memory. Where several agents share one host, give them a shared
 parent cgroup (a systemd slice with its own `MemoryMax`) so their caps cannot add up past
-the host's memory.
+the host's memory, and start each job in it with `--slice=<slice>` added to the command
+above: a scope otherwise lands outside the caller's slice. Check that the slice is an
+ancestor of the job's scope (`systemctl --user status <scope>` shows its control group).
 
 With no measured peak, lower parallelism and drop debug info before
 raising the cap. A capped job that exits 137 or 143 without its own error was likely
