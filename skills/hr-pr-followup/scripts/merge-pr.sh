@@ -210,18 +210,21 @@ else
   fi
 fi
 
-# Without --no-env-file Bun reads a .env in the current directory, and the gate's settings come from the
-# environment: a pull request checked out here could carry one that skips a failing check.
-CHECKER="$(dirname "${BASH_SOURCE[0]}")/check-pr-review.ts"
+# Bun reads a .env and a bunfig.toml (whose preload runs code) from the current directory, and the gate's
+# settings come from the environment: a pull request checked out here could carry either one and skip a
+# failing check. The gate runs from this script's own directory, without .env loading; every gh call in
+# it names the repository, so it needs no checkout.
+HELPER_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CHECKER="$HELPER_DIR/check-pr-review.ts"
 if [ "$EXPLAIN" != 1 ]; then
-  if ! bun --no-env-file "$CHECKER" "$PR" --repo "$REPO"; then
+  if ! (cd "$HELPER_DIR" && bun --no-env-file "$CHECKER" "$PR" --repo "$REPO"); then
     echo "refused: review feedback is open (check-pr-review.ts); PR $PR is not merged" >&2
     exit 1
   fi
 else
   # The checker prints each open item as an indented line on stderr. Sort them into the conditions they break.
   REVIEW_CODE=0
-  REVIEW_ERR="$(bun --no-env-file "$CHECKER" "$PR" --repo "$REPO" 2>&1 >/dev/null)" || REVIEW_CODE=$?
+  REVIEW_ERR="$(cd "$HELPER_DIR" && bun --no-env-file "$CHECKER" "$PR" --repo "$REPO" 2>&1 >/dev/null)" || REVIEW_CODE=$?
   THREADS="" BOT="" CHECKS="" OTHER=""
   if [ "$REVIEW_CODE" = 1 ]; then
     while IFS= read -r LINE; do
@@ -292,14 +295,14 @@ run_repo_check() {
   # unreadable package.json refuses.
   read -r NAMED MAJOR HAS_CHECK NEEDS_INSTALL < <(
     if git cat-file -e "$OID:package.json" 2>/dev/null; then
-      git show "$OID:package.json" | bun -e '
+      git show "$OID:package.json" | (cd "$HELPER_DIR" && bun --no-env-file -e '
         const p = JSON.parse(await Bun.stdin.text());
         const deps = Object.keys({ ...p.dependencies, ...p.devDependencies, ...p.optionalDependencies });
         const install = deps.length > 0 || p.workspaces !== undefined;
         const [name, version] = String(p.packageManager ?? "-").split("@");
         const major = /^\d+/.exec(version ?? "")?.[0] ?? "-";
         console.log(name || "-", major, typeof p.scripts?.check === "string" ? 1 : 0, install ? 1 : 0);
-      ' || echo "invalid"
+      ') || echo "invalid"
     else
       echo "- - 0 0"
     fi

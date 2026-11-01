@@ -1,7 +1,7 @@
 # Optional GitHub review helpers
 
 Use these helpers only when the repository or user selects their policy.
-They require Bun and authenticated `gh`. Run the commands from this skill's
+They require Bun 1.3.3 or newer and authenticated `gh`. Run the commands from this skill's
 installed directory. They add no authority to reply, resolve or land a PR.
 Prefer the host's native PR notifications; `--wait` is a fallback when those
 are unavailable.
@@ -14,7 +14,9 @@ bun --no-env-file scripts/check-pr-review.ts 123 --repo OWNER/REPO
 
 `--no-env-file` keeps Bun from reading a `.env` in the current directory; the gate's
 settings (`HR_PRIVATE_REVIEWER`, `HR_ADVISORY_CHECKS`) come only from the environment, and
-a pull request checked out there could otherwise carry one that skips a failing check.
+a pull request checked out there could otherwise carry one that skips a failing check. The
+landing helper also runs these Bun calls from the skill's own directory, so a `bunfig.toml`
+in the checkout cannot preload code into them.
 
 The gate exits 0 when its selected feedback checks pass, 1 for open feedback,
 and 2 when coverage cannot be verified. It checks unresolved threads, pending
@@ -134,7 +136,7 @@ Run this helper only after judging that the selected reply answers the finding.
 It reads GitHub through `gh`, using that CLI's authenticated account.
 
 ```sh
-bun scripts/resolve-pr-thread.ts https://github.com/OWNER/REPO/pull/123 \
+bun --no-env-file scripts/resolve-pr-thread.ts https://github.com/OWNER/REPO/pull/123 \
   --thread THREAD_NODE_ID --expect-head FULL_HEAD_SHA \
   --reply-url https://github.com/OWNER/REPO/pull/123#discussion_r456
 ```

@@ -260,6 +260,10 @@ exit $code
       env: {
         ...process.env,
         ...gitEnv,
+        // The caller's own settings must not decide what these tests see.
+        HR_ADVISORY_CHECKS: "",
+        HR_PRIVATE_REVIEWER: "",
+        HR_REVIEW_ROUND_CAP: "",
         HR_PUSH_LANDED: "bompus/house-rules",
         PATH: `${bin}:${process.env.PATH}`,
       },
@@ -1042,15 +1046,38 @@ test.skipIf(process.getuid?.() === 0)(
   },
 );
 
-// Bun loads a `.env` from the current directory. A pull request checked out for landing could carry
-// one, and the gate's settings come from the environment, so the helper runs the checker without it.
+// Bun loads a `.env` and a `bunfig.toml` (its `preload` runs code) from the current directory. A pull
+// request checked out where the helper runs could carry either, and the gate's settings come from the
+// environment, so the helper runs its Bun calls without the file and from outside the checkout.
+const failingBuild = [{ name: "build", status: "COMPLETED", conclusion: "FAILURE" }];
+
 test("a .env in the checkout does not change the review verdict", () => {
-  const { work, log, run } = fixture({
-    checks: [{ name: "build", status: "COMPLETED", conclusion: "FAILURE" }],
-  });
+  const { work, log, run } = fixture({ checks: failingBuild });
   writeFileSync(join(work, ".env"), 'HR_ADVISORY_CHECKS=["build"]\nHR_PRIVATE_REVIEWER=someone\n');
   const r = run();
   expect(r.code).toBe(1);
   expect(r.err).toContain("check build concluded FAILURE");
   expect(readFileSync(log, "utf8")).not.toContain("pr merge");
+});
+
+test("a bunfig.toml preload in the checkout does not change the verdict or the check lookup", () => {
+  const { work, log, run } = fixture({ checks: failingBuild });
+  writeFileSync(join(work, "bunfig.toml"), 'preload = ["./preload.ts"]\n');
+  writeFileSync(
+    join(work, "preload.ts"),
+    'process.env.HR_ADVISORY_CHECKS = \'["build"]\';\nconsole.log("- - 0 0");\n',
+  );
+  const r = run();
+  expect(r.code).toBe(1);
+  expect(r.err).toContain("check build concluded FAILURE");
+  expect(r.err).not.toContain("no check command");
+  expect(readFileSync(log, "utf8")).not.toContain("pr merge");
+});
+
+test("--explain reads the same verdict whatever the checkout's .env says", () => {
+  const { work, run } = fixture({ checks: failingBuild });
+  writeFileSync(join(work, ".env"), 'HR_ADVISORY_CHECKS=["build"]\n');
+  const r = run("--explain");
+  expect(r.code).toBe(1);
+  expect(r.out).toContain("UNMET  other checks on the head commit have passed");
 });
