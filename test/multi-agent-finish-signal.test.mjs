@@ -42,13 +42,13 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
  * command starts, as in real use: it is written a moment later, and the command must wait for it.
  * @param {string} logs directory that holds the provider logs
  * @param {Record<string, string>} env
- * @param {string[]} [shell] options for bash, such as `["-O", "nullglob"]`
+ * @param {string[]} [shell] the shell and its options, such as `["bash", "-O", "nullglob"]`
  * @returns {Promise<string>} what the command printed in four seconds
  */
-async function signal(logs, env, shell = []) {
+async function signal(logs, env, shell = ["bash"]) {
   mkdirSync(logs, { recursive: true });
   const filled = command.replaceAll("<mcp-id>", "abc123").replaceAll("<task>", "t1");
-  const child = spawn("timeout", ["4", "bash", ...shell, "-c", filled], {
+  const child = spawn("timeout", ["4", ...shell, "-c", filled], {
     env: { PATH: process.env.PATH ?? "", ...env },
   });
   let out = "";
@@ -97,9 +97,24 @@ test("it still waits for the log when the shell has nullglob enabled", posix, as
   // With nullglob an unmatched $G vanishes: `ls` would list the current directory and succeed, and
   // `tail -F` would get no file name.
   const out = await signal(join(home, ".t3", "userdata", "logs", "provider"), { HOME: home }, [
+    "bash",
     "-O",
     "nullglob",
   ]);
   assert.match(out, /delegate-task%253At1:/);
   assert.doesNotMatch(out, /delegate-task%253At2:/);
 });
+
+test(
+  "it still works in a POSIX shell that exits on error, where shopt does not exist",
+  posix,
+  async (t) => {
+    const home = scratch(t, "finish-signal-home-");
+    const out = await signal(join(home, ".t3", "userdata", "logs", "provider"), { HOME: home }, [
+      "sh",
+      "-e",
+    ]);
+    assert.match(out, /delegate-task%253At1:/);
+    assert.doesNotMatch(out, /delegate-task%253At2:/);
+  },
+);
