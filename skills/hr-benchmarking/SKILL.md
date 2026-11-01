@@ -73,6 +73,10 @@ rule and a fresh admission check before each arm).
   not the median. Keep the runner's minimum iteration counts and check the timer's resolution first.
 - One arm per unit. Put an arm's workloads and runtimes in one unit, so the fresh admission check each
   arm needs is paid once per arm and a refusal discards one arm. Do not skip or reuse a check to save time.
+- Retry a refused admission in seconds, not minutes. A controller that holds no lock, observer or other
+  resource between attempts can look again after a few seconds, keeping every refusal, up to a declared
+  attempt cap and the stop below; a fixed wait of a minute or more after each refusal can be most of a
+  run's elapsed time on a busy host.
 - Declare the expected duration and a wall-clock stop. When the first phase's measured rate puts the plan
   past the stop, tell the user and get their choice between a smaller plan and more time; do not drop a
   decision-critical comparison to fit.
