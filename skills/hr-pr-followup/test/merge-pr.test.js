@@ -75,7 +75,8 @@ function stub(bin, name, body) {
  *   packageJson?: string | null, pnpmInstallExit?: number, files?: Record<string, string>,
  *   racingFetch?: boolean, baseCurrent?: boolean, errexitOff?: boolean, advanceHead?: boolean,
  *   sharing?: string[], sharingFails?: boolean, upstream?: boolean, originUrl?: string,
- *   botReviews?: number, alias?: boolean, silentReviewFailure?: boolean }} [options]
+ *   botReviews?: number, alias?: boolean, silentReviewFailure?: boolean,
+ *   checks?: object[] | null }} [options]
  */
 function fixture({
   dependents = "",
@@ -117,6 +118,8 @@ function fixture({
   botReviews = 0,
   // The review checker refuses with exit status 1 and no line --explain can sort.
   silentReviewFailure = false,
+  // Check runs on the pull request head, as the review gate reads them.
+  checks = null,
 } = {}) {
   const root = mkdtempSync(join(process.env.HOUSE_RULES_TEST_TMP ?? tmpdir(), "merge-pr-"));
   roots.push(root);
@@ -187,7 +190,7 @@ case "$*" in
   "repo view"*) echo "${upstream ? "pingdotgg/t3code" : repo}";;
   "api repos"*reviews*) echo "${botReviews}";;
   "api graphql"*associatedPullRequests*) ${sharingFails ? "exit 1" : `printf '%s\\n' ${[`https://github.com/${repo}/pull/7`, ...sharing].map((url) => `'${url}'`).join(" ")}`};;
-  "api graphql"*) printf '%s' '${JSON.stringify({ data: { viewer: { __typename: "User", login: "maintainer" }, repository: { viewerPermission: "ADMIN", pullRequest: { headRefOid: oid, baseRef: { branchProtectionRule: null, rules: { pageInfo: { hasNextPage: false }, nodes: [] } }, reviewThreads: { nodes: threads, pageInfo: { hasNextPage: false, endCursor: null } }, reviews: { nodes: [], pageInfo: { hasNextPage: false, endCursor: null } }, comments: { nodes: [], pageInfo: { hasNextPage: false, endCursor: null } }, commits: { nodes: [{ commit: { oid, committedDate: "2026-10-01T00:00:00Z", tree: { entries: [] }, statusCheckRollup: null } }] } } } } })}';;
+  "api graphql"*) printf '%s' '${JSON.stringify({ data: { viewer: { __typename: "User", login: "maintainer" }, repository: { viewerPermission: "ADMIN", pullRequest: { headRefOid: oid, baseRef: { branchProtectionRule: null, rules: { pageInfo: { hasNextPage: false }, nodes: [] } }, reviewThreads: { nodes: threads, pageInfo: { hasNextPage: false, endCursor: null } }, reviews: { nodes: [], pageInfo: { hasNextPage: false, endCursor: null } }, comments: { nodes: [], pageInfo: { hasNextPage: false, endCursor: null } }, commits: { nodes: [{ commit: { oid, committedDate: "2026-10-01T00:00:00Z", tree: { entries: [] }, statusCheckRollup: checks === null ? null : { contexts: { nodes: checks, pageInfo: { hasNextPage: false, endCursor: null } } } } }] } } } } })}';;
 esac
 `,
   );
@@ -1034,3 +1037,16 @@ test.skipIf(process.getuid?.() === 0)(
     }
   },
 );
+
+// Bun loads a `.env` from the current directory. A pull request checked out for landing could carry
+// one, and the gate's settings come from the environment, so the helper runs the checker without it.
+test("a .env in the checkout does not change the review verdict", () => {
+  const { work, log, run } = fixture({
+    checks: [{ name: "build", status: "COMPLETED", conclusion: "FAILURE" }],
+  });
+  writeFileSync(join(work, ".env"), 'HR_ADVISORY_CHECKS=["build"]\nHR_PRIVATE_REVIEWER=someone\n');
+  const r = run();
+  expect(r.code).toBe(1);
+  expect(r.err).toContain("check build concluded FAILURE");
+  expect(readFileSync(log, "utf8")).not.toContain("pr merge");
+});

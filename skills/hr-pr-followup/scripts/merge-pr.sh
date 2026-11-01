@@ -210,16 +210,18 @@ else
   fi
 fi
 
+# Without --no-env-file Bun reads a .env in the current directory, and the gate's settings come from the
+# environment: a pull request checked out here could carry one that skips a failing check.
 CHECKER="$(dirname "${BASH_SOURCE[0]}")/check-pr-review.ts"
 if [ "$EXPLAIN" != 1 ]; then
-  if ! bun "$CHECKER" "$PR" --repo "$REPO"; then
+  if ! bun --no-env-file "$CHECKER" "$PR" --repo "$REPO"; then
     echo "refused: review feedback is open (check-pr-review.ts); PR $PR is not merged" >&2
     exit 1
   fi
 else
   # The checker prints each open item as an indented line on stderr. Sort them into the conditions they break.
   REVIEW_CODE=0
-  REVIEW_ERR="$(bun "$CHECKER" "$PR" --repo "$REPO" 2>&1 >/dev/null)" || REVIEW_CODE=$?
+  REVIEW_ERR="$(bun --no-env-file "$CHECKER" "$PR" --repo "$REPO" 2>&1 >/dev/null)" || REVIEW_CODE=$?
   THREADS="" BOT="" CHECKS="" OTHER=""
   if [ "$REVIEW_CODE" = 1 ]; then
     while IFS= read -r LINE; do

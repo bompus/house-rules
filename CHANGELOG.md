@@ -5,6 +5,7 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 ## Unreleased
 
 - Add two small notes. The `hr-benchmarking` tools reference says not to add Mitata as a runner (an existing Mitata workload stays a comparison input) and a note to check a Vitest project's `benchmark.provider` and to hoist an import that does not change out of the timed callback when the module runner exposes it through a getter. The `hr-code-review` reviewer role says a finding needs evidence and a concrete failure, and leaves out low-confidence guesses and repeats of comments already on the pull request (a confirmed blocker still counts in the verdict).
+- Run the review gate without Bun's `.env` loading. `merge-pr.sh` now runs `check-pr-review.ts` with `bun --no-env-file`, and the usage lines say so, because the gate's settings (`HR_PRIVATE_REVIEWER`, `HR_ADVISORY_CHECKS`) come from the environment and a `.env` in a checkout where a pull request is landed could have skipped a failing check. A test puts such a `.env` in the checkout and shows the verdict is unchanged.
 
 ## 0.18.0 - 2026-11-01
 
