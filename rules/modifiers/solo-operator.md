@@ -16,7 +16,7 @@ A review bot that comments again on each push can keep a pull request open witho
 end. Count one posted bot review as a round. In rounds 1 and 2, fix or answer every
 finding, batch the fixes into one push, and answer and resolve each thread. From round
 3 on, fix only a finding that is a defect you reproduced, or one rated high or
-critical, in code the pull request changes; answer the rest in one line with the
+critical, in code the pull request changes or affects; answer the rest in one line with the
 reason, resolve the thread and land.
 
 A nit (a cosmetic preference, optional polish, a speculative cleanup with no concrete
