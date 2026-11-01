@@ -12,8 +12,8 @@ reporting load or running jobs stays allowed; what you see informs the report an
 never holds the work back. A limit the user states for a run still applies. Cap
 parallel workers and compiler jobs at max(1, floor(CPUs / 2)); count CPUs with
 `nproc --all`, which ignores a cgroup CPU quota, because counters that follow a quota
-differ on fractions (a 1.5 CPU quota reads 1 in Node and Bun, 2 in uutils `nproc` and
-16 in GNU `nproc`).
+differ on fractions (on a 16-CPU host, a 1.5 CPU quota reads 1 in Node and Bun, 2 in
+uutils `nproc` and 16 in GNU `nproc`).
 
 A benchmark, timing run or other performance measurement keeps every rule of
 `hr-benchmarking`. That includes keeping other work from competing with the run
@@ -28,8 +28,8 @@ Work risks exhausting memory when its expected or last measured peak leaves
 little headroom in the memory available to it, or when its peak is unknown and
 its input is large. Constrain such work using the host's supported controls; on
 Linux with systemd, `systemd-run --user --scope -p MemoryMax=<size> -- <cmd>`, sized
-from the job's measured peak plus about 20% (the scope's journal line reports
-`Consumed …`). With no measured peak, lower parallelism and drop debug info before
+from the job's measured peak plus about 20% (where systemd reports it, the scope's
+journal line `Consumed …` includes the peak memory). With no measured peak, lower parallelism and drop debug info before
 raising the cap. A capped job that exits 137 or 143 without its own error was likely
 killed for memory: check the system journal for an OOM kill before retrying.
 Retry with a larger budget only when host evidence shows memory pressure caused

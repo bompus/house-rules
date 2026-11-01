@@ -23,7 +23,7 @@ A nit (a cosmetic preference, optional polish, a speculative cleanup with no con
 consequence) gets a one-line reason, not a commit or another review request; a small
 fix for a real defect is not a nit, and mandatory checks still apply. Code that
 handles credentials, deletion, permissions or untrusted input is the exception:
-review continues until a round comes back clean of material defects, and a bot that
-posts only high findings after round 2 has not given a clean round, so run its
-unfiltered review by hand. After 6 rounds on any pull request, stop and show the user
+review continues until a round comes back clean of material defects, and a bot
+configured to report only high-severity findings after round 2 has not given a clean
+round, so run its unfiltered review by hand. After 6 rounds on any pull request, stop and show the user
 the open findings with a recommendation before pushing again.
