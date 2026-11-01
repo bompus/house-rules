@@ -202,15 +202,19 @@ behavior.
   session's delegated tasks, and the file does not exist until the first event, so a Monitor waits for it
   and then reads from the start while following, in one operation, so an event written before the
   Monitor attached is not lost, and filters on the task id with its boundary and the update type:
-  `cd <data dir>/logs/provider; G='<glob>'; until ls $G >/dev/null 2>&1; do sleep 2; done; tail -n +1 -F $G | grep --line-buffered 'delegate-task%253A<task>:.*"update":{"type":"turn-ended"'`.
+  `cd "<data dir>/logs/provider" || exit 1; G='<glob>'; until ls $G >/dev/null 2>&1; do sleep 2; done; tail -n +1 -F $G | grep --line-buffered 'delegate-task%253A<task>:.*"update":{"type":"turn-ended"'`.
   The `:` after the task id ends it (ids can share a prefix), and `"update":{"type":"turn-ended"`
   keeps a tool result that merely contains the words from matching. Nothing may follow `grep` in the
   pipe: `cut` and `head` buffer when output is not a terminal and hold the signal back (a Monitor with
   a `cut` after the `grep` stayed silent through a finished review). Re-arming after the Monitor
-  expires is the same command. The line is a prompt to inspect, not the end of the task: read the
-  thread, confirm the last assistant item is the report and that no background command, nested
-  delegate or queued turn of the run is still working, then `task_cancel`. The `turn-ended` time minus
-  the run's start is the review's real duration.
+  expires is the same command. Reading from the start replays older events, and a follow-up in the same
+  child thread leaves earlier `turn-ended` lines in the file: each line starts with its UTC timestamp, so
+  ignore any line older than the current run's `startedAt` (from `t3_thread_read`). The line is a prompt to
+  inspect, not the end of the task: read the thread, confirm the last assistant item belongs to the
+  current run and is the report, and that no background command, nested delegate or queued turn of the
+  run is still working, then `task_cancel`. The `turn-ended` time minus the run's start is the model
+  turn's duration; a review that waits on background or delegated work is complete only when the last
+  of that work settles, so time it to that moment.
 - Measured once: `run.completed` reached the log exactly 8 h 00 min after `turn-ended` (06:45:28.009Z,
   14:45:27.591Z) with nothing from the adapter in between; the full result had been streamed before
   `turn-ended`. Whether the Cursor agent keeps working after `turn-ended` is otherwise unverified.
