@@ -18,7 +18,8 @@ settings (`HR_PRIVATE_REVIEWER`, `HR_ADVISORY_CHECKS`) come only from the enviro
 a pull request checked out there could otherwise carry one that skips a failing check. The
 landing helper also runs its Bun calls from the filesystem root with `--config=/dev/null`,
 so a `bunfig.toml` in the checkout, beside the helper or at the root cannot preload code
-into them.
+into them. `/dev/null` is a POSIX path: on Windows, run the commands from a directory that
+holds no `bunfig.toml` or `.env` instead.
 
 The gate exits 0 when its selected feedback checks pass, 1 for open feedback,
 and 2 when coverage cannot be verified. It checks unresolved threads, pending
