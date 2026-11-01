@@ -55,6 +55,27 @@ Keep warm and cold conditions explicit. Reset state or use fresh processes
 where the question requires independence. Record warmup and cache conditions.
 A reused service needs equivalent state across arms, not an arbitrary restart.
 
+## Keep it as short as the decision allows
+
+A benchmark's length costs the host and everyone waiting, so size each part to the decision it supports
+and write the sizes down before the first run.
+
+- Measure what changed. Rerun an arm only when its code, version, input, runtime or timer changed since
+  a result you still trust; carry the others forward, labelled with their date, versions and timer. Re-measure
+  one or two unchanged anchor arms under the new setup: if they stay within their bands the carried arms
+  stand, otherwise measure those too. When nothing changed, do not run.
+- Start small and extend. Pilot one unit of each kind of case. Then run the planned arms for the fewest
+  rounds that give a noise band and a range (two), and add rounds only for comparisons still unsettled.
+  A gap of several times the band needs no replicates; a close gap earns them. Declare the unsettled
+  rule and the round cap first.
+- Size each timing window to the noise. Use the shortest window that meets the stated precision, checked
+  in a pilot from the runner's own error figure (for example the relative error of the median); an
+  operation of a microsecond or less rarely needs seconds. Keep the runner's minimum batch counts.
+- Pay for admission once per unit. The check that ends a unit can start the next one when it is recent,
+  and a phase gets a fresh check at its start. Make units no larger than you can afford to discard.
+- Declare the expected duration and a wall-clock stop. When the first phase's measured rate puts the plan
+  past the stop, shrink the plan before going on instead of letting it run.
+
 ## Confirm the work
 
 Validate outputs, consumed results and error counts outside the timed region
