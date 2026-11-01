@@ -214,7 +214,7 @@ fi
 # settings come from the environment: a pull request checked out here could carry either one and skip a
 # failing check. The gate runs from the filesystem root, outside any checkout (this script may sit in one),
 # without .env loading; every gh call in it names the repository, so it needs no checkout.
-HELPER_DIR="$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+HELPER_DIR="$(CDPATH='' cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 CHECKER="$HELPER_DIR/check-pr-review.ts"
 if [ "$EXPLAIN" != 1 ]; then
   if ! (cd / && bun --no-env-file "$CHECKER" "$PR" --repo "$REPO"); then

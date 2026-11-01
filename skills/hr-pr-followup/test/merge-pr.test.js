@@ -272,6 +272,7 @@ exit $code
   const spawnHelper = (script, extraEnv, pr, args) => {
     // The caller's own settings must not decide what these tests see. They are removed, not
     // emptied: Bun keeps an empty variable that is already set and would not read it from a .env.
+    /** @type {Record<string, string | undefined>} */
     const env = {
       ...process.env,
       ...gitEnv,
