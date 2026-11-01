@@ -1,5 +1,5 @@
 ---
-description: A job expected to run longer than about 10 minutes posts a short status update every 5 minutes by default, with progress, an ETA with its basis or "unmeasured", and findings so far, until the job ends; a watcher event that changes nothing gets at most one line.
+description: A job expected to run longer than about 10 minutes posts a short status update every 5 minutes by default, with progress, an ETA with its basis or "unmeasured", and findings so far, until the job ends; a watcher event that changes nothing gets at most one line. A scheduled task states when it runs, stays silent when idle and has an end.
 after: Reporting
 ---
 
@@ -30,3 +30,14 @@ nothing until it returns, and a user message can interrupt it. Otherwise post at
 the first natural checkpoint after each interval has passed, when a step
 finishes or a tool call returns. Stop the updates when the job ends;
 the final report replaces them.
+
+A scheduled or recurring task states a fire condition (what must be true for a run to
+do work), exits silently when the condition is false, and has an end: it disables
+itself after 3 consecutive runs that found nothing to do, or it carries an end date.
+A run that has nothing to report sends no "nothing to report" message.
+
+Before creating one, settle its purpose and owning thread, the scope it may change (no
+metered route unless approved), and who is told, and only on a change or failure.
+After creating it, read it back: enabled, bound thread, next run. When updating a
+task, change only the fields you mean to; a thread binding or schedule reset as a side
+effect is a change.

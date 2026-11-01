@@ -40,6 +40,13 @@ An option that creates a rule, skill, document or script also names the owning
 repository, whether any project could use it unchanged, and what you searched.
 
 The coded list makes an offer; a prose recommendation alone does not.
+
+Write the offer
+as plain text, never inside a code fence, or it renders as raw text. A reply that
+leaves the user something to act on ends with an offer even after an audit, review,
+investigation or report-only task: a brief that says "do not start the fixes" or
+"done means one report" bans doing, not offering, so end with an offer to act on the
+findings. "If you want X, say …", "let me know if …" and "should I …?" are not offers.
 Record a stable offer ID before presenting it. Codes and `go`/`continue` refer to that
 conversation's latest open offer.
 `go` or `continue` selects the recommendation in the latest open offer. Keep that
