@@ -195,7 +195,24 @@ behavior.
 - Cancelling shows the task as cancelled or interrupted, not `result_available`.
   Take the result from the thread read. `t3_thread_interrupt` on such a child
   closed it in about 10 seconds, the SDK's interrupt timeout.
-- Whether the Cursor agent keeps working after `turn-ended` is unverified.
+- A finish signal without the sentinel: T3 writes the SDK's `turn-ended` update to the child's
+  provider log, `<T3 data dir>/logs/provider/events.thread-delegated-task-command-3amcp-3a<mcp-id>*.log`
+  (data dir `~/.t3/userdata` by default; `<mcp-id>` is the text between `command%3Amcp%3A` and
+  `%3Adelegate-task` in the child's thread id). The file name is cut short and shared by all of one
+  session's delegated tasks, and the file does not exist until the first event, so a Monitor waits for it
+  and then reads from the start while following, in one operation, so an event written before the
+  Monitor attached is not lost, and filters on the task id with its boundary and the update type:
+  `cd <data dir>/logs/provider; G='<glob>'; until ls $G >/dev/null 2>&1; do sleep 2; done; tail -n +1 -F $G | grep --line-buffered 'delegate-task%253A<task>:.*"update":{"type":"turn-ended"'`.
+  The `:` after the task id ends it (ids can share a prefix), and `"update":{"type":"turn-ended"`
+  keeps a tool result that merely contains the words from matching. Re-arming after the Monitor
+  expires is the same command. The line is a prompt to inspect, not the end of the task: read the
+  thread, confirm the last assistant item is the report and that no background command, nested
+  delegate or queued turn of the run is still working, then `task_cancel`. The `turn-ended` time minus
+  the run's start is the review's real duration.
+- Measured once: `run.completed` reached the log exactly 8 h 00 min after `turn-ended` (06:45:28.009Z,
+  14:45:27.591Z) with nothing from the adapter in between; the full result had been streamed before
+  `turn-ended`. Whether the Cursor agent keeps working after `turn-ended` is otherwise unverified.
+  The fix for the hang is the open pingdotgg/t3code#27185 (issue #28444); #17565 was closed as upstream.
 
 Do not start another independent review round by sending a message to `childThreadId`; start a
 new `delegate_task` with the full brief. A follow-up that needs the same child's conversation is
