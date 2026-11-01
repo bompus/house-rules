@@ -57,7 +57,8 @@
 # is that repository's; the script uses that remote, `origin` first, unless --remote names one.
 # With no such remote it refuses.
 #
-# --explain runs the same conditions read-only, lands nothing and prints one line per condition,
+# --explain runs the same conditions and lands nothing, but still runs the head's check command (and
+# its dependency install), and prints one line per condition,
 # `met` or `UNMET`: the pull request is open, no open PR targets its head branch, review threads
 # and review-body findings are resolved, the private reviewer has reviewed the current head, the
 # bot review rounds so far against HR_REVIEW_ROUND_CAP (default 6; advisory, a landing never

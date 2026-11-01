@@ -6,18 +6,18 @@ second until SIGTERM or SIGINT, takes one last sample at that moment, then write
 to --output (and every sample to `<output>.samples.jsonl`) and exits 0 when the unit may count, 1
 when it may not. It writes `<output>.ready` after its first sample; start the unit after that.
 
-Limits are the host benchmarking rules'. Host scope: available memory at least 8 GiB in every
-sample (unrounded); memory full PSI at most 10 ms and I/O full PSI at most 100 ms in any observation
-interval; coverage with no gap over 2.5 s (monotonic clock) and at least two samples; PSI must be
-readable. Competing CPU: the mean over the whole run of host busy cores minus the workload
-cgroup's own CPU (usage_usec, descendants included) is at most 4; with --host-only there is no
-workload to subtract, so the unit's own CPU counts. Workload scope (the cgroup given with
---workload-cgroup, or `auto` for the observer's parent's cgroup): the same pressure limits on its
-own pressure files; in every sample no growth of memory.swap.current or memory.zswap.current over
-the first sample, no change of zswpin, zswpout or zswpwb and no change of memory.events high, max,
-oom or oom_kill from the first sample, the same directory (device and inode), readable required
-counters, and the same set of optional counters (zswap) as in the first sample. A counter that goes
-backward is a failure.
+Limits are these defaults; a protocol that declares others applies its own. Host scope: available
+memory at least 8 GiB in every sample (unrounded); memory full PSI at most 10 ms and I/O full PSI
+at most 100 ms in any observation interval; coverage with no gap over 2.5 s (monotonic clock) and
+at least two samples; PSI must be readable. Competing CPU: the mean over the whole run of host
+busy cores minus the workload cgroup's own CPU (usage_usec, descendants included) is at most 4;
+with --host-only there is no workload to subtract, so the unit's own CPU counts. Workload scope
+(the cgroup given with --workload-cgroup, or `auto` for the observer's parent's cgroup): the same
+pressure limits on its own pressure files; in every sample no growth of memory.swap.current or
+memory.zswap.current over the first sample, no change of zswpin, zswpout or zswpwb and no change
+of memory.events high, max, oom or oom_kill from the first sample, the same directory (device and
+inode), readable required counters, and the same set of optional counters (zswap) as in the first
+sample. A counter that goes backward is a failure.
 
 Host-wide swap-out and zswap activity (pswpout, zswpout, zswpwb) is recorded for every interval
 and rejects the unit only with --storage-phase, the phases the rules name.

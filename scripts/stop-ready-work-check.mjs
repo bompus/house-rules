@@ -148,7 +148,7 @@ function waits(text, planOwner, today) {
     .match(/\bowner:\s*([^;.,)]+)/i)?.[1]
     ?.trim()
     .toLowerCase();
-  // "SageGlen (Orchestrator thread mcp:…)" names one identity, SageGlen; split on the separators around it.
+  // "worker-1 (thread mcp:…)" names one identity, worker-1; split on the separators around it.
   const own = (planOwner ?? "").toLowerCase();
   const identities = [own, ...own.split(/[,;()]/)].map((part) => part.trim());
   const unassigned = ["none", "tbd", "n/a", "unassigned", "unknown"];

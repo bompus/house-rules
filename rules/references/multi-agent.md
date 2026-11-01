@@ -200,7 +200,7 @@ behavior.
   (T3 home is `$T3CODE_HOME`, `$HOME/.t3` when it is unset, so a Monitor started without T3's
   `T3CODE_HOME` watches `$HOME/.t3` and stays silent when T3 runs elsewhere; the command needs
   `T3CODE_HOME` to be an absolute path with no surrounding whitespace, because T3 also accepts a padded
-  or `~`-prefixed value, which the shell does not resolve here and this host does not use; `<mcp-id>` is the text between `command%3Amcp%3A` and
+  or `~`-prefixed value, which the shell does not resolve; `<mcp-id>` is the text between `command%3Amcp%3A` and
   `%3Adelegate-task` in the child's thread id). The file name is cut short and shared by all of one
   session's delegated tasks, and the file does not exist until the first event, so a Monitor waits for it
   and then reads from the start while following, in one operation, so an event written before the

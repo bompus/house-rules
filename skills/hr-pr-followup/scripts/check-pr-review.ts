@@ -56,14 +56,12 @@
 // The reader makes a final head check, not an atomic snapshot of changing review feedback.
 import { spawnSync } from "node:child_process";
 import { parseArgs } from "node:util";
+import { advisoryChecks, isPrivateReviewer, privateReviewerLogin } from "./review-settings.ts";
 
 const CODERABBIT = /coderabbit/i;
 const CUBIC = /^cubic · AI code reviewer$/i;
-// The private reviewer posts as its own App bot, so its review and any check named for it are
-// review-bot output rather than ordinary CI that must pass.
-const PRIVATE_REVIEWER = /^bompus-ai-review(?:\[bot\])?$/i;
 const isReviewBot = (name: string) =>
-  CODERABBIT.test(name) || CUBIC.test(name) || PRIVATE_REVIEWER.test(name);
+  CODERABBIT.test(name) || CUBIC.test(name) || isPrivateReviewer(name);
 const REVIEW_BOT_CONFIG = ".coderabbit.yaml";
 const BODY_FINDINGS = /Outside diff range comments|Nitpick comments|Duplicate comments/;
 const REVIEWED = /^Review completed/;
@@ -74,8 +72,6 @@ const CHECK_RUNNING = "check still running: ";
 const PASSING_CONCLUSIONS = ["SUCCESS", "NEUTRAL", "SKIPPED"];
 const NO_CHECK = "no CodeRabbit check on the head commit";
 const REQUIRED_MISSING = "required check has not reported: ";
-// Checks that only observe a pull request. Queued, running or failed, they never refuse a landing.
-const ADVISORY_CHECKS = new Set(["shadow review"]);
 // A neutral cubic result means it did not review the head; a person has to ask again.
 const CUBIC_RETRY = "comment `@cubic review`";
 // Signs that a review bot has no quota or capacity for this pull request.
@@ -388,8 +384,13 @@ export function requiredCheckNames(baseRef: unknown): string[] {
  * One request, and complete - unlike a sample of recent pull requests, which can miss earlier
  * activity and let a landing pass before the App's first review of a new pull request. An
  * unreadable answer is treated as "not active", so a search failure cannot block every landing.
+ * Without HR_PRIVATE_REVIEWER there is no App to ask about, so it is not active.
  */
 function reviewedByApp(owner: string, name: string): boolean | null {
+  const login = privateReviewerLogin();
+  if (login === undefined) {
+    return false;
+  }
   // A default invocation leaves {owner}/{repo} for gh to resolve inside GraphQL; a search URL
   // needs the concrete name, so ask for it once rather than searching a literal placeholder.
   let repoOwner = owner;
@@ -407,9 +408,7 @@ function reviewedByApp(owner: string, name: string): boolean | null {
     }
     [repoOwner, repoName] = resolved.stdout.trim().split("/") as [string, string];
   }
-  const query = encodeURIComponent(
-    `repo:${repoOwner}/${repoName} is:pr reviewed-by:app/bompus-ai-review`,
-  );
+  const query = encodeURIComponent(`repo:${repoOwner}/${repoName} is:pr reviewed-by:app/${login}`);
   const run = spawnSync("gh", ["api", `search/issues?q=${query}&per_page=1`], { encoding: "utf8" });
   if (run.status !== 0) {
     return null;
@@ -784,7 +783,7 @@ export function reviewFeedback(pr: ReviewState): { open: string[]; skipped: stri
   // Only a Bot account can satisfy this: a user login that happens to match the App's slug is a
   // different namespace and must not clear the requirement.
   const appReviews = pr.reviews.nodes.filter(
-    (review) => review.author?.__typename === "Bot" && PRIVATE_REVIEWER.test(review.author.login),
+    (review) => review.author?.__typename === "Bot" && isPrivateReviewer(review.author.login),
   );
   // An App review already on this pull request is evidence the App is in use here, whatever the
   // repository search says; a search that reports no matches must not clear the requirement.
@@ -804,7 +803,7 @@ export function reviewFeedback(pr: ReviewState): { open: string[]; skipped: stri
   }
   for (const ctx of contexts) {
     const name = ctx.context ?? ctx.name ?? "";
-    if (ADVISORY_CHECKS.has(name) || (suspended && CODERABBIT.test(name))) {
+    if (advisoryChecks().has(name) || (suspended && CODERABBIT.test(name))) {
       continue;
     }
     const running =
@@ -894,7 +893,7 @@ export function reviewFeedback(pr: ReviewState): { open: string[]; skipped: stri
   }
   const reported = new Set(contexts.map((ctx) => ctx.context ?? ctx.name ?? ""));
   for (const required of pr.requiredChecks) {
-    if (!reported.has(required) && !ADVISORY_CHECKS.has(required)) {
+    if (!reported.has(required) && !advisoryChecks().has(required)) {
       open.push(`${REQUIRED_MISSING}${required}`);
     }
   }

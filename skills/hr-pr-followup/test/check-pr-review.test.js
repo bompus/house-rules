@@ -6,6 +6,10 @@ import {
   waitForReview,
 } from "../scripts/check-pr-review.ts";
 
+// The private reviewer is whatever HR_PRIVATE_REVIEWER names; these tests run with one configured.
+process.env.HR_PRIVATE_REVIEWER = "acme-reviewer";
+process.env.HR_ADVISORY_CHECKS = "advisory probe";
+
 const bot = { __typename: "Bot", login: "coderabbitai" };
 const user = { __typename: "User", login: "maintainer" };
 
@@ -84,8 +88,8 @@ test("blocks an outside-diff finding with no human reply after it", () => {
 test("an unknown App search still requires a review when the App already reviewed this PR", () => {
   /** @param {string} oid @param {string} [typename] */
   const appReview = (oid, typename = "Bot") => ({
-    author: { __typename: typename, login: "bompus-ai-review[bot]" },
-    body: "**Bompus AI Review**: 1 finding(s).",
+    author: { __typename: typename, login: "acme-reviewer[bot]" },
+    body: "**Acme AI Review**: 1 finding(s).",
     submittedAt: "2026-10-29T23:00:00Z",
     lastEditedAt: null,
     url: "r-app",
@@ -106,7 +110,7 @@ test("an unknown App search still requires a review when the App already reviewe
     reviews: [
       {
         ...appReview("a".repeat(40), "User"),
-        author: { __typename: "User", login: "bompus-ai-review" },
+        author: { __typename: "User", login: "acme-reviewer" },
       },
     ],
   });
@@ -116,8 +120,8 @@ test("an unknown App search still requires a review when the App already reviewe
 test("a landing waits for the private reviewer's review of the current head", () => {
   /** @param {string} oid */
   const appReview = (oid) => ({
-    author: { __typename: "Bot", login: "bompus-ai-review[bot]" },
-    body: "**Bompus AI Review** (GPT-6.1 Sol, xhigh reasoning): 1 finding(s).",
+    author: { __typename: "Bot", login: "acme-reviewer[bot]" },
+    body: "**Acme AI Review** (GPT-6.1 Sol, xhigh reasoning): 1 finding(s).",
     submittedAt: "2026-10-29T23:00:00Z",
     lastEditedAt: null,
     url: "r-app",
@@ -358,8 +362,8 @@ test("waitForReview polls while the review runs and stops when it finishes or ti
 test("waitForReview keeps a known App requirement when a later read does not report it", async () => {
   /** @param {string} oid */
   const appReview = (oid) => ({
-    author: { __typename: "Bot", login: "bompus-ai-review[bot]" },
-    body: "**Bompus AI Review**: 0 finding(s).",
+    author: { __typename: "Bot", login: "acme-reviewer[bot]" },
+    body: "**Acme AI Review**: 0 finding(s).",
     submittedAt: "2026-10-29T23:00:00Z",
     lastEditedAt: null,
     url: "r-app",
@@ -464,9 +468,9 @@ test("blocks any other check that failed, was cancelled or is unfinished, and pa
   }
 });
 
-test("never blocks on the advisory shadow review check, whatever its state", () => {
+test("never blocks on the advisory advisory probe check, whatever its state", () => {
   /** @param {string} status @param {string | null} conclusion */
-  const run = (status, conclusion) => ({ name: "shadow review", status, conclusion });
+  const run = (status, conclusion) => ({ name: "advisory probe", status, conclusion });
   /** @type {[string, string | null][]} */
   const states = [
     ["QUEUED", null],
@@ -480,10 +484,10 @@ test("never blocks on the advisory shadow review check, whatever its state", () 
   }
   // Other checks keep their authority beside it, including one with a similar name.
   const build = { name: "build", status: "COMPLETED", conclusion: "FAILURE" };
-  const similar = { name: "shadow review 2", status: "COMPLETED", conclusion: "FAILURE" };
+  const similar = { name: "advisory probe 2", status: "COMPLETED", conclusion: "FAILURE" };
   expect(openFeedback(pr({ contexts: [run("QUEUED", null), build, similar] }))).toEqual([
     "check build concluded FAILURE",
-    "check shadow review 2 concluded FAILURE",
+    "check advisory probe 2 concluded FAILURE",
   ]);
 });
 
@@ -1288,7 +1292,7 @@ test("a required check that has not reported on the head is not green by omissio
     "check windows concluded FAILURE",
   ]);
   // An advisory check never refuses, even when a ruleset lists it.
-  expect(openFeedback(pr({ requiredChecks: ["shadow review"] }))).toEqual([]);
+  expect(openFeedback(pr({ requiredChecks: ["advisory probe"] }))).toEqual([]);
   // With nothing required the old behavior stands: a head with no checks is not blocked.
   expect(openFeedback(pr())).toEqual([]);
 });
@@ -1354,4 +1358,27 @@ test("requiredCheckNames merges classic protection with active rulesets and reje
       rules: rules([{ type: "REQUIRED_STATUS_CHECKS", parameters: null }]),
     }),
   ).toThrow("malformed");
+});
+
+test("without HR_PRIVATE_REVIEWER no private reviewer is required, and a bad value is refused", () => {
+  const review = {
+    author: { __typename: "Bot", login: "acme-reviewer[bot]" },
+    body: "**Acme AI Review**: 1 finding(s).",
+    submittedAt: "2026-10-29T23:00:00Z",
+    lastEditedAt: null,
+    url: "r-app",
+    commit: { oid: "b".repeat(40) },
+  };
+  /** @param {boolean} appActive */
+  const feedback = (appActive) => openFeedback(pr({ appActive, reviews: [review] })).join("\n");
+  try {
+    expect(feedback(true)).toContain("app review pending");
+    // Unset: the search reports no App (reviewedByApp is false) and the login matches nothing.
+    delete process.env.HR_PRIVATE_REVIEWER;
+    expect(feedback(false)).not.toContain("app review pending");
+    process.env.HR_PRIVATE_REVIEWER = "not a login";
+    expect(() => feedback(false)).toThrow("HR_PRIVATE_REVIEWER must be a GitHub App login");
+  } finally {
+    process.env.HR_PRIVATE_REVIEWER = "acme-reviewer";
+  }
 });

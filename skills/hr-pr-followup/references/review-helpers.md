@@ -36,7 +36,11 @@ matches names as written, so a required check restricted to one GitHub App is sa
 same-named check from any source; GitHub's merge check decides the source. A check
 that fails for a known unrelated reason blocks the merge until it passes or the owner decides to
 land another way. `--wait` also polls while such a check runs, and for a few minutes while a
-required check has not yet appeared. The gate does not authorize landing.
+required check has not yet appeared. Two settings name what the gate cannot know. `HR_PRIVATE_REVIEWER` is the
+login of a private review App (with or without `[bot]`): once it has reviewed the repository, a landing waits
+for its review of the current head, and its checks count as review-bot output. `HR_ADVISORY_CHECKS` is a
+comma-separated list of check names that only observe a pull request and never refuse a landing. Unset, there is
+no private reviewer and no advisory check. The gate does not authorize landing.
 
 The check named exactly "cubic · AI code reviewer" on the head commit is held to the
 same rule: while it runs, the gate refuses, and a completed one must conclude
@@ -177,7 +181,8 @@ reset, switch or delete a checkout.
   belongs to, since a fork checkout's upstream remote makes gh answer with the upstream. It
   fetches and pushes through the checkout's remote whose URL (https or ssh, any case) is that
   repository's, `origin` first, unless `--remote` names one, and refuses when none matches.
-  `--explain` runs the same conditions read-only, lands nothing, prints one `met` or `UNMET`
+  `--explain` runs the same conditions and lands nothing, but it does run the head's `check` command
+  (installing dependencies first when needed), so it is not free of side effects. It prints one `met` or `UNMET`
   line for each and exits 0 only when all are met. It deletes the remote head without `gh pr merge --delete-branch`, which
   removes other sessions' linked worktrees, and with `git push --no-verify`, so a failing
   pre-push hook cannot stop the landing report; a delete that fails anyway leaves the branch

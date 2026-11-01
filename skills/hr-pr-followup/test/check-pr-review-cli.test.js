@@ -102,7 +102,7 @@ mock.module("node:child_process", () => ({spawnSync: (command, args, options) =>
       ...(options.defaultRepo ? [] : ["--repo", "owner/app"]),
     ],
     {
-      env: { ...process.env, REVIEW_FIXTURE: fixture },
+      env: { ...process.env, HR_PRIVATE_REVIEWER: "acme-reviewer", REVIEW_FIXTURE: fixture },
     },
   );
   return { code: r.exitCode, err: r.stderr.toString(), out: r.stdout.toString() };
@@ -182,8 +182,8 @@ test("CLI refuses partial, malformed, incomplete and inconsistent API reads", ()
 test("CLI reports a malformed review commit as a contract violation, not open feedback", () => {
   /** @param {any} commit */
   const review = (commit) => ({
-    author: { __typename: "Bot", login: "bompus-ai-review[bot]" },
-    body: "**Bompus AI Review**: 0 finding(s).",
+    author: { __typename: "Bot", login: "acme-reviewer[bot]" },
+    body: "**Acme AI Review**: 0 finding(s).",
     submittedAt: "2026-10-03T17:00:00Z",
     lastEditedAt: null,
     url: "https://example.test/review/1",
