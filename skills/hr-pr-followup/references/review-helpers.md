@@ -9,10 +9,11 @@ are unavailable.
 ## Check review feedback
 
 ```sh
-bun --no-env-file scripts/check-pr-review.ts 123 --repo OWNER/REPO
+bun --config=/dev/null --no-env-file scripts/check-pr-review.ts 123 --repo OWNER/REPO
 ```
 
-`--no-env-file` keeps Bun from reading a `.env` in the current directory; the gate's
+`--no-env-file` keeps Bun from reading a `.env` in the current directory and
+`--config=/dev/null` from reading its `bunfig.toml` (whose `preload` runs code); the gate's
 settings (`HR_PRIVATE_REVIEWER`, `HR_ADVISORY_CHECKS`) come only from the environment, and
 a pull request checked out there could otherwise carry one that skips a failing check. The
 landing helper also runs its Bun calls from the filesystem root with `--config=/dev/null`,
@@ -137,7 +138,7 @@ Run this helper only after judging that the selected reply answers the finding.
 It reads GitHub through `gh`, using that CLI's authenticated account.
 
 ```sh
-bun --no-env-file scripts/resolve-pr-thread.ts https://github.com/OWNER/REPO/pull/123 \
+bun --config=/dev/null --no-env-file scripts/resolve-pr-thread.ts https://github.com/OWNER/REPO/pull/123 \
   --thread THREAD_NODE_ID --expect-head FULL_HEAD_SHA \
   --reply-url https://github.com/OWNER/REPO/pull/123#discussion_r456
 ```

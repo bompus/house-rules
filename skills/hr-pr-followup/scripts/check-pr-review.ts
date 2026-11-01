@@ -35,7 +35,7 @@
 // --wait gives it a few minutes to appear after a push, like the CodeRabbit check. Only what the
 // API shows the viewer is read: classic branch protection can be hidden from a viewer without
 // write access.
-//   bun --no-env-file scripts/check-pr-review.ts <pr> [--repo <owner>/<name>] [--wait [--timeout <minutes>]]
+//   bun --config=/dev/null --no-env-file scripts/check-pr-review.ts <pr> [--repo <owner>/<name>] [--wait [--timeout <minutes>]]
 // With the CodeRabbit app suspended, HR_CODERABBIT_SUSPENDED=1 records its check or status, missing or stale, as skipped.
 // Exit 1 while feedback is open, 2 when gh fails. Without --repo, gh resolves the repository from
 // the current checkout. --wait polls every 30 s while CodeRabbit's or cubic's review or any other check is still running, and for up to 3 minutes while the head commit has no CodeRabbit check yet (CodeRabbit posts it a little

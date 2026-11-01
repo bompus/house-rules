@@ -1,5 +1,5 @@
 import { afterEach, expect, test } from "bun:test";
-import { chmodSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
@@ -372,4 +372,37 @@ test("CLI exits 2 on a malformed setting even when the head has no checks", () =
   const login = run({ env: { HR_PRIVATE_REVIEWER: "acme-reviewer-" } });
   expect(login.code).toBe(2);
   expect(login.err).toContain("HR_PRIVATE_REVIEWER must be a GitHub App login");
+});
+
+// The command the helper reference documents, run from a directory that holds a preloading
+// bunfig.toml and a .env, as a checked-out pull request could: neither may be read.
+test("the documented standalone command reads neither a bunfig.toml preload nor a .env", () => {
+  const reference = readFileSync(
+    fileURLToPath(new URL("../references/review-helpers.md", import.meta.url)),
+    "utf8",
+  );
+  const documented = /^(bun [^\n]*scripts\/check-pr-review\.ts) 123 --repo OWNER\/REPO$/m.exec(
+    reference,
+  );
+  expect(documented?.[1]).toBeDefined();
+  const flags = (documented?.[1] ?? "")
+    .replace(/^bun /, "")
+    .replace(/ ?scripts\/check-pr-review\.ts$/, "");
+  const root = mkdtempSync(join(scratch, "check-pr-review-direct-"));
+  roots.push(root);
+  const marker = join(root, "preload-ran");
+  writeFileSync(join(root, "bunfig.toml"), 'preload = ["./preload.ts"]\n');
+  writeFileSync(
+    join(root, "preload.ts"),
+    `require("node:fs").writeFileSync(${JSON.stringify(marker)}, "x");\n`,
+  );
+  writeFileSync(join(root, ".env"), 'HR_ADVISORY_CHECKS=["build"]\n');
+  // PR number 0 is refused with a usage message before any GitHub call.
+  const run = Bun.spawnSync(["bun", ...flags.split(" ").filter(Boolean), script, "0"], {
+    cwd: root,
+    env: { ...process.env, HR_ADVISORY_CHECKS: undefined },
+  });
+  expect(run.exitCode).toBe(2);
+  expect(run.stderr.toString()).toContain("usage:");
+  expect(existsSync(marker)).toBe(false);
 });
