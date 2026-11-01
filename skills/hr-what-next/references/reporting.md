@@ -66,8 +66,7 @@ documented forms before reporting the entity missing, and say which forms you tr
 T3 Code writes attached-thread references as `thread_<uuid>` while its thread tools
 accept only the bare uuid or `mcp:<uuid>`: strip the prefix and retry that form.
 To find a thread known only by its title, list the projects and
-search within each rather than searching the calling project alone. Remove this
-paragraph once the upstream lookup accepts the prefixed form.
+search within each rather than searching the calling project alone.
 
 Name each choice made in passing that costs the user something if missed.
 That covers a tradeoff, a default picked for them, a step you did not
