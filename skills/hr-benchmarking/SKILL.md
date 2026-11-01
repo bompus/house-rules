@@ -61,21 +61,21 @@ A benchmark's length costs the host and everyone waiting. These are the places t
 cut them without leaving the rules that follow (three runs by default, alternation, the A/A arm, the pilot
 rule and a fresh admission check before each arm).
 
-- Rerun what changed. Carry a result forward only under the saved-evidence rules below: the same
-  workload, host, run conditions, runner, input and variation statistic. A changed runtime, runner or
-  version is a changed experiment, and a result made under another runner is measured again.
-- Fewer runs per arm. When the user asks for shorter benchmarks, or a pilot shows every gap to be several
-  times the declared variation criterion, the declared count may be two per arm, still alternated and with
-  the A/A arm. Extend to three and then five only for comparisons inside the criterion, and report one
-  still unresolved at five as inconclusive. Declare the count and its reason before the first run; fewer
-  than three needs the user's request or that pilot result, not the author's preference.
+- Rerun what changed. Carry a result forward only when every saved-evidence rule below holds; those
+  rules, not this list, decide whether a number can stand.
+- Fewer runs per arm only on the user's request. When the user asks for shorter benchmarks, the declared
+  count may be two per arm, still alternated and with the A/A arm. A pilot that shows gaps far outside the
+  variation criterion is the reason to offer two runs, not permission to take them. Extend to three and
+  then five only for comparisons inside the criterion, and report one still unresolved at five as
+  inconclusive. Declare the count and the request before the first run.
 - The shortest run that clears the criterion. Shorten a run only as far as a pilot shows repeated runs
   still agree, judged by the spread of those runs: a runner's own error figure can be that of the mean,
   not the median. Keep the runner's minimum iteration counts and check the timer's resolution first.
 - One arm per unit. Put an arm's workloads and runtimes in one unit, so the fresh admission check each
   arm needs is paid once per arm and a refusal discards one arm. Do not skip or reuse a check to save time.
 - Declare the expected duration and a wall-clock stop. When the first phase's measured rate puts the plan
-  past the stop, shrink the plan before going on instead of letting it run.
+  past the stop, tell the user and get their choice between a smaller plan and more time; do not drop a
+  decision-critical comparison to fit.
 
 ## Confirm the work
 
