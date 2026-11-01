@@ -77,7 +77,7 @@ function stub(bin, name, body) {
  *   racingFetch?: boolean, baseCurrent?: boolean, errexitOff?: boolean, advanceHead?: boolean,
  *   sharing?: string[], sharingFails?: boolean, upstream?: boolean, originUrl?: string,
  *   botReviews?: number, alias?: boolean, silentReviewFailure?: boolean,
- *   checks?: object[] | null, helperBunfig?: boolean }} [options]
+ *   checks?: object[] | null, helperBunfig?: boolean, bunCalls?: boolean }} [options]
  */
 function fixture({
   dependents = "",
@@ -123,6 +123,8 @@ function fixture({
   checks = null,
   // A copy of the helper's directory carries a bunfig.toml whose preload sets the gate's settings.
   helperBunfig = false,
+  // Record the directory and the first arguments of each Bun call the helper makes.
+  bunCalls = false,
 } = {}) {
   const root = mkdtempSync(join(process.env.HOUSE_RULES_TEST_TMP ?? tmpdir(), "merge-pr-"));
   roots.push(root);
@@ -197,6 +199,11 @@ case "$*" in
 esac
 `,
   );
+  const bunLog = join(root, "bun.log");
+  if (bunCalls) {
+    const bun = Bun.which("bun");
+    stub(bin, "bun", `echo "$PWD $1 $2 $3" >> "${bunLog}"\nexec "${bun}" "$@"\n`);
+  }
   if (silentReviewFailure) {
     const bun = Bun.which("bun");
     stub(
@@ -300,7 +307,7 @@ exit $code
   };
   /** @param {...string} args */
   const run = (...args) => runTarget(`${repo}#7`, ...args);
-  return { remote, work, wt, oid, squash, log, pmLog, run, runTarget, runRelative };
+  return { remote, work, wt, oid, squash, log, pmLog, bunLog, run, runTarget, runRelative };
 }
 
 test("merges without --delete-branch, deletes only the remote head and names the worktree", () => {
@@ -1123,4 +1130,19 @@ test("a bunfig.toml preload beside the helper does not change the verdict either
   expect(r.code).toBe(1);
   expect(r.err).toContain("check build concluded FAILURE");
   expect(readFileSync(log, "utf8")).not.toContain("pr merge");
+});
+
+// Bun reads a bunfig.toml from its working directory, and --no-env-file does not change that. The
+// gate and the package.json read run from the root with an empty config, so no file the checkout (or
+// the root) holds can preload code into them.
+test("the gate and the package.json read run from the root with an empty Bun config", () => {
+  const { bunLog, run } = fixture({ bunCalls: true });
+  expect(run().code).toBe(0);
+  const calls = readFileSync(bunLog, "utf8")
+    .split("\n")
+    .filter((line) => /check-pr-review| -e$/.test(line));
+  expect(calls.length).toBe(2);
+  for (const line of calls) {
+    expect(line).toMatch(/^\/ --config=\/dev\/null --no-env-file /);
+  }
 });

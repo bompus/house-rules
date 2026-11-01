@@ -213,18 +213,19 @@ fi
 # Bun reads a .env and a bunfig.toml (whose preload runs code) from the current directory, and the gate's
 # settings come from the environment: a pull request checked out here could carry either one and skip a
 # failing check. The gate runs from the filesystem root, outside any checkout (this script may sit in one),
-# without .env loading; every gh call in it names the repository, so it needs no checkout.
+# with no .env loading and an empty config file, so nothing in a directory can preload code into it. Every
+# gh call in it names the repository, so it needs no checkout.
 HELPER_DIR="$(CDPATH='' cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 CHECKER="$HELPER_DIR/check-pr-review.ts"
 if [ "$EXPLAIN" != 1 ]; then
-  if ! (cd / && bun --no-env-file "$CHECKER" "$PR" --repo "$REPO"); then
+  if ! (cd / && bun --config=/dev/null --no-env-file "$CHECKER" "$PR" --repo "$REPO"); then
     echo "refused: review feedback is open (check-pr-review.ts); PR $PR is not merged" >&2
     exit 1
   fi
 else
   # The checker prints each open item as an indented line on stderr. Sort them into the conditions they break.
   REVIEW_CODE=0
-  REVIEW_ERR="$(cd / && bun --no-env-file "$CHECKER" "$PR" --repo "$REPO" 2>&1 >/dev/null)" || REVIEW_CODE=$?
+  REVIEW_ERR="$(cd / && bun --config=/dev/null --no-env-file "$CHECKER" "$PR" --repo "$REPO" 2>&1 >/dev/null)" || REVIEW_CODE=$?
   THREADS="" BOT="" CHECKS="" OTHER=""
   if [ "$REVIEW_CODE" = 1 ]; then
     while IFS= read -r LINE; do
@@ -295,7 +296,7 @@ run_repo_check() {
   # unreadable package.json refuses.
   read -r NAMED MAJOR HAS_CHECK NEEDS_INSTALL < <(
     if git cat-file -e "$OID:package.json" 2>/dev/null; then
-      git show "$OID:package.json" | (cd / && bun --no-env-file -e '
+      git show "$OID:package.json" | (cd / && bun --config=/dev/null --no-env-file -e '
         const p = JSON.parse(await Bun.stdin.text());
         const deps = Object.keys({ ...p.dependencies, ...p.devDependencies, ...p.optionalDependencies });
         const install = deps.length > 0 || p.workspaces !== undefined;
