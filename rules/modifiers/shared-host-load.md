@@ -29,7 +29,9 @@ little headroom in the memory available to it, or when its peak is unknown and
 its input is large. Constrain such work using the host's supported controls; on
 Linux with systemd, `systemd-run --user --scope -p MemoryMax=<size> -- <cmd>`, sized
 from the job's measured peak plus about 20% (where systemd reports it, the scope's
-journal line `Consumed …` includes the peak memory). With no measured peak, lower parallelism and drop debug info before
+journal line `Consumed …` includes the peak memory).
+
+With no measured peak, lower parallelism and drop debug info before
 raising the cap. A capped job that exits 137 or 143 without its own error was likely
 killed for memory: check the system journal for an OOM kill before retrying.
 Retry with a larger budget only when host evidence shows memory pressure caused
