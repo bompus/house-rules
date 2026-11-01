@@ -196,7 +196,11 @@ esac
   );
   if (silentReviewFailure) {
     const bun = Bun.which("bun");
-    stub(bin, "bun", `case "$1" in *check-pr-review.ts) exit 1;; esac\nexec "${bun}" "$@"\n`);
+    stub(
+      bin,
+      "bun",
+      `for a in "$@"; do case "$a" in *check-pr-review.ts) exit 1;; esac; done\nexec "${bun}" "$@"\n`,
+    );
   }
   const pmLog = join(root, "pnpm.log");
   stub(
