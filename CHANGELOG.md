@@ -4,7 +4,7 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
-- Add two small notes. The `hr-benchmarking` tools reference says not to add Mitata as a runner (an existing Mitata workload stays a comparison input) and a note to check a Vitest project's `benchmark.provider` and to hoist an import out of the timed callback when the module runner exposes it through a getter. The `hr-code-review` reviewer role says a finding needs evidence and a concrete failure, and leaves out low-confidence guesses and repeats of comments already on the pull request (a confirmed blocker still counts in the verdict).
+- Add two small notes. The `hr-benchmarking` tools reference says not to add Mitata as a runner (an existing Mitata workload stays a comparison input) and a note to check a Vitest project's `benchmark.provider` and to hoist an import that does not change out of the timed callback when the module runner exposes it through a getter. The `hr-code-review` reviewer role says a finding needs evidence and a concrete failure, and leaves out low-confidence guesses and repeats of comments already on the pull request (a confirmed blocker still counts in the verdict).
 
 ## 0.18.0 - 2026-11-01
 

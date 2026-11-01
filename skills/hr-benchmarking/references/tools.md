@@ -20,8 +20,9 @@ until the project authorizes replacing its runner. In a repository on Vitest 5, 
 bench` uses Tinybench unless the project configures another `benchmark.provider`; check
 that setting before counting it as a runner. Vite's module runner can expose an imported
 binding through a getter, which a small operation in a hot loop pays for on every call:
-copy the import to a local `const` outside the timed callback, and record how the workload
-was loaded.
+copy a binding that is set before timing and does not change into a local `const` outside
+the timed callback, keep the live read for one that changes (and count the getter's cost),
+and record how the workload was loaded.
 
 ## Timing and resource measurement
 
