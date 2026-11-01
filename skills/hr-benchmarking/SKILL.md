@@ -57,22 +57,23 @@ A reused service needs equivalent state across arms, not an arbitrary restart.
 
 ## Keep it as short as the decision allows
 
-A benchmark's length costs the host and everyone waiting, so size each part to the decision it supports
-and write the sizes down before the first run.
+A benchmark's length costs the host and everyone waiting. These are the places that cost most and how to
+cut them without leaving the rules that follow (three runs by default, alternation, the A/A arm, the pilot
+rule and a fresh admission check before each arm).
 
-- Measure what changed. Rerun an arm only when its code, version, input, runtime or timer changed since
-  a result you still trust; carry the others forward, labelled with their date, versions and timer. Re-measure
-  one or two unchanged anchor arms under the new setup: if they stay within their bands the carried arms
-  stand, otherwise measure those too. When nothing changed, do not run.
-- Start small and extend. Pilot one unit of each kind of case. Then run the planned arms for the fewest
-  rounds that give a noise band and a range (two), and add rounds only for comparisons still unsettled.
-  A gap of several times the band needs no replicates; a close gap earns them. Declare the unsettled
-  rule and the round cap first.
-- Size each timing window to the noise. Use the shortest window that meets the stated precision, checked
-  in a pilot from the runner's own error figure (for example the relative error of the median); an
-  operation of a microsecond or less rarely needs seconds. Keep the runner's minimum batch counts.
-- Pay for admission once per unit. The check that ends a unit can start the next one when it is recent,
-  and a phase gets a fresh check at its start. Make units no larger than you can afford to discard.
+- Rerun what changed. Carry a result forward only under the saved-evidence rules below: the same
+  workload, host, run conditions, runner, input and variation statistic. A changed runtime, runner or
+  version is a changed experiment, and a result made under another runner is measured again.
+- Fewer runs per arm. When the user asks for shorter benchmarks, or a pilot shows every gap to be several
+  times the declared variation criterion, the declared count may be two per arm, still alternated and with
+  the A/A arm. Extend to three and then five only for comparisons inside the criterion, and report one
+  still unresolved at five as inconclusive. Declare the count and its reason before the first run; fewer
+  than three needs the user's request or that pilot result, not the author's preference.
+- The shortest run that clears the criterion. Shorten a run only as far as a pilot shows repeated runs
+  still agree, judged by the spread of those runs: a runner's own error figure can be that of the mean,
+  not the median. Keep the runner's minimum iteration counts and check the timer's resolution first.
+- One arm per unit. Put an arm's workloads and runtimes in one unit, so the fresh admission check each
+  arm needs is paid once per arm and a refusal discards one arm. Do not skip or reuse a check to save time.
 - Declare the expected duration and a wall-clock stop. When the first phase's measured rate puts the plan
   past the stop, shrink the plan before going on instead of letting it run.
 
