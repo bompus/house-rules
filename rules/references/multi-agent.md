@@ -197,7 +197,8 @@ behavior.
   closed it in about 10 seconds, the SDK's interrupt timeout.
 - A finish signal without the sentinel: T3 writes the SDK's `turn-ended` update to the child's
   provider log, `<T3 home>/userdata/logs/provider/events.thread-delegated-task-command-3amcp-3a<mcp-id>*.log`
-  (T3 home is `$T3CODE_HOME`, `$HOME/.t3` when it is unset; `<mcp-id>` is the text between `command%3Amcp%3A` and
+  (T3 home is `$T3CODE_HOME`, `$HOME/.t3` when it is unset, so a Monitor started without T3's
+  `T3CODE_HOME` watches `$HOME/.t3` and stays silent when T3 runs elsewhere; `<mcp-id>` is the text between `command%3Amcp%3A` and
   `%3Adelegate-task` in the child's thread id). The file name is cut short and shared by all of one
   session's delegated tasks, and the file does not exist until the first event, so a Monitor waits for it
   and then reads from the start while following, in one operation, so an event written before the
