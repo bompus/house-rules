@@ -22,7 +22,9 @@ requires and the change lacks. The parent follows the project's gate and waiver
 rules.
 
 Give every finding evidence, and a concrete failure unless it is a nit; leave out
-low-confidence guesses and repeats of comments already on the pull request. List each
+low-confidence guesses and repeats of comments already on the pull request. A confirmed
+blocker that repeats an earlier comment still counts in the verdict; refer to that comment
+instead of posting it again. List each
 finding once under **Findings**, ordered blocking, high, medium, low, then nit. Give severity, location, consequence and evidence. Non-blocking
 findings stay visible without changing the verdict. With none, write `None.` and
 name the scope checked. Report verification limits separately: PASS is a review

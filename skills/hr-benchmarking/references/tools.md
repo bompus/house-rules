@@ -16,11 +16,12 @@ rerunning every arm. Check the official version's documentation before relying o
 flags or interpreting output.
 
 Do not add Mitata as a runner; an existing Mitata workload stays a comparison input
-until the project authorizes replacing its runner. In a repository on Vitest 5, reuse
-`vitest bench`, which wraps Tinybench. Vite's module runner wraps imports in
-getters that can dominate a hot loop: copy the import to a local `const`, benchmark the
-built package, or, with the forks or threads pool, disable `experimental.viteModuleRunner` for the
-benchmark project; record the choice.
+until the project authorizes replacing its runner. In a repository on Vitest 5, `vitest
+bench` uses Tinybench unless the project configures another `benchmark.provider`; check
+that setting before counting it as a runner. Vite's module runner can expose an imported
+binding through a getter, which a small operation in a hot loop pays for on every call:
+copy the import to a local `const` outside the timed callback, and record how the workload
+was loaded.
 
 ## Timing and resource measurement
 
