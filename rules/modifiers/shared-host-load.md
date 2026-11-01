@@ -42,8 +42,12 @@ work done by a daemon, such as a container build, needs the daemon's own limits.
 Per-job caps cannot stop jobs that start at the same moment from each sizing against the
 same free memory. Where several agents share one host, use one shared budget that is an
 ancestor of every job (on Linux, one cgroup that all of them are placed under, created at
-system level when the agents run as different users), and check that the same capped
-cgroup is an ancestor of each job.
+system level when the agents run as different users). Start each job inside it, so the
+ancestor exists before the workload can allocate memory: `--slice=<slice>` added to the
+`systemd-run` command above for agents of one user (without it the scope lands outside
+the caller's slice), a system-level unit for agents of different users. Check that the
+capped cgroup is an ancestor of each job's scope; a check made after the job has finished
+is too late to protect the host.
 
 With no measured peak, lower parallelism and drop debug info before
 raising the cap. A capped job that exits 137 or 143 without its own error was likely
