@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -7,8 +7,23 @@ import { test } from "node:test";
 import { scratch } from "./fixture.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
-// GNU timeout and a POSIX shell.
-const posix = { skip: process.platform !== "linux", timeout: 20000 };
+// The command needs a grep with --line-buffered, and the test needs a timeout that stops the whole
+// pipeline (GNU or uutils coreutils); BusyBox versions would fail or hang the test, so it runs only where
+// both are present.
+const grepBuffers =
+  spawnSync("grep", ["--line-buffered", "x"], { input: "", encoding: "utf8" }).status === 1;
+const timeoutStops = /GNU|uutils/.test(
+  spawnSync("timeout", ["--version"], { encoding: "utf8" }).stdout,
+);
+const posix = {
+  skip:
+    process.platform !== "linux"
+      ? "needs Linux"
+      : !grepBuffers || !timeoutStops
+        ? "needs grep --line-buffered and a GNU or uutils timeout"
+        : false,
+  timeout: 20000,
+};
 
 // The finish-signal command the agent-work reference gives, run against a fake T3 data directory: the
 // reference text is the only copy, so the test takes the command from it.
