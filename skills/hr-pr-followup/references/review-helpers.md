@@ -15,8 +15,8 @@ bun --no-env-file scripts/check-pr-review.ts 123 --repo OWNER/REPO
 `--no-env-file` keeps Bun from reading a `.env` in the current directory; the gate's
 settings (`HR_PRIVATE_REVIEWER`, `HR_ADVISORY_CHECKS`) come only from the environment, and
 a pull request checked out there could otherwise carry one that skips a failing check. The
-landing helper also runs these Bun calls from the skill's own directory, so a `bunfig.toml`
-in the checkout cannot preload code into them.
+landing helper also runs its Bun calls from the filesystem root, so a `bunfig.toml` in the
+checkout, or beside the helper, cannot preload code into them.
 
 The gate exits 0 when its selected feedback checks pass, 1 for open feedback,
 and 2 when coverage cannot be verified. It checks unresolved threads, pending

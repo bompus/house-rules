@@ -9,6 +9,7 @@ import {
   mkdtempSync,
   readFileSync,
   rmSync,
+  symlinkSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -76,7 +77,7 @@ function stub(bin, name, body) {
  *   racingFetch?: boolean, baseCurrent?: boolean, errexitOff?: boolean, advanceHead?: boolean,
  *   sharing?: string[], sharingFails?: boolean, upstream?: boolean, originUrl?: string,
  *   botReviews?: number, alias?: boolean, silentReviewFailure?: boolean,
- *   checks?: object[] | null }} [options]
+ *   checks?: object[] | null, helperBunfig?: boolean }} [options]
  */
 function fixture({
   dependents = "",
@@ -120,6 +121,8 @@ function fixture({
   silentReviewFailure = false,
   // Check runs on the pull request head, as the review gate reads them.
   checks = null,
+  // A copy of the helper's directory carries a bunfig.toml whose preload sets the gate's settings.
+  helperBunfig = false,
 } = {}) {
   const root = mkdtempSync(join(process.env.HOUSE_RULES_TEST_TMP ?? tmpdir(), "merge-pr-"));
   roots.push(root);
@@ -250,29 +253,53 @@ exit $code
     }
     writeFileSync(target, text.replace("set -euo pipefail\n", ""));
   }
+  if (helperBunfig) {
+    const copy = join(root, "scripts-bunfig");
+    cpSync(dirname(script), copy, { recursive: true });
+    target = join(copy, "merge-pr.sh");
+    writeFileSync(join(copy, "bunfig.toml"), 'preload = ["./preload.ts"]\n');
+    writeFileSync(
+      join(copy, "preload.ts"),
+      "process.env.HR_ADVISORY_CHECKS = '[\"build\"]';\nconsole.log('- - 0 0');\n",
+    );
+  }
+  /**
+   * @param {string} script path of the helper to run, as the caller gives it
+   * @param {Record<string, string>} extraEnv
+   * @param {string} pr
+   * @param {string[]} args
+   */
+  const spawnHelper = (script, extraEnv, pr, args) => {
+    // The caller's own settings must not decide what these tests see. They are removed, not
+    // emptied: Bun keeps an empty variable that is already set and would not read it from a .env.
+    const env = {
+      ...process.env,
+      ...gitEnv,
+      HR_PUSH_LANDED: "bompus/house-rules",
+      PATH: `${bin}:${process.env.PATH}`,
+      ...extraEnv,
+    };
+    for (const name of ["HR_ADVISORY_CHECKS", "HR_PRIVATE_REVIEWER", "HR_REVIEW_ROUND_CAP"]) {
+      delete env[name];
+    }
+    const r = Bun.spawnSync(["bash", script, pr, ...args], { cwd: fromTask ? wt : work, env });
+    return { code: r.exitCode, out: r.stdout.toString(), err: r.stderr.toString() };
+  };
   /**
    * @param {string} pr
    * @param {...string} args
    */
-  const runTarget = (pr, ...args) => {
-    const r = Bun.spawnSync(["bash", target, pr, ...args], {
-      cwd: fromTask ? wt : work,
-      env: {
-        ...process.env,
-        ...gitEnv,
-        // The caller's own settings must not decide what these tests see.
-        HR_ADVISORY_CHECKS: "",
-        HR_PRIVATE_REVIEWER: "",
-        HR_REVIEW_ROUND_CAP: "",
-        HR_PUSH_LANDED: "bompus/house-rules",
-        PATH: `${bin}:${process.env.PATH}`,
-      },
-    });
-    return { code: r.exitCode, out: r.stdout.toString(), err: r.stderr.toString() };
+  const runTarget = (pr, ...args) => spawnHelper(target, {}, pr, args);
+  // The helper reached by a relative path from the checkout, with CDPATH set, as a caller in the
+  // checkout would run it.
+  /** @param {...string} args */
+  const runRelative = (...args) => {
+    symlinkSync(dirname(target), join(work, "helper-link"));
+    return spawnHelper("helper-link/merge-pr.sh", { CDPATH: "." }, `${repo}#7`, args);
   };
   /** @param {...string} args */
   const run = (...args) => runTarget(`${repo}#7`, ...args);
-  return { remote, work, wt, oid, squash, log, pmLog, run, runTarget };
+  return { remote, work, wt, oid, squash, log, pmLog, run, runTarget, runRelative };
 }
 
 test("merges without --delete-branch, deletes only the remote head and names the worktree", () => {
@@ -1080,4 +1107,19 @@ test("--explain reads the same verdict whatever the checkout's .env says", () =>
   const r = run("--explain");
   expect(r.code).toBe(1);
   expect(r.out).toContain("UNMET  other checks on the head commit have passed");
+});
+
+test("the helper works when reached by a relative path with CDPATH set", () => {
+  const { runRelative } = fixture();
+  const r = runRelative("--explain");
+  expect(r.err).not.toContain("refused");
+  expect(r.code).toBe(0);
+});
+
+test("a bunfig.toml preload beside the helper does not change the verdict either", () => {
+  const { log, run } = fixture({ checks: failingBuild, helperBunfig: true });
+  const r = run();
+  expect(r.code).toBe(1);
+  expect(r.err).toContain("check build concluded FAILURE");
+  expect(readFileSync(log, "utf8")).not.toContain("pr merge");
 });
