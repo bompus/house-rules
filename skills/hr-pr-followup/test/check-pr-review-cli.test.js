@@ -102,7 +102,12 @@ mock.module("node:child_process", () => ({spawnSync: (command, args, options) =>
       ...(options.defaultRepo ? [] : ["--repo", "owner/app"]),
     ],
     {
-      env: { ...process.env, HR_PRIVATE_REVIEWER: "acme-reviewer", REVIEW_FIXTURE: fixture },
+      env: {
+        ...process.env,
+        HR_PRIVATE_REVIEWER: "acme-reviewer",
+        REVIEW_FIXTURE: fixture,
+        ...options.env,
+      },
     },
   );
   return { code: r.exitCode, err: r.stderr.toString(), out: r.stdout.toString() };
@@ -358,4 +363,13 @@ test("CLI reads classic branch protection and refuses an incomplete rule list", 
   });
   expect(partial.code).toBe(2);
   expect(run({ baseRef: null }).code).toBe(2);
+});
+
+test("CLI exits 2 on a malformed setting even when the head has no checks", () => {
+  const r = run({ env: { HR_ADVISORY_CHECKS: "advisory probe, observe" } });
+  expect(r.code).toBe(2);
+  expect(r.err).toContain("HR_ADVISORY_CHECKS must be a JSON array");
+  const login = run({ env: { HR_PRIVATE_REVIEWER: "acme-reviewer-" } });
+  expect(login.code).toBe(2);
+  expect(login.err).toContain("HR_PRIVATE_REVIEWER must be a GitHub App login");
 });

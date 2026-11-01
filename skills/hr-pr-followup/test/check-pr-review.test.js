@@ -1378,6 +1378,11 @@ test("without HR_PRIVATE_REVIEWER no private reviewer is required, and a bad val
     expect(feedback(false)).not.toContain("app review pending");
     process.env.HR_PRIVATE_REVIEWER = "not a login";
     expect(() => feedback(false)).toThrow("HR_PRIVATE_REVIEWER must be a GitHub App login");
+    // Shapes GitHub never issues: a trailing hyphen and a login over 39 characters.
+    for (const bad of ["acme-reviewer-", "-acme", "a".repeat(40)]) {
+      process.env.HR_PRIVATE_REVIEWER = bad;
+      expect(() => feedback(false)).toThrow("HR_PRIVATE_REVIEWER must be a GitHub App login");
+    }
     // A bot suffix with no login is a mistake, not an unset setting.
     process.env.HR_PRIVATE_REVIEWER = "[bot]";
     expect(() => feedback(false)).toThrow("HR_PRIVATE_REVIEWER must be a GitHub App login");

@@ -56,12 +56,12 @@
 // The reader makes a final head check, not an atomic snapshot of changing review feedback.
 import { spawnSync } from "node:child_process";
 import { parseArgs } from "node:util";
-import { advisoryChecks, isPrivateReviewer, privateReviewerLogin } from "./review-settings.ts";
+import * as cfg from "./review-settings.ts";
 
 const CODERABBIT = /coderabbit/i;
 const CUBIC = /^cubic · AI code reviewer$/i;
 const isReviewBot = (name: string) =>
-  CODERABBIT.test(name) || CUBIC.test(name) || isPrivateReviewer(name);
+  CODERABBIT.test(name) || CUBIC.test(name) || cfg.isPrivateReviewer(name);
 const REVIEW_BOT_CONFIG = ".coderabbit.yaml";
 const BODY_FINDINGS = /Outside diff range comments|Nitpick comments|Duplicate comments/;
 const REVIEWED = /^Review completed/;
@@ -387,7 +387,7 @@ export function requiredCheckNames(baseRef: unknown): string[] {
  * Without HR_PRIVATE_REVIEWER there is no App to ask about, so it is not active.
  */
 function reviewedByApp(owner: string, name: string): boolean | null {
-  const login = privateReviewerLogin();
+  const login = cfg.privateReviewerLogin();
   if (login === undefined) {
     return false;
   }
@@ -783,7 +783,7 @@ export function reviewFeedback(pr: ReviewState): { open: string[]; skipped: stri
   // Only a Bot account can satisfy this: a user login that happens to match the App's slug is a
   // different namespace and must not clear the requirement.
   const appReviews = pr.reviews.nodes.filter(
-    (review) => review.author?.__typename === "Bot" && isPrivateReviewer(review.author.login),
+    (review) => review.author?.__typename === "Bot" && cfg.isPrivateReviewer(review.author.login),
   );
   // An App review already on this pull request is evidence the App is in use here, whatever the
   // repository search says; a search that reports no matches must not clear the requirement.
@@ -803,7 +803,7 @@ export function reviewFeedback(pr: ReviewState): { open: string[]; skipped: stri
   }
   for (const ctx of contexts) {
     const name = ctx.context ?? ctx.name ?? "";
-    if (advisoryChecks().has(name) || (suspended && CODERABBIT.test(name))) {
+    if (cfg.advisoryChecks().has(name) || (suspended && CODERABBIT.test(name))) {
       continue;
     }
     const running =
@@ -893,7 +893,7 @@ export function reviewFeedback(pr: ReviewState): { open: string[]; skipped: stri
   }
   const reported = new Set(contexts.map((ctx) => ctx.context ?? ctx.name ?? ""));
   for (const required of pr.requiredChecks) {
-    if (!reported.has(required) && !advisoryChecks().has(required)) {
+    if (!reported.has(required) && !cfg.advisoryChecks().has(required)) {
       open.push(`${REQUIRED_MISSING}${required}`);
     }
   }
@@ -965,6 +965,7 @@ if (import.meta.main) {
   const [owner, name] = values.repo ? values.repo.split("/") : ["{owner}", "{repo}"];
   let state: ReviewState | undefined, open: string[] | undefined;
   try {
+    cfg.validateReviewSettings();
     const read = () => (state = readReviewState(owner!, name!, pr));
     if (values.wait) {
       open = await waitForReview(read, { timeoutMs: waitMinutes * 60_000 });

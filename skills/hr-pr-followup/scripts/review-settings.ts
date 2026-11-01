@@ -9,7 +9,8 @@ export function privateReviewerLogin(): string | undefined {
     return undefined;
   }
   const login = raw.replace(/\[bot\]$/i, "").toLowerCase();
-  if (!/^[a-z0-9][a-z0-9-]*$/.test(login)) {
+  // GitHub logins are at most 39 characters of letters, digits and hyphens, with no hyphen at either end.
+  if (!/^[a-z0-9](?:[a-z0-9-]{0,37}[a-z0-9])?$/.test(login)) {
     throw new Error(`HR_PRIVATE_REVIEWER must be a GitHub App login, got "${raw}"`);
   }
   return login;
@@ -40,4 +41,10 @@ export function advisoryChecks(): Set<string> {
     );
   }
   return new Set(names);
+}
+
+// Read both settings once, so a malformed value fails before any review state is judged.
+export function validateReviewSettings(): void {
+  privateReviewerLogin();
+  advisoryChecks();
 }
