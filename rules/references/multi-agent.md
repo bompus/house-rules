@@ -204,7 +204,9 @@ behavior.
   Monitor attached is not lost, and filters on the task id with its boundary and the update type:
   `cd <data dir>/logs/provider; G='<glob>'; until ls $G >/dev/null 2>&1; do sleep 2; done; tail -n +1 -F $G | grep --line-buffered 'delegate-task%253A<task>:.*"update":{"type":"turn-ended"'`.
   The `:` after the task id ends it (ids can share a prefix), and `"update":{"type":"turn-ended"`
-  keeps a tool result that merely contains the words from matching. Re-arming after the Monitor
+  keeps a tool result that merely contains the words from matching. Nothing may follow `grep` in the
+  pipe: `cut` and `head` buffer when output is not a terminal and hold the signal back (a Monitor with
+  a `cut` after the `grep` stayed silent through a finished review). Re-arming after the Monitor
   expires is the same command. The line is a prompt to inspect, not the end of the task: read the
   thread, confirm the last assistant item is the report and that no background command, nested
   delegate or queued turn of the run is still working, then `task_cancel`. The `turn-ended` time minus
