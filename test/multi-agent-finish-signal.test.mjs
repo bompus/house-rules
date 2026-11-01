@@ -10,11 +10,12 @@ const root = dirname(dirname(fileURLToPath(import.meta.url)));
 // The command needs a grep with --line-buffered, and the test needs a timeout that stops the whole
 // pipeline (GNU or uutils coreutils); BusyBox versions would fail or hang the test, so it runs only where
 // both are present.
-const grepBuffers =
-  spawnSync("grep", ["--line-buffered", "x"], { input: "", encoding: "utf8" }).status === 1;
-const timeoutStops = /GNU|uutils/.test(
-  spawnSync("timeout", ["--version"], { encoding: "utf8" }).stdout,
-);
+// Probes run with stdin closed and their own timeout, so a sandbox that cannot shut a pipe down cannot
+// hang the test file before any test is registered.
+/** @type {import("node:child_process").SpawnSyncOptionsWithStringEncoding} */
+const probe = { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], timeout: 5000 };
+const grepBuffers = spawnSync("grep", ["--line-buffered", "x", "/dev/null"], probe).status === 1;
+const timeoutStops = /GNU|uutils/.test(spawnSync("timeout", ["--version"], probe).stdout);
 const posix = {
   skip:
     process.platform !== "linux"
