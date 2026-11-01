@@ -206,7 +206,9 @@ behavior.
   directory is quoted and expanded by the shell, not `~`, which the shell does not expand inside quotes;
   `G` is the file-name glob alone, with no directory part, so a T3 home containing a space cannot split
   it):
-  `cd "${T3CODE_HOME:-$HOME/.t3}/userdata/logs/provider" || exit 1; G='events.thread-delegated-task-command-3amcp-3a<mcp-id>*.log'; until ls $G >/dev/null 2>&1; do sleep 2; done; tail -n +1 -F $G | grep --line-buffered 'delegate-task%253A<task>:.*"update":{"type":"turn-ended"'`.
+  `cd "${T3CODE_HOME:-$HOME/.t3}/userdata/logs/provider" || exit 1; shopt -u nullglob 2>/dev/null; G='events.thread-delegated-task-command-3amcp-3a<mcp-id>*.log'; until ls $G >/dev/null 2>&1; do sleep 2; done; tail -n +1 -F $G | grep --line-buffered 'delegate-task%253A<task>:.*"update":{"type":"turn-ended"'`.
+  `shopt -u nullglob` keeps a shell that sets that option from dropping the unmatched `$G`, which would
+  make `ls` list the directory and `tail -F` follow nothing; `sh` has no `shopt`, so its error is hidden.
   The `:` after the task id ends it (ids can share a prefix), and `"update":{"type":"turn-ended"`
   keeps a tool result that merely contains the words from matching. Nothing may follow `grep` in the
   pipe: `cut` and `head` buffer when output is not a terminal and hold the signal back (a Monitor with

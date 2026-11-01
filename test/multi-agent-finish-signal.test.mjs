@@ -42,12 +42,13 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
  * command starts, as in real use: it is written a moment later, and the command must wait for it.
  * @param {string} logs directory that holds the provider logs
  * @param {Record<string, string>} env
+ * @param {string[]} [shell] options for bash, such as `["-O", "nullglob"]`
  * @returns {Promise<string>} what the command printed in four seconds
  */
-async function signal(logs, env) {
+async function signal(logs, env, shell = []) {
   mkdirSync(logs, { recursive: true });
   const filled = command.replaceAll("<mcp-id>", "abc123").replaceAll("<task>", "t1");
-  const child = spawn("timeout", ["4", "bash", "-c", filled], {
+  const child = spawn("timeout", ["4", "bash", ...shell, "-c", filled], {
     env: { PATH: process.env.PATH ?? "", ...env },
   });
   let out = "";
@@ -89,4 +90,16 @@ test("logs outside userdata under T3CODE_HOME are not where T3 writes them", pos
   const custom = scratch(t, "finish-signal-custom-");
   const out = await signal(join(custom, "logs", "provider"), { HOME: home, T3CODE_HOME: custom });
   assert.equal(out, "");
+});
+
+test("it still waits for the log when the shell has nullglob enabled", posix, async (t) => {
+  const home = scratch(t, "finish-signal-home-");
+  // With nullglob an unmatched $G vanishes: `ls` would list the current directory and succeed, and
+  // `tail -F` would get no file name.
+  const out = await signal(join(home, ".t3", "userdata", "logs", "provider"), { HOME: home }, [
+    "-O",
+    "nullglob",
+  ]);
+  assert.match(out, /delegate-task%253At1:/);
+  assert.doesNotMatch(out, /delegate-task%253At2:/);
 });
