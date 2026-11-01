@@ -39,7 +39,7 @@ land another way. `--wait` also polls while such a check runs, and for a few min
 required check has not yet appeared. Two settings name what the gate cannot know. `HR_PRIVATE_REVIEWER` is the
 login of a private review App (with or without `[bot]`): once it has reviewed the repository, a landing waits
 for its review of the current head, and its checks count as review-bot output. `HR_ADVISORY_CHECKS` is a
-comma-separated list of check names that only observe a pull request and never refuse a landing. Unset, there is
+JSON array of check names (`["observe (linux, x64)"]`) that only observe a pull request and never refuse a landing. Unset, there is
 no private reviewer and no advisory check. The gate does not authorize landing.
 
 The check named exactly "cubic · AI code reviewer" on the head commit is held to the

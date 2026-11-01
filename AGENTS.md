@@ -10,7 +10,10 @@ The maintainer lands pull requests; contributors' commits keep their author
 for the record, then land it with
 `HR_PUSH_LANDED=bompus/house-rules bash skills/hr-pr-followup/scripts/merge-pr.sh bompus/house-rules#<n>`.
 After the pull request review gate and the `check` gate pass, it fast-forwards `main` to the
-reviewed head with a push, deletes the branch and verifies the landing. That
+reviewed head with a push, deletes the branch and verifies the landing. When a
+private review App reviews these pull requests, export `HR_PRIVATE_REVIEWER` (and
+`HR_ADVISORY_CHECKS` for checks that only observe) first: without them the gate
+does not know the App and does not wait for it. That
 push puts the task's changes straight into `main`, so the core rules' local
 review of those changes comes first, before the pull request opens. Do not
 push to `main` by hand. A hand-written check-then-push sequence can push past a

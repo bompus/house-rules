@@ -8,7 +8,7 @@ import {
 
 // The private reviewer is whatever HR_PRIVATE_REVIEWER names; these tests run with one configured.
 process.env.HR_PRIVATE_REVIEWER = "acme-reviewer";
-process.env.HR_ADVISORY_CHECKS = "advisory probe";
+process.env.HR_ADVISORY_CHECKS = '["advisory probe", "observe (linux, x64)"]';
 
 const bot = { __typename: "Bot", login: "coderabbitai" };
 const user = { __typename: "User", login: "maintainer" };
@@ -1378,7 +1378,25 @@ test("without HR_PRIVATE_REVIEWER no private reviewer is required, and a bad val
     expect(feedback(false)).not.toContain("app review pending");
     process.env.HR_PRIVATE_REVIEWER = "not a login";
     expect(() => feedback(false)).toThrow("HR_PRIVATE_REVIEWER must be a GitHub App login");
+    // A bot suffix with no login is a mistake, not an unset setting.
+    process.env.HR_PRIVATE_REVIEWER = "[bot]";
+    expect(() => feedback(false)).toThrow("HR_PRIVATE_REVIEWER must be a GitHub App login");
   } finally {
     process.env.HR_PRIVATE_REVIEWER = "acme-reviewer";
+  }
+});
+
+test("HR_ADVISORY_CHECKS is a JSON array, so a check name can hold a comma", () => {
+  const run = (/** @type {string} */ name) => ({ name, status: "IN_PROGRESS", conclusion: null });
+  const refused = (/** @type {string} */ name) =>
+    openFeedback(pr({ contexts: [run(name)] })).join("\n");
+  expect(refused("observe (linux, x64)")).toBe("");
+  expect(refused("observe (linux")).toContain("check still running");
+  const saved = process.env.HR_ADVISORY_CHECKS;
+  try {
+    process.env.HR_ADVISORY_CHECKS = "advisory probe, observe";
+    expect(() => refused("advisory probe")).toThrow("HR_ADVISORY_CHECKS must be a JSON array");
+  } finally {
+    process.env.HR_ADVISORY_CHECKS = saved;
   }
 });

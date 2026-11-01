@@ -4,14 +4,13 @@
 // review-bot output rather than ordinary CI that must pass. HR_PRIVATE_REVIEWER names its login
 // (with or without "[bot]"); unset means there is no private reviewer and none is required.
 export function privateReviewerLogin(): string | undefined {
-  const login = process.env.HR_PRIVATE_REVIEWER?.trim()
-    .replace(/\[bot\]$/i, "")
-    .toLowerCase();
-  if (login === undefined || login === "") {
+  const raw = process.env.HR_PRIVATE_REVIEWER?.trim();
+  if (raw === undefined || raw === "") {
     return undefined;
   }
+  const login = raw.replace(/\[bot\]$/i, "").toLowerCase();
   if (!/^[a-z0-9][a-z0-9-]*$/.test(login)) {
-    throw new Error(`HR_PRIVATE_REVIEWER must be a GitHub App login, got "${login}"`);
+    throw new Error(`HR_PRIVATE_REVIEWER must be a GitHub App login, got "${raw}"`);
   }
   return login;
 }
@@ -22,12 +21,23 @@ export function isPrivateReviewer(name: string): boolean {
 }
 
 // Checks that only observe a pull request. Queued, running or failed, they never refuse a landing.
-// HR_ADVISORY_CHECKS lists their names, comma separated.
+// HR_ADVISORY_CHECKS is a JSON array of their names, since a check name can hold a comma
+// ("test (ubuntu, 20)").
 export function advisoryChecks(): Set<string> {
-  return new Set(
-    (process.env.HR_ADVISORY_CHECKS ?? "")
-      .split(",")
-      .map((entry) => entry.trim())
-      .filter((entry) => entry !== ""),
-  );
+  const raw = process.env.HR_ADVISORY_CHECKS?.trim();
+  if (raw === undefined || raw === "") {
+    return new Set();
+  }
+  let names: unknown;
+  try {
+    names = JSON.parse(raw);
+  } catch {
+    names = undefined;
+  }
+  if (!Array.isArray(names) || !names.every((name) => typeof name === "string")) {
+    throw new Error(
+      'HR_ADVISORY_CHECKS must be a JSON array of check names, for example ["observe (linux, x64)"]',
+    );
+  }
+  return new Set(names);
 }
