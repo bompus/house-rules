@@ -197,12 +197,15 @@ behavior.
   closed it in about 10 seconds, the SDK's interrupt timeout.
 - A finish signal without the sentinel: T3 writes the SDK's `turn-ended` update to the child's
   provider log, `<T3 data dir>/logs/provider/events.thread-delegated-task-command-3amcp-3a<mcp-id>*.log`
-  (data dir `~/.t3/userdata` by default; `<mcp-id>` is the text between `command%3Amcp%3A` and
+  (data dir `$HOME/.t3/userdata` by default; `<mcp-id>` is the text between `command%3Amcp%3A` and
   `%3Adelegate-task` in the child's thread id). The file name is cut short and shared by all of one
   session's delegated tasks, and the file does not exist until the first event, so a Monitor waits for it
   and then reads from the start while following, in one operation, so an event written before the
-  Monitor attached is not lost, and filters on the task id with its boundary and the update type:
-  `cd "<data dir>/logs/provider" || exit 1; G='<glob>'; until ls $G >/dev/null 2>&1; do sleep 2; done; tail -n +1 -F $G | grep --line-buffered 'delegate-task%253A<task>:.*"update":{"type":"turn-ended"'`.
+  Monitor attached is not lost, and filters on the task id with its boundary and the update type (a
+  different data dir replaces `$HOME/.t3/userdata`, quoted and as an absolute path, because the shell does
+  not expand `~` inside quotes; `G` is the file-name glob alone, with no directory part, so a data dir
+  containing a space cannot split it):
+  `cd "$HOME/.t3/userdata/logs/provider" || exit 1; G='events.thread-delegated-task-command-3amcp-3a<mcp-id>*.log'; until ls $G >/dev/null 2>&1; do sleep 2; done; tail -n +1 -F $G | grep --line-buffered 'delegate-task%253A<task>:.*"update":{"type":"turn-ended"'`.
   The `:` after the task id ends it (ids can share a prefix), and `"update":{"type":"turn-ended"`
   keeps a tool result that merely contains the words from matching. Nothing may follow `grep` in the
   pipe: `cut` and `head` buffer when output is not a terminal and hold the signal back (a Monitor with
