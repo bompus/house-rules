@@ -39,12 +39,11 @@ caps together stay within it); when that leaves less than the peak, shrink the j
 includes the peak memory). Check that the heavy processes run inside the capped scope:
 work done by a daemon, such as a container build, needs the daemon's own limits.
 
-Separate scopes cannot stop two jobs that start at the same moment from each sizing a cap
-against the same free memory. Where several agents share one host, give them a shared
-parent cgroup (a systemd slice with its own `MemoryMax`) so their caps cannot add up past
-the host's memory, and start each job in it with `--slice=<slice>` added to the command
-above: a scope otherwise lands outside the caller's slice. Check that the slice is an
-ancestor of the job's scope (`systemctl --user status <scope>` shows its control group).
+Per-job caps cannot stop jobs that start at the same moment from each sizing against the
+same free memory. Where several agents share one host, use one shared budget that is an
+ancestor of every job (on Linux, one cgroup that all of them are placed under, created at
+system level when the agents run as different users), and check that the same capped
+cgroup is an ancestor of each job.
 
 With no measured peak, lower parallelism and drop debug info before
 raising the cap. A capped job that exits 137 or 143 without its own error was likely
