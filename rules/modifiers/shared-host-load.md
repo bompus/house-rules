@@ -11,9 +11,11 @@ or admission check. Several heavy jobs may run at the same time. Checking and
 reporting load or running jobs stays allowed; what you see informs the report and
 never holds the work back. A limit the user states for a run still applies. Cap
 parallel workers and compiler jobs at max(1, floor(CPUs / 2)); count CPUs with
-`nproc --all`, which ignores a cgroup CPU quota, because counters that follow a quota
-differ on fractions (on a 16-CPU host, a 1.5 CPU quota reads 1 in Node and Bun, 2 in
-uutils `nproc` and 16 in GNU `nproc`).
+`nproc --all` (macOS: `sysctl -n hw.logicalcpu`; Windows: `NUMBER_OF_PROCESSORS`),
+and never above `nproc`, which honors a CPU affinity mask. `nproc --all` ignores a
+cgroup CPU quota, because counters that follow a quota differ on fractions (on a 16-CPU
+host, a 1.5 CPU quota reads 1 in Node and Bun, 2 in uutils `nproc` and 16 in GNU
+`nproc`). Use the cap yourself when you set a tool's worker count.
 
 A benchmark, timing run or other performance measurement keeps every rule of
 `hr-benchmarking`. That includes keeping other work from competing with the run
@@ -28,8 +30,11 @@ Work risks exhausting memory when its expected or last measured peak leaves
 little headroom in the memory available to it, or when its peak is unknown and
 its input is large. Constrain such work using the host's supported controls; on
 Linux with systemd, `systemd-run --user --scope -p MemoryMax=<size> -- <cmd>`, sized
-from the job's measured peak plus about 20% (where systemd reports it, the scope's
-journal line `Consumed …` includes the peak memory).
+from the job's measured peak plus about 20%, but never above the memory available to
+it less what the rest of the host needs; when that leaves less than the peak, shrink
+the job instead (where systemd reports it, the scope's journal line `Consumed …`
+includes the peak memory). Check that the heavy processes run inside the capped scope:
+work done by a daemon, such as a container build, needs the daemon's own limits.
 
 With no measured peak, lower parallelism and drop debug info before
 raising the cap. A capped job that exits 137 or 143 without its own error was likely

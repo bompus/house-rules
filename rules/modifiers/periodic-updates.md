@@ -32,9 +32,12 @@ finishes or a tool call returns. Stop the updates when the job ends;
 the final report replaces them.
 
 A scheduled or recurring task states a fire condition (what must be true for a run to
-do work), exits silently when the condition is false, and has an end: it disables
-itself after 3 consecutive runs that found nothing to do, or it carries an end date.
-A run that has nothing to report sends no "nothing to report" message.
+do work), exits silently when the condition is false, and has an end: an end date, or
+the purpose it stops at. A task that waits for an event it still expects does not
+disable itself because runs were idle; one whose idleness means it is no longer needed
+may disable itself after a set number of consecutive idle runs (3 is a start), and says
+so to whoever it was set up for. A run with nothing to report sends no "nothing to
+report" message.
 
 Before creating one, settle its purpose and owning thread, the scope it may change (no
 metered route unless approved), and who is told, and only on a change or failure.
