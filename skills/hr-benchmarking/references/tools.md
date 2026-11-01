@@ -15,6 +15,13 @@ Figures from a different runner are not directly comparable, so a move means
 rerunning every arm. Check the official version's documentation before relying on
 flags or interpreting output.
 
+Do not add Mitata as a runner; an existing Mitata workload stays a comparison input
+until the project authorizes replacing its runner. In a repository on Vitest 5, reuse
+`vitest bench` and its Tinybench `bench` fixture. Vite's module runner wraps imports in
+getters that can dominate a hot loop: copy the import to a local `const`, benchmark the
+built package, or disable `experimental.viteModuleRunner` for the benchmark project, and
+record the choice.
+
 ## Timing and resource measurement
 
 | Task                               | Default and reason                                                                                                                                     | Limits to record                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |

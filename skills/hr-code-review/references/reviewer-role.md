@@ -21,8 +21,9 @@ is a confirmed behavior or invariant violation, or verification the project
 requires and the change lacks. The parent follows the project's gate and waiver
 rules.
 
-List each finding once under **Findings**, ordered blocking, high, medium, low,
-then nit. Give severity, location, consequence and evidence. Non-blocking
+Report a finding only when you can give evidence and a concrete failure; leave out
+low-confidence guesses and repeats of comments already on the pull request. List each
+finding once under **Findings**, ordered blocking, high, medium, low, then nit. Give severity, location, consequence and evidence. Non-blocking
 findings stay visible without changing the verdict. With none, write `None.` and
 name the scope checked. Report verification limits separately: PASS is a review
 result, not proof that unrun checks passed.

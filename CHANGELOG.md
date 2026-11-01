@@ -4,6 +4,8 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Add two small notes. The `hr-benchmarking` tools reference says not to add Mitata as a runner (an existing Mitata workload stays a comparison input) and how to benchmark with `vitest bench` on Vitest 5 despite Vite's module runner getters. The `hr-code-review` reviewer role says a finding needs evidence and a concrete failure, and leaves out low-confidence guesses and repeats of comments already on the pull request.
+
 ## 0.18.0 - 2026-11-01
 
 - **Breaking for configs that list it:** `hr-split-to-prs` is folded into `hr-writing-pr`. The procedure for dividing a branch into several PRs is now `skills/hr-writing-pr/references/splitting.md`, and the `hr-writing-pr` description covers splitting. A config that lists `hr-split-to-prs` in `skills.include` now fails composition with "unknown shipped skill". Replace it with `hr-writing-pr`, or remove it when `hr-writing-pr` is already listed, since a duplicate entry also fails composition. Also check that `skills.exclude` does not list `hr-writing-pr` (an excluded skill is not selected, so neither skill would load) and that a personal skill named `hr-writing-pr`, which replaces the shipped one, carries the splitting guidance or is removed.
