@@ -66,13 +66,15 @@ rule and a fresh admission check before each arm).
 - Fewer runs per arm only on the user's request. When the user asks for shorter benchmarks, the declared
   count may be two per arm, still alternated and with the A/A arm. A pilot that shows gaps far outside the
   variation criterion is the reason to offer two runs, not permission to take them. Extend to three and
-  then five only for comparisons inside the criterion, and report one still unresolved at five as
-  inconclusive. Declare the count and the request before the first run.
+  then five only for comparisons inside the criterion or whose ranges overlap, and report one still
+  unresolved at five as inconclusive. Declare the count and the request before the first run.
 - The shortest run that clears the criterion. Shorten a run only as far as a pilot shows repeated runs
   still agree, judged by the spread of those runs: a runner's own error figure can be that of the mean,
   not the median. Keep the runner's minimum iteration counts and check the timer's resolution first.
 - One arm per unit. Put an arm's workloads and runtimes in one unit, so the fresh admission check each
-  arm needs is paid once per arm and a refusal discards one arm. Do not skip or reuse a check to save time.
+  arm needs is paid once per arm and a refusal discards one arm. Judge the competing-work limit on each
+  timed workload's own interval as well as on the unit, since a unit mean can hide a burst that hit one
+  workload. Do not skip or reuse a check to save time.
 - Retry a refused admission in seconds, not minutes. A controller that holds no lock, observer or other
   resource between attempts can look again after a few seconds, keeping every refusal, up to a declared
   attempt cap and the stop below; a fixed wait of a minute or more after each refusal can be most of a
