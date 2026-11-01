@@ -39,6 +39,11 @@ caps together stay within it); when that leaves less than the peak, shrink the j
 includes the peak memory). Check that the heavy processes run inside the capped scope:
 work done by a daemon, such as a container build, needs the daemon's own limits.
 
+Separate scopes cannot stop two jobs that start at the same moment from each sizing a cap
+against the same free memory. Where several agents share one host, give them a shared
+parent cgroup (a systemd slice with its own `MemoryMax`) so their caps cannot add up past
+the host's memory.
+
 With no measured peak, lower parallelism and drop debug info before
 raising the cap. A capped job that exits 137 or 143 without its own error was likely
 killed for memory: check the system journal for an OOM kill before retrying.
