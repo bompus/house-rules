@@ -1,6 +1,7 @@
 ---
 description: Ask every question in text and call no question tool, even when the host exposes one.
 after: Offers
+core: true
 ---
 
 ## Text-only questions

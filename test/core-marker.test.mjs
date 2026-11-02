@@ -158,6 +158,37 @@ test("the shipped rules mark the safeguard sections core and coreFirst moves the
   assert.equal(names[0], "End of every reply");
 });
 
+test("the text-only questions section is core, so coreFirst keeps it beside the Offers permission", (t) => {
+  const dir = scratch(t, "core-marker-text-only-");
+  const config = {
+    modifiers: ["text-only-questions", "shared-host-load"],
+    coreFirst: true,
+    skills: { include: [] },
+  };
+  const { parts } = composeConfiguration(config, dir);
+  const names = order(parts);
+  const core = coreOf(parts);
+  assert.ok(core.includes("Offers") && core.includes("Text-only questions"));
+  assert.ok(
+    names.findLastIndex((h) => core.includes(h)) < names.findIndex((h) => !core.includes(h)),
+    "every core section, the text-only one included, comes before every other section",
+  );
+});
+
+test("composing text-only questions with another question choice stops before any output", (t) => {
+  const dir = scratch(t, "core-marker-text-only-conflict-");
+  for (const other of ["model-default-questions", "coded-offers", "question-cards"]) {
+    assert.throws(
+      () =>
+        composeConfiguration(
+          { modifiers: ["text-only-questions", other], skills: { include: [] } },
+          dir,
+        ),
+      /text-only-questions cannot combine/,
+    );
+  }
+});
+
 test("--sizes lists the core sections and the bytes of each group", (t) => {
   const dir = scratch(t, "core-marker-sizes-");
   mkdirSync(join(dir, "rules"));

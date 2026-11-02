@@ -30,5 +30,5 @@ pingdotgg/t3code#26841 reports approvals too). Where the host separates steering
 the message so it waits for the answer. A report that cannot wait, such as a
 security or production risk, goes anyway: say in the message that it may cancel
 the wait, and tell the user what it cancelled. A session whose run ended with a
-question still pending may be idle, so a queued send can start a run: read the
-delivery result, and hold a message that can wait.
+question still pending may be idle, so a queued send can start a run: check that
+first, and hold a message that can wait until the question is answered.

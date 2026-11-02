@@ -334,6 +334,18 @@ const layersOf = (/** @type {Config} */ config) => config.layers ?? ["."];
  * @returns {Fragment[]}
  */
 function loadRawFragments(config, configDir) {
+  const selected = config.modifiers ?? [];
+  if (
+    selected.includes("text-only-questions") &&
+    selected.some((name) =>
+      ["model-default-questions", "coded-offers", "question-cards"].includes(name),
+    )
+  ) {
+    // The rules would otherwise say both to use a question tool and to call none.
+    throw new Error(
+      "text-only-questions cannot combine with model-default-questions, coded-offers or question-cards",
+    );
+  }
   const fragments = (config.modifiers ?? []).map((name) => {
     const path = join(BASE, "rules/modifiers", `${name}.md`);
     if (!existsSync(path)) {
