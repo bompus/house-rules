@@ -246,6 +246,13 @@ The `multi-agent` modifier exports its complete agent-work procedure when enable
 including review follow-ups and cleanup qualification. It remains independent
 of selected skills; enabling reference output does not enable the modifier.
 
+To see how large each part of the output is, run `house-rules --config <path> --sizes`
+(`bun compose.mjs --config <path> --sizes` in a checkout). It writes nothing and prints one
+tab-separated line per part, in output order: bytes, kind and name. The kinds are `preamble`, `section`
+(by heading), `reference` (a file in the references directory) and `total` (the whole rules file). The
+numbers are those of a run with `--out`, so a section that exports a procedure counts only its pointer.
+`--sizes` cannot be combined with `--out`, `--skills-out` or `--references-out`.
+
 Use `--references-out <directory>` with `--out` to choose another destination;
 links are rendered relative to the rules file. Keep both locations available.
 Stdout and ordinary composition/configuration API calls retain full inline

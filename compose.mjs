@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // Composes rules and skills into explicit output paths; config commands manage selections.
 //   bun compose.mjs --config <path> [--out <file>] [--skills-out <dir>]
+//   bun compose.mjs --config <path> --sizes
 //   bun compose.mjs config help
 import {
   cpSync,
@@ -14,7 +15,12 @@ import {
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
-import { composeConfiguration, configurationPath, modifierList } from "./composition.mjs";
+import {
+  composeConfiguration,
+  configurationPath,
+  modifierList,
+  splitSections,
+} from "./composition.mjs";
 import { configCommand } from "./config.mjs";
 import { setupCommand } from "./setup.mjs";
 import { checkOutputPath, planReferenceOutput, writeReferenceOutput } from "./rule-references.mjs";
@@ -30,6 +36,25 @@ export {
 } from "./composition.mjs";
 const BASE = dirname(fileURLToPath(import.meta.url));
 const NOTICES = ["LICENSE", "THIRD_PARTY_NOTICES.md"];
+
+const bytes = (/** @type {string} */ text) => Buffer.byteLength(text, "utf8");
+
+/**
+ * One tab-separated line per part of the composed output, in output order: bytes, kind, name.
+ * Kinds are preamble, section, reference (a file in the references directory) and total (the rules file).
+ * @param {string} rules
+ * @param {Map<string, string>} references
+ */
+export function sizeListing(rules, references) {
+  const { preamble, sections } = splitSections(rules);
+  const lines = [
+    [bytes(preamble), "preamble", ""],
+    ...sections.map((s) => [bytes(s.text), "section", s.heading]),
+    ...[...references].map(([name, text]) => [bytes(text), "reference", name]),
+    [bytes(rules), "total", "rules"],
+  ];
+  return lines.map((line) => `${line.join("\t")}\n`).join("");
+}
 
 /** @param {string[]} argv */
 function main(argv) {
@@ -47,6 +72,7 @@ function main(argv) {
       "skills-out": { type: "string" },
       "references-out": { type: "string" },
       list: { type: "boolean" },
+      sizes: { type: "boolean" },
     },
   });
   if (values.list) {
@@ -54,6 +80,11 @@ function main(argv) {
       console.log(`${m.name}: ${m.description ?? ""}`);
     }
     return;
+  }
+  if (values.sizes && (values.out || values["skills-out"] || values["references-out"])) {
+    throw new Error(
+      "--sizes writes nothing; do not combine it with --out, --skills-out or --references-out",
+    );
   }
   const configPath = configurationPath(values.config);
   let config;
@@ -66,6 +97,17 @@ function main(argv) {
     throw new Error(`${configPath} is not valid JSON (${error.message}); fix it or move it aside`, {
       cause: error,
     });
+  }
+  if (values.sizes) {
+    // The sizes of what a run with --out writes: reference pointers in the rules, procedures in references.
+    const sized = composeConfiguration(config, dirname(configPath), {
+      referencesDirectory: "house-rules-references",
+    });
+    for (const warning of sized.warnings) {
+      console.error(`warning: ${warning}`);
+    }
+    process.stdout.write(sizeListing(sized.rules, sized.references));
+    return;
   }
   const { out, "skills-out": skillsOut, "references-out": explicitReferences } = values;
   if (explicitReferences && !out) {

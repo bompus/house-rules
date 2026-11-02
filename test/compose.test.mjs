@@ -183,6 +183,55 @@ test("Windows line endings and headings inside code fences do not change the res
   assert.match(out, /## Mine\n\nText\./);
 });
 
+/** @param {string} text */
+const byteLength = (text) => Buffer.byteLength(text, "utf8");
+
+test("--sizes lists the bytes of each section and reference in output order and writes nothing", (t) => {
+  const dir = scratch(t);
+  const config = join(dir, "house-rules.json");
+  writeFileSync(config, JSON.stringify({ modifiers: ["multi-agent"] }));
+  const listing = composeCli(["--config", config, "--sizes"]).toString("utf8");
+  // The sizes are those of the file and references a run with --out writes.
+  const { rules, references } = composeConfiguration({ modifiers: ["multi-agent"] }, dir, {
+    referencesDirectory: "house-rules-references",
+  });
+  const { preamble, sections } = splitSections(rules);
+  const rows = listing
+    .trimEnd()
+    .split("\n")
+    .map((line) => line.split("\t"));
+  const expected = [
+    ["preamble", "", String(byteLength(preamble))],
+    ...sections.map((s) => ["section", s.heading, String(byteLength(s.text))]),
+    ...[...references].map(([name, text]) => ["reference", name, String(byteLength(text))]),
+    ["total", "rules", String(byteLength(rules))],
+  ].map(([kind, name, bytes]) => [bytes, kind, name]);
+  assert.deepEqual(rows, expected);
+  assert.ok(references.size > 0, "the multi-agent modifier exports a reference");
+  assert.deepEqual(
+    rows.filter((r) => r[1] === "section").map((r) => r[2]),
+    headings(rules),
+  );
+  assert.deepEqual(readdirSync(dir), ["house-rules.json"]);
+});
+
+test("--sizes refuses output flags instead of writing", (t) => {
+  const dir = scratch(t);
+  const config = join(dir, "house-rules.json");
+  writeFileSync(config, "{}");
+  for (const extra of [
+    ["--out", join(dir, "rules.md")],
+    ["--skills-out", join(dir, "s")],
+  ]) {
+    assert.throws(
+      () => composeCli(["--config", config, "--sizes", ...extra]),
+      (error) =>
+        String(/** @type {{ stderr: Buffer }} */ (error).stderr).includes("--sizes writes nothing"),
+    );
+  }
+  assert.deepEqual(readdirSync(dir), ["house-rules.json"]);
+});
+
 test("a failed run writes nothing, and unknown flags are refused", (t) => {
   const dir = scratch(t);
   const out = join(dir, "rules.md");
