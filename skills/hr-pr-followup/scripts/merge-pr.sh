@@ -217,15 +217,86 @@ fi
 # gh call in it names the repository, so it needs no checkout.
 HELPER_DIR="$(CDPATH='' cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 CHECKER="$HELPER_DIR/check-pr-review.ts"
+# The gate and the check run in other directories, where a relative PATH entry (an empty one means the
+# starting directory), a tilde, `~+`, `~-` or a relative GH_CONFIG_DIR would name something else. They
+# are made absolute against the starting directory here, and both variables are exported in that form.
+# Nothing else is added: a Bun or gh that cannot be found, or credentials that cannot be read, still
+# refuse the landing.
+gate_path_refused() {
+  echo "refused: $1" >&2
+  exit 1
+}
+GATE_DIR="$(pwd -P)"
+GATE_PATH=""
+GATE_REST="${PATH-}"
+while :; do
+  GATE_ENTRY="${GATE_REST%%:*}"
+  GATE_BASE=""
+  # shellcheck disable=SC2088 # the patterns match a literal tilde in a PATH entry
+  case "$GATE_ENTRY" in
+    /*) ;;
+    "~+" | "~+/"*) GATE_BASE="$GATE_DIR" GATE_ENTRY="${GATE_ENTRY#"~+"}" ;;
+    "~-" | "~-/"*)
+      if [ -n "${OLDPWD-}" ]; then
+        GATE_BASE="$OLDPWD" GATE_ENTRY="${GATE_ENTRY#"~-"}"
+      else
+        # Bash leaves ~- as written while OLDPWD is unset, so it names a directory called ~-; the
+        # `cd /` that follows would otherwise set OLDPWD and turn it into the starting directory.
+        GATE_BASE="$GATE_DIR"
+      fi
+      ;;
+    "~" | "~/"*)
+      # Bun's own command lookup does not expand a tilde, so it is expanded here.
+      GATE_BASE="${HOME:-}"
+      [ -n "$GATE_BASE" ] || gate_path_refused "a PATH entry starts with ~ and HOME is not set"
+      GATE_ENTRY="${GATE_ENTRY#"~"}"
+      ;;
+    "~"*) gate_path_refused "a PATH entry starts with a ~ form this helper does not expand (~user, ~N)" ;;
+    *) GATE_BASE="$GATE_DIR" ;;
+  esac
+  if [ -n "$GATE_BASE" ]; then
+    case "$GATE_BASE" in
+      /*) ;;
+      *) gate_path_refused "a PATH entry is relative to $GATE_BASE, which is not an absolute path" ;;
+    esac
+    # A colon would split the rebuilt entry into two search directories.
+    case "$GATE_BASE" in
+      *:*) gate_path_refused "a PATH entry is relative to a directory whose name contains a colon" ;;
+    esac
+    GATE_ENTRY="$GATE_BASE${GATE_ENTRY:+/${GATE_ENTRY#/}}"
+  fi
+  GATE_PATH="${GATE_PATH:+$GATE_PATH:}$GATE_ENTRY"
+  case "$GATE_REST" in
+    *:*) GATE_REST="${GATE_REST#*:}" ;;
+    *) break ;;
+  esac
+done
+# The repository check gets the PATH the caller had, so a relative entry in it (node_modules/.bin, tools)
+# keeps meaning a directory of the checked-out head, as it did before; only `nice` and the package
+# manager are looked up with the absolute one, before the check changes directory.
+GATE_PATH_WAS_SET=0
+if [ "${PATH+set}" = set ]; then
+  GATE_PATH_WAS_SET=1
+  GATE_ORIG_PATH="$PATH"
+  export PATH="$GATE_PATH"
+fi
+case "${GH_CONFIG_DIR:-}" in
+  "" | /*) ;;
+  *) export GH_CONFIG_DIR="$GATE_DIR/$GH_CONFIG_DIR" ;;
+esac
+# Bun, from the root with an empty config and no .env.
+bun_isolated() {
+  (cd / && exec bun --config=/dev/null --no-env-file "$@")
+}
 if [ "$EXPLAIN" != 1 ]; then
-  if ! (cd / && bun --config=/dev/null --no-env-file "$CHECKER" "$PR" --repo "$REPO"); then
+  if ! bun_isolated "$CHECKER" "$PR" --repo "$REPO"; then
     echo "refused: review feedback is open (check-pr-review.ts); PR $PR is not merged" >&2
     exit 1
   fi
 else
   # The checker prints each open item as an indented line on stderr. Sort them into the conditions they break.
   REVIEW_CODE=0
-  REVIEW_ERR="$(cd / && bun --config=/dev/null --no-env-file "$CHECKER" "$PR" --repo "$REPO" 2>&1 >/dev/null)" || REVIEW_CODE=$?
+  REVIEW_ERR="$(bun_isolated "$CHECKER" "$PR" --repo "$REPO" 2>&1 >/dev/null)" || REVIEW_CODE=$?
   THREADS="" BOT="" CHECKS="" OTHER=""
   if [ "$REVIEW_CODE" = 1 ]; then
     while IFS= read -r LINE; do
@@ -296,14 +367,14 @@ run_repo_check() {
   # unreadable package.json refuses.
   read -r NAMED MAJOR HAS_CHECK NEEDS_INSTALL < <(
     if git cat-file -e "$OID:package.json" 2>/dev/null; then
-      git show "$OID:package.json" | (cd / && bun --config=/dev/null --no-env-file -e '
+      git show "$OID:package.json" | bun_isolated -e '
         const p = JSON.parse(await Bun.stdin.text());
         const deps = Object.keys({ ...p.dependencies, ...p.devDependencies, ...p.optionalDependencies });
         const install = deps.length > 0 || p.workspaces !== undefined;
         const [name, version] = String(p.packageManager ?? "-").split("@");
         const major = /^\d+/.exec(version ?? "")?.[0] ?? "-";
         console.log(name || "-", major, typeof p.scripts?.check === "string" ? 1 : 0, install ? 1 : 0);
-      ') || echo "invalid"
+      ' || echo "invalid"
     else
       echo "- - 0 0"
     fi
@@ -351,11 +422,19 @@ run_repo_check() {
   CPUS="$(nproc --all 2>/dev/null || getconf _NPROCESSORS_ONLN 2>/dev/null || echo 2)"
   HALF=$((CPUS / 2 > 0 ? CPUS / 2 : 1))
   NICE=()
-  command -v nice >/dev/null && NICE=(nice -n 10)
+  NICE_BIN="$(command -v nice || true)"
+  [ -n "$NICE_BIN" ] && NICE=("$NICE_BIN" -n 10)
   run_step() {
     local code=0
-    (cd "$CHECK_DIR" && RAYON_NUM_THREADS="${RAYON_NUM_THREADS:-$HALF}" \
-      UV_THREADPOOL_SIZE="${UV_THREADPOOL_SIZE:-$HALF}" ${NICE[@]+"${NICE[@]}"} "$@") 2>&1 || code=$?
+    local -a cmd=("$@")
+    local tool
+    tool="$(command -v -- "${cmd[0]}" || true)"
+    [ -n "$tool" ] && cmd[0]="$tool"
+    (
+      if [ "$GATE_PATH_WAS_SET" = 1 ]; then export PATH="$GATE_ORIG_PATH"; else unset PATH; fi
+      cd "$CHECK_DIR" && RAYON_NUM_THREADS="${RAYON_NUM_THREADS:-$HALF}" \
+        UV_THREADPOOL_SIZE="${UV_THREADPOOL_SIZE:-$HALF}" ${NICE[@]+"${NICE[@]}"} "${cmd[@]}"
+    ) 2>&1 || code=$?
     if [ "$code" != 0 ]; then
       CHECK_FAILED="refused: \`$*\` exited $code at ${OID:0:12}; PR $PR is not merged"
       return 1

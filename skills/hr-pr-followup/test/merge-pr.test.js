@@ -6,8 +6,10 @@ import {
   chmodSync,
   cpSync,
   existsSync,
+  mkdirSync,
   mkdtempSync,
   readFileSync,
+  realpathSync,
   rmSync,
   symlinkSync,
   writeFileSync,
@@ -77,9 +79,14 @@ function stub(bin, name, body) {
  *   racingFetch?: boolean, baseCurrent?: boolean, errexitOff?: boolean, advanceHead?: boolean,
  *   sharing?: string[], sharingFails?: boolean, upstream?: boolean, originUrl?: string,
  *   botReviews?: number, alias?: boolean, silentReviewFailure?: boolean,
- *   checks?: object[] | null, helperBunfig?: boolean, bunCalls?: boolean }} [options]
+ *   checks?: object[] | null, helperBunfig?: boolean, bunCalls?: boolean, workName?: string,
+ *   executableFiles?: string[] }} [options]
  */
 function fixture({
+  // The checkout directory's name, for a test that needs an unusual one.
+  workName = "work",
+  // Names, among `files`, that are committed executable.
+  executableFiles = [],
   dependents = "",
   threads = [],
   repo = "owner/app",
@@ -130,7 +137,7 @@ function fixture({
   roots.push(root);
   const remote = join(root, "remote.git");
   sh(root, "git", "-c", "init.defaultBranch=main", "init", "--bare", remote);
-  const work = join(root, "work");
+  const work = join(root, workName);
   sh(root, "git", "clone", remote, work);
   // The remote is spelled as a GitHub URL, as in a real checkout, and ssh reaches the bare
   // repository: a stand-in ssh command runs the server side of git against it.
@@ -166,7 +173,8 @@ exec bash -c "$(printf '%s' "\${@: -1}" | sed -e "s#^git-#git #" -e "s#'[^']*'#'
     sh(wt, "git", "add", "package.json");
   }
   for (const [name, text] of Object.entries(files)) {
-    writeFileSync(join(wt, name), text);
+    mkdirSync(dirname(join(wt, name)), { recursive: true });
+    writeFileSync(join(wt, name), text, { mode: executableFiles.includes(name) ? 0o755 : 0o644 });
     sh(wt, "git", "add", name);
   }
   sh(wt, "git", "commit", "--allow-empty", "-m", "work");
@@ -202,7 +210,11 @@ esac
   const bunLog = join(root, "bun.log");
   if (bunCalls) {
     const bun = Bun.which("bun");
-    stub(bin, "bun", `echo "$PWD $1 $2 $3" >> "${bunLog}"\nexec "${bun}" "$@"\n`);
+    stub(
+      bin,
+      "bun",
+      `echo "$PWD $1 $2 $3" >> "${bunLog}"\necho "GH_CONFIG_DIR[$PWD]=$GH_CONFIG_DIR" >> "${bunLog}"\necho "PATH[$PWD]=$PATH" >> "${bunLog}"\nexec "${bun}" "$@"\n`,
+    );
   }
   if (silentReviewFailure) {
     const bun = Bun.which("bun");
@@ -301,13 +313,31 @@ exit $code
   // The helper reached by a relative path from the checkout, with CDPATH set, as a caller in the
   // checkout would run it.
   /** @param {...string} args */
-  const runRelative = (...args) => {
+  const runWithEnv = (
+    /** @type {Record<string, string>} */ extraEnv,
+    /** @type {string[]} */ ...args
+  ) => spawnHelper(target, extraEnv, `${repo}#7`, args);
+  const runRelative = (/** @type {string[]} */ ...args) => {
     symlinkSync(dirname(target), join(work, "helper-link"));
     return spawnHelper("helper-link/merge-pr.sh", { CDPATH: "." }, `${repo}#7`, args);
   };
   /** @param {...string} args */
   const run = (...args) => runTarget(`${repo}#7`, ...args);
-  return { remote, work, wt, oid, squash, log, pmLog, bunLog, run, runTarget, runRelative };
+  return {
+    remote,
+    work,
+    wt,
+    oid,
+    squash,
+    log,
+    pmLog,
+    bunLog,
+    bin,
+    run,
+    runTarget,
+    runRelative,
+    runWithEnv,
+  };
 }
 
 test("merges without --delete-branch, deletes only the remote head and names the worktree", () => {
@@ -1145,4 +1175,180 @@ test("the gate and the package.json read run from the root with an empty Bun con
   for (const line of calls) {
     expect(line).toMatch(/^\/ --config=\/dev\/null --no-env-file /);
   }
+});
+
+// The gate runs after `cd /`, so a relative PATH entry or a relative GH_CONFIG_DIR would stop meaning
+// what it meant in the caller's directory. The helper resolves both against that directory first.
+test("a Bun found through a relative PATH entry still runs the gate", () => {
+  const { work, bin, runWithEnv } = fixture({ check: null });
+  const root = dirname(bin);
+  mkdirSync(join(work, "tools"));
+  // A recording Bun reachable only through the relative entry `tools`: a system Bun on the absolute
+  // entries would leave the log empty.
+  const log = join(root, "relative-bun.log");
+  writeFileSync(
+    join(work, "tools", "bun"),
+    `#!/bin/sh\necho "$PWD" >> "${log}"\nexec "${Bun.which("bun")}" "$@"\n`,
+    { mode: 0o755 },
+  );
+  const r = runWithEnv({ PATH: `tools:${bin}:/usr/bin:/bin` });
+  expect(r.err).not.toContain("refused");
+  expect(r.code).toBe(0);
+  expect(readFileSync(log, "utf8")).toContain("/");
+});
+
+test("the directory the helper was started in is not added to the gate's command path", () => {
+  const { work, bin, runWithEnv } = fixture({ check: null });
+  const root = dirname(bin);
+  // A checkout file named bun must not be found when PATH has no empty or relative entry.
+  const marker = join(root, "planted-bun-ran");
+  writeFileSync(join(work, "bun"), `#!/bin/sh\ntouch "${marker}"\nexit 0\n`, { mode: 0o755 });
+  runWithEnv({ PATH: `${bin}:/usr/bin:/bin` });
+  expect(existsSync(marker)).toBe(false);
+});
+
+test("a tilde PATH entry still finds Bun and reaches the gate already expanded", () => {
+  const { work, bin, runWithEnv } = fixture({ check: null });
+  const bunLog = join(dirname(bin), "tilde.log");
+  const home = join(work, "home");
+  mkdirSync(join(home, "bin"), { recursive: true });
+  writeFileSync(
+    join(home, "bin", "bun"),
+    `#!/bin/sh\necho "PATH[$PWD]=$PATH" >> "${bunLog}"\nexec "${Bun.which("bun")}" "$@"\n`,
+    { mode: 0o755 },
+  );
+  const r = runWithEnv({ HOME: home, PATH: `~/bin:${bin}:/usr/bin:/bin` });
+  expect(r.err).not.toContain("refused");
+  expect(r.code).toBe(0);
+  // Bun's own lookup (the checker's gh call) does not expand a tilde, so none may reach it.
+  const paths = readFileSync(bunLog, "utf8")
+    .split("\n")
+    .filter((line) => line.startsWith("PATH["));
+  expect(paths.length).toBeGreaterThanOrEqual(1);
+  for (const line of paths) {
+    expect(line).not.toContain("~");
+    expect(line).toContain(`${home}/bin`);
+  }
+});
+
+test("a ~- PATH entry with no OLDPWD does not become the starting directory after the gate's cd", () => {
+  const { work, bin, runWithEnv } = fixture({ check: null });
+  const marker = join(dirname(bin), "planted-bun-ran");
+  writeFileSync(join(work, "bun"), `#!/bin/sh\ntouch "${marker}"\nexit 0\n`, { mode: 0o755 });
+  runWithEnv({ OLDPWD: "", PATH: `~-:${bin}:${process.env.PATH}` });
+  expect(existsSync(marker)).toBe(false);
+});
+
+test("a ~user PATH entry refuses", () => {
+  const { bin, runWithEnv } = fixture({ check: null });
+  const r = runWithEnv({ PATH: `~nobody/bin:${bin}:/usr/bin:/bin` });
+  expect(r.code).toBe(1);
+  expect(r.err).toContain("~user");
+});
+
+test("a PATH entry starting ~+ or ~- without a slash is not the starting directory", () => {
+  const { work, bin, runWithEnv } = fixture({ check: null });
+  const marker = join(dirname(bin), "planted-bun-ran");
+  mkdirSync(join(work, "bin"));
+  writeFileSync(join(work, "bin", "bun"), `#!/bin/sh\ntouch "${marker}"\nexit 0\n`, {
+    mode: 0o755,
+  });
+  // Bash reads `~+bin` as a user name, not as ~+ followed by bin, so it names no directory.
+  const r = runWithEnv({ PATH: `~+bin:${bin}:${process.env.PATH}` });
+  expect(r.code).toBe(1);
+  expect(existsSync(marker)).toBe(false);
+});
+
+test("the repository check looks up a relative PATH entry in its own worktree, not the caller's directory", () => {
+  const { work, bin, runWithEnv } = fixture({
+    check: "validate",
+    files: { "tools/validate": "#!/bin/sh\nexit 1\n" },
+    executableFiles: ["tools/validate"],
+  });
+  // The caller's checkout has an uncommitted tools/validate that would pass.
+  mkdirSync(join(work, "tools"), { recursive: true });
+  writeFileSync(join(work, "tools", "validate"), "#!/bin/sh\nexit 0\n", { mode: 0o755 });
+  const r = runWithEnv({ PATH: `tools:${bin}:${process.env.PATH}` });
+  expect(r.err).toContain("refused");
+  expect(r.code).toBe(1);
+});
+
+test("a relative GH_CONFIG_DIR is absolute for the repository check too", () => {
+  const { work, bunLog, runWithEnv } = fixture({ bunCalls: true });
+  const r = runWithEnv({ GH_CONFIG_DIR: ".config/gh" });
+  expect(r.err).not.toContain("refused");
+  expect(r.code).toBe(0);
+  const seen = readFileSync(bunLog, "utf8")
+    .split("\n")
+    .filter((line) => line.startsWith("GH_CONFIG_DIR["));
+  // The gate calls run from the root; the install and check steps run in the throwaway worktree.
+  expect(seen.some((line) => !line.startsWith("GH_CONFIG_DIR[/]="))).toBe(true);
+  for (const line of seen) {
+    expect(line.endsWith(`=${join(work, ".config/gh")}`)).toBe(true);
+  }
+});
+
+// A recording Bun in `work/tools`, reachable only through a PATH entry that depends on the directory.
+function plantRelativeBun(/** @type {string} */ work, /** @type {string} */ log) {
+  mkdirSync(join(work, "tools"), { recursive: true });
+  writeFileSync(
+    join(work, "tools", "bun"),
+    `#!/bin/sh\necho "$PWD" >> "${log}"\nexec "${Bun.which("bun")}" "$@"\n`,
+    { mode: 0o755 },
+  );
+}
+
+test("a PATH entry written ~+ finds Bun from the starting directory", () => {
+  const { work, bin, runWithEnv } = fixture({ check: null });
+  const log = join(dirname(bin), "tilde-plus.log");
+  plantRelativeBun(work, log);
+  const r = runWithEnv({ PATH: `~+/tools:${bin}:/usr/bin:/bin` });
+  expect(r.err).not.toContain("refused");
+  expect(r.code).toBe(0);
+  expect(readFileSync(log, "utf8")).toContain("/");
+});
+
+test("a relative PATH entry also reaches the repository check as an absolute one", () => {
+  const { work, bin, runWithEnv } = fixture();
+  const log = join(dirname(bin), "check-bun.log");
+  plantRelativeBun(work, log);
+  const r = runWithEnv({ PATH: `tools:${bin}:/usr/bin:/bin` });
+  expect(r.err).not.toContain("refused");
+  expect(r.code).toBe(0);
+  // The gate, the package.json read, and the install and check steps all used it.
+  expect(readFileSync(log, "utf8").trim().split("\n").length).toBeGreaterThanOrEqual(3);
+});
+
+test("a starting directory with a colon in its name refuses a relative PATH entry", () => {
+  const { work, bin, runWithEnv } = fixture({ check: null, workName: "work:dir" });
+  const log = join(dirname(bin), "colon.log");
+  plantRelativeBun(work, log);
+  const r = runWithEnv({ PATH: `tools:${bin}:/usr/bin:/bin` });
+  expect(r.code).toBe(1);
+  expect(r.err).toContain("contains a colon");
+  expect(existsSync(log)).toBe(false);
+});
+
+test("a relative GH_CONFIG_DIR is rebased on the physical starting directory", () => {
+  const { work, bin, bunLog, runWithEnv } = fixture({ bunCalls: true });
+  const link = join(dirname(bin), "linked-work");
+  symlinkSync(work, link);
+  // The shell was told it is in the symlink, as a caller that cd'd through it would be.
+  const r = runWithEnv({ PWD: link, GH_CONFIG_DIR: ".config/gh" }, "--explain");
+  expect(r.code).toBe(0);
+  const seen = readFileSync(bunLog, "utf8")
+    .split("\n")
+    .filter((line) => line.startsWith("GH_CONFIG_DIR[/]="));
+  expect(new Set(seen)).toEqual(new Set([`GH_CONFIG_DIR[/]=${realpathSync(work)}/.config/gh`]));
+});
+
+test("a relative GH_CONFIG_DIR reaches the gate as an absolute path", () => {
+  const { work, bunLog, runWithEnv } = fixture({ bunCalls: true });
+  const r = runWithEnv({ GH_CONFIG_DIR: ".config/gh" }, "--explain");
+  expect(r.code).toBe(0);
+  const seen = readFileSync(bunLog, "utf8")
+    .split("\n")
+    .filter((line) => line.startsWith("GH_CONFIG_DIR[/]="));
+  expect(seen.length).toBeGreaterThanOrEqual(2);
+  expect(new Set(seen)).toEqual(new Set([`GH_CONFIG_DIR[/]=${join(work, ".config/gh")}`]));
 });
