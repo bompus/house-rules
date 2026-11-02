@@ -241,6 +241,41 @@ test("--sizes reports the sizes of the files a real --out run writes", (t) => {
   }
 });
 
+test("--sizes keeps the composer's own section boundaries around an indented closing fence", (t) => {
+  const dir = scratch(t);
+  mkdirSync(join(dir, "rules"));
+  // The splitter does not see an indented fence as closing, so splitting the joined file again would
+  // swallow every later section into this one; the composer splits each fragment on its own.
+  const body = "## Example\n\n```text\nan example\n ```";
+  writeFileSync(join(dir, "rules", "example.md"), `---\nafter: End of every reply\n---\n${body}`);
+  writeFileSync(join(dir, "house-rules.json"), "{}");
+  const rows = composeCli(["--config", join(dir, "house-rules.json"), "--sizes"])
+    .toString("utf8")
+    .trimEnd()
+    .split("\n")
+    .map((line) => line.split("\t"));
+  const names = rows.filter((r) => r[1] === "section").map((r) => r[2]);
+  assert.deepEqual(names.slice(0, 3), ["End of every reply", "Example", "Offers"]);
+  assert.equal(rows.find((r) => r[2] === "Example")?.[0], String(byteLength(body)));
+  assert.equal(names.length, headings(core.replace(/```[\s\S]*?```/g, "")).length + 1);
+});
+
+test("--sizes and --list are two different listings and cannot be combined", (t) => {
+  const dir = scratch(t);
+  const config = join(dir, "house-rules.json");
+  writeFileSync(config, "{}");
+  assert.throws(
+    () => composeCli(["--config", config, "--sizes", "--list"]),
+    (error) =>
+      String(/** @type {{ stderr: Buffer }} */ (error).stderr).includes("--sizes and --list"),
+  );
+  assert.throws(
+    () => composeCli(["--config", config, "--sizes", "--list", "--out", join(dir, "rules.md")]),
+    (error) =>
+      String(/** @type {{ stderr: Buffer }} */ (error).stderr).includes("--sizes and --list"),
+  );
+});
+
 test("--sizes refuses output flags instead of writing", (t) => {
   const dir = scratch(t);
   const config = join(dir, "house-rules.json");

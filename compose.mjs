@@ -15,12 +15,7 @@ import {
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
-import {
-  composeConfiguration,
-  configurationPath,
-  modifierList,
-  splitSections,
-} from "./composition.mjs";
+import { composeConfiguration, configurationPath, modifierList } from "./composition.mjs";
 import { configCommand } from "./config.mjs";
 import { setupCommand } from "./setup.mjs";
 import { checkOutputPath, planReferenceOutput, writeReferenceOutput } from "./rule-references.mjs";
@@ -42,14 +37,15 @@ const bytes = (/** @type {string} */ text) => Buffer.byteLength(text, "utf8");
 /**
  * One tab-separated line per part of the composed output, in output order: bytes, kind, name.
  * Kinds are preamble, section, reference (a file in the references directory) and total (the rules file).
+ * The sections are the ones the composer built, not a second split of the joined text.
+ * @param {{ preamble: string, sections: { heading: string, text: string }[] }} parts
  * @param {string} rules
  * @param {Map<string, string>} references
  */
-export function sizeListing(rules, references) {
-  const { preamble, sections } = splitSections(rules);
+export function sizeListing(parts, rules, references) {
   const lines = [
-    [bytes(preamble), "preamble", ""],
-    ...sections.map((s) => [bytes(s.text), "section", s.heading]),
+    [bytes(parts.preamble), "preamble", ""],
+    ...parts.sections.map((s) => [bytes(s.text), "section", s.heading]),
     ...[...references].map(([name, text]) => [bytes(text), "reference", name]),
     [bytes(rules), "total", "rules"],
   ];
@@ -75,6 +71,9 @@ function main(argv) {
       sizes: { type: "boolean" },
     },
   });
+  if (values.sizes && values.list) {
+    throw new Error("--sizes and --list are separate listings; use one");
+  }
   if (values.list) {
     for (const m of modifierList()) {
       console.log(`${m.name}: ${m.description ?? ""}`);
@@ -106,7 +105,7 @@ function main(argv) {
     for (const warning of sized.warnings) {
       console.error(`warning: ${warning}`);
     }
-    process.stdout.write(sizeListing(sized.rules, sized.references));
+    process.stdout.write(sizeListing(sized.parts, sized.rules, sized.references));
     return;
   }
   const { out, "skills-out": skillsOut, "references-out": explicitReferences } = values;

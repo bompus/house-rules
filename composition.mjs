@@ -213,8 +213,12 @@ function composeParts(coreText, fragments, referencesDirectory, candidates) {
       throw new Error(`a "${h}" section is required; a replacement must keep that heading`);
     }
   }
-  return [preamble, ...sections.map((s) => s.text)].filter(Boolean).join("\n\n") + "\n";
+  return { preamble, sections: sections.map(({ heading, text }) => ({ heading, text })) };
 }
+
+/** @param {{ preamble: string, sections: { text: string }[] }} parts */
+const joinParts = ({ preamble, sections }) =>
+  [preamble, ...sections.map((s) => s.text)].filter(Boolean).join("\n\n") + "\n";
 
 /**
  * @param {string} coreText
@@ -246,7 +250,7 @@ export function compose(coreText, fragments) {
     renderReference(f, undefined);
     return f;
   });
-  return composeParts(coreText, inline, undefined, new Map());
+  return joinParts(composeParts(coreText, inline, undefined, new Map()));
 }
 
 const mdFiles = (/** @type {string} */ dir) =>
@@ -491,12 +495,13 @@ export function composeConfiguration(config, configDir, { referencesDirectory } 
     candidates,
     referencesDirectory: directory,
   } = referenceFragments(config, configDir, referencesDirectory);
-  const rules = composeParts(
+  const parts = composeParts(
     readFileSync(join(BASE, "rules/core.md"), "utf8"),
     fragments,
     directory,
     candidates,
   );
+  const rules = joinParts(parts);
   const references = new Map([...candidates].map(([name, value]) => [name, value.text]));
   const skills = skillSources(config, configDir);
   /** @type {string[]} */
@@ -512,5 +517,5 @@ export function composeConfiguration(config, configDir, { referencesDirectory } 
       }
     }
   }
-  return { fragments, rules, skills, warnings, references };
+  return { fragments, rules, parts, skills, warnings, references };
 }

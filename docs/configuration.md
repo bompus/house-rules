@@ -253,7 +253,7 @@ second tab, so a heading that itself contains a tab stays readable). The kinds a
 (by heading), `reference` (a reference file, not the `manifest.json` beside them) and `total` (the whole
 rules file). The numbers are those of a run with `--out` and the default references directory, so a
 section that exports a procedure counts only its pointer. `--sizes` cannot be combined with `--out`,
-`--skills-out` or `--references-out`.
+`--skills-out`, `--references-out` or `--list`.
 
 Use `--references-out <directory>` with `--out` to choose another destination;
 links are rendered relative to the rules file. Keep both locations available.
