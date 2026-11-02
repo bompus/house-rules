@@ -121,7 +121,8 @@ systemd-run --user --scope -p MemoryMax=2G bash -c '
 It samples once a second, takes one more sample the moment it is stopped, and writes every sample to
 `<output>.samples.jsonl`. It rejects: available memory under 8 GiB; host or workload memory or I/O
 full PSI over 10 ms or 100 ms per observation interval (unreadable PSI also rejects; each measured
-interval is scaled to a nominal second by the time between its PSI reads, and none counts as shorter than half a second);
+interval is scaled to a nominal second by the time between the reads of that total, and PSI reads
+more than the gap limit apart also reject, and none counts as shorter than half a second);
 a gap over
 2.5 s, a non-positive interval or fewer than two samples; competing CPU, the mean over the run of
 host busy cores minus the workload cgroup's own CPU, over 4 (`--host-only` has no workload to

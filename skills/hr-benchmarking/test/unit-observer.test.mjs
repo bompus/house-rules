@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawn, spawnSync } from "node:child_process";
 import {
+  chmodSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
@@ -407,8 +408,9 @@ test(
 /**
  * Runs the observer's `judge` on synthetic host samples, as [monotonic seconds, memory PSI µs, I/O PSI µs].
  * Runs the observer's `judge` on synthetic host samples, as [monotonic seconds, memory PSI µs, I/O PSI µs],
- * with an optional fourth element: the time the PSI counters were read, when it differs from the first.
- * @param {([number, number, number] | [number, number, number, number])[]} rows
+ * with optional fourth and fifth elements: the times the memory and I/O PSI totals were read, when they
+ * differ from the sample start.
+ * @param {number[][]} rows
  * @returns {{ reasons: string[], out: Record<string, number> }}
  */
 function judgeRows(rows) {
@@ -421,7 +423,9 @@ class Args:
     storage_phase = False
 rows = json.loads(sys.stdin.read())
 samples = [{"t": r[0], "wall": r[0], "cpu": 0.0, "busy_ticks": 0, "mem_psi": r[1], "io_psi": r[2],
-            "psi_t": r[3] if len(r) > 3 else r[0],
+            "mem_psi_t": r[3] if len(r) > 3 else r[0],
+            "io_psi_t": r[4] if len(r) > 4 else (r[3] if len(r) > 3 else r[0]),
+            "psi_t": max(r[3:5]) if len(r) > 3 else r[0],
             "avail_gib": 64.0, "vm": {}, "workload": None} for r in rows]
 reasons, out = m.judge(samples, None, 100.0, Args)
 print(json.dumps({"reasons": reasons, "out": out}))
@@ -750,6 +754,53 @@ test(
         [300, (f) => writeFileSync(join(f.dir, "memory.current"), "123456\n")],
         [300, (f) => writeFileSync(join(f.dir, "io.stat"), "8:0 rbytes=100 wbytes=200\n")],
       ],
+    });
+    assert.equal(r.code, 0, String(r.summary.reasons));
+    assert.equal(r.summary.workload_memory_current_peak_bytes, "unknown");
+    assert.equal(r.summary.workload_io_bytes_delta, "unknown");
+  },
+);
+
+test("memory and I/O PSI are each scaled by the time between their own reads", { skip }, () => {
+  // Memory PSI is read at 0 and 1 s and rises 12 ms, but the second I/O read comes 0.5 s late: a stamp
+  // shared by both reads would make the interval 1.5 s and the rate 8 ms, under the 10 ms limit.
+  assert.ok(
+    stalled(
+      judgeRows([
+        [0, 0, 0, 0, 0],
+        [1, 12000, 0, 1, 1.5],
+        [2, 12000, 0, 2, 2],
+      ]).reasons,
+    ),
+  );
+});
+
+test("pressure reads further apart than the sampling limit reject the unit", { skip }, () => {
+  // Sample starts are 2.4 s and 2.2 s apart, but the second PSI read came 3.6 s after the first, so
+  // pressure went unobserved for longer than the limit; 300 ms over it would scale to 83 ms.
+  const { reasons } = judgeRows([
+    [0, 0, 0, 0],
+    [2.4, 0, 300000, 3.6],
+    [4.6, 0, 300000, 4.6],
+  ]);
+  assert.ok(
+    reasons.some((x) => x.includes("pressure reads more than 2.5 s apart")),
+    String(reasons),
+  );
+});
+
+test(
+  "an optional counter that cannot be read from the start is unknown, not a failed first sample",
+  opts,
+  async () => {
+    if (process.getuid?.() === 0) {
+      return; // root reads a mode-000 file
+    }
+    const r = await observe(["--workload-cgroup", "{cg}"], {
+      setup: (f) => {
+        chmodSync(join(f.dir, "memory.current"), 0);
+        chmodSync(join(f.dir, "io.stat"), 0);
+      },
     });
     assert.equal(r.code, 0, String(r.summary.reasons));
     assert.equal(r.summary.workload_memory_current_peak_bytes, "unknown");

@@ -12,17 +12,17 @@ Limits are these defaults; a protocol that declares others applies its own, thro
 --min-avail-gib, --mem-psi-ms, --io-psi-ms and --max-competing-cores. Host scope: available memory
 at least 8 GiB in every sample (unrounded); memory full PSI at most 10 ms and I/O full PSI at most
 100 ms per observation interval (each measured interval is scaled to one second by the time
-between its PSI reads, and none counts as shorter than half a second); coverage with no gap over
-2.5 s (monotonic clock) and at least two samples; PSI must be readable. Competing CPU: the mean
-over the whole run of host busy cores minus the workload cgroup's own CPU (usage_usec, descendants
-included) is at most 4; with --host-only there is no workload to subtract, so the unit's own CPU
-counts. Workload scope (the cgroup given with --workload-cgroup, or `auto` for the observer's
-parent's cgroup): the same pressure limits on its own pressure files; in every sample no growth of
-memory.swap.current or memory.zswap.current over the first sample, no change of zswpin, zswpout or
-zswpwb and no change of memory.events high, max, oom or oom_kill from the first sample, the same
-directory (device and inode), readable required counters, the same set of optional counters
-(zswap) as in the first sample, and a memory.current or io.stat that stays readable once it has
-been. A CPU or PSI counter that goes backward is a failure.
+between the reads of that total, and none counts as shorter than half a second); coverage with no
+gap over 2.5 s (monotonic clock) and at least two samples; PSI must be readable. Competing CPU:
+the mean over the whole run of host busy cores minus the workload cgroup's own CPU (usage_usec,
+descendants included) is at most 4; with --host-only there is no workload to subtract, so the
+unit's own CPU counts. Workload scope (the cgroup given with --workload-cgroup, or `auto` for the
+observer's parent's cgroup): the same pressure limits on its own pressure files; in every sample
+no growth of memory.swap.current or memory.zswap.current over the first sample, no change of
+zswpin, zswpout or zswpwb and no change of memory.events high, max, oom or oom_kill from the first
+sample, the same directory (device and inode), readable required counters, the same set of
+optional counters (zswap) as in the first sample, and a memory.current or io.stat that stays
+readable once it has been. A CPU or PSI counter that goes backward is a failure.
 
 Host-wide swap-out and zswap activity (pswpout, zswpout, zswpwb) is recorded for every interval
 and rejects the unit only with --storage-phase, the phases the rules name.
@@ -139,7 +139,7 @@ def own_cgroup(pid):
 def optional_int(path):
     try:
         return int(read(path)[0])
-    except (FileNotFoundError, ValueError, IndexError):
+    except (OSError, ValueError, IndexError):
         return None
 
 
@@ -153,7 +153,7 @@ def io_bytes(path):
                 if key in total:
                     total[key] += int(value)
         return total
-    except (FileNotFoundError, ValueError):
+    except (OSError, ValueError):
         return None
 
 
@@ -162,8 +162,9 @@ def workload_sample(path):
     try:
         st = os.stat(path)
         mem_psi = psi_full(f"{path}/memory.pressure")
+        mem_psi_t = time.monotonic()  # when each total was read, for scaling its delta
         io_psi = psi_full(f"{path}/io.pressure")
-        psi_t = time.monotonic()  # when these PSI totals were read, for scaling their delta
+        io_psi_t = time.monotonic()
         events = {k: v for k, v in keyed(f"{path}/memory.events").items() if k in EVENTS}
         if set(events) != set(EVENTS):
             return None
@@ -182,7 +183,8 @@ def workload_sample(path):
             "zswap": zswap,
             "mem_psi": mem_psi,
             "io_psi": io_psi,
-            "psi_t": psi_t,
+            "mem_psi_t": mem_psi_t,
+            "io_psi_t": io_psi_t,
         }
     except (OSError, KeyError, ValueError, IndexError):
         return None
@@ -195,9 +197,10 @@ def take(cg):
         "cpu": sum(os.times()[:2]),
         "busy_ticks": host_busy_ticks(),
         "mem_psi": psi_full(f"{PROC}/pressure/memory"),
-        "io_psi": psi_full(f"{PROC}/pressure/io"),
     }
-    sample["psi_t"] = time.monotonic()  # when the host PSI totals were read
+    sample["mem_psi_t"] = time.monotonic()  # when each total was read, for scaling its delta
+    sample["io_psi"] = psi_full(f"{PROC}/pressure/io")
+    sample["io_psi_t"] = time.monotonic()
     sample["avail_gib"] = avail_gib()
     sample["vm"] = vmstat()
     sample["workload"] = workload_sample(cg) if cg else None
@@ -243,8 +246,7 @@ def judge(samples, cg, hz, args):
     if min_avail < MIN_AVAIL_GIB:
         reasons.append(f"available memory below {MIN_AVAIL_GIB:g} GiB")
     reasons += pressure_reasons(
-        [(s["mem_psi"], s["io_psi"]) for s in samples],
-        [b["psi_t"] - a["psi_t"] for a, b in steps],
+        [(s["mem_psi"], s["mem_psi_t"], s["io_psi"], s["io_psi_t"]) for s in samples],
         out,
         "host",
         "host",
@@ -259,7 +261,7 @@ def judge(samples, cg, hz, args):
         if any(w is None for w in workload):
             reasons.append("workload cgroup counters unreadable or the directory went missing")
         else:
-            w_reasons, w_cores = workload_reasons(workload, gaps, total, out)
+            w_reasons, w_cores = workload_reasons(workload, total, out)
             reasons += w_reasons
     competing = host_cores - w_cores
     out["competing_cpu_cores_mean"] = round(competing, 2)
@@ -268,17 +270,32 @@ def judge(samples, cg, hz, args):
     return reasons, out
 
 
-def pressure_reasons(pairs, gaps, out, label, key):
-    """Memory and I/O full PSI over each observation interval; both must be readable."""
-    if any(m is None or i is None for m, i in pairs):
+def pressure_reasons(rows, out, label, key):
+    """Memory and I/O full PSI over each observation interval; both must be readable.
+
+    Each row is (memory total, time it was read, I/O total, time it was read). A delta is scaled by
+    the time between its own two reads, and reads further apart than MAX_GAP_S leave pressure
+    unobserved, which rejects.
+    """
+    if any(r[0] is None or r[2] is None for r in rows):
         return [f"{label} pressure unreadable"]
-    mem = [b[0] - a[0] for a, b in zip(pairs, pairs[1:], strict=False)]
-    io = [b[1] - a[1] for a, b in zip(pairs, pairs[1:], strict=False)]
+    pairs = list(zip(rows, rows[1:], strict=False))
+    mem = [b[0] - a[0] for a, b in pairs]
+    io = [b[2] - a[2] for a, b in pairs]
     if min(mem + io) < 0:
         return [f"{label} pressure counter went backward"]
-    scale = [NOMINAL_INTERVAL_S / max(g, MIN_PSI_INTERVAL_S) for g in gaps]
-    mem = [d * k for d, k in zip(mem, scale, strict=True)]
-    io = [d * k for d, k in zip(io, scale, strict=True)]
+    mem_gaps = [b[1] - a[1] for a, b in pairs]
+    io_gaps = [b[3] - a[3] for a, b in pairs]
+    if max(mem_gaps + io_gaps) > MAX_GAP_S:
+        return [f"{label} pressure reads more than {MAX_GAP_S:g} s apart"]
+    mem = [
+        d * NOMINAL_INTERVAL_S / max(g, MIN_PSI_INTERVAL_S)
+        for d, g in zip(mem, mem_gaps, strict=True)
+    ]
+    io = [
+        d * NOMINAL_INTERVAL_S / max(g, MIN_PSI_INTERVAL_S)
+        for d, g in zip(io, io_gaps, strict=True)
+    ]
     out[f"{key}_mem_full_psi_ms_max"] = round(max(mem) / 1000, 2)
     out[f"{key}_io_full_psi_ms_max"] = round(max(io) / 1000, 2)
     if max(mem) > MEM_PSI_MS * 1000 or max(io) > IO_PSI_MS * 1000:
@@ -297,7 +314,7 @@ def lost(values):
     return False
 
 
-def workload_reasons(w, gaps, total, out):
+def workload_reasons(w, total, out):
     reasons = []
     first = w[0]
     cpu = [x["cpu_usec"] for x in w]
@@ -332,8 +349,7 @@ def workload_reasons(w, gaps, total, out):
         {k: io_last[k] - io_first[k] for k in io_first} if io_first and io_last else "unknown"
     )
     reasons += pressure_reasons(
-        [(x["mem_psi"], x["io_psi"]) for x in w],
-        [b["psi_t"] - a["psi_t"] for a, b in zip(w, w[1:], strict=False)],
+        [(x["mem_psi"], x["mem_psi_t"], x["io_psi"], x["io_psi_t"]) for x in w],
         out,
         "workload",
         "workload",
