@@ -2,6 +2,7 @@
 description: Work is split across delegated workers and several agent hosts; worker reports, review standards and cleanup checks account for all of them.
 after: Coordination and isolation
 reference: ../references/multi-agent.md
+core: true
 ---
 
 ## Working with other agents
@@ -15,11 +16,6 @@ An incomplete worker report is a checkpoint. A worker with a background command
 or subagent still running is not done. Verify reports against evidence and use
 host durations or timestamps for elapsed time. Keep workers from delegating
 further unless asked.
-
-Give implementers the task, file boundaries, public APIs and architectural
-constraints. Put mechanically enforceable standards in tooling; reserve style
-and judgment for review. The user's direction is the judgment backstop when
-no second reviewer runs. An advisor model is not a second review.
 
 After review, treat each finding as a claim. Fix it when a reproduced failure
 (a test that fails before the fix, where one fits) or a cited requirement

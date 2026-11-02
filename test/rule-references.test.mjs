@@ -36,7 +36,9 @@ test("inline callers and disabled modifiers preserve policy without requiring a 
       "reporting.md",
       "github-actions.md",
       "thread-visuals.md",
+      "repository-work.md",
       "landing.md",
+      "coordination-and-isolation.md",
       "implementation-economy.md",
       "writing-and-naming.md",
     ],
@@ -194,7 +196,9 @@ test("a personal replacement omits the overridden public reference from resource
       "reporting.md",
       "github-actions.md",
       "thread-visuals.md",
+      "repository-work.md",
       "landing.md",
+      "coordination-and-isolation.md",
       "implementation-economy.md",
       "writing-and-naming.md",
     ],
@@ -220,10 +224,12 @@ test("core landing and selected squash references preserve inline callers and pe
   assert.equal(inline.references.size, 0);
   const linked = composeConfiguration(config, dir, { referencesDirectory: "resources" });
   assert.deepEqual([...linked.references.keys()].sort(), [
+    "coordination-and-isolation.md",
     "github-actions.md",
     "implementation-economy.md",
     "landing.md",
     "reporting.md",
+    "repository-work.md",
     "squash-landing.md",
     "thread-visuals.md",
     "writing-and-naming.md",
@@ -338,12 +344,19 @@ test("core reference lists retain scalar compatibility and reject malformed inpu
   const reporting = readFileSync(join(root, "skills/hr-what-next/references/reporting.md"), "utf8");
   const actions = readFileSync(join(root, "rules/references/github-actions.md"), "utf8");
   const visuals = readFileSync(join(root, "rules/references/thread-visuals.md"), "utf8");
+  const repoWork = readFileSync(join(root, "rules/references/repository-work.md"), "utf8");
+  const coordination = readFileSync(
+    join(root, "rules/references/coordination-and-isolation.md"),
+    "utf8",
+  );
   const economy = readFileSync(join(root, "rules/references/implementation-economy.md"), "utf8");
   const writing = readFileSync(join(root, "rules/references/writing-and-naming.md"), "utf8");
   const inlineBody = body
     .replace(/## Reporting\n[\s\S]*?(?=\n## )/, reporting.trim())
     .replace(/## GitHub Actions\n[\s\S]*?(?=\n## )/, actions.trim())
     .replace(/## Visuals in issues, discussions and comments\n[\s\S]*?(?=\n## )/, visuals.trim())
+    .replace(/## Repository work\n[\s\S]*?(?=\n## )/, repoWork.trim())
+    .replace(/## Coordination and isolation\n[\s\S]*?(?=\n## )/, coordination.trim())
     .replace(/## Implementation economy\n[\s\S]*?(?=\n## )/, economy.trim())
     .replace(/## Writing\n[\s\S]*$/, writing.trim());
   const scalar = `---\nreference: references/landing.md\n---\n${inlineBody}`;

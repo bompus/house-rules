@@ -192,10 +192,14 @@ test("--sizes lists the bytes of each section and reference in output order and 
   writeFileSync(config, JSON.stringify({ modifiers: ["multi-agent"] }));
   const listing = composeCli(["--config", config, "--sizes"]).toString("utf8");
   // The sizes are those of the file and references a run with --out writes.
-  const { rules, references } = composeConfiguration({ modifiers: ["multi-agent"] }, dir, {
+  const { rules, references, parts } = composeConfiguration({ modifiers: ["multi-agent"] }, dir, {
     referencesDirectory: "house-rules-references",
   });
   const { preamble, sections } = splitSections(rules);
+  const sumBytes = (/** @type {boolean} */ core) =>
+    parts.sections.filter((s) => s.core === core).reduce((n, s) => n + byteLength(s.text), 0);
+  const coreBytes = sumBytes(true);
+  const otherBytes = sumBytes(false);
   const rows = listing
     .trimEnd()
     .split("\n")
@@ -203,6 +207,11 @@ test("--sizes lists the bytes of each section and reference in output order and 
   const expected = [
     ["preamble", "", String(byteLength(preamble))],
     ...sections.map((s) => ["section", s.heading, String(byteLength(s.text))]),
+    ...parts.sections
+      .filter((s) => s.core)
+      .map((s) => ["core", s.heading, String(byteLength(s.text))]),
+    ["subtotal", "core sections", String(coreBytes)],
+    ["subtotal", "other sections", String(otherBytes)],
     ...[...references].map(([name, text]) => ["reference", name, String(byteLength(text))]),
     ["total", "rules", String(byteLength(rules))],
   ].map(([kind, name, bytes]) => [bytes, kind, name]);

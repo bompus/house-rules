@@ -1,6 +1,7 @@
 ---
 description: Commits, pull requests and comments carry no agent or tool credit lines unless the target repository asks for a disclosure.
 after: Writing
+core: true
 ---
 
 ## No attribution

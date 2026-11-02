@@ -36,16 +36,24 @@ const bytes = (/** @type {string} */ text) => Buffer.byteLength(text, "utf8");
 
 /**
  * One tab-separated line per part of the composed output, in output order: bytes, kind, name.
- * Kinds are preamble, section, reference (a file in the references directory) and total (the rules file).
+ * Kinds are preamble, section, core (a section marked core, again), subtotal (core sections, other sections),
+ * reference (a file in the references directory) and total (the rules file).
  * The sections are the ones the composer built, not a second split of the joined text.
- * @param {{ preamble: string, sections: { heading: string, text: string }[] }} parts
+ * @param {{ preamble: string, sections: { heading: string, text: string, core?: boolean }[] }} parts
  * @param {string} rules
  * @param {Map<string, string>} references
  */
 export function sizeListing(parts, rules, references) {
+  const coreSections = parts.sections.filter((s) => s.core);
+  const otherSections = parts.sections.filter((s) => !s.core);
+  const total = (/** @type {{ text: string }[]} */ list) =>
+    list.reduce((n, s) => n + bytes(s.text), 0);
   const lines = [
     [bytes(parts.preamble), "preamble", ""],
     ...parts.sections.map((s) => [bytes(s.text), "section", s.heading]),
+    ...coreSections.map((s) => [bytes(s.text), "core", s.heading]),
+    [total(coreSections), "subtotal", "core sections"],
+    [total(otherSections), "subtotal", "other sections"],
     ...[...references].map(([name, text]) => [bytes(text), "reference", name]),
     [bytes(rules), "total", "rules"],
   ];

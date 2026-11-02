@@ -233,6 +233,19 @@ step. Use `hr-house-rules-setup` for the guided workflow. Custom rule prose
 still belongs in layer fragments; the protected completion sections stay
 required.
 
+## Core sections
+
+A section can be marked core: it holds a safeguard that nothing makes an agent go and read, so it must stay in
+the always-on text. In `rules/core.md` the front matter key `core:` lists the headings of the core rules'
+sections that are core; in a modifier or personal rule file `core: true` marks every section the file adds
+(`core: false` unmarks, and a replacement keeps the mark of the section it replaces unless it says
+otherwise). A heading that `core:` names but the rules do not have is an error.
+
+`"coreFirst": true` in the configuration file puts the core sections first, in their order, then the others
+in theirs; "End of every reply" stays first. Hosts that cut the rules at a size limit then cut the sections that
+are not core first. It is off by default, so the order of an existing configuration does not change. The
+`--sizes` listing shows the core sections and the bytes of each group.
+
 ## Reference output
 
 `--out rules.md` writes selected procedure references to a sibling
@@ -252,7 +265,8 @@ To see how large each part of the output is, run `house-rules --config <path> --
 (`bun compose.mjs --config <path> --sizes` in a checkout). It writes nothing and prints one
 tab-separated line per part, in output order: bytes, kind and name (the name is everything after the
 second tab, so a heading that itself contains a tab stays readable). The kinds are `preamble`, `section`
-(by heading), `reference` (a reference file, not the `manifest.json` beside them) and `total` (the whole
+(by heading), `core` (the sections marked core, again, in the same order), `subtotal` (`core sections` and
+`other sections`), `reference` (a reference file, not the `manifest.json` beside them) and `total` (the whole
 rules file). The numbers are those of a run with `--out` and the default references directory, so a
 section that exports a procedure counts only its pointer. `--sizes` cannot be combined with `--out`,
 `--skills-out`, `--references-out` or `--list`.

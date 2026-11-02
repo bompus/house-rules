@@ -1,6 +1,7 @@
 ---
 description: For repositories with one maintainer, the user's direction is the review; no review-gated steps. A review bot's rounds are capped.
 after: Landing
+core: true
 ---
 
 ## Solo operator

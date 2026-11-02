@@ -9,7 +9,7 @@ const PROTECTED = "End of every reply";
 // The protected section points at § Offers, so Offers may be replaced but not removed.
 const REQUIRED = [PROTECTED, "Offers"];
 const OPS = ["replaces", "after", "before", "removes"];
-const KEYS = [...OPS, "description", "requires", "reference"];
+const KEYS = [...OPS, "description", "requires", "reference", "core"];
 
 /**
  * @typedef {Record<string, string>} Meta frontmatter keys and their values
@@ -21,10 +21,11 @@ const KEYS = [...OPS, "description", "requires", "reference"];
  * @property {string} [path] the file, when the fragment has one
  * @property {string} [root] the layer directory a reference must stay inside
  * @property {ReferenceOutput} [referenceOutput] the procedure written beside the rules
- * @typedef {{ heading: string, text: string, after?: string, referenceOutput?: ReferenceOutput }} Section
+ * @typedef {{ heading: string, text: string, after?: string, core?: boolean, referenceOutput?: ReferenceOutput }} Section
  * @typedef {object} Config
  * @property {string[]} [modifiers]
  * @property {string[]} [layers]
+ * @property {boolean} [coreFirst] put the sections marked core before the others
  * @property {{ include?: unknown, exclude?: string[], independent?: string[] }} [skills]
  */
 
@@ -92,8 +93,9 @@ export function splitSections(rawText) {
  * @param {Fragment[]} fragments
  * @param {string | undefined} referencesDirectory
  * @param {Map<string, ReferenceOutput>} candidates
+ * @param {boolean} [coreFirst] put the sections marked core before the others
  */
-function composeParts(coreText, fragments, referencesDirectory, candidates) {
+function composeParts(coreText, fragments, referencesDirectory, candidates, coreFirst = false) {
   const core = parseFragment(coreText, "core");
   if ("reference" in core.meta && "references" in core.meta) {
     throw new Error("core: use reference or references, not both");
@@ -119,9 +121,20 @@ function composeParts(coreText, fragments, referencesDirectory, candidates) {
       }
       outputs.set(output.heading, output);
     }
-    coreText = core.body;
   }
+  coreText = core.body;
   const { preamble, sections } = splitSections(coreText);
+  // The core rules list the headings of their sections that must stay in the always-on text.
+  for (const heading of (core.meta.core ?? "")
+    .split(",")
+    .map((h) => h.trim())
+    .filter(Boolean)) {
+    const section = sections.find((s) => s.heading === heading);
+    if (!section) {
+      throw new Error(`core: no section "${heading}" to mark core`);
+    }
+    section.core = true;
+  }
   if (referencesDirectory !== undefined) {
     for (const section of sections) {
       section.referenceOutput = outputs.get(section.heading);
@@ -166,8 +179,14 @@ function composeParts(coreText, fragments, referencesDirectory, candidates) {
       continue;
     }
     const { preamble: stray, sections: added } = splitSections(f.body);
+    if (f.meta.core !== undefined && !["true", "false"].includes(f.meta.core)) {
+      throw new Error(`${f.source}: core: must be true or false`);
+    }
     for (const section of added) {
       section.referenceOutput = f.referenceOutput;
+      if (f.meta.core !== undefined) {
+        section.core = f.meta.core === "true";
+      }
     }
     if (!added.length || stray) {
       throw new Error(`${f.source}: body must start with a "## " heading`);
@@ -175,8 +194,9 @@ function composeParts(coreText, fragments, referencesDirectory, candidates) {
     if (op === "replaces" && target) {
       // A replacement keeps the `after:` tag of the section it replaces, so later `after:` fragments still queue behind it.
       const i = find(target, f);
-      const { after } = sections[i] ?? {};
-      sections.splice(i, 1, ...added.map((s) => ({ ...s, after })));
+      const { after, core: replacedCore } = sections[i] ?? {};
+      // A replacement that does not say otherwise stays core when the section it replaces is.
+      sections.splice(i, 1, ...added.map((s) => ({ ...s, after, core: s.core ?? replacedCore })));
     } else if (op === "before" && target) {
       sections.splice(find(target, f), 0, ...added);
     } else if (op === "after" && target) {
@@ -213,7 +233,31 @@ function composeParts(coreText, fragments, referencesDirectory, candidates) {
       throw new Error(`a "${h}" section is required; a replacement must keep that heading`);
     }
   }
-  return { preamble, sections: sections.map(({ heading, text }) => ({ heading, text })) };
+  let ordered = sections;
+  if (coreFirst) {
+    // The first section stays first; the others keep their relative order within each group.
+    // The check above guarantees a first section.
+    const rest = sections.slice(1);
+    ordered = [
+      ...sections.slice(0, 1),
+      ...rest.filter((s) => s.core),
+      ...rest.filter((s) => !s.core),
+    ];
+  }
+  return {
+    preamble,
+    sections: ordered.map(({ heading, text, core }) => ({ heading, text, core: core === true })),
+  };
+}
+
+/**
+ * The composed sections with their core marks, optionally with the core sections first.
+ * @param {string} coreText
+ * @param {Fragment[]} fragments
+ * @param {{ coreFirst?: boolean }} [options]
+ */
+export function composeSections(coreText, fragments, { coreFirst = false } = {}) {
+  return composeParts(coreText, fragments, undefined, new Map(), coreFirst);
 }
 
 /** @param {{ preamble: string, sections: { text: string }[] }} parts */
@@ -495,11 +539,15 @@ export function composeConfiguration(config, configDir, { referencesDirectory } 
     candidates,
     referencesDirectory: directory,
   } = referenceFragments(config, configDir, referencesDirectory);
+  if (config.coreFirst !== undefined && typeof config.coreFirst !== "boolean") {
+    throw new Error("coreFirst must be true or false");
+  }
   const parts = composeParts(
     readFileSync(join(BASE, "rules/core.md"), "utf8"),
     fragments,
     directory,
     candidates,
+    config.coreFirst === true,
   );
   const rules = joinParts(parts);
   const references = new Map([...candidates].map(([name, value]) => [name, value.text]));

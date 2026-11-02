@@ -1,6 +1,7 @@
 ---
+core: End of every reply, Offers, Finishing work, Session purpose, Repository work, Landing, Cleanup, Coordination and isolation, Safety and privacy
 requires: hr-what-next, hr-code-review, hr-diagnosing-bugs, hr-plain-prose
-references: references/landing.md, references/github-actions.md, references/thread-visuals.md, references/implementation-economy.md, references/writing-and-naming.md, ../skills/hr-what-next/references/reporting.md
+references: references/landing.md, references/repository-work.md, references/coordination-and-isolation.md, references/github-actions.md, references/thread-visuals.md, references/implementation-economy.md, references/writing-and-naming.md, ../skills/hr-what-next/references/reporting.md
 ---
 
 # House rules
@@ -224,9 +225,11 @@ Transfer to another top-level conversation only at the user's direction, under a
 
 Keep independent repository edits on separate branches and isolated worktrees when a checkout may be shared. Leave other people's and sessions' edits alone. Edit a file with uncommitted changes you did not write; never rewrite it. A whole-file write takes every other change with it and still reports success, so use a targeted edit. Never rebuild a file from conversation context. When git cannot restore it, stop and ask. Copy the file aside before any whole-file write.
 
-Before creating a branch or worktree, read the default branch of the repository the change will land in (`gh repo view <owner>/<repo> --json defaultBranchRef` or `git ls-remote --symref <remote> HEAD`), fetch it and base the work on its tip. That repository is your fork when the change lands there and upstream when a pull request targets upstream. A branch name shown by a tool or harness is not evidence of the default branch, which need not be `main`. If the repository's own guidance names another base, follow it and say so.
+Before creating a branch or worktree, read the default branch of the repository the change will land in (`gh repo view <owner>/<repo> --json defaultBranchRef` or `git ls-remote --symref <remote> HEAD`), fetch it and base the work on its tip.
 
-Before creating an issue or pull request, search the target repository's open and closed issues and pull requests for the same change. Reuse or coordinate with a match; otherwise link related work and say how yours differs. If you cannot search, say so instead of claiming no matches.
+A branch name shown by a tool or harness is not evidence of the default branch, which need not be `main`.
+
+Before creating an issue or pull request, search the target repository's open and closed issues and pull requests for the same change. Reuse or coordinate with a match; otherwise link related work and say how yours differs.
 
 Create pull requests ready for review, not as drafts, unless the user asks for a draft.
 
@@ -238,24 +241,16 @@ benchmarks and an earlier review of the parent PR do not replace this review.
 Before opening a pull request in a repository the user owns, or before pushing
 this task's changes straight into its default branch, review the changes this task
 made once locally. Use `hr-code-review`, or the host's reviewer
-subagent when the host runs reviews through one. Fix or answer each finding. A
-trivially mechanical change, one a formatter or generator produced with no
-hand-written edits, is exempt. So is a change that only records dated findings
-or figures copied from cited sources, with no code, rule, setting or
-configuration change; check each figure against its source before opening the
-pull request or pushing. Review bots and the repository's own review requirements still
-apply; neither replaces this review.
+subagent when the host runs reviews through one. Fix or answer each finding.
 
-Before filing a bug in any repository, follow the `hr-diagnosing-bugs` skill's
-`references/reporting.md`: reduce and verify the reproduction before submitting.
-For fixes intended for pull requests, try the simplest adequate change first;
-keep the diff focused, and write the pull request from the final diff with concrete behavior and the proof you ran.
+Review bots and the repository's own review requirements still
+apply; neither replaces this review.
 
 Fetch before updating a feature branch. Prefer rebasing unpublished commits this task owns; merge the fetched base into published or shared branches.
 Do not rewrite history another person or agent may rely on.
 
-Take each independently complete, verified task as far as § Landing allows
-when it finishes. Keep inseparable changes together until verified as one task.
+For the base-branch commands, the review exemptions, bug filing and finishing detail, read
+[the repository-work procedure](references/repository-work.md).
 
 ## Landing
 
@@ -279,7 +274,7 @@ and do not ask the user.
 
 Before the first publish step of a version bump (tag, publish, release, announcement), review unreleased changelog entries and public materials (READMEs, charts, graphics with alt text, listing text, announcement, repository description and social preview) and fix what is stale first; an urgent release may limit only the materials to what it affects.
 
-When a change alters something the project states about itself (its scope, supported platforms, defaults, limits or counts), search every place that states it for the old claim before opening the pull request. Search the old wording and its synonyms; do not rely on remembering where it appears. Cover the README, package and registry metadata, docs, graphics and their sources and alt text, tool and help text, setup output, and the hosted repository's description, topics and social preview. Fix each hit or say why it stays. Where the project can, add a check that fails on the old claim.
+When a change alters something the project states about itself (its scope, supported platforms, defaults, limits or counts), search every place that states it for the old claim before opening the pull request.
 
 ## Cleanup
 
@@ -294,20 +289,18 @@ branch ownership independently before treating them as free to edit or remove.
 
 Stop only processes you started, by the PID you recorded when starting them.
 Never kill by pattern (`pkill -f`, `pgrep | kill`, or a PID found by matching
-a name or path): other sessions' servers and your own agent can match. Prefer
-commands that exit; for servers, watchers and other long runs, record the PID,
-port, stop command and a time limit, and stop them before finishing. A long run
-must outlive the call that launched it: a bare `nohup … &` can still die when
-the call's session or process group is reaped, so detach it into its own session
-(`setsid`, or a detached systemd unit — `systemd-run --user -p
-WorkingDirectory="$PWD" <command>`; a `--scope` unit keeps the caller's
-session, and a detached unit inherits neither the working directory nor the
-environment), or the host's capped job runner, and verify it is still alive
-after the launching call returns. Reuse a running
+a name or path): other sessions' servers and your own agent can match.
+
+Reuse a running
 server, browser, watcher, emulator or test runner only when its working
 directory is your own checkout.
 
-Keep small or tightly coupled tasks local. Use subagents for bounded investigations or reviews; they stay read-only when they share your directory. Delegate implementation only when authorized, in its own worktree. Brief each worker with the user's request in their own words, then your reading of it, plus paths, constraints and what counts as done. Give each item a check that counts the effect (a delete sent exactly once), not "the button works". Number the items of a batch of feedback and give each an owner. Ask for evidence, checks run and open uncertainty. Weigh its evidence without redoing its investigation, but keep the required review and integration checks. Before building on a worker's claim that something is undefined, unused or missing, search the whole repository yourself.
+Keep small or tightly coupled tasks local. Use subagents for bounded investigations or reviews; they stay read-only when they share your directory. Delegate implementation only when authorized, in its own worktree.
+
+Before building on a worker's claim that something is undefined, unused or missing, search the whole repository yourself.
+
+For detaching a long run (setsid or a systemd unit), the host's capped job runner and briefing a worker, read
+[the coordination procedure](references/coordination-and-isolation.md).
 
 ## Implementation economy
 
