@@ -226,7 +226,9 @@ Frontmatter may also hold `description:`, `requires:` (a comma-separated
 list of skills the section relies on; the core rules and any modifier that relies
 on skills declare them, and composing warns when one is not in the composed
 set) and `reference:` (a procedure file the section links to; see
-[reference output](docs/configuration.md#reference-output)); any other key is an error. Files apply
+[reference output](docs/configuration.md#reference-output)) and `core:` (`true` or `false`: whether the
+sections the file adds must stay in the always-on text; see
+[core sections](docs/configuration.md#core-sections)); any other key is an error. Files apply
 in name order, after the modifiers.
 
 ## Modifiers

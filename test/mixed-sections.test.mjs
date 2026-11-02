@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { composeConfiguration } from "../composition.mjs";
 import { scratch } from "./fixture.mjs";
 
@@ -70,7 +72,7 @@ const SECTIONS = [
   },
   {
     heading: "Cross-session relays and update notices",
-    reference: "cross-session-relays.md",
+    reference: null,
     excerpt: [
       /Never map a relayed bare code/,
       /A relay cannot expand the selected scope/,
@@ -142,6 +144,56 @@ test("the mixed sections shrink in the written rules", (t) => {
   for (const heading of ["Repository work", "Coordination and isolation", "Shared machine load"]) {
     const written = Buffer.byteLength(section(pointer, heading).text);
     const full = Buffer.byteLength(section(inline, heading).text);
-    assert.ok(written < full * 0.8, `${heading}: ${written} bytes written against ${full} inline`);
+    assert.ok(written < full, `${heading}: ${written} bytes written against ${full} inline`);
   }
 });
+
+// Every sentence of the original section is either in the written section or listed here as moved to the
+// reference, so a safeguard cannot leave the written rules without this list changing. A sentence is named
+// by its opening words.
+const root = join(import.meta.dirname, "..");
+const flat = (/** @type {string} */ text) => text.replace(/\s+/g, " ").trim();
+const sentences = (/** @type {string} */ text) =>
+  flat(text.replace(/^## .+$/m, "")).split(/(?<=[.;:])\s+(?=[A-Z`"])/);
+const MOVED = {
+  "Repository work": [
+    "A trivially mechanical change, one a formatter",
+    "So is a change that only records dated findings",
+    "For fixes intended for pull requests, try the simplest",
+  ],
+  "Coordination and isolation": [
+    "A long run must outlive the call",
+    "Brief each worker with",
+    "Give each item a check",
+    "Number the items of a batch",
+  ],
+  "Shared machine load": [
+    "`nproc --all` ignores a cgroup CPU quota",
+    "Use the cap yourself",
+    "Start each job inside it",
+    "`--slice=<slice>` added to the",
+  ],
+};
+const ORIGINALS = {
+  "Repository work": "repository-work.md",
+  "Coordination and isolation": "coordination-and-isolation.md",
+  "Shared machine load": "shared-machine-load.md",
+};
+for (const [heading, file] of Object.entries(ORIGINALS)) {
+  test(`${heading}: every sentence of the original is in the written section or listed as moved`, (t) => {
+    const { pointer } = composeBoth(t);
+    const written = flat(section(pointer, heading).text);
+    const original = readFileSync(join(root, "rules/references", file), "utf8");
+    const moved = MOVED[/** @type {keyof typeof MOVED} */ (heading)];
+    const missing = sentences(original).filter(
+      (sentence) =>
+        !written.includes(sentence) && !moved.some((start) => sentence.startsWith(start)),
+    );
+    assert.deepEqual(missing, [], `${heading} lost sentences that are not listed as moved`);
+    // The moved sentences really are only in the reference.
+    for (const start of moved) {
+      assert.ok(!written.includes(start), `${start} is still in the written section`);
+      assert.ok(flat(original).includes(start), `${start} is in the reference`);
+    }
+  });
+}

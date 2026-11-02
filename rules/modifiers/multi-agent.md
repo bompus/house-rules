@@ -17,6 +17,11 @@ or subagent still running is not done. Verify reports against evidence and use
 host durations or timestamps for elapsed time. Keep workers from delegating
 further unless asked.
 
+Give implementers the task, file boundaries, public APIs and architectural
+constraints. Put mechanically enforceable standards in tooling; reserve style
+and judgment for review. The user's direction is the judgment backstop when
+no second reviewer runs. An advisor model is not a second review.
+
 After review, treat each finding as a claim. Fix it when a reproduced failure
 (a test that fails before the fix, where one fits) or a cited requirement
 confirms it, with the smallest change that clears it; a reviewer's proposed

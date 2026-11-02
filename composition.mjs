@@ -168,6 +168,9 @@ function composeParts(coreText, fragments, referencesDirectory, candidates, core
         `${f.source}: "${PROTECTED}" stays first and can only be added to with after:`,
       );
     }
+    if (f.meta.core !== undefined && !["true", "false"].includes(f.meta.core)) {
+      throw new Error(`${f.source}: core: must be true or false`);
+    }
     if (op === "removes" && target) {
       if (REQUIRED.includes(target)) {
         throw new Error(`${f.source}: "${target}" can be replaced, not removed`);
@@ -179,9 +182,6 @@ function composeParts(coreText, fragments, referencesDirectory, candidates, core
       continue;
     }
     const { preamble: stray, sections: added } = splitSections(f.body);
-    if (f.meta.core !== undefined && !["true", "false"].includes(f.meta.core)) {
-      throw new Error(`${f.source}: core: must be true or false`);
-    }
     for (const section of added) {
       section.referenceOutput = f.referenceOutput;
       if (f.meta.core !== undefined) {

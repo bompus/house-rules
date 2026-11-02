@@ -251,8 +251,8 @@ are not core first. It is off by default, so the order of an existing configurat
 `--out rules.md` writes selected procedure references to a sibling
 `house-rules-references/` directory. Keep that directory beside the rules file
 when copying it to a host. References do not depend on `skills.include` or
-`skills.exclude`. Core Landing, Reporting, GitHub Actions, Visuals, Implementation economy and Writing always
-contribute their references; enabled modifiers contribute theirs. A section with a reference keeps a short
+`skills.exclude`. Core Landing, Reporting, GitHub Actions, Visuals, Repository work, Coordination and isolation,
+Implementation economy and Writing always contribute their references; enabled modifiers contribute theirs. A section with a reference keeps a short
 excerpt in the rules (its safeguards and a "before X, read Y" pointer) and the full text in the
 reference; the rules without `--out` carry the full text inline. Reporting is also bundled with `hr-what-next` for standalone
 skill use. Excluding that skill does not remove the core reference. A personal replacement suppresses the resource it replaces.

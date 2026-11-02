@@ -191,3 +191,24 @@ test("--sizes lists the core sections and the bytes of each group", (t) => {
   assert.equal(subtotal("core sections"), sum(core));
   assert.equal(subtotal("other sections"), sum(sections) - sum(core));
 });
+
+test("core: false unmarks a section and a replacement of several sections keeps the mark on each", () => {
+  const unmarked = composeSections(CORE, [
+    frag({ replaces: "Landing", core: "false" }, "## Landing\n\nNew."),
+  ]);
+  assert.equal(coreOf(unmarked).includes("Landing"), false);
+  const many = composeSections(CORE, [
+    frag({ replaces: "Landing" }, "## Landing\n\nNew.\n\n## Landing two\n\nTwo."),
+  ]);
+  assert.deepEqual(
+    coreOf(many).filter((h) => h.startsWith("Landing")),
+    ["Landing", "Landing two"],
+  );
+});
+
+test("core: is checked on a removes: fragment too", () => {
+  assert.throws(
+    () => composeSections(CORE, [frag({ removes: "Extra", core: "maybe" }, "")]),
+    /core: must be true or false/,
+  );
+});

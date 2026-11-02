@@ -2,7 +2,6 @@
 description: Relayed work between sessions keeps its source and authorized scope, and an authorized push that changes inherited guidance or tooling is announced to the affected sessions.
 after: Coordination and isolation
 requires: hr-agent-guidance-refresh
-reference: ../references/cross-session-relays.md
 core: true
 ---
 
@@ -16,13 +15,10 @@ If the source selection cannot be verified, ask for clarification before acting 
 
 After an authorized push changes inherited or installed agent guidance, skills,
 subagent definitions, configuration, supporting scripts or tooling, notify
-affected active sessions through an existing authorized update channel.
-
-A source notice does not
-prove deployment.
-
-If an evaluation has fixed its guidance or tools, hold the update for it and leave its inputs unchanged until it ends. If no
+affected active sessions through an existing authorized update channel. Name
+the component, exact revision or fingerprint, affected paths and actions, and
+whether the change is pushed source or deployed. A source notice does not
+prove deployment. Use the host's supported update procedure and
+`hr-agent-guidance-refresh`; keep pending notices for idle or offline sessions
+until their next boundary or resume. If an evaluation has fixed its guidance or tools, hold the update for it and leave its inputs unchanged until it ends. If no
 channel is authorized or reachable, record the missing delivery and report it.
-
-For what a notice names and how pending notices are kept, read
-[the relay procedure](../references/cross-session-relays.md).

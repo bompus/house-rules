@@ -225,11 +225,9 @@ Transfer to another top-level conversation only at the user's direction, under a
 
 Keep independent repository edits on separate branches and isolated worktrees when a checkout may be shared. Leave other people's and sessions' edits alone. Edit a file with uncommitted changes you did not write; never rewrite it. A whole-file write takes every other change with it and still reports success, so use a targeted edit. Never rebuild a file from conversation context. When git cannot restore it, stop and ask. Copy the file aside before any whole-file write.
 
-Before creating a branch or worktree, read the default branch of the repository the change will land in (`gh repo view <owner>/<repo> --json defaultBranchRef` or `git ls-remote --symref <remote> HEAD`), fetch it and base the work on its tip.
+Before creating a branch or worktree, read the default branch of the repository the change will land in (`gh repo view <owner>/<repo> --json defaultBranchRef` or `git ls-remote --symref <remote> HEAD`), fetch it and base the work on its tip. That repository is your fork when the change lands there and upstream when a pull request targets upstream. A branch name shown by a tool or harness is not evidence of the default branch, which need not be `main`. If the repository's own guidance names another base, follow it and say so.
 
-A branch name shown by a tool or harness is not evidence of the default branch, which need not be `main`.
-
-Before creating an issue or pull request, search the target repository's open and closed issues and pull requests for the same change. Reuse or coordinate with a match; otherwise link related work and say how yours differs.
+Before creating an issue or pull request, search the target repository's open and closed issues and pull requests for the same change. Reuse or coordinate with a match; otherwise link related work and say how yours differs. If you cannot search, say so instead of claiming no matches.
 
 Create pull requests ready for review, not as drafts, unless the user asks for a draft.
 
@@ -246,10 +244,16 @@ subagent when the host runs reviews through one. Fix or answer each finding.
 Review bots and the repository's own review requirements still
 apply; neither replaces this review.
 
+Before filing a bug in any repository, follow the `hr-diagnosing-bugs` skill's
+`references/reporting.md`: reduce and verify the reproduction before submitting.
+
 Fetch before updating a feature branch. Prefer rebasing unpublished commits this task owns; merge the fetched base into published or shared branches.
 Do not rewrite history another person or agent may rely on.
 
-For the base-branch commands, the review exemptions, bug filing and finishing detail, read
+Take each independently complete, verified task as far as § Landing allows
+when it finishes. Keep inseparable changes together until verified as one task.
+
+For the review exemptions and the pull-request writing detail, read
 [the repository-work procedure](references/repository-work.md).
 
 ## Landing
@@ -274,7 +278,7 @@ and do not ask the user.
 
 Before the first publish step of a version bump (tag, publish, release, announcement), review unreleased changelog entries and public materials (READMEs, charts, graphics with alt text, listing text, announcement, repository description and social preview) and fix what is stale first; an urgent release may limit only the materials to what it affects.
 
-When a change alters something the project states about itself (its scope, supported platforms, defaults, limits or counts), search every place that states it for the old claim before opening the pull request.
+When a change alters something the project states about itself (its scope, supported platforms, defaults, limits or counts), search every place that states it for the old claim before opening the pull request. Search the old wording and its synonyms; do not rely on remembering where it appears. Cover the README, package and registry metadata, docs, graphics and their sources and alt text, tool and help text, setup output, and the hosted repository's description, topics and social preview. Fix each hit or say why it stays. Where the project can, add a check that fails on the old claim.
 
 ## Cleanup
 
@@ -291,11 +295,17 @@ Stop only processes you started, by the PID you recorded when starting them.
 Never kill by pattern (`pkill -f`, `pgrep | kill`, or a PID found by matching
 a name or path): other sessions' servers and your own agent can match.
 
+Prefer
+commands that exit; for servers, watchers and other long runs, record the PID,
+port, stop command and a time limit, and stop them before finishing.
+
 Reuse a running
 server, browser, watcher, emulator or test runner only when its working
 directory is your own checkout.
 
 Keep small or tightly coupled tasks local. Use subagents for bounded investigations or reviews; they stay read-only when they share your directory. Delegate implementation only when authorized, in its own worktree.
+
+Ask for evidence, checks run and open uncertainty. Weigh its evidence without redoing its investigation, but keep the required review and integration checks.
 
 Before building on a worker's claim that something is undefined, unused or missing, search the whole repository yourself.
 
