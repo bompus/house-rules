@@ -145,8 +145,9 @@ unit's CPU, so report it beside the results and make no negligible-impact claim 
 A unit that spans several transient scopes (one per child) has no single cgroup to watch; put the
 whole phase in one scope. `auto` reads the observer's parent's cgroup on a unified cgroup v2 mount, so
 it needs the observer to be a direct child of a process inside the workload cgroup (the unit's shell,
-as above); when the parent is pid 1 or in the root cgroup it refuses and the summary says so, and
-otherwise you pass the path. Per-interval host CPU is not recorded as a figure; derive it from
+as above); when the parent is pid 1 or in the root cgroup it refuses and the summary says so. A parent
+that has exited and been replaced by a subreaper in another cgroup is not detected, so pass the path
+there too. Per-interval host CPU is not recorded as a figure; derive it from
 `<output>.samples.jsonl`: the difference of `busy_ticks` between samples, over the clock ticks per second
 and the interval.
 

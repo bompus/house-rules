@@ -20,8 +20,9 @@ with --host-only there is no workload to subtract, so the unit's own CPU counts.
 pressure limits on its own pressure files; in every sample no growth of memory.swap.current or
 memory.zswap.current over the first sample, no change of zswpin, zswpout or zswpwb and no change
 of memory.events high, max, oom or oom_kill from the first sample, the same directory (device and
-inode), readable required counters, and the same set of optional counters (zswap) as in the first
-sample. A counter that goes backward is a failure.
+inode), readable required counters, the same set of optional counters (zswap) as in the first
+sample, and a memory.current or io.stat that stays readable once it has been. A CPU or PSI counter
+that goes backward is a failure.
 
 Host-wide swap-out and zswap activity (pswpout, zswpout, zswpwb) is recorded for every interval
 and rejects the unit only with --storage-phase, the phases the rules name.
@@ -355,6 +356,17 @@ def write_summary(args, samples, reasons, out, status):
     return summary["clean"]
 
 
+def positive(text):
+    """An argparse type for an admission limit: a finite number above zero."""
+    try:
+        value = float(text)
+    except ValueError:
+        value = float("nan")
+    if not value > 0 or value == float("inf"):
+        raise argparse.ArgumentTypeError(f"must be a positive number, got {text!r}")
+    return value
+
+
 def main():
     global PROC, MAX_GAP_S, MAX_COMPETING_CORES, MIN_AVAIL_GIB, MEM_PSI_MS, IO_PSI_MS
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
@@ -362,11 +374,11 @@ def main():
     ap.add_argument("--workload-cgroup", default=os.environ.get("WORKLOAD_CGROUP"))
     ap.add_argument("--host-only", action="store_true")
     ap.add_argument("--storage-phase", action="store_true")
-    ap.add_argument("--max-gap-s", type=float, default=MAX_GAP_S)
-    ap.add_argument("--min-avail-gib", type=float, default=MIN_AVAIL_GIB)
-    ap.add_argument("--mem-psi-ms", type=float, default=MEM_PSI_MS)
-    ap.add_argument("--io-psi-ms", type=float, default=IO_PSI_MS)
-    ap.add_argument("--max-competing-cores", type=float, default=MAX_COMPETING_CORES)
+    ap.add_argument("--max-gap-s", type=positive, default=MAX_GAP_S)
+    ap.add_argument("--min-avail-gib", type=positive, default=MIN_AVAIL_GIB)
+    ap.add_argument("--mem-psi-ms", type=positive, default=MEM_PSI_MS)
+    ap.add_argument("--io-psi-ms", type=positive, default=IO_PSI_MS)
+    ap.add_argument("--max-competing-cores", type=positive, default=MAX_COMPETING_CORES)
     ap.add_argument("--max-observer-cores", type=float, default=0.05)
     ap.add_argument("--max-observer-rss-mib", type=float, default=128)
     ap.add_argument("--proc-root", default="/proc", help="for tests: where /proc/stat etc. live")

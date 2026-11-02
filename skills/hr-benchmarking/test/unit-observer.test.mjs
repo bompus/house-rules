@@ -437,7 +437,8 @@ test(
   "PSI is judged per nominal one-second interval: a short final interval is scaled up, a long gap down",
   { skip },
   () => {
-    // 92 ms of I/O stall in a 0.43 s final interval is 214 ms per second: over the 100 ms limit.
+    // 92 ms of I/O stall in a 0.43 s final interval counts as 184 ms (the interval is floored at half a
+    // second): over the 100 ms limit.
     assert.ok(
       stalled(
         judgeRows([
@@ -658,7 +659,12 @@ test(
       .split("\n")
       .find((line) => line.startsWith("0::"));
     // A container without its own cgroup namespace view reports "/" and cannot show the documented case.
-    if (own === undefined || own === "0::/" || !existsSync("/sys/fs/cgroup/cgroup.controllers")) {
+    if (
+      own === undefined ||
+      own === "0::/" ||
+      !existsSync("/sys/fs/cgroup/cgroup.controllers") ||
+      !existsSync(`/sys/fs/cgroup${own.slice(3)}`)
+    ) {
       return;
     }
     const root = mkdtempSync(join(tmpdir(), "unit-observer-"));
@@ -682,3 +688,21 @@ test(
     }
   },
 );
+
+test("the admission limit flags must be positive numbers", { skip }, () => {
+  for (const flag of [
+    "--max-gap-s",
+    "--min-avail-gib",
+    "--mem-psi-ms",
+    "--io-psi-ms",
+    "--max-competing-cores",
+  ]) {
+    for (const value of ["0", "-1", "nan"]) {
+      const run = spawnSync("python3", [observer, "--output", "/dev/null", flag, value], {
+        encoding: "utf8",
+      });
+      assert.equal(run.status, 2, `${flag} ${value}`);
+      assert.ok(run.stderr.includes("positive number"), `${flag} ${value}: ${run.stderr}`);
+    }
+  }
+});
