@@ -125,9 +125,10 @@ function composeParts(coreText, fragments, referencesDirectory, candidates, core
   coreText = core.body;
   const { preamble, sections } = splitSections(coreText);
   // The core rules list the headings of their sections that must stay in the always-on text.
+  // A comma inside a heading is written \, in the list.
   for (const heading of (core.meta.core ?? "")
-    .split(",")
-    .map((h) => h.trim())
+    .split(/(?<!\\),/)
+    .map((h) => h.replace(/\\,/g, ",").trim())
     .filter(Boolean)) {
     const section = sections.find((s) => s.heading === heading);
     if (!section) {
@@ -278,8 +279,11 @@ function inlineReferences(fragments) {
     }
     const f = { ...fragment };
     if (!f.path) {
+      // The label is the modifier's name, or its file path (the directory is ignored; the body is verified below).
       const name =
-        typeof f.source === "string" ? f.source.replace(/^modifier /, "").replace(/\.md$/, "") : "";
+        typeof f.source === "string"
+          ? basename(f.source.replace(/^modifier /, "")).replace(/\.md$/, "")
+          : "";
       const path = join(BASE, "rules/modifiers", `${name}.md`);
       if (
         !/^[a-z0-9-]+$/.test(name) ||

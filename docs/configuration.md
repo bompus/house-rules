@@ -237,7 +237,7 @@ required.
 
 A section can be marked core: it holds a safeguard that nothing makes an agent go and read, so it must stay in
 the always-on text. In `rules/core.md` the front matter key `core:` lists the headings of the core rules'
-sections that are core; in a modifier or personal rule file `core: true` marks every section the file adds
+sections that are core (write a comma inside a heading as `\,`); in a modifier or personal rule file `core: true` marks every section the file adds
 (`core: false` unmarks, and a replacement keeps the mark of the section it replaces unless it says
 otherwise). A heading that `core:` names but the rules do not have is an error.
 
@@ -265,8 +265,9 @@ To see how large each part of the output is, run `house-rules --config <path> --
 (`bun compose.mjs --config <path> --sizes` in a checkout). It writes nothing and prints one
 tab-separated line per part, in output order: bytes, kind and name (the name is everything after the
 second tab, so a heading that itself contains a tab stays readable). The kinds are `preamble`, `section`
-(by heading), `core` (the sections marked core, again, in the same order), `subtotal` (`core sections` and
-`other sections`), `reference` (a reference file, not the `manifest.json` beside them) and `total` (the whole
+(by heading), `core` (the sections marked core, again, in the same order), `subtotal` (`core sections`, `other sections`
+and `core prefix`: the bytes of the preamble, the core sections and the blank lines between them, which is the front of the
+written rules under `coreFirst`), `reference` (a reference file, not the `manifest.json` beside them) and `total` (the whole
 rules file). The numbers are those of a run with `--out` and the default references directory, so a
 section that exports a procedure counts only its pointer. `--sizes` cannot be combined with `--out`,
 `--skills-out`, `--references-out` or `--list`.

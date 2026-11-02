@@ -167,12 +167,7 @@ const MOVED = {
     "Give each item a check",
     "Number the items of a batch",
   ],
-  "Shared machine load": [
-    "`nproc --all` ignores a cgroup CPU quota",
-    "Use the cap yourself",
-    "Start each job inside it",
-    "`--slice=<slice>` added to the",
-  ],
+  "Shared machine load": ["`nproc --all` ignores a cgroup CPU quota", "Use the cap yourself"],
 };
 const ORIGINALS = {
   "Repository work": "repository-work.md",

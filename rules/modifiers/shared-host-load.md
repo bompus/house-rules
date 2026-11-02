@@ -43,6 +43,11 @@ same free memory. Where several agents share one host, use one shared budget tha
 ancestor of every job (on Linux, one cgroup that all of them are placed under, created at
 system level when the agents run as different users).
 
+Start each job inside it, so the
+ancestor exists before the workload can allocate memory: `--slice=<slice>` added to the
+`systemd-run` command above for agents of one user (without it the scope lands outside
+the caller's slice), a system-level unit for agents of different users.
+
 Check that the
 capped cgroup is an ancestor of each job's scope; a check made after the job has finished
 is too late to protect the host.
@@ -53,5 +58,5 @@ killed for memory: check the system journal for an OOM kill before retrying.
 Retry with a larger budget only when host evidence shows memory pressure caused
 the failure; without that evidence, find the cause before raising the budget.
 
-For the cgroup quota note, starting a job inside the shared budget and the worker-count hint, read
+For the cgroup quota note and the worker-count hint, read
 [the shared-load procedure](../references/shared-machine-load.md).

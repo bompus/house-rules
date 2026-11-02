@@ -212,6 +212,17 @@ test("--sizes lists the bytes of each section and reference in output order and 
       .map((s) => ["core", s.heading, String(byteLength(s.text))]),
     ["subtotal", "core sections", String(coreBytes)],
     ["subtotal", "other sections", String(otherBytes)],
+    [
+      "subtotal",
+      "core prefix",
+      String(
+        byteLength(
+          [preamble, ...parts.sections.filter((s) => s.core).map((s) => s.text)]
+            .filter(Boolean)
+            .join("\n\n"),
+        ),
+      ),
+    ],
     ...[...references].map(([name, text]) => ["reference", name, String(byteLength(text))]),
     ["total", "rules", String(byteLength(rules))],
   ].map(([kind, name, bytes]) => [bytes, kind, name]);

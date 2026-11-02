@@ -3,7 +3,7 @@ import { execFileSync } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
-import { composeConfiguration, composeSections, parseFragment } from "../composition.mjs";
+import { compose, composeConfiguration, composeSections, parseFragment } from "../composition.mjs";
 import { scratch } from "./fixture.mjs";
 
 const root = join(import.meta.dirname, "..");
@@ -225,4 +225,56 @@ test("composeSections writes the references of a directly parsed shipped modifie
   )?.text;
   assert.ok(text?.includes("Start each job inside it"), "the procedure is inline");
   assert.ok(!text?.includes("](../references/"), "no unresolved reference link");
+});
+
+test("a core heading with a comma is written with a backslash", () => {
+  const core = CORE.replace(
+    "core: End of every reply, Offers, Landing",
+    "core: End of every reply, Offers, Landing, Visuals\\, and more",
+  ).replace("## Extra\n\nD.", "## Visuals, and more\n\nV.\n\n## Extra\n\nD.");
+  assert.ok(coreOf(composeSections(core, [])).includes("Visuals, and more"));
+});
+
+test("compose accepts the file path of a shipped modifier as its source label", () => {
+  const core = readFileSync(join(root, "rules/core.md"), "utf8");
+  const text = readFileSync(join(root, "rules/modifiers/shared-host-load.md"), "utf8");
+  const byName = compose(core, [parseFragment(text, "shared-host-load")]);
+  assert.equal(compose(core, [parseFragment(text, "rules/modifiers/shared-host-load.md")]), byName);
+});
+
+test("--sizes reports the bytes of the core prefix the written rules start with under coreFirst", (t) => {
+  const dir = scratch(t, "core-marker-prefix-");
+  mkdirSync(join(dir, "rules"));
+  writeFileSync(
+    join(dir, "rules", "mine.md"),
+    "---\nafter: Writing\ncore: true\n---\n\n## Mine\n\nM.\n",
+  );
+  const config = join(dir, "house-rules.json");
+  writeFileSync(config, JSON.stringify({ coreFirst: true, skills: { include: [] } }));
+  const listing = execFileSync(
+    process.execPath,
+    [join(root, "compose.mjs"), "--config", config, "--sizes"],
+    { stdio: "pipe" },
+  ).toString();
+  const prefix = Number(
+    listing
+      .split("\n")
+      .map((l) => l.split("\t"))
+      .find((r) => r[1] === "subtotal" && r[2] === "core prefix")?.[0],
+  );
+  // --sizes reports the written rules, the ones --out writes.
+  const out = join(dir, "out", "rules.md");
+  execFileSync(process.execPath, [join(root, "compose.mjs"), "--config", config, "--out", out], {
+    stdio: "pipe",
+  });
+  const rules = readFileSync(out, "utf8");
+  const first = rules.indexOf("\n\n## Offers"); // sanity: the written rules start with the preamble
+  assert.ok(first > 0);
+  const lastCore = rules.indexOf("## Mine");
+  const end = rules.indexOf("\n\n## ", lastCore + 1);
+  assert.equal(
+    prefix,
+    Buffer.byteLength(rules.slice(0, end), "utf8"),
+    "the prefix ends after the last core section",
+  );
 });
