@@ -1,5 +1,5 @@
 ---
-core: End of every reply, Offers, Finishing work, Session purpose, Repository work, Landing, Cleanup, Coordination and isolation, Safety and privacy
+core: End of every reply, Offers, Finishing work, Session purpose, Repository work, Landing, Cleanup, Coordination and isolation, Durable notes, Safety and privacy
 requires: hr-what-next, hr-code-review, hr-diagnosing-bugs, hr-plain-prose
 references: references/landing.md, references/repository-work.md, references/coordination-and-isolation.md, references/github-actions.md, references/thread-visuals.md, references/implementation-economy.md, references/writing-and-naming.md, ../skills/hr-what-next/references/reporting.md
 ---

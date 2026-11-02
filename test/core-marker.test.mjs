@@ -139,6 +139,7 @@ test("the shipped rules mark the safeguard sections core and coreFirst moves the
     "Landing by default",
     "Cleanup",
     "Coordination and isolation",
+    "Durable notes",
     "Safety and privacy",
     "Solo operator",
     "Squash landing",
