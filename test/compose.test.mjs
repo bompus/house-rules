@@ -215,6 +215,32 @@ test("--sizes lists the bytes of each section and reference in output order and 
   assert.deepEqual(readdirSync(dir), ["house-rules.json"]);
 });
 
+test("--sizes reports the sizes of the files a real --out run writes", (t) => {
+  const dir = scratch(t);
+  const config = join(dir, "house-rules.json");
+  writeFileSync(config, JSON.stringify({ modifiers: ["multi-agent"] }));
+  const out = join(dir, "out", "rules.md");
+  composeCli(["--config", config, "--out", out]);
+  const rows = composeCli(["--config", config, "--sizes"])
+    .toString("utf8")
+    .trimEnd()
+    .split("\n")
+    .map((line) => line.split("\t"));
+  const written = readFileSync(out, "utf8");
+  assert.equal(rows.at(-1)?.[0], String(byteLength(written)));
+  const { sections } = splitSections(written);
+  assert.deepEqual(
+    rows.filter((r) => r[1] === "section"),
+    sections.map((s) => [String(byteLength(s.text)), "section", s.heading]),
+  );
+  const refsDir = join(dir, "out", "house-rules-references");
+  const references = rows.filter((r) => r[1] === "reference");
+  assert.ok(references.length > 0);
+  for (const [bytes, , name] of references) {
+    assert.equal(String(byteLength(readFileSync(join(refsDir, String(name)), "utf8"))), bytes);
+  }
+});
+
 test("--sizes refuses output flags instead of writing", (t) => {
   const dir = scratch(t);
   const config = join(dir, "house-rules.json");
@@ -222,6 +248,7 @@ test("--sizes refuses output flags instead of writing", (t) => {
   for (const extra of [
     ["--out", join(dir, "rules.md")],
     ["--skills-out", join(dir, "s")],
+    ["--references-out", join(dir, "refs")],
   ]) {
     assert.throws(
       () => composeCli(["--config", config, "--sizes", ...extra]),
