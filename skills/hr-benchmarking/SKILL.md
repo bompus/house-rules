@@ -193,6 +193,21 @@ precision criterion. Retain inconclusive controls; do not subtract observer CPU
 from workload wall time. For remote agent or model evaluations, record the
 timing regime and concurrent local work.
 
+A run that spends a login shared with other use (a live service, a reviewer,
+interactive sessions) is bounded by every usage limit that login has, not only
+the weekly one. A subscription seat can also have a short rolling window (for
+example five hours) that fills while the weekly figure stays low. Guards that
+watched only the weekly figure let two evaluation runs fill that window, and the
+live seat failed 29 calls. Before the first call, declare a stop at a percentage
+of each limit and reserve room for the calls still in flight when it fires plus
+a margin for the other use. Size the reserve from a known or enforced upper bound
+per call (a limit you apply, not an observed maximum or average), cap concurrency
+so the reserve fits, and add the usage the feed has not reported yet, or stop
+dispatching until the reading is current. Guard the pilot too: assume a
+conservative cost and run one call at a time until real costs are known. With no
+bound, or when the margin cannot be met, give the run its own login. A usage feed may store no
+row while a seat is idle, so check the seat itself before calling the feed dead.
+
 Screen correctness and quality first, then use one run per selected arm to
 explore timing and resource behavior. Preserve screened-out results and their
 reasons. Label screening exploratory; one run does not support a performance
