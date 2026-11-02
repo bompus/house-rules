@@ -299,6 +299,8 @@ Prefer
 commands that exit; for servers, watchers and other long runs, record the PID,
 port, stop command and a time limit, and stop them before finishing.
 
+Run a long job under a supervisor that outlives the session and reports how it ended (a status record and a message to the thread that owns the job, with the job's output kept somewhere that survives the session), so a session reload or crash does not lose the result: no bare background shell and no detached unit without a reporter; the host supplies the command, and where it supplies none, run the job in the foreground or tell the user what is missing instead of detaching it.
+
 Reuse a running
 server, browser, watcher, emulator or test runner only when its working
 directory is your own checkout.
@@ -309,8 +311,8 @@ Ask for evidence, checks run and open uncertainty. Weigh its evidence without re
 
 Before building on a worker's claim that something is undefined, unused or missing, search the whole repository yourself.
 
-For detaching a long run (setsid or a systemd unit), the host's capped job runner and briefing a worker, read
-[the coordination procedure](references/coordination-and-isolation.md).
+Before starting any server, watcher or other long-running command, or briefing a worker, read
+[the coordination procedure](references/coordination-and-isolation.md): a detached long run must outlive the call that launched it and be checked after the call returns, and it goes through the reporting supervisor where the host has one (with setsid, a detached systemd unit or the host's capped job runner underneath).
 
 ## Implementation economy
 
