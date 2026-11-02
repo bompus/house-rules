@@ -17,6 +17,8 @@ arm it when launching the job and wait on the job through it, not in one long
 blocking call; stop the updates when the job ends. A scheduled or recurring task
 states a fire condition, exits silently when it is false, has an end, sends no
 "nothing to report" message and is read back after creating it (enabled, bound
-thread, next run); it uses no metered route unless approved. Before launching such
-a job or creating such a task, read
+thread, next run); it uses no metered route unless approved. When updating a task,
+change only the fields you mean to: a thread binding or schedule reset as a side effect
+is a change. Before launching such a job, or creating, updating or disabling such a
+task, read
 [the periodic-update procedure](../references/periodic-updates.md).

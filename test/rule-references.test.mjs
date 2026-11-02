@@ -38,7 +38,7 @@ test("inline callers and disabled modifiers preserve policy without requiring a 
       "thread-visuals.md",
       "landing.md",
       "implementation-economy.md",
-      "writing.md",
+      "writing-and-naming.md",
     ],
   );
   const config = join(dir, "config.json");
@@ -196,7 +196,7 @@ test("a personal replacement omits the overridden public reference from resource
       "thread-visuals.md",
       "landing.md",
       "implementation-economy.md",
-      "writing.md",
+      "writing-and-naming.md",
     ],
   );
 });
@@ -226,7 +226,7 @@ test("core landing and selected squash references preserve inline callers and pe
     "reporting.md",
     "squash-landing.md",
     "thread-visuals.md",
-    "writing.md",
+    "writing-and-naming.md",
   ]);
   assert.match(linked.rules, /without bypassing\s+checks/);
   assert.match(linked.rules, /During integration, never switch, reset, force-move or remove/);
@@ -339,7 +339,7 @@ test("core reference lists retain scalar compatibility and reject malformed inpu
   const actions = readFileSync(join(root, "rules/references/github-actions.md"), "utf8");
   const visuals = readFileSync(join(root, "rules/references/thread-visuals.md"), "utf8");
   const economy = readFileSync(join(root, "rules/references/implementation-economy.md"), "utf8");
-  const writing = readFileSync(join(root, "rules/references/writing.md"), "utf8");
+  const writing = readFileSync(join(root, "rules/references/writing-and-naming.md"), "utf8");
   const inlineBody = body
     .replace(/## Reporting\n[\s\S]*?(?=\n## )/, reporting.trim())
     .replace(/## GitHub Actions\n[\s\S]*?(?=\n## )/, actions.trim())

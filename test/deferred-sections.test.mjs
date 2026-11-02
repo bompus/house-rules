@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import { mkdirSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import { test } from "node:test";
 import { composeConfiguration } from "../composition.mjs";
 import { scratch } from "./fixture.mjs";
@@ -16,6 +18,7 @@ const SECTIONS = [
       /when\s+nothing\s+outside\s+the\s+change\s+depends\s+on\s+the\s+old\s+shape/,
       /no\s+blind\s+upgrades/,
       /cannot\s+tell\s+whether\s+something\s+still\s+has\s+a\s+user,\s+ask/,
+      /script\s+that\s+makes\s+or\s+proves\s+a\s+change\s+in\s+many\s+places/,
       /repeats\s+no\s+external\s+action/,
       /Reuse first/,
       /simplest solution/,
@@ -30,6 +33,8 @@ const SECTIONS = [
     reference: "periodic-updates.md",
     excerpt: [
       /posted\s+even\s+when\s+nothing\s+changed/,
+      /change\s+only\s+the\s+fields\s+you\s+mean\s+to/,
+      /updating\s+or\s+disabling/,
       /not\s+in\s+one\s+long\s+blocking\s+call/,
       /no\s+metered\s+route\s+unless\s+approved/,
       /sends\s+no\s+"nothing\s+to\s+report"\s+message/,
@@ -72,7 +77,7 @@ const SECTIONS = [
   {
     heading: "Writing",
     modifier: null,
-    reference: "writing.md",
+    reference: "writing-and-naming.md",
     excerpt: [
       /unless\s+the\s+user\s+asks\s+for\s+it\s+elsewhere/,
       /MCP\s+registries/,
@@ -118,6 +123,7 @@ const SECTIONS = [
     reference: "compression-codecs.md",
     excerpt: [
       /does\s+not\s+add\s+a\s+codec\s+to\s+a\s+runtime/,
+      /skip\s+any\s+coding\s+listed\s+with\s+`q=0`/,
       /outside\s+the\s+task\s+unless\s+asked/,
       /zstd, then brotli,\s+then gzip/,
       /Accept-Encoding/,
@@ -176,4 +182,26 @@ test("the eight deferred sections together stay small in the always-on rules", (
     SECTIONS.reduce((total, s) => total + bytes(sectionText(composed, s.heading)), 0);
   assert.ok(sum(pointer) <= MAX_ALL_EXCERPTS_BYTES, `excerpts total ${sum(pointer)} bytes`);
   assert.ok(sum(inline) > 15000, "the inline rendering still carries the full text");
+});
+
+test("a personal layer's own writing.md reference still composes beside the core references", (t) => {
+  const dir = scratch(t, "deferred-sections-personal-");
+  mkdirSync(join(dir, "rules"), { recursive: true });
+  mkdirSync(join(dir, "references"), { recursive: true });
+  writeFileSync(
+    join(dir, "rules", "mine.md"),
+    "---\nafter: Writing\nreference: ../references/writing.md\n---\n\n## Personal drafting\n\nShort. See [the procedure](../references/writing.md).\n",
+  );
+  writeFileSync(
+    join(dir, "references", "writing.md"),
+    "## Personal drafting\n\nLong personal procedure.\n",
+  );
+  const result = composeConfiguration({ skills: { include: [] } }, dir, {
+    referencesDirectory: "house-rules-references",
+  });
+  assert.ok(result.references.has("writing.md"), "the personal reference is exported");
+  assert.ok(
+    result.references.has("writing-and-naming.md"),
+    "the core reference keeps its own name",
+  );
 });

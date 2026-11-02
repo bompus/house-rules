@@ -1,6 +1,6 @@
 ---
 requires: hr-what-next, hr-code-review, hr-diagnosing-bugs, hr-plain-prose
-references: references/landing.md, references/github-actions.md, references/thread-visuals.md, references/implementation-economy.md, references/writing.md, ../skills/hr-what-next/references/reporting.md
+references: references/landing.md, references/github-actions.md, references/thread-visuals.md, references/implementation-economy.md, references/writing-and-naming.md, ../skills/hr-what-next/references/reporting.md
 ---
 
 # House rules
@@ -321,7 +321,7 @@ report; keep no silent fallback, and when you cannot tell whether something stil
 user, ask. Stay compatible with the versions in use and make no blind upgrades: check
 current official documentation when behavior depends on a version, and read the release
 notes for every version in between before landing a dependency or toolchain upgrade. A
-script's second run changes nothing and repeats no external action. Before adding a
+script that makes or proves a change in many places runs a second time with no effect and repeats no external action. Before adding a
 dependency, script, hook or skill, writing React effects or tests, or fixing a repeated
 mistake, read [the implementation procedure](references/implementation-economy.md).
 
@@ -370,4 +370,4 @@ public name (project, repository, package, command, MCP server), search the regi
 could publish to, GitHub and, for an MCP server, the MCP registries; report exact and
 near matches and let the user pick. Link repository guidance by local file, and verify the
 reference resolves after installation and in worktrees. Before writing text others will
-read or linking guidance, read [the writing procedure](references/writing.md).
+read or linking guidance, read [the writing procedure](references/writing-and-naming.md).
