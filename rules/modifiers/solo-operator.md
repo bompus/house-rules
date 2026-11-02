@@ -15,9 +15,11 @@ repository's own guidance, directs a direct push.
 A review bot that comments again on each push can keep a pull request open without
 end. Count one posted bot review as a round. In rounds 1 and 2, fix or answer every
 finding, batch the fixes into one push, and answer and resolve each thread. From round
-3 on, fix only a finding that is a defect you reproduced, or one rated high or
-critical, in code the pull request changes or affects; answer the rest in one line with the
-reason, resolve the thread and land.
+3 on, fix only a finding that is a defect shown by a reproduction, a concrete code trace
+or a cited contract, or one rated high or critical, in the code, rules, configuration or
+operational instructions the pull request changes or affects; answer the rest in one line
+with the reason, resolve the thread and land. While a finding still needs evidence or a
+decision, keep it open and say what is missing.
 
 A nit (a cosmetic preference, optional polish, a speculative cleanup with no concrete
 consequence) gets a one-line reason, not a commit or another review request; a small
