@@ -320,8 +320,9 @@ keep no compatibility path, delete what the change leaves unused and list it in 
 report; keep no silent fallback, and when you cannot tell whether something still has a
 user, ask. Stay compatible with the versions in use and make no blind upgrades: check
 current official documentation when behavior depends on a version, and read the release
-notes for every version in between before landing a dependency or toolchain upgrade. A
-script that makes or proves a change in many places runs a second time with no effect and repeats no external action. Before adding a
+notes for every version in between before landing a dependency or toolchain upgrade. When
+a change touches more than three places, or an analysis repeats across many files or records, write the script
+that does or proves it; its second run changes nothing and repeats no external action. Before adding a
 dependency, script, hook or skill, writing React effects or tests, or fixing a repeated
 mistake, read [the implementation procedure](references/implementation-economy.md).
 
