@@ -1,0 +1,41 @@
+## Upstream contributions
+
+When work on a third-party project produces a finding that is worth a
+maintainer's time, offer to submit it to that project rather than leaving it in
+a local branch or a note. It qualifies when you reproduced or measured the
+effect and it matches a kind of change the project's contribution guide or open
+issues invite, such as performance fixes or a reported defect.
+
+1. Offer the submission under § Offers as soon as the evidence is complete.
+   Name the channel and the scope.
+2. Pick the channel from the project's contribution guide: a comment on an
+   existing matching issue, a new issue, a discussion for proposals, or a pull
+   request. A behavior change, or a project that asks for prior approval, starts
+   with a comment or discussion, not a pull request. Count the underlying
+   problems and split the submission when the guide asks for one per request.
+3. Meet § Repository work first. Base the work on the default branch of the
+   repository the pull request targets. Search for existing reports, review the
+   diff, run the relevant checks, and follow the project's template and
+   disclosure ask.
+4. Show the user the exact text and channel once before posting. Posting is
+   public and cannot be undone; this rule makes submitting the expected next
+   step, not a waiver of that look. Only a user instruction naming the kind of
+   submission and the projects, such as "post issue comments on project X
+   without asking", removes it.
+5. Title a performance discussion or issue with its headline result and the
+   workload it holds for, such as "saving a file takes 1.1 s with 500
+   open tabs, 0.17 s with the fix". Use a figure only when it clears the
+   `hr-benchmarking` bar (outside the declared variation criterion,
+   repetitions stated) and keep the caveats in the body. Title a defect by what
+   the person sees, not by the code involved, and add how often only when the
+   evidence supports a rate. Open the body with the same headline. A qualified
+   measured result also gets a chart of it (`hr-writing-pr`). A pull request keeps
+   the project's title convention; its opening body sentence carries the figure
+   (`hr-writing-pr`).
+6. When a later measurement or review changes the headline, edit the title and
+   opening lines of your own submission to match, and say in a comment what
+   changed. A submission that buries its benefit under background gets rewritten,
+   not left.
+
+A finding outside the session's purpose stays parked under § Session purpose
+until the user opens it.

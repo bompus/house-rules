@@ -5,10 +5,12 @@ remains, and ends with an offer when something is left for you to decide. Run
 it after changing the rules, and against every model you use.
 
 ```bash
-node compose.mjs --config ~/.config/house-rules/house-rules.json --out ~/.config/house-rules/rules.md
-node evals/end-of-reply/run.mjs --rules ~/.config/house-rules/rules.md --cmd "<your model CLI in print mode>"
+node compose.mjs --config ~/.config/house-rules/house-rules.json > ~/.config/house-rules/rules-inline.md
+node evals/end-of-reply/run.mjs --rules ~/.config/house-rules/rules-inline.md --cmd "<your model CLI in print mode>"
 node evals/end-of-reply/run.mjs --rules ~/.config/house-rules/rules.md --cmd "..." --slice 80   # agents that read 80 lines at a time
 ```
+
+Compose to stdout (no `--out`): the rules then carry every procedure inline. A file written with `--out` holds a short excerpt for each section that has a reference, and this eval, which cannot open a reference, would judge the excerpt. To see what a deferred section costs when the model does not open its reference, run the same scenarios against both files (`compose.mjs --config <config> > inline.md` and `--out pointer.md`) and compare the pass counts.
 
 Bun runs these commands in place of `node`. Add `--coded` when the `coded-offers` modifier is enabled. Each file in `scenarios/`
 states what it expects: `continue` (a tool call, no request for permission),
@@ -78,7 +80,7 @@ that live in modifiers (periodic updates, cross-session relays, coded offers); c
 with the `config.json` beside them, which enables those three modifiers:
 
 ```bash
-node compose.mjs --config evals/end-of-reply/screen/modifiers/config.json --out modifiers-rules.md
+node compose.mjs --config evals/end-of-reply/screen/modifiers/config.json > modifiers-rules.md
 node evals/end-of-reply/run.mjs --screen --scenarios evals/end-of-reply/screen/modifiers --rules modifiers-rules.md --cmd "<model CLI>" --runs 4
 ```
 

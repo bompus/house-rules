@@ -1,6 +1,6 @@
 ---
 requires: hr-what-next, hr-code-review, hr-diagnosing-bugs, hr-plain-prose
-references: references/landing.md, references/github-actions.md, references/thread-visuals.md, ../skills/hr-what-next/references/reporting.md
+references: references/landing.md, references/github-actions.md, references/thread-visuals.md, references/implementation-economy.md, references/writing.md, ../skills/hr-what-next/references/reporting.md
 ---
 
 # House rules
@@ -311,52 +311,15 @@ Keep small or tightly coupled tasks local. Use subagents for bounded investigati
 
 ## Implementation economy
 
-- Reuse first: existing code, the standard library and installed dependencies,
-  and supported extension points over forks or rewrites. Before adding a
-  script, timer, service, hook or skill, search the repository and what is
-  already installed for one doing that job; extend or install that one instead.
-- In React, avoid unnecessary effects. Derive values during render and handle
-  user actions in event handlers. Prefer supported component or library callbacks
-  when they satisfy the task. Reserve `useEffect` for necessary synchronization
-  with external systems, including subscriptions and DOM APIs. Use
-  `useLayoutEffect` only when that synchronization must finish before paint;
-  custom hooks wrapping effects need the same justification. Explain why the
-  effect is needed and preserve cleanup. Do not use effects to copy derived
-  state or sequence application logic that belongs in handlers.
-- Before adding a dependency, compare maintained alternatives, existing code and a small direct implementation against the requirements, counting maintenance, transitive dependencies and shipped size. Measure performance only when it could change the choice; otherwise call it unmeasured. Record why you chose.
-- Pick the simplest solution that meets the requirements, with no speculative
-  abstraction, never at the cost of security, validation or stated
-  requirements. When proposing extra defensive machinery, describe the concrete
-  failure, the evidence it can occur, and the maintenance cost. Omit speculative
-  additions; ask for a decision only when the proposal expands the authorized
-  scope.
-- Replace rather than wrap. When nothing outside the change depends on the
-  old shape (no released interface, stored data or outside caller), update
-  every caller and keep no compatibility path, shim or migration. Delete the
-  code, files and docs the change left unused, and list them in the report.
-  Keep no second algorithm, transport or scrape that quietly takes over when
-  the first one breaks. It hides the breakage and leaves two paths to maintain.
-  Ship and prove the primary, delete the old path in the same change, and fail
-  loudly when it misses. Ordinary defaults and a second source the product
-  needs on purpose are not fallbacks.
-  When you cannot tell whether something still has a user, ask.
-- When a change touches more than three places, or an analysis repeats across
-  many files or records, write the script that does or proves it. Do
-  the first unit by hand and confirm the script reproduces it. A second run of
-  the script must change nothing and repeat no external action, such as a
-  push or a sent message.
-- Check current official documentation when behavior depends on a version, and
-  stay compatible with the versions in use; no blind upgrades. Before landing a
-  dependency or toolchain upgrade, read the release notes for every version in
-  between, apply their migration steps and config changes, and report new
-  features, rules or options worth adopting.
-- Write regression tests that would catch a real failure; skip tests that only
-  mirror the implementation, redundant tests and release gates without a
-  reason.
-- The second time the same mistake or instruction comes up, encode it in
-  structure before prose: a type, then a lint rule, then a test or check
-  script, then a shared helper, then a runtime check. Write a rule only when
-  none of these would fail or block the mistake if it happened again.
+Reuse first (existing code, the standard library, installed dependencies, supported
+extension points) and pick the simplest solution that meets the requirements, never at
+the cost of security, validation or stated requirements. Replace rather than wrap: update
+every caller, delete what the change leaves unused, keep no silent fallback path, and
+when you cannot tell whether something still has a user, ask. Check current official
+documentation when behavior depends on a version, and read the release notes for every version in
+between before landing a dependency or toolchain upgrade. Before adding a dependency,
+script, hook or skill, writing React effects or tests, or fixing a repeated mistake, read
+[the implementation procedure](references/implementation-economy.md).
 
 ## Durable notes
 
@@ -395,23 +358,10 @@ an issue, pull request, comment or commit the user's audience would see.
 
 ## Writing
 
-Docs, rules, skills and code comments describe current behavior. Version
-history belongs in changelogs, findings ledgers, receipts and git history,
-unless the user asks for it elsewhere. Text a person will read (commit
-messages, pull requests, docs, replies) uses plain, specific language.
-
-In every reply, status note and question, write for a reader who has not seen
-your working notes. Name a thing by what it is or does, not by a label you
-coined, a file or section name, or a term from a tool, repository or rule set.
-Use ordinary names before identifiers. Keep internal labels and technical terms
-only when the reader needs them to understand, find, run or check the work;
-explain an unfamiliar term when first used. Do not reuse a
-coined label without saying again what it means. `hr-plain-prose` has the
-full procedure.
-
-Operational references to available repository guidance use local files.
-For installed skills, bundle the reference with the skill or name the repository
-that owns it; verify the reference resolves after installation and in worktrees. Keep remote links
-for external sources, pinned history, downloads and explicit upstream refreshes.
-
-Before settling a public name (project, repository, package, command, MCP server), search the registries it could publish to, GitHub and, for an MCP server, the MCP registries. Report exact and near matches (ignoring case and separators: one letter different, or containing the name) and let the user pick.
+Docs, rules, skills and code comments describe current behavior; version history belongs
+in changelogs and git history. Text a person will read uses plain, specific language, and
+names a thing by what it is, not by a label you coined. Before settling a public name
+(project, repository, package, command, MCP server), search the registries it could
+publish to and GitHub, report exact and near matches, and let the user pick. Before
+writing text others will read or linking guidance, read
+[the writing procedure](references/writing.md).

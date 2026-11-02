@@ -10,6 +10,8 @@ const screen = join(root, "evals/end-of-reply/screen");
 
 // Each screening scenario's `without:` must match its composed rules exactly once, or run.mjs
 // stops with exit 2. A rule reworded without its scenario fails here instead of in a model run.
+// The screens compose the rules inline (no --out): a rule that has an excerpt and a reference in
+// the written file still has its full text here.
 for (const [name, config, dir] of /** @type {[string, object | string, string][]} */ ([
   ["core rules", { modifiers: [], skills: { include: [] } }, screen],
   ["modifier rules", join(screen, "modifiers/config.json"), join(screen, "modifiers")],
@@ -21,12 +23,16 @@ for (const [name, config, dir] of /** @type {[string, object | string, string][]
       writeFileSync(configPath, JSON.stringify(config));
     }
     const rules = join(tmp, "rules.md");
+    // Without --out the rules carry every procedure inline, which is what the screens judge.
     const composed = spawnSync(
       process.execPath,
-      [join(root, "compose.mjs"), "--config", configPath, "--out", rules],
-      { encoding: "utf8" },
+      [join(root, "compose.mjs"), "--config", configPath],
+      {
+        encoding: "utf8",
+      },
     );
     assert.equal(composed.status, 0, composed.stderr);
+    writeFileSync(rules, composed.stdout);
     const model = join(tmp, "model.mjs");
     writeFileSync(
       model,
