@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
-import { composeConfiguration, composeSections } from "../composition.mjs";
+import { composeConfiguration, composeSections, parseFragment } from "../composition.mjs";
 import { scratch } from "./fixture.mjs";
 
 const root = join(import.meta.dirname, "..");
@@ -211,4 +211,17 @@ test("core: is checked on a removes: fragment too", () => {
     () => composeSections(CORE, [frag({ removes: "Extra", core: "maybe" }, "")]),
     /core: must be true or false/,
   );
+});
+
+test("composeSections writes the references of a directly parsed shipped modifier inline, as compose does", () => {
+  const core = readFileSync(join(root, "rules/core.md"), "utf8");
+  const modifier = parseFragment(
+    readFileSync(join(root, "rules/modifiers/shared-host-load.md"), "utf8"),
+    "shared-host-load",
+  );
+  const text = composeSections(core, [modifier]).sections.find(
+    (s) => s.heading === "Shared machine load",
+  )?.text;
+  assert.ok(text?.includes("Start each job inside it"), "the procedure is inline");
+  assert.ok(!text?.includes("](../references/"), "no unresolved reference link");
 });

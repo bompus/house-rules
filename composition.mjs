@@ -257,7 +257,7 @@ function composeParts(coreText, fragments, referencesDirectory, candidates, core
  * @param {{ coreFirst?: boolean }} [options]
  */
 export function composeSections(coreText, fragments, { coreFirst = false } = {}) {
-  return composeParts(coreText, fragments, undefined, new Map(), coreFirst);
+  return composeParts(coreText, inlineReferences(fragments), undefined, new Map(), coreFirst);
 }
 
 /** @param {{ preamble: string, sections: { text: string }[] }} parts */
@@ -265,11 +265,11 @@ const joinParts = ({ preamble, sections }) =>
   [preamble, ...sections.map((s) => s.text)].filter(Boolean).join("\n\n") + "\n";
 
 /**
- * @param {string} coreText
+ * Fragments with each linked reference written inline, as the rules without a references directory read.
  * @param {Fragment[]} fragments
  */
-export function compose(coreText, fragments) {
-  const inline = fragments.map((fragment) => {
+function inlineReferences(fragments) {
+  return fragments.map((fragment) => {
     if (
       !("reference" in fragment.meta) ||
       !fragment.body.includes(`](${fragment.meta.reference})`)
@@ -294,6 +294,14 @@ export function compose(coreText, fragments) {
     renderReference(f, undefined);
     return f;
   });
+}
+
+/**
+ * @param {string} coreText
+ * @param {Fragment[]} fragments
+ */
+export function compose(coreText, fragments) {
+  const inline = inlineReferences(fragments);
   return joinParts(composeParts(coreText, inline, undefined, new Map()));
 }
 
