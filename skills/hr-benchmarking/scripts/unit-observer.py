@@ -4,13 +4,17 @@
 Run it beside a unit (a timed run, a phase) that executes inside one cgroup. It samples once a
 second until SIGTERM or SIGINT, takes one last sample at that moment, then writes one JSON summary
 to --output (and every sample to `<output>.samples.jsonl`) and exits 0 when the unit may count, 1
-when it may not. It writes `<output>.ready` after its first sample; start the unit after that.
+when it may not. It writes `<output>.ready` after its first sample; start the unit after that. A
+first sample that already fails writes no `.ready`: the observer exits 1 with the reasons in the
+summary.
 
-Limits are these defaults; a protocol that declares others applies its own. Host scope: available
+Limits are these defaults; a protocol that declares others applies its own, through --max-gap-s,
+--min-avail-gib, --mem-psi-ms, --io-psi-ms and --max-competing-cores. Host scope: available
 memory at least 8 GiB in every sample (unrounded); memory full PSI at most 10 ms and I/O full PSI
-at most 100 ms in any observation interval; coverage with no gap over 2.5 s (monotonic clock) and
-at least two samples; PSI must be readable. Competing CPU: the mean over the whole run of host
-busy cores minus the workload cgroup's own CPU (usage_usec, descendants included) is at most 4;
+at most 100 ms per observation interval (each measured interval is scaled to one second by its
+length, and none counts as shorter than half a second); coverage with no gap over 2.5 s (monotonic
+clock) and at least two samples; PSI must be readable. Competing CPU: the mean over the whole run of
+host busy cores minus the workload cgroup's own CPU (usage_usec, descendants included) is at most 4;
 with --host-only there is no workload to subtract, so the unit's own CPU counts. Workload scope
 (the cgroup given with --workload-cgroup, or `auto` for the observer's parent's cgroup): the same
 pressure limits on its own pressure files; in every sample no growth of memory.swap.current or
@@ -46,6 +50,12 @@ MAX_COMPETING_CORES = 4
 MIN_AVAIL_GIB = 8
 MEM_PSI_MS = 10
 IO_PSI_MS = 100
+# PSI limits are for one nominal observation interval of NOMINAL_INTERVAL_S seconds. Each measured
+# interval's stall is scaled to it by the interval's length, and an interval counts as at least
+# MIN_PSI_INTERVAL_S, so a stop right after a sample cannot turn a millisecond of stall into a
+# rejection.
+NOMINAL_INTERVAL_S = 1.0
+MIN_PSI_INTERVAL_S = 0.5
 PROC = "/proc"
 stop = threading.Event()
 
@@ -114,6 +124,11 @@ def own_cgroup(pid):
             path = line[3:]
     if path is None:
         raise OSError("no cgroup v2 path for the observer's parent")
+    if path.strip("/") == "":
+        raise OSError(
+            "the observer's parent is in the root cgroup, so `auto` would watch the whole host; "
+            "pass the workload cgroup's path"
+        )
     for root in ("/sys/fs/cgroup", "/sys/fs/cgroup/unified"):
         if os.path.exists(f"{root}/cgroup.controllers"):
             return root + path
@@ -182,6 +197,22 @@ def take(cg):
     }
 
 
+def first_sample_reasons(sample, cg):
+    """Reasons the first sample already fails, so a unit is not started that cannot count."""
+    reasons = []
+    if sample["mem_psi"] is None or sample["io_psi"] is None:
+        reasons.append("host pressure unreadable")
+    if sample["avail_gib"] < MIN_AVAIL_GIB:
+        reasons.append(f"available memory below {MIN_AVAIL_GIB:g} GiB")
+    if cg:
+        workload = sample["workload"]
+        if workload is None:
+            reasons.append("workload cgroup counters unreadable or the directory went missing")
+        elif workload["mem_psi"] is None or workload["io_psi"] is None:
+            reasons.append("workload pressure unreadable")
+    return reasons
+
+
 def judge(samples, cg, hz, args):
     """The reasons the unit may not count, and the figures behind them."""
     reasons = []
@@ -193,7 +224,7 @@ def judge(samples, cg, hz, args):
     total = samples[-1]["t"] - samples[0]["t"]
     out.update(window_s=round(total, 1), max_gap_s=round(max(gaps), 2))
     if min(gaps) <= 0 or max(gaps) > MAX_GAP_S:
-        reasons.append("sampling interval not positive or gap above 2.5 s")
+        reasons.append(f"sampling interval not positive or gap above {MAX_GAP_S:g} s")
         return reasons, out
     busy = [s["busy_ticks"] for s in samples]
     if any(b < a for a, b in zip(busy, busy[1:], strict=False)):
@@ -203,7 +234,7 @@ def judge(samples, cg, hz, args):
     min_avail = min(s["avail_gib"] for s in samples)
     out["avail_gib_min"] = round(min_avail, 3)
     if min_avail < MIN_AVAIL_GIB:
-        reasons.append("available memory below 8 GiB")
+        reasons.append(f"available memory below {MIN_AVAIL_GIB:g} GiB")
     reasons += pressure_reasons(
         [(s["mem_psi"], s["io_psi"]) for s in samples], gaps, out, "host", "host"
     )
@@ -222,7 +253,7 @@ def judge(samples, cg, hz, args):
     competing = host_cores - w_cores
     out["competing_cpu_cores_mean"] = round(competing, 2)
     if competing > MAX_COMPETING_CORES:
-        reasons.append("competing CPU above 4 cores")
+        reasons.append(f"competing CPU above {MAX_COMPETING_CORES:g} cores")
     return reasons, out
 
 
@@ -234,6 +265,9 @@ def pressure_reasons(pairs, gaps, out, label, key):
     io = [b[1] - a[1] for a, b in zip(pairs, pairs[1:], strict=False)]
     if min(mem + io) < 0:
         return [f"{label} pressure counter went backward"]
+    scale = [NOMINAL_INTERVAL_S / max(g, MIN_PSI_INTERVAL_S) for g in gaps]
+    mem = [d * k for d, k in zip(mem, scale, strict=True)]
+    io = [d * k for d, k in zip(io, scale, strict=True)]
     out[f"{key}_mem_full_psi_ms_max"] = round(max(mem) / 1000, 2)
     out[f"{key}_io_full_psi_ms_max"] = round(max(io) / 1000, 2)
     if max(mem) > MEM_PSI_MS * 1000 or max(io) > IO_PSI_MS * 1000:
@@ -265,7 +299,12 @@ def workload_reasons(w, gaps, total, out):
         reasons.append("workload memory.events high, max, oom or oom_kill changed")
     out["workload_zswap"] = "absent" if first["zswap"] is None else "present"
     currents = [x["memory_current"] for x in w]
+    if None in currents and any(c is not None for c in currents):
+        reasons.append("workload memory.current availability changed")
     out["workload_memory_current_peak_bytes"] = max(currents) if None not in currents else "unknown"
+    ios = [x["io_bytes"] for x in w]
+    if None in ios and any(i is not None for i in ios):
+        reasons.append("workload io.stat availability changed")
     io_first, io_last = first["io_bytes"], w[-1]["io_bytes"]
     out["workload_io_bytes_delta"] = (
         {k: io_last[k] - io_first[k] for k in io_first} if io_first and io_last else "unknown"
@@ -317,12 +356,17 @@ def write_summary(args, samples, reasons, out, status):
 
 
 def main():
-    global PROC
+    global PROC, MAX_GAP_S, MAX_COMPETING_CORES, MIN_AVAIL_GIB, MEM_PSI_MS, IO_PSI_MS
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--output", default=os.environ.get("OBSERVER_OUT"))
     ap.add_argument("--workload-cgroup", default=os.environ.get("WORKLOAD_CGROUP"))
     ap.add_argument("--host-only", action="store_true")
     ap.add_argument("--storage-phase", action="store_true")
+    ap.add_argument("--max-gap-s", type=float, default=MAX_GAP_S)
+    ap.add_argument("--min-avail-gib", type=float, default=MIN_AVAIL_GIB)
+    ap.add_argument("--mem-psi-ms", type=float, default=MEM_PSI_MS)
+    ap.add_argument("--io-psi-ms", type=float, default=IO_PSI_MS)
+    ap.add_argument("--max-competing-cores", type=float, default=MAX_COMPETING_CORES)
     ap.add_argument("--max-observer-cores", type=float, default=0.05)
     ap.add_argument("--max-observer-rss-mib", type=float, default=128)
     ap.add_argument("--proc-root", default="/proc", help="for tests: where /proc/stat etc. live")
@@ -330,6 +374,9 @@ def main():
     if not args.output:
         ap.error("--output or OBSERVER_OUT is required")
     PROC = args.proc_root
+    MAX_GAP_S, MIN_AVAIL_GIB = args.max_gap_s, args.min_avail_gib
+    MEM_PSI_MS, IO_PSI_MS = args.mem_psi_ms, args.io_psi_ms
+    MAX_COMPETING_CORES = args.max_competing_cores
     for stale in (args.output, args.output + ".ready", args.output + ".samples.jsonl"):
         if os.path.exists(stale):
             os.remove(stale)
@@ -345,20 +392,31 @@ def main():
         if args.workload_cgroup:
             cg = args.workload_cgroup.rstrip("/")
             if cg == "auto":
-                cg = own_cgroup(os.getppid())
+                parent = os.getppid()
+                if parent == 1:
+                    raise OSError(
+                        "`auto` needs a parent inside the workload cgroup, but the parent is pid 1 "
+                        "(a double fork or a service started outside the unit); pass the path"
+                    )
+                cg = own_cgroup(parent)
             if not cg or not os.path.isdir(cg):
                 raise OSError(f"the workload cgroup is not a directory: {cg!r}")
             out.update(scope="workload-cgroup", workload_cgroup=cg)
         elif not args.host_only:
             reasons.append("no workload cgroup given")
         samples.append(take(cg))
-        open(args.output + ".ready", "w").close()
-        while not stop.wait(1.0):
-            samples.append(take(cg))
-        samples.append(take(cg))  # the boundary at the stop, so the unit's tail is covered
-        judged, figures = judge(samples, cg, hz, args)
-        reasons += judged
-        out.update(figures)
+        doomed = first_sample_reasons(samples[0], cg)
+        if doomed:
+            # No .ready: the driver must not start a unit this run cannot count.
+            reasons += doomed
+        else:
+            open(args.output + ".ready", "w").close()
+            while not stop.wait(1.0):
+                samples.append(take(cg))
+            samples.append(take(cg))  # the boundary at the stop, so the unit's tail is covered
+            judged, figures = judge(samples, cg, hz, args)
+            reasons += judged
+            out.update(figures)
     except (OSError, ValueError, KeyError, IndexError) as error:
         status = "failed"
         reasons.append(f"observer error: {type(error).__name__}: {error}")

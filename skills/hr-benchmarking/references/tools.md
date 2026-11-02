@@ -120,16 +120,21 @@ systemd-run --user --scope -p MemoryMax=2G bash -c '
 
 It samples once a second, takes one more sample the moment it is stopped, and writes every sample to
 `<output>.samples.jsonl`. It rejects: available memory under 8 GiB; host or workload memory or I/O
-full PSI over 10 ms or 100 ms in an observation interval (unreadable PSI also rejects); a gap over
+full PSI over 10 ms or 100 ms per observation interval (unreadable PSI also rejects; each measured
+interval is scaled to a nominal second by its length, and none counts as shorter than half a second);
+a gap over
 2.5 s, a non-positive interval or fewer than two samples; competing CPU, the mean over the run of
 host busy cores minus the workload cgroup's own CPU, over 4 (`--host-only` has no workload to
 subtract, so the unit's own CPU counts); and, comparing every sample with the first, growth of
 `memory.swap.current` or `memory.zswap.current`, any change of `zswpin`, `zswpout`, `zswpwb` or of
-`memory.events` high, max, oom or oom_kill, a replaced directory, a counter that goes backward, an
-unreadable required counter or a changed set of optional counters.
+`memory.events` high, max, oom or oom_kill, a replaced directory, an unreadable required counter, a
+changed set of optional counters, or a `memory.current` or `io.stat` that was readable and is not. A
+host or workload CPU counter or a PSI total that goes backward also rejects. If the first sample
+already fails (unreadable PSI, available memory under the floor, an unreadable workload counter) the
+observer writes no `<output>.ready`, exits 1 and the summary says why, so the unit is not started.
 
 Host-wide swap-out and zswap activity is recorded per interval and rejects only with
-`--storage-phase`. Observer cost (CPU, resident peak, output bytes) is recorded and checked against
+`--storage-phase`. Observer cost (CPU, resident peak, and the size of the samples file) is recorded and checked against
 `--max-observer-cores` (default 0.05) and `--max-observer-rss-mib` (default 128); a protocol declares
 its own. The workload's `memory.current` peak and `io.stat` byte deltas are recorded for attribution;
 a counter the kernel does not provide is `unknown`.
@@ -138,7 +143,12 @@ A clean summary does not qualify a run by itself. The protocol still declares th
 stop rules and retries beforehand, and keeps every receipt; the cost of the observer is part of the
 unit's CPU, so report it beside the results and make no negligible-impact claim from a clean summary.
 A unit that spans several transient scopes (one per child) has no single cgroup to watch; put the
-whole phase in one scope. `auto` reads the observer's parent's cgroup on a unified cgroup v2 mount.
+whole phase in one scope. `auto` reads the observer's parent's cgroup on a unified cgroup v2 mount, so
+it needs the observer to be a direct child of a process inside the workload cgroup (the unit's shell,
+as above); when the parent is pid 1 or in the root cgroup it refuses and the summary says so, and
+otherwise you pass the path. Per-interval host CPU is not recorded as a figure; derive it from
+`<output>.samples.jsonl`: the difference of `busy_ticks` between samples, over the clock ticks per second
+and the interval.
 
 ## Scheduling controls
 

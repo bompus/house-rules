@@ -65,13 +65,17 @@ function fakeWorld(root) {
  * Runs the observer on the fake world, applies the timed `steps` (ms after the ready marker), then sends
  * SIGTERM `stopAfter` ms after the ready marker, and returns its exit code, summary and kill time.
  * @param {string[]} args extra observer arguments, `{cg}` standing for the fake cgroup directory
- * @param {{ steps?: Step[], stopAfter?: number, hostCores?: number }} [options]
+ * @param {{ steps?: Step[], stopAfter?: number, hostCores?: number, setup?: (f: Fake) => void }} [options]
  * @returns {Promise<Result>}
  */
-async function observe(args, { steps = [], stopAfter = 2800, hostCores = 0 } = {}) {
+async function observe(
+  args,
+  { steps = [], stopAfter = 2800, hostCores = 0, setup = () => {} } = {},
+) {
   const root = mkdtempSync(join(tmpdir(), "unit-observer-"));
   try {
     const world = fakeWorld(root);
+    setup(world);
     const output = join(root, "out.json");
     const argv = args.map((a) => a.replace("{cg}", world.dir));
     const child = spawn(
@@ -123,7 +127,9 @@ test(
 
 test("SIGTERM takes a last sample at once, so the unit's tail is covered", opts, async () => {
   const r = await observe(["--workload-cgroup", "{cg}"], { stopAfter: 1500 });
-  assert.ok(Math.abs(r.summary.last_sample * 1000 - r.killedAt) < 700);
+  // The periodic samples are a second apart and the kill comes half-way between two, so only a sample
+  // taken at the stop itself can be this close to it.
+  assert.ok(Math.abs(r.summary.last_sample * 1000 - r.killedAt) < 250);
 });
 
 test(
@@ -366,3 +372,313 @@ test("observer CPU budget uses the CPU between the first and last sample", { ski
   const busy = budgetReasons(0.5, 0.4, 0.5, 0.15);
   assert.ok(busy.reasons.includes("observer CPU over budget"));
 });
+
+test(
+  "the admission limits are flags, and the defaults are unchanged without them",
+  opts,
+  async () => {
+    // 8 busy cores with an idle workload fail the default competing-CPU limit of 4 ...
+    let r = await observe(["--workload-cgroup", "{cg}"], { hostCores: 8 });
+    assert.ok(reason(r, /competing CPU above 4/), String(r.summary.reasons));
+    // ... and pass a protocol's own larger limit.
+    r = await observe(["--workload-cgroup", "{cg}", "--max-competing-cores", "9"], {
+      hostCores: 8,
+    });
+    assert.ok(!reason(r, /competing CPU/), String(r.summary.reasons));
+    // The fake host has 100000000 kB (about 95 GiB) available: a higher floor rejects the first sample.
+    const low = await observeToExit(
+      ["--workload-cgroup", "{cg}", "--min-avail-gib", "200"],
+      () => {},
+    );
+    assert.ok(
+      low.summary?.reasons.some((/** @type {string} */ x) =>
+        x.includes("available memory below 200"),
+      ),
+      String(low.summary?.reasons),
+    );
+    // Busy pressure fails the default 10 ms limit and passes a looser one.
+    r = await observe(["--workload-cgroup", "{cg}", "--mem-psi-ms", "100000"], {
+      steps: [[300, (f) => edit(f, "memory.pressure", BUSY)]],
+    });
+    assert.ok(!reason(r, /workload pressure above/), String(r.summary.reasons));
+  },
+);
+
+/**
+ * Runs the observer's `judge` on synthetic host samples, as [monotonic seconds, memory PSI µs, I/O PSI µs].
+ * @param {[number, number, number][]} rows
+ * @returns {{ reasons: string[], out: Record<string, number> }}
+ */
+function judgeRows(rows) {
+  const script = `
+import importlib.util, json, sys
+spec = importlib.util.spec_from_file_location("observer", ${JSON.stringify(observer)})
+m = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(m)
+class Args:
+    storage_phase = False
+rows = json.loads(sys.stdin.read())
+samples = [{"t": t, "wall": t, "cpu": 0.0, "busy_ticks": 0, "mem_psi": mem, "io_psi": io,
+            "avail_gib": 64.0, "vm": {}, "workload": None} for t, mem, io in rows]
+reasons, out = m.judge(samples, None, 100.0, Args)
+print(json.dumps({"reasons": reasons, "out": out}))
+`;
+  const run = spawnSync("python3", ["-c", script], {
+    input: JSON.stringify(rows),
+    encoding: "utf8",
+  });
+  assert.equal(run.status, 0, run.stderr);
+  return JSON.parse(run.stdout);
+}
+const stalled = (/** @type {string[]} */ reasons) =>
+  reasons.some((x) => x.includes("pressure above"));
+
+test(
+  "PSI is judged per nominal one-second interval: a short final interval is scaled up, a long gap down",
+  { skip },
+  () => {
+    // 92 ms of I/O stall in a 0.43 s final interval is 214 ms per second: over the 100 ms limit.
+    assert.ok(
+      stalled(
+        judgeRows([
+          [0, 0, 0],
+          [1, 0, 0],
+          [1.43, 0, 92000],
+        ]).reasons,
+      ),
+    );
+    // 150 ms spread over a 2.4 s gap is 62 ms per second: within it.
+    assert.ok(
+      !stalled(
+        judgeRows([
+          [0, 0, 0],
+          [1, 0, 0],
+          [3.4, 0, 150000],
+        ]).reasons,
+      ),
+    );
+    // The same 150 ms in a normal one-second interval is over it, as before.
+    assert.ok(
+      stalled(
+        judgeRows([
+          [0, 0, 0],
+          [1, 0, 0],
+          [2, 0, 150000],
+        ]).reasons,
+      ),
+    );
+    // An interval is never counted as shorter than half a second, so a stop right after a sample
+    // cannot turn a millisecond of stall into a rejection.
+    assert.ok(
+      !stalled(
+        judgeRows([
+          [0, 0, 0],
+          [1, 0, 0],
+          [1.001, 0, 1000],
+        ]).reasons,
+      ),
+    );
+    // The figure recorded is the same per-second rate.
+    assert.equal(
+      judgeRows([
+        [0, 0, 0],
+        [1, 0, 0],
+        [1.5, 0, 40000],
+      ]).out.host_io_full_psi_ms_max,
+      80,
+    );
+  },
+);
+
+test("a gap over the sampling limit rejects the unit", { skip }, () => {
+  const { reasons } = judgeRows([
+    [0, 0, 0],
+    [1, 0, 0],
+    [3.6, 0, 0],
+  ]);
+  assert.ok(
+    reasons.some((x) => /gap above 2.5 s/.test(x)),
+    String(reasons),
+  );
+});
+
+/**
+ * Runs the observer until it exits by itself, on a fake world changed first by `mutate`.
+ * @param {string[]} args
+ * @param {(f: Fake) => void} mutate
+ */
+async function observeToExit(args, mutate) {
+  const root = mkdtempSync(join(tmpdir(), "unit-observer-"));
+  try {
+    const world = fakeWorld(root);
+    mutate(world);
+    const output = join(root, "out.json");
+    const argv = args.map((a) => a.replace("{cg}", world.dir));
+    const child = spawn(
+      "python3",
+      [observer, "--output", output, "--proc-root", world.proc, ...argv],
+      { stdio: "ignore" },
+    );
+    /** @type {Promise<number | string | null>} */
+    const done = new Promise((resolve) => child.on("exit", resolve));
+    const timer = setTimeout(() => child.kill("SIGKILL"), 4000);
+    const code = await done;
+    clearTimeout(timer);
+    return {
+      code,
+      ready: existsSync(`${output}.ready`),
+      summary: existsSync(output) ? JSON.parse(readFileSync(output, "utf8")) : null,
+    };
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+}
+
+test(
+  "a first sample that already fails writes no .ready marker and ends the run",
+  opts,
+  async () => {
+    /** @type {[string, (f: Fake) => void, RegExp][]} */
+    const cases = [
+      [
+        "unreadable host PSI",
+        (f) => rmSync(join(f.proc, "pressure", "memory")),
+        /pressure unreadable/,
+      ],
+      [
+        "available memory under the floor",
+        (f) => writeFileSync(join(f.proc, "meminfo"), "MemAvailable:   1000 kB\n"),
+        /available memory below/,
+      ],
+      [
+        "a missing workload swap counter",
+        (f) => rmSync(join(f.dir, "memory.swap.current")),
+        /workload cgroup counters unreadable/,
+      ],
+    ];
+    for (const [name, mutate, expected] of cases) {
+      const r = await observeToExit(["--workload-cgroup", "{cg}"], mutate);
+      assert.equal(r.code, 1, name);
+      assert.equal(r.ready, false, `${name}: .ready was written`);
+      assert.ok(
+        r.summary?.reasons.some((/** @type {string} */ x) => expected.test(x)),
+        `${name}: ${r.summary?.reasons}`,
+      );
+    }
+  },
+);
+
+test(
+  "a counter that disappears mid-run rejects the unit, and one never provided stays unknown",
+  opts,
+  async () => {
+    let r = await observe(["--workload-cgroup", "{cg}"], {
+      steps: [[300, (f) => rmSync(join(f.dir, "memory.current"))]],
+    });
+    assert.ok(reason(r, /memory\.current availability changed/), String(r.summary.reasons));
+    r = await observe(["--workload-cgroup", "{cg}"], {
+      steps: [[300, (f) => rmSync(join(f.dir, "io.stat"))]],
+    });
+    assert.ok(reason(r, /io\.stat availability changed/), String(r.summary.reasons));
+    r = await observe(["--workload-cgroup", "{cg}"], {
+      setup: (f) => {
+        rmSync(join(f.dir, "memory.current"));
+        rmSync(join(f.dir, "io.stat"));
+      },
+    });
+    assert.equal(r.code, 0, String(r.summary.reasons));
+    assert.equal(r.summary.workload_memory_current_peak_bytes, "unknown");
+    assert.equal(r.summary.workload_io_bytes_delta, "unknown");
+  },
+);
+
+/**
+ * Runs the observer's main() with `--workload-cgroup auto` after `patch` (Python run in the module's
+ * namespace as `m`), and returns its summary.
+ * @param {string} patch
+ */
+function runAuto(patch) {
+  const root = mkdtempSync(join(tmpdir(), "unit-observer-"));
+  try {
+    const world = fakeWorld(root);
+    const output = join(root, "out.json");
+    const script = `
+import importlib.util, os, sys
+spec = importlib.util.spec_from_file_location("observer", ${JSON.stringify(observer)})
+m = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(m)
+${patch}
+sys.argv = ["unit-observer.py", "--workload-cgroup", "auto", "--output", ${JSON.stringify(output)},
+            "--proc-root", ${JSON.stringify(world.proc)}]
+try:
+    m.main()
+except SystemExit:
+    pass
+`;
+    const run = spawnSync("python3", ["-c", script], { encoding: "utf8", timeout: 4000 });
+    assert.equal(run.status, 0, run.stderr);
+    return {
+      ready: existsSync(`${output}.ready`),
+      summary: JSON.parse(readFileSync(output, "utf8")),
+    };
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+}
+
+test(
+  "--workload-cgroup auto fails closed when the parent is outside any workload cgroup",
+  { skip },
+  () => {
+    // A parent that is pid 1 (a double fork, a service started without --scope) is not the unit's shell.
+    let r = runAuto("os.getppid = lambda: 1");
+    assert.equal(r.ready, false);
+    assert.equal(r.summary.observer, "failed");
+    assert.equal(r.summary.clean, false);
+    assert.ok(
+      r.summary.reasons.some((/** @type {string} */ x) => x.includes("parent is pid 1")),
+      String(r.summary.reasons),
+    );
+    // A parent in the root cgroup would make the whole host the workload.
+    r = runAuto('orig = m.read\nm.read = lambda p: ["0::/"] if p.endswith("/cgroup") else orig(p)');
+    assert.equal(r.ready, false);
+    assert.equal(r.summary.observer, "failed");
+    assert.ok(
+      r.summary.reasons.some((/** @type {string} */ x) => x.includes("root cgroup")),
+      String(r.summary.reasons),
+    );
+  },
+);
+
+test(
+  "--workload-cgroup auto still resolves the cgroup of a parent inside one",
+  { skip },
+  async () => {
+    const own = readFileSync("/proc/self/cgroup", "utf8")
+      .split("\n")
+      .find((line) => line.startsWith("0::"));
+    // A container without its own cgroup namespace view reports "/" and cannot show the documented case.
+    if (own === undefined || own === "0::/" || !existsSync("/sys/fs/cgroup/cgroup.controllers")) {
+      return;
+    }
+    const root = mkdtempSync(join(tmpdir(), "unit-observer-"));
+    try {
+      const world = fakeWorld(root);
+      const output = join(root, "out.json");
+      // The observer is a background child of a shell, as the reference documents.
+      const shell = spawn(
+        "bash",
+        [
+          "-c",
+          `python3 ${observer} --workload-cgroup auto --output ${output} --proc-root ${world.proc} & pid=$!; sleep 1.5; kill -TERM $pid; wait $pid`,
+        ],
+        { stdio: "ignore" },
+      );
+      await new Promise((resolve) => shell.on("exit", resolve));
+      const summary = JSON.parse(readFileSync(output, "utf8"));
+      assert.equal(summary.workload_cgroup, `/sys/fs/cgroup${own.slice(3)}`);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  },
+);
