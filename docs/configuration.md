@@ -248,7 +248,8 @@ of selected skills; enabling reference output does not enable the modifier.
 
 To see how large each part of the output is, run `house-rules --config <path> --sizes`
 (`bun compose.mjs --config <path> --sizes` in a checkout). It writes nothing and prints one
-tab-separated line per part, in output order: bytes, kind and name. The kinds are `preamble`, `section`
+tab-separated line per part, in output order: bytes, kind and name (the name is everything after the
+second tab, so a heading that itself contains a tab stays readable). The kinds are `preamble`, `section`
 (by heading), `reference` (a reference file, not the `manifest.json` beside them) and `total` (the whole
 rules file). The numbers are those of a run with `--out` and the default references directory, so a
 section that exports a procedure counts only its pointer. `--sizes` cannot be combined with `--out`,
