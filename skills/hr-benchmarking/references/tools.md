@@ -246,7 +246,7 @@ For a concrete crash, hang or event-tracing question, use the available
 [system tracing tool](https://bpftrace.org/docs). They are optional diagnostic
 tools, not benchmark prerequisites; platform and permissions affect availability.
 
-For TypeScript compiler versus application timing, and for Bun-versus-Node pitfalls, read [the language reference](javascript.md).
+For hunting JavaScript or TypeScript performance problems (what to count and check first), for TypeScript compiler versus application timing, and for Bun-versus-Node pitfalls, read [the language reference](javascript.md).
 
 ### Off-CPU tracing under WSL2
 
