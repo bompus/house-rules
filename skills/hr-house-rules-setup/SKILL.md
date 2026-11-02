@@ -50,22 +50,23 @@ For an agent running without a terminal, use the preview/apply workflow below.
    unrelated settings and exclusions.
 
    Ask how they want questions asked, in these words, unless the config
-   already records a choice they confirm: **Model default** (your model and host
-   ask their usual way; house-rules gives no instruction), **Text only** (plain
-   text options; no question tools are called), or **Clickable choices when
-   available** (complete text options plus a question card). Recommend Model
-   default unless they say otherwise. Before they choose, give each choice's cost
-   from the "What each question choice costs" section of `docs/configuration.md`
-   in one sentence: Text only hides questions from hosts that show pending ones;
-   cards can be cancelled by a steering message and may hide text written before
-   them; Model default varies by host. Map the answers to `--questions default`,
-   `plain` (or `coded`) and `cards`.
+   already records a choice they confirm: **House default** (the core rules let
+   your host's question tool be used, with a complete text offer), **Model
+   default** (your model and host ask their usual way; house-rules gives no
+   instruction), **Text only** (plain text options; no question tools are
+   called), or **Clickable choices when available** (complete text options plus a
+   question card). Recommend House default unless they say otherwise. Before they
+   choose, give each choice's cost from the "What each question choice costs"
+   section of `docs/configuration.md` in one sentence: Text only hides questions
+   from hosts that show pending ones; cards can be cancelled by a steering message
+   and may hide text written before them; Model default varies by host. Map the
+   answers to `--questions core`, `default`, `plain` (or `coded`) and `cards`.
 
    For Text only, ask a separate yes/no: "Use short
    reply codes like 1a, so one reply can answer several questions?" Yes is
    `coded`, no is `plain`. Explain that host, provider and model behavior varies;
    card availability and presentation are unverified until checked. Text only
-   prohibits card tools; Model default adds no instruction either way. If
+   prohibits card tools; House default and Model default do not. If
    personal rules still steer how questions are asked, resolve that conflict
    before changing those rules or composing. Call modifiers "optional rules"
    and the user's layer "your own rules" when talking to them.

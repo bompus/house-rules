@@ -27,8 +27,10 @@ Before sending a message to another agent session that may be waiting on the
 user, check whether your host's send can steer a running turn and cancel that
 wait: on some hosts a steer cancels a pending question card (T3 Code, measured;
 pingdotgg/t3code#26841 reports approvals too). Where the host separates steering from queueing, queue
-the message so it waits for the answer. A report that cannot wait, such as a
-security or production risk, goes anyway: say in the message that it may cancel
-the wait, and tell the user what it cancelled. A session whose run ended with a
-question still pending may be idle, so a queued send can start a run: check that
-first, and hold a message that can wait until the question is answered.
+the message. Where the card blocks the run, a queued message waits for the
+answer. Where the run ends with the question still pending, a queued message
+starts a run before the answer, so hold a message that can wait until the
+question is answered; when you cannot tell which kind of host it is, keep the
+message and say so. A report that cannot wait, such as a security or production
+risk, goes anyway: say in the message that it may cancel the wait, and tell the
+user what it cancelled.

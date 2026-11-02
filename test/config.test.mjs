@@ -396,6 +396,7 @@ test("question presets keep unrelated selections and resolve to composed offer r
   ]) {
     const { path } = fixture(t, { modifiers: start });
     for (const [questions, enabled] of /** @type {[string, string[]][]} */ ([
+      ["core", []],
       ["default", ["model-default-questions"]],
       ["plain", ["text-only-questions"]],
       ["coded", ["coded-offers"]],
@@ -426,7 +427,7 @@ test("question presets keep unrelated selections and resolve to composed offer r
 test("with no question modifier the core rules let the host's question tool be used", (t) => {
   const { path } = fixture(t, { modifiers: ["shared-host-load"] });
   const out = report(path);
-  assert.equal(out.questions, "default");
+  assert.equal(out.questions, "core");
   /** @param {string} text */
   const offers = (text) => text.split("## Offers")[1]?.split(/\n## /)[0] ?? "";
   const section = offers(out.composedRules);

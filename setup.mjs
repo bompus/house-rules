@@ -23,7 +23,7 @@ const HELP = `Choose guidance with numbered prompts:
   house-rules setup [--config PATH] --json
 
 toggle N [N ...] or toggle NAME changes the listed choices.
-questions default|plain|coded|cards chooses how questions are asked.
+questions core|default|plain|coded|cards chooses how questions are asked.
 search TEXT, clear search, show selected, show all, help N
 next, back, save (on Review), refresh (after a stale revision), cancel
 
@@ -280,7 +280,7 @@ export async function setupCommand(argv) {
       );
     }
     print(
-      `Question format: ${questions ?? baseline.questions}. Use questions default|plain|coded|cards.`,
+      `Question format: ${questions ?? baseline.questions}. Use questions core|default|plain|coded|cards.`,
     );
     const kind = stage === 0 ? "modifier" : "skill";
     // With nothing selected yet, the selected-only view would be empty, so list every choice.
@@ -375,7 +375,7 @@ export async function setupCommand(argv) {
         } else if (command.startsWith("questions ")) {
           const preset = command.slice(10);
           if (!QUESTION_PRESETS.includes(preset)) {
-            throw new Error("Choose questions default|plain|coded|cards.");
+            throw new Error("Choose questions core|default|plain|coded|cards.");
           }
           questions = preset;
         } else if (command.startsWith("toggle ") || command.startsWith("help ")) {

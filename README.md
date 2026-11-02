@@ -263,9 +263,10 @@ in name order, after the modifiers.
 | `upstream-contributions`                                                                                                                                 | A measured optimization, fix or defect found in a third-party project is offered for submission to that project through its own contribution route.                                                                                                                                                                                                |
 | `web-image-formats`                                                                                                                                      | Prefer WebP for web raster images when it saves bytes at acceptable quality, with format exceptions and delivered-file checks.                                                                                                                                                                                                                     |
 
-By default house-rules says nothing against your host's own question tool: the
-host and model ask the way they normally do, and every decision still gets a
-complete text offer. Setup asks how you want questions asked:
+By default house-rules does not forbid your host's own question tool: the core
+rules let it be used, with the whole decision in the card, and every decision
+still gets a complete text offer. `--questions core` returns to this state from
+any other choice. Setup asks how you want questions asked:
 
 - **Model default**: house-rules gives no instruction, so your model and host ask
   their usual way (`model-default-questions`).

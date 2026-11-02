@@ -19,7 +19,7 @@ or `toggle NAME`, with several choices separated by spaces. `search TEXT`,
 Excluding a skill name excludes its personal override as well as the shipped
 copy. Exclusions without a current source remain in the configuration.
 
-Use `questions default|plain|coded|cards` for question preferences; these modifiers
+Use `questions core|default|plain|coded|cards` for question preferences; these modifiers
 are handled together rather than as individual toggles. `next` moves from
 modifiers to skills, then review. `back` keeps the draft. Only `save` on review
 writes configuration. Before a save attempt, `cancel`, end of input or Ctrl-C
@@ -102,22 +102,24 @@ not add a shipped name. Disabling adds an exclusion, retaining the include list,
 unrelated exclusions and custom settings. Configs without an include list keep
 their existing selection behavior.
 
-| Question preset       | What you get                      | Enabled offer modifiers             |
-| --------------------- | --------------------------------- | ----------------------------------- |
-| `--questions default` | Model default                     | `model-default-questions`           |
-| `--questions plain`   | Text only                         | `text-only-questions`               |
-| `--questions coded`   | Text only, with short reply codes | `coded-offers`                      |
-| `--questions cards`   | Clickable choices when available  | `coded-offers` and `question-cards` |
+| Question preset       | What you get                               | Enabled offer modifiers             |
+| --------------------- | ------------------------------------------ | ----------------------------------- |
+| `--questions core`    | House default: the core rules' own wording | none                                |
+| `--questions default` | Model default                              | `model-default-questions`           |
+| `--questions plain`   | Text only                                  | `text-only-questions`               |
+| `--questions coded`   | Text only, with short reply codes          | `coded-offers`                      |
+| `--questions cards`   | Clickable choices when available           | `coded-offers` and `question-cards` |
 
-`default` adds no instruction about how to ask: the model and host ask
-questions their usual way, which on some hosts means clickable choices and on
-others plain text. Core rules, with no question modifier, also let the host's
-question tool be used, but they keep the step-by-step text offer that `default`
-drops, so `default` changes the composed rules. Setup reports both as
-"default". Text only is an explicit choice, so a config that has none of these
-modifiers no longer means text only; to return from a preset to none, disable its
-modifier with `--disable-modifier`. `default` and `plain` cannot combine with each
-other, `coded-offers` or `question-cards`.
+`core` is the state of a config with no question modifier, and the way back to it
+from any other preset: it removes all four question modifiers. The core rules let
+the host's question tool be used, with the whole decision in the card and the
+step-by-step text offer complete. `default` adds no instruction about how to ask:
+the model and host ask questions their usual way, which on some hosts means
+clickable choices and on others plain text, and it drops the core rules' text
+offer format, so it changes the composed rules. Text only is an explicit choice,
+so a config that has none of these modifiers no longer means text only.
+`default` and `plain` cannot combine with each other, `coded-offers` or
+`question-cards`.
 
 Question presets preserve other modifiers. Choose a preset or explicit offer
 modifier toggles, rather than combining both in one command. Cards still depend

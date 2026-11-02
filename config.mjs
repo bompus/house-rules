@@ -72,7 +72,7 @@ function stringList(value, key) {
   }
 }
 
-export const QUESTION_PRESETS = ["default", "plain", "coded", "cards"];
+export const QUESTION_PRESETS = ["core", "default", "plain", "coded", "cards"];
 export const QUESTION_MODIFIERS = [
   "model-default-questions",
   "text-only-questions",
@@ -233,7 +233,7 @@ export function selectionReport(config, path) {
           ? "coded"
           : selected.has("text-only-questions")
             ? "plain"
-            : "default",
+            : "core",
     warnings: result.warnings,
     composedRules: result.rules,
     hostLoading: "unverified",
@@ -302,27 +302,34 @@ export function changeSelection(config, options, path) {
   }
   if (options.questions !== undefined) {
     if (!QUESTION_PRESETS.includes(options.questions)) {
-      throw new Error("--questions must be default, plain, coded or cards");
+      throw new Error("--questions must be core, default, plain, coded or cards");
     }
-    if (options.questions === "plain" || options.questions === "default") {
-      modifiers.delete("coded-offers");
+    if (options.questions === "core") {
+      // No question modifier: the core rules' own wording applies.
+      for (const name of QUESTION_MODIFIERS) {
+        modifiers.delete(name);
+      }
     } else {
-      modifiers.add("coded-offers");
-    }
-    if (options.questions === "plain") {
-      modifiers.add("text-only-questions");
-    } else {
-      modifiers.delete("text-only-questions");
-    }
-    if (options.questions === "cards") {
-      modifiers.add("question-cards");
-    } else {
-      modifiers.delete("question-cards");
-    }
-    if (options.questions === "default") {
-      modifiers.add("model-default-questions");
-    } else {
-      modifiers.delete("model-default-questions");
+      if (options.questions === "plain" || options.questions === "default") {
+        modifiers.delete("coded-offers");
+      } else {
+        modifiers.add("coded-offers");
+      }
+      if (options.questions === "plain") {
+        modifiers.add("text-only-questions");
+      } else {
+        modifiers.delete("text-only-questions");
+      }
+      if (options.questions === "cards") {
+        modifiers.add("question-cards");
+      } else {
+        modifiers.delete("question-cards");
+      }
+      if (options.questions === "default") {
+        modifiers.add("model-default-questions");
+      } else {
+        modifiers.delete("model-default-questions");
+      }
     }
   }
   if (JSON.stringify([...modifiers]) !== JSON.stringify(next.modifiers ?? [])) {
