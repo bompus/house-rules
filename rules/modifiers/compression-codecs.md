@@ -7,6 +7,9 @@ reference: ../references/compression-codecs.md
 ## Compression codecs
 
 When you choose how to compress data a project writes itself, prefer zstd, then brotli,
-then gzip: the first that every writer and reader supports. Negotiate browser responses
-by `Accept-Encoding`. Before choosing levels, choosing between codecs or changing a
-working one, read [the compression reference](../references/compression-codecs.md).
+then gzip: the first that every writer and reader supports. A preference does not add a
+codec to a runtime; check its version and API before relying on one. Negotiate browser
+responses by `Accept-Encoding`, keep gzip where another tool must read the file, and
+treat converting existing data as outside the task unless asked. Before choosing levels,
+choosing between codecs or changing a working one, read
+[the compression reference](../references/compression-codecs.md).

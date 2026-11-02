@@ -312,14 +312,18 @@ Keep small or tightly coupled tasks local. Use subagents for bounded investigati
 ## Implementation economy
 
 Reuse first (existing code, the standard library, installed dependencies, supported
-extension points) and pick the simplest solution that meets the requirements, never at
-the cost of security, validation or stated requirements. Replace rather than wrap: update
-every caller, delete what the change leaves unused, keep no silent fallback path, and
-when you cannot tell whether something still has a user, ask. Check current official
-documentation when behavior depends on a version, and read the release notes for every version in
-between before landing a dependency or toolchain upgrade. Before adding a dependency,
-script, hook or skill, writing React effects or tests, or fixing a repeated mistake, read
-[the implementation procedure](references/implementation-economy.md).
+extension points) and pick the simplest solution that meets the requirements, with no
+speculative abstraction, never at the cost of security, validation or stated
+requirements. Replace rather than wrap: when nothing outside the change depends on the
+old shape (no released interface, stored data or outside caller), update every caller,
+keep no compatibility path, delete what the change leaves unused and list it in the
+report; keep no silent fallback, and when you cannot tell whether something still has a
+user, ask. Stay compatible with the versions in use and make no blind upgrades: check
+current official documentation when behavior depends on a version, and read the release
+notes for every version in between before landing a dependency or toolchain upgrade. A
+script's second run changes nothing and repeats no external action. Before adding a
+dependency, script, hook or skill, writing React effects or tests, or fixing a repeated
+mistake, read [the implementation procedure](references/implementation-economy.md).
 
 ## Durable notes
 
@@ -359,9 +363,11 @@ an issue, pull request, comment or commit the user's audience would see.
 ## Writing
 
 Docs, rules, skills and code comments describe current behavior; version history belongs
-in changelogs and git history. Text a person will read uses plain, specific language, and
-names a thing by what it is, not by a label you coined. Before settling a public name
-(project, repository, package, command, MCP server), search the registries it could
-publish to and GitHub, report exact and near matches, and let the user pick. Before
-writing text others will read or linking guidance, read
-[the writing procedure](references/writing.md).
+in changelogs, findings ledgers, receipts and git history, unless the user asks for it
+elsewhere. Text a person will read uses plain, specific language: name a thing by what it
+is, not by a label you coined, and say again what a coined label means. Before settling a
+public name (project, repository, package, command, MCP server), search the registries it
+could publish to, GitHub and, for an MCP server, the MCP registries; report exact and
+near matches and let the user pick. Link repository guidance by local file, and verify the
+reference resolves after installation and in worktrees. Before writing text others will
+read or linking guidance, read [the writing procedure](references/writing.md).

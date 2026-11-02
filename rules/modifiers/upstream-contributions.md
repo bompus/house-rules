@@ -7,8 +7,12 @@ reference: ../references/upstream-contributions.md
 
 ## Upstream contributions
 
-When work on a third-party project produces a reproduced or measured finding worth a
-maintainer's time, offer to submit it to that project through its own contribution
-route. Show the user the exact text and channel once before posting: posting is public
-and cannot be undone. Before offering or preparing a submission, read
-[the upstream-contribution procedure](../references/upstream-contributions.md).
+When work on a third-party project produces a reproduced or measured finding that
+matches a kind of change its contribution guide or open issues invite, offer to submit
+it under § Offers as soon as the evidence is complete, naming the channel and scope.
+Show the user the exact text and channel once before posting: posting is public and
+cannot be undone, and only a user instruction naming the kind of submission and the
+projects removes that look. A behavior change, or a project that asks for prior
+approval, starts with a comment or discussion, not a pull request. Use a measured
+figure only when it clears the `hr-benchmarking` bar. Before preparing a submission,
+read [the upstream-contribution procedure](../references/upstream-contributions.md).
