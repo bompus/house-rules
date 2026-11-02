@@ -45,7 +45,7 @@ counts as `v1` and is renamed at the handoff.
    leading zeros.
 
 A title is a label for people. Never look a thread up by its title. Use the
-registry row, the project and the thread id.
+thread record, the project and the thread id.
 
 ## What the handoff records
 
@@ -58,11 +58,11 @@ registry row, the project and the thread id.
   deferred or superseded since the handoff was written authorizes nothing. A
   bare code or `go` in the successor selects an offer only when one listed offer
   is open. With several, it asks which one, as § Offers requires. A thread that
-  holds no offer, such as a project Orchestrator, writes the list as "none"; an
+  holds no offer, such as a standing worker thread, writes the list as "none"; an
   empty list is not left out.
 - The inventory and read-backs from the skill's thread-move step. The
   receiving thread re-points to itself each item the host lets it bind:
-  registry rows, scheduled tasks, pull request watches and the messaging name
+  thread records the host keeps, scheduled tasks, pull request watches and the messaging name
   the work was known by. For an item it cannot bind, the handoff keeps the
   recorded reason it stays with the outgoing thread. Where the host does not let
   the successor take over the name, the handoff says which name the successor

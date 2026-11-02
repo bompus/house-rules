@@ -35,8 +35,8 @@ different engine, driver or pool, read
    probe sets 0 and says why in a comment. A connection has one busy handler,
    and `PRAGMA busy_timeout` replaces any handler the driver or your code
    installed (D), so where you register a custom handler, configure that and do
-   not also set the pragma. (M: a mail server's first start and a wake-lock
-   probe failed this way. A test with a holder of 300 ms failed the old order in
+   not also set the pragma. (M: a server's first start and a small probe
+   program failed this way. A test with a holder of 300 ms failed the old order in
    5 ms and passed once the timeout came first.)
 2. **Convert to WAL once.** Switching a brand-new file to `journal_mode=WAL`
    takes an exclusive lock, and several processes doing it together failed.
