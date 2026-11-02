@@ -9,20 +9,20 @@ first sample that already fails writes no `.ready`: the observer exits 1 with th
 summary.
 
 Limits are these defaults; a protocol that declares others applies its own, through --max-gap-s,
---min-avail-gib, --mem-psi-ms, --io-psi-ms and --max-competing-cores. Host scope: available
-memory at least 8 GiB in every sample (unrounded); memory full PSI at most 10 ms and I/O full PSI
-at most 100 ms per observation interval (each measured interval is scaled to one second by its
-length, and none counts as shorter than half a second); coverage with no gap over 2.5 s (monotonic
-clock) and at least two samples; PSI must be readable. Competing CPU: the mean over the whole run of
-host busy cores minus the workload cgroup's own CPU (usage_usec, descendants included) is at most 4;
-with --host-only there is no workload to subtract, so the unit's own CPU counts. Workload scope
-(the cgroup given with --workload-cgroup, or `auto` for the observer's parent's cgroup): the same
-pressure limits on its own pressure files; in every sample no growth of memory.swap.current or
-memory.zswap.current over the first sample, no change of zswpin, zswpout or zswpwb and no change
-of memory.events high, max, oom or oom_kill from the first sample, the same directory (device and
-inode), readable required counters, the same set of optional counters (zswap) as in the first
-sample, and a memory.current or io.stat that stays readable once it has been. A CPU or PSI counter
-that goes backward is a failure.
+--min-avail-gib, --mem-psi-ms, --io-psi-ms and --max-competing-cores. Host scope: available memory
+at least 8 GiB in every sample (unrounded); memory full PSI at most 10 ms and I/O full PSI at most
+100 ms per observation interval (each measured interval is scaled to one second by the time
+between its PSI reads, and none counts as shorter than half a second); coverage with no gap over
+2.5 s (monotonic clock) and at least two samples; PSI must be readable. Competing CPU: the mean
+over the whole run of host busy cores minus the workload cgroup's own CPU (usage_usec, descendants
+included) is at most 4; with --host-only there is no workload to subtract, so the unit's own CPU
+counts. Workload scope (the cgroup given with --workload-cgroup, or `auto` for the observer's
+parent's cgroup): the same pressure limits on its own pressure files; in every sample no growth of
+memory.swap.current or memory.zswap.current over the first sample, no change of zswpin, zswpout or
+zswpwb and no change of memory.events high, max, oom or oom_kill from the first sample, the same
+directory (device and inode), readable required counters, the same set of optional counters
+(zswap) as in the first sample, and a memory.current or io.stat that stays readable once it has
+been. A CPU or PSI counter that goes backward is a failure.
 
 Host-wide swap-out and zswap activity (pswpout, zswpout, zswpwb) is recorded for every interval
 and rejects the unit only with --storage-phase, the phases the rules name.
@@ -161,6 +161,9 @@ def workload_sample(path):
     """The workload cgroup's counters, or None when a required one is unreadable."""
     try:
         st = os.stat(path)
+        mem_psi = psi_full(f"{path}/memory.pressure")
+        io_psi = psi_full(f"{path}/io.pressure")
+        psi_t = time.monotonic()  # when these PSI totals were read, for scaling their delta
         events = {k: v for k, v in keyed(f"{path}/memory.events").items() if k in EVENTS}
         if set(events) != set(EVENTS):
             return None
@@ -177,25 +180,28 @@ def workload_sample(path):
             "stat": {k: stat[k] for k in WORKLOAD_STAT if k in stat},
             "swap": int(read(f"{path}/memory.swap.current")[0]),
             "zswap": zswap,
-            "mem_psi": psi_full(f"{path}/memory.pressure"),
-            "io_psi": psi_full(f"{path}/io.pressure"),
+            "mem_psi": mem_psi,
+            "io_psi": io_psi,
+            "psi_t": psi_t,
         }
     except (OSError, KeyError, ValueError, IndexError):
         return None
 
 
 def take(cg):
-    return {
+    sample = {
         "t": time.monotonic(),
         "wall": time.time(),
         "cpu": sum(os.times()[:2]),
         "busy_ticks": host_busy_ticks(),
         "mem_psi": psi_full(f"{PROC}/pressure/memory"),
         "io_psi": psi_full(f"{PROC}/pressure/io"),
-        "avail_gib": avail_gib(),
-        "vm": vmstat(),
-        "workload": workload_sample(cg) if cg else None,
     }
+    sample["psi_t"] = time.monotonic()  # when the host PSI totals were read
+    sample["avail_gib"] = avail_gib()
+    sample["vm"] = vmstat()
+    sample["workload"] = workload_sample(cg) if cg else None
+    return sample
 
 
 def first_sample_reasons(sample, cg):
@@ -237,7 +243,11 @@ def judge(samples, cg, hz, args):
     if min_avail < MIN_AVAIL_GIB:
         reasons.append(f"available memory below {MIN_AVAIL_GIB:g} GiB")
     reasons += pressure_reasons(
-        [(s["mem_psi"], s["io_psi"]) for s in samples], gaps, out, "host", "host"
+        [(s["mem_psi"], s["io_psi"]) for s in samples],
+        [b["psi_t"] - a["psi_t"] for a, b in steps],
+        out,
+        "host",
+        "host",
     )
     swaps = [{k: b["vm"][k] - a["vm"][k] for k in a["vm"] if k in b["vm"]} for a, b in steps]
     out["host_swap_deltas_by_interval"] = swaps
@@ -276,6 +286,17 @@ def pressure_reasons(pairs, gaps, out, label, key):
     return []
 
 
+def lost(values):
+    """True when a value that was readable is later not; one never readable is just unknown."""
+    seen = False
+    for value in values:
+        if value is not None:
+            seen = True
+        elif seen:
+            return True
+    return False
+
+
 def workload_reasons(w, gaps, total, out):
     reasons = []
     first = w[0]
@@ -300,18 +321,22 @@ def workload_reasons(w, gaps, total, out):
         reasons.append("workload memory.events high, max, oom or oom_kill changed")
     out["workload_zswap"] = "absent" if first["zswap"] is None else "present"
     currents = [x["memory_current"] for x in w]
-    if None in currents and any(c is not None for c in currents):
-        reasons.append("workload memory.current availability changed")
+    if lost(currents):
+        reasons.append("workload memory.current became unreadable")
     out["workload_memory_current_peak_bytes"] = max(currents) if None not in currents else "unknown"
     ios = [x["io_bytes"] for x in w]
-    if None in ios and any(i is not None for i in ios):
-        reasons.append("workload io.stat availability changed")
+    if lost(ios):
+        reasons.append("workload io.stat became unreadable")
     io_first, io_last = first["io_bytes"], w[-1]["io_bytes"]
     out["workload_io_bytes_delta"] = (
         {k: io_last[k] - io_first[k] for k in io_first} if io_first and io_last else "unknown"
     )
     reasons += pressure_reasons(
-        [(x["mem_psi"], x["io_psi"]) for x in w], gaps, out, "workload", "workload"
+        [(x["mem_psi"], x["io_psi"]) for x in w],
+        [b["psi_t"] - a["psi_t"] for a, b in zip(w, w[1:], strict=False)],
+        out,
+        "workload",
+        "workload",
     )
     return reasons, cores
 

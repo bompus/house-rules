@@ -121,14 +121,14 @@ systemd-run --user --scope -p MemoryMax=2G bash -c '
 It samples once a second, takes one more sample the moment it is stopped, and writes every sample to
 `<output>.samples.jsonl`. It rejects: available memory under 8 GiB; host or workload memory or I/O
 full PSI over 10 ms or 100 ms per observation interval (unreadable PSI also rejects; each measured
-interval is scaled to a nominal second by its length, and none counts as shorter than half a second);
+interval is scaled to a nominal second by the time between its PSI reads, and none counts as shorter than half a second);
 a gap over
 2.5 s, a non-positive interval or fewer than two samples; competing CPU, the mean over the run of
 host busy cores minus the workload cgroup's own CPU, over 4 (`--host-only` has no workload to
 subtract, so the unit's own CPU counts); and, comparing every sample with the first, growth of
 `memory.swap.current` or `memory.zswap.current`, any change of `zswpin`, `zswpout`, `zswpwb` or of
 `memory.events` high, max, oom or oom_kill, a replaced directory, an unreadable required counter, a
-changed set of optional counters, or a `memory.current` or `io.stat` that was readable and is not. A
+changed set of optional counters, or a `memory.current` or `io.stat` that was readable and later is not (one never readable stays `unknown`). A
 host or workload CPU counter or a PSI total that goes backward also rejects. If the first sample
 already fails (unreadable PSI, available memory under the floor, an unreadable workload counter) the
 observer writes no `<output>.ready`, exits 1 and the summary says why, so the unit is not started.

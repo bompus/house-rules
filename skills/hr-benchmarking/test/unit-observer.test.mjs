@@ -406,7 +406,9 @@ test(
 
 /**
  * Runs the observer's `judge` on synthetic host samples, as [monotonic seconds, memory PSI µs, I/O PSI µs].
- * @param {[number, number, number][]} rows
+ * Runs the observer's `judge` on synthetic host samples, as [monotonic seconds, memory PSI µs, I/O PSI µs],
+ * with an optional fourth element: the time the PSI counters were read, when it differs from the first.
+ * @param {([number, number, number] | [number, number, number, number])[]} rows
  * @returns {{ reasons: string[], out: Record<string, number> }}
  */
 function judgeRows(rows) {
@@ -418,8 +420,9 @@ spec.loader.exec_module(m)
 class Args:
     storage_phase = False
 rows = json.loads(sys.stdin.read())
-samples = [{"t": t, "wall": t, "cpu": 0.0, "busy_ticks": 0, "mem_psi": mem, "io_psi": io,
-            "avail_gib": 64.0, "vm": {}, "workload": None} for t, mem, io in rows]
+samples = [{"t": r[0], "wall": r[0], "cpu": 0.0, "busy_ticks": 0, "mem_psi": r[1], "io_psi": r[2],
+            "psi_t": r[3] if len(r) > 3 else r[0],
+            "avail_gib": 64.0, "vm": {}, "workload": None} for r in rows]
 reasons, out = m.judge(samples, None, 100.0, Args)
 print(json.dumps({"reasons": reasons, "out": out}))
 `;
@@ -576,11 +579,11 @@ test(
     let r = await observe(["--workload-cgroup", "{cg}"], {
       steps: [[300, (f) => rmSync(join(f.dir, "memory.current"))]],
     });
-    assert.ok(reason(r, /memory\.current availability changed/), String(r.summary.reasons));
+    assert.ok(reason(r, /memory\.current became unreadable/), String(r.summary.reasons));
     r = await observe(["--workload-cgroup", "{cg}"], {
       steps: [[300, (f) => rmSync(join(f.dir, "io.stat"))]],
     });
-    assert.ok(reason(r, /io\.stat availability changed/), String(r.summary.reasons));
+    assert.ok(reason(r, /io\.stat became unreadable/), String(r.summary.reasons));
     r = await observe(["--workload-cgroup", "{cg}"], {
       setup: (f) => {
         rmSync(join(f.dir, "memory.current"));
@@ -706,3 +709,50 @@ test("the admission limit flags must be positive numbers", { skip }, () => {
     }
   }
 });
+
+test(
+  "PSI is scaled by the time between the counter reads, not between the sample starts",
+  { skip },
+  () => {
+    // The first sample began at 0 but read its PSI counters at 0.1: the first interval's reads are 0.9 s
+    // apart, so 95 ms of stall in it is 105 ms per second, over the limit (by the starts it is 95).
+    assert.ok(
+      stalled(
+        judgeRows([
+          [0, 0, 0, 0.1],
+          [1, 0, 95000],
+          [2, 0, 95000],
+        ]).reasons,
+      ),
+    );
+    assert.ok(
+      !stalled(
+        judgeRows([
+          [0, 0, 0],
+          [1, 0, 95000],
+          [2, 0, 95000],
+        ]).reasons,
+      ),
+    );
+  },
+);
+
+test(
+  "a counter that is absent at first and appears later stays unknown, not rejected",
+  opts,
+  async () => {
+    const r = await observe(["--workload-cgroup", "{cg}"], {
+      setup: (f) => {
+        rmSync(join(f.dir, "memory.current"));
+        rmSync(join(f.dir, "io.stat"));
+      },
+      steps: [
+        [300, (f) => writeFileSync(join(f.dir, "memory.current"), "123456\n")],
+        [300, (f) => writeFileSync(join(f.dir, "io.stat"), "8:0 rbytes=100 wbytes=200\n")],
+      ],
+    });
+    assert.equal(r.code, 0, String(r.summary.reasons));
+    assert.equal(r.summary.workload_memory_current_peak_bytes, "unknown");
+    assert.equal(r.summary.workload_io_bytes_delta, "unknown");
+  },
+);
