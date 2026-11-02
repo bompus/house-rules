@@ -276,6 +276,7 @@ test("invalid requests and invalid composition never write config", (t) => {
     ["--disable-skill", "no-such-skill"],
     ["--enable-modifier", "shared-host-load", "--disable-modifier", "shared-host-load"],
     ["--questions", "plain", "--enable-modifier", "coded-offers"],
+    ["--questions", "plain", "--enable-modifier", "text-only-questions"],
     ["--enable-modifier", "question-cards"],
     ["--questions", "default", "--enable-modifier", "model-default-questions"],
     ["--questions", "unknown"],
@@ -389,27 +390,61 @@ test("missing config is read without creating it and explicit apply can initiali
 });
 
 test("question presets keep unrelated selections and resolve to composed offer rules", (t) => {
-  const { path } = fixture(t, {
-    modifiers: ["shared-host-load", "coded-offers", "question-cards"],
-  });
-  for (const [questions, enabled] of /** @type {[string, string[]][]} */ ([
-    ["default", ["model-default-questions"]],
-    ["plain", []],
-    ["coded", ["coded-offers"]],
-    ["cards", ["coded-offers", "question-cards"]],
-  ])) {
-    const out = report(path, ["--questions", questions]);
-    assert.deepEqual(
-      out.modifiers
-        .filter((m) => m.enabled)
-        .map((m) => m.name)
-        .sort(),
-      ["shared-host-load", ...enabled].sort(),
-    );
-    assert.equal(out.hostLoading, "unverified");
-    assert.equal(
-      out.rules.some((rule) => rule.heading === "Question cards"),
-      questions === "cards",
+  for (const start of [
+    ["shared-host-load", "coded-offers", "question-cards"],
+    ["shared-host-load", "text-only-questions"],
+  ]) {
+    const { path } = fixture(t, { modifiers: start });
+    for (const [questions, enabled] of /** @type {[string, string[]][]} */ ([
+      ["default", ["model-default-questions"]],
+      ["plain", ["text-only-questions"]],
+      ["coded", ["coded-offers"]],
+      ["cards", ["coded-offers", "question-cards"]],
+    ])) {
+      const out = report(path, ["--questions", questions]);
+      assert.deepEqual(
+        out.modifiers
+          .filter((m) => m.enabled)
+          .map((m) => m.name)
+          .sort(),
+        ["shared-host-load", ...enabled].sort(),
+      );
+      assert.equal(out.questions, questions);
+      assert.equal(out.hostLoading, "unverified");
+      assert.equal(
+        out.rules.some((rule) => rule.heading === "Question cards"),
+        questions === "cards",
+      );
+      assert.equal(
+        out.rules.some((rule) => rule.heading === "Text-only questions"),
+        questions === "plain",
+      );
+    }
+  }
+});
+
+test("with no question modifier the core rules let the host's question tool be used", (t) => {
+  const { path } = fixture(t, { modifiers: ["shared-host-load"] });
+  const out = report(path);
+  assert.equal(out.questions, "default");
+  /** @param {string} text */
+  const offers = (text) => text.split("## Offers")[1]?.split(/\n## /)[0] ?? "";
+  const section = offers(out.composedRules);
+  assert.match(section, /you may use it for a decision with options/);
+  assert.doesNotMatch(section, /Ask questions in text|Call no multiple-choice question tool/);
+  assert.equal(
+    out.rules.some((rule) => rule.heading === "Text-only questions"),
+    false,
+  );
+  const plain = report(path, ["--questions", "plain"]);
+  assert.match(plain.composedRules, /Call no multiple-choice question tool/);
+});
+
+test("text-only-questions cannot combine with another question choice", (t) => {
+  for (const other of ["model-default-questions", "coded-offers"]) {
+    assert.throws(
+      () => report(fixture(t, { modifiers: ["text-only-questions", other] }).path),
+      /cannot combine/,
     );
   }
 });

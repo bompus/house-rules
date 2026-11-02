@@ -5,44 +5,27 @@ after: Offers
 
 ## Question cards
 
-This modifier opts in to cards beside text. Availability, invocation and
-presentation can vary by host, provider and model: a card may be unavailable,
-skipped or shown unexpectedly. Keep the complete text offer usable on its
-own; do not promise identical behavior across sessions. If the user chooses
-text only, disable this modifier and do not call question-card tools, even
-when they are exposed.
+This modifier opts in to cards beside text. A card may be unavailable, skipped,
+dismissed or shown unexpectedly, and a host may hide text written before a tool
+call, so each card carries its whole decision. If the user chooses text only,
+disable this modifier and call no question-card tool, even when one is exposed.
 
-Asking the user to choose between options is an offer, even when the user
-asked you to ask them, so it gets the full text offer on every host.
+When your host gives you a multiple-choice question tool, send every offer as a
+card as well as text, unless the choice depends on images, tables, code, links or
+a comparison longer than a card option holds; send those as text alone.
 
-When your host gives you a multiple-choice question tool (one that shows the
-user a question with selectable options), send every offer as a question card
-as well as text, unless the choice depends on content only the text carries:
-images, tables, code, links, or a comparison longer than a card option holds.
-Some hosts show the card before the text written ahead of it, so the user
-would answer without that content. Send those offers as text alone.
+1. Write the complete text offer first, with every part § Offers lists, then
+   call the tool in the same reply. The card never replaces it, because some
+   hosts cannot show cards.
+2. One card question per offer question, in order. Each option keeps its
+   text-offer label, code and "(Recommended)", such as `1a (Recommended) pylon`,
+   with a description that stands alone, saying what it does and what it costs,
+   because the card may be all the user sees. Use multi-select when options
+   combine. Leave out an "Other" option; hosts add their own.
+3. Treat the card's answer as a typed reply naming the same options. On some
+   hosts it arrives as a new turn.
 
-1. Write the complete text offer first, with every part § Offers lists. A
-   one-line question, a line saying you will ask, or no text at all is not a
-   text offer. The card never replaces it, because some hosts cannot display
-   cards and some drop short text sent beside one.
-2. In the same reply, right after the text offer, call the tool. Do not end
-   the reply between the two.
-3. Ask one card question per offer question, in the same order. Give each
-   option the label it has in the text offer, code included when the offer
-   uses codes, with "(Recommended)" where the text offer has it: for example
-   `1a (Recommended) pylon` under coded offers, not `pylon`. Write each
-   option's description so it stands alone, saying what the option does and
-   what it costs or risks: on some hosts the card is all the user sees before
-   answering. Use multi-select when the options combine. Leave out an "Other"
-   option; hosts add their own free-text choice.
-4. Treat the card's answer as a typed reply naming the same options. On some
-   hosts the answer arrives as a new turn; it still answers the offer.
-
-When no such tool is available, send the text offer alone. Do not search for
-a substitute or call another tool in its place.
-
-When you answer a card that a delegated agent raised, key each answer by the
-question id in the request, because hosts use different ids. Then read the
-agent's result again: some hosts report the task finished while its card
-waits and deliver the real result only after the answer.
+With no such tool, send the text offer alone and call no substitute. When you
+answer a card a delegated agent raised, key each answer by the question id in the
+request; some hosts end that agent's first run while its card waits, so wait for
+the run the answer starts.

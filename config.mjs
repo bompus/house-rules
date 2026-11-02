@@ -73,7 +73,12 @@ function stringList(value, key) {
 }
 
 export const QUESTION_PRESETS = ["default", "plain", "coded", "cards"];
-export const QUESTION_MODIFIERS = ["model-default-questions", "coded-offers", "question-cards"];
+export const QUESTION_MODIFIERS = [
+  "model-default-questions",
+  "text-only-questions",
+  "coded-offers",
+  "question-cards",
+];
 const BACKLOG_VIEWS = ["backlog-visual", "backlog-outline"];
 
 /**
@@ -123,6 +128,16 @@ function validateSelection(config) {
   ) {
     throw new Error(
       "model-default-questions cannot combine with coded-offers or question-cards; use --questions",
+    );
+  }
+  if (
+    config.modifiers?.includes("text-only-questions") &&
+    config.modifiers.some((name) =>
+      ["model-default-questions", "coded-offers", "question-cards"].includes(name),
+    )
+  ) {
+    throw new Error(
+      "text-only-questions cannot combine with model-default-questions, coded-offers or question-cards; use --questions",
     );
   }
 }
@@ -216,7 +231,9 @@ export function selectionReport(config, path) {
         ? "cards"
         : selected.has("coded-offers")
           ? "coded"
-          : "plain",
+          : selected.has("text-only-questions")
+            ? "plain"
+            : "default",
     warnings: result.warnings,
     composedRules: result.rules,
     hostLoading: "unverified",
@@ -291,6 +308,11 @@ export function changeSelection(config, options, path) {
       modifiers.delete("coded-offers");
     } else {
       modifiers.add("coded-offers");
+    }
+    if (options.questions === "plain") {
+      modifiers.add("text-only-questions");
+    } else {
+      modifiers.delete("text-only-questions");
     }
     if (options.questions === "cards") {
       modifiers.add("question-cards");

@@ -22,3 +22,13 @@ prove deployment. Use the host's supported update procedure and
 `hr-agent-guidance-refresh`; keep pending notices for idle or offline sessions
 until their next boundary or resume. If an evaluation has fixed its guidance or tools, hold the update for it and leave its inputs unchanged until it ends. If no
 channel is authorized or reachable, record the missing delivery and report it.
+
+Before sending a message to another agent session that may be waiting on the
+user, check whether your host's send can steer a running turn and cancel that
+wait: on some hosts a steer cancels a pending question card (T3 Code, measured;
+pingdotgg/t3code#26841 reports approvals too). Where the host separates steering from queueing, queue
+the message so it waits for the answer. A report that cannot wait, such as a
+security or production risk, goes anyway: say in the message that it may cancel
+the wait, and tell the user what it cancelled. A session whose run ended with a
+question still pending may be idle, so a queued send can start a run: read the
+delivery result, and hold a message that can wait.

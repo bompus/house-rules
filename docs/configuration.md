@@ -105,19 +105,50 @@ their existing selection behavior.
 | Question preset       | What you get                      | Enabled offer modifiers             |
 | --------------------- | --------------------------------- | ----------------------------------- |
 | `--questions default` | Model default                     | `model-default-questions`           |
-| `--questions plain`   | Text only                         | Neither offer modifier              |
+| `--questions plain`   | Text only                         | `text-only-questions`               |
 | `--questions coded`   | Text only, with short reply codes | `coded-offers`                      |
 | `--questions cards`   | Clickable choices when available  | `coded-offers` and `question-cards` |
 
 `default` adds no instruction about how to ask: the model and host ask
 questions their usual way, which on some hosts means clickable choices and on
-others plain text. Core rules, without a preset, keep text only. `default`
-cannot combine with `coded-offers` or `question-cards`.
+others plain text. Core rules, with no question modifier, also let the host's
+question tool be used, but they keep the step-by-step text offer that `default`
+drops, so `default` changes the composed rules. Setup reports both as
+"default". Text only is an explicit choice, so a config that has none of these
+modifiers no longer means text only; to return from a preset to none, disable its
+modifier with `--disable-modifier`. `default` and `plain` cannot combine with each
+other, `coded-offers` or `question-cards`.
 
 Question presets preserve other modifiers. Choose a preset or explicit offer
 modifier toggles, rather than combining both in one command. Cards still depend
 on the agent host, provider and model. Review any personal Offers override
 before saving; the CLI does not rewrite personal prose.
+
+### What each question choice costs
+
+Pick with these in mind; none of them is free.
+
+- **Text only.** A text question creates no pending request on the host, so a host
+  that shows pending questions (an "awaiting input" marker in a thread list,
+  notifications, an answer queue) cannot show it. The user finds it by reading, and
+  with many sessions that is slow. A typed answer also carries no structured
+  selection. T3 Code's thread list is an example of a host that shows pending
+  questions only for cards; a request for a marker that persists is open at
+  [pingdotgg/t3code discussion 29634](https://github.com/pingdotgg/t3code/discussions/29634).
+- **Clickable choices.**
+  - A message that steers the thread can cancel its pending card; on T3 Code a
+    steering send did so within seconds, while a queued send left the card pending
+    ([issue 26841](https://github.com/pingdotgg/t3code/issues/26841)). Queue messages
+    to a thread with a pending question where the host allows it; the
+    `cross-session-relay` rule says so.
+  - Text written before a card may not display on some hosts
+    ([issue 28775](https://github.com/pingdotgg/t3code/issues/28775)), so each card
+    carries the whole decision and the text offer stays complete beside it.
+  - Some hosts expose no card tool to some providers
+    ([issue 22736](https://github.com/pingdotgg/t3code/issues/22736)), and a card can be
+    dismissed or skipped.
+- **Model default.** Behavior varies by host and model: some ask with cards, some in
+  text, and the same session can change between them.
 
 To repair invalid modifier selections, preview changes that produce a valid
 selection. `--questions` can repair the offer dependency; `--disable-modifier`

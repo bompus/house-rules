@@ -34,8 +34,11 @@ user's confirmation unless they already directed them.
 
 ## Offers
 
-Ask questions in text. Call a multiple-choice question tool only when a Question
-cards section follows.
+Ask the way your host and model normally ask. When your host gives you a
+multiple-choice question tool, you may use it for a decision with options, with
+the whole decision in the card and the text offer below still complete, because a
+host can hide text written before a tool call or leave a card unshown. Use text
+alone when the choice depends on images, tables, code or links.
 
 Write the offer as normal text that stands alone, with these parts in order:
 

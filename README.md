@@ -259,20 +259,27 @@ in name order, after the modifiers.
 | `shared-host-load`                                                                                                                                       | Only benchmarks and other performance measurements wait for a quiet host. Other work runs whatever the load; while an isolated measurement runs, competing work follows its isolation rules. Very large jobs still run under a memory cap.                                                                                                         |
 | `solo-operator`                                                                                                                                          | For repositories with one maintainer, the user's direction is the review; no review-gated steps. A review bot's rounds are capped.                                                                                                                                                                                                                 |
 | `squash-landing`                                                                                                                                         | Pull requests land by squash merge after review-bot findings are handled, and the session's checkout moves off the landed branch.                                                                                                                                                                                                                  |
+| `text-only-questions`                                                                                                                                    | Ask every question in text and call no question tool, even when the host exposes one.                                                                                                                                                                                                                                                              |
 | `upstream-contributions`                                                                                                                                 | A measured optimization, fix or defect found in a third-party project is offered for submission to that project through its own contribution route.                                                                                                                                                                                                |
 | `web-image-formats`                                                                                                                                      | Prefer WebP for web raster images when it saves bytes at acceptable quality, with format exceptions and delivered-file checks.                                                                                                                                                                                                                     |
 
-Questions use text only by default. Setup asks how you want questions asked:
+By default house-rules says nothing against your host's own question tool: the
+host and model ask the way they normally do, and every decision still gets a
+complete text offer. Setup asks how you want questions asked:
 
 - **Model default**: house-rules gives no instruction, so your model and host ask
   their usual way (`model-default-questions`).
 - **Text only**: plain text options, with or without short reply codes such as
-  `1a` (`coded-offers`). No question tools are called, even when the host
-  exposes them.
+  `1a` (`text-only-questions`, or `coded-offers` for codes). No question tools are
+  called, even when the host exposes them.
 - **Clickable choices when available**: complete text options plus a
   question card (`question-cards`). Cards can be unavailable, skipped or shown
   unexpectedly across hosts, providers and models; the text offer remains usable
   on its own.
+
+Each choice has costs, listed in
+[What each choice costs](docs/configuration.md#what-each-question-choice-costs).
+Text only is the one that hides a question from hosts that show pending ones.
 
 `hr-house-rules-setup` asks which you want and explains these limits before
 changing the configuration.

@@ -224,6 +224,7 @@ test(
     assert.deepEqual(saved.skills.exclude, ["unavailable-helper", "hr-read-reddit"]);
     assert.equal(saved.modifiers?.includes("question-cards") ?? false, false);
     assert.equal(saved.modifiers?.includes("coded-offers") ?? false, false);
+    assert.equal(saved.modifiers?.includes("text-only-questions") ?? false, true);
     assert.equal(readFileSync(outputPath, "utf8"), "generated sentinel");
     assert.equal(result.output.includes("\x1b"), false);
   },

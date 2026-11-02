@@ -177,6 +177,11 @@ export async function setupCommand(argv) {
     }
     if (projection.modifiers.includes("model-default-questions")) {
       projection.modifiers = projection.modifiers.filter(
+        (name) => !["coded-offers", "question-cards", "text-only-questions"].includes(name),
+      );
+    }
+    if (projection.modifiers.includes("text-only-questions")) {
+      projection.modifiers = projection.modifiers.filter(
         (name) => !["coded-offers", "question-cards"].includes(name),
       );
     }

@@ -83,7 +83,6 @@ still carries the acceptance line. Give each question one block. Show every
 option's code, a short label and its steps from start to finish, and mark the
 recommended options. Add a short box on how to reply.
 
-Ask questions in text. Question cards are a separate, optional modifier
-(`question-cards`); while it is off, which is the default, never call a
-question-card tool. Tool availability alone does not turn it on. When it is on,
-follow it beside the complete text offer.
+Ask questions in text, and call no question-card tool unless the optional
+`question-cards` modifier is on; tool availability alone does not turn it on.
+When it is on, follow it beside the complete text offer.
