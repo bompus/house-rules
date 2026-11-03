@@ -5,15 +5,11 @@ own schedule, without the user asking. So does a job that has run that long with
 no estimate. This covers a build, test suite, benchmark, CI run, long search or
 similar. The default interval is 5 minutes. That figure is a default, not a
 measured value; use the interval the user names instead. In the reply that
-launches the job, give its total ETA with the basis (or "unmeasured") and the
-interval. Give the ETA again whenever it changes, including when more rounds are
-queued.
+launches the job, give the interval and what the job waits on; add a finish time only when a named comparable finished run (its start and end times from a transcript, git history or the plan) supports it, and name that run. Give the figure again whenever new evidence changes it, including when more rounds are queued.
 
 Each update is one short line, not a report, posted even when nothing has
 changed. It gives completed/total or a percent (the current step when the job
-reports no total), the ETA with its basis or the word "unmeasured", and a
-one-line summary of findings so far. A milestone, failure, stall or change in
-the forecast goes in full instead.
+reports no total), elapsed time, what the job is waiting on, and a one-line summary of findings so far, with no promised end time or whole-task ETA unless a named comparable finished run measured it. A milestone, failure, stall or change in a forecast that a named comparable run supports goes in full instead.
 
 Where the host can run a background watcher or timer, arm it in the step that
 launches the job. It posts a line every interval, even when nothing changed. It

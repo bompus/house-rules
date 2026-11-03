@@ -389,11 +389,14 @@ test("progress reporting survives reference exports while effort forecasts stay 
       assert.match(reporting, /before reporting UTC or saying the zone is\s+unknown/);
       assert.match(reporting, /ask if neither\s+establishes it/);
       if (effort) {
-        assert.match(result.rules, /best supported whole-task ETA/);
-        assert.match(result.rules, /running job's finish forecast separately/);
+        assert.match(
+          result.rules,
+          /only\s+when\s+a\s+named\s+comparable\s+finished\s+run\s+supports\s+it/,
+        );
+        assert.match(result.rules, /that\s+job's elapsed time and what it waits on/);
         assert.match(result.rules, /completed\/total counts consistently/);
       } else {
-        assert.doesNotMatch(result.rules, /whole-task ETA|completed\/total counts/);
+        assert.doesNotMatch(result.rules, /completed\/total counts/);
       }
     }
   }

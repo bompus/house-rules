@@ -2,7 +2,8 @@
 expect: reply
 allowRead: true
 without: Periodic status updates.*?the final report replaces them\.
-requiredPattern: ^(?![\s\S]{501})(?=(?:\s*TOOL_CALL[^\n]*\n)*\s*(?!TOOL_CALL)[^\n]+(?:\n\s*TOOL_CALL[^\n]*)*\s*$)(?=[\s\S]*(612\s*/\s*1,?840|612 of 1,?840|33(\.\d)?\s*%))(?=[\s\S]*(ETA|unmeasured|remaining|left|finish))
+requiredPattern: ^(?![\s\S]{501})(?=(?:\s*TOOL_CALL[^\n]*\n)*\s*(?!TOOL_CALL)[^\n]+(?:\n\s*TOOL_CALL[^\n]*)*\s*$)(?=[\s\S]*(612\s*/\s*1,?840|612 of 1,?840|33(\.\d)?\s*%))(?=[\s\S]*(?<![\d.:])(14\s*m\b|14\s*min|14\s*minutes|0?0:14))(?=[\s\S]*\bwait(s|ing)?\b)
+forbiddenPattern: (?<![\d.:])(?!(14|5)\s*(m|min|minutes?)\b)\d+(\.\d+)?\s*(m|min|mins|minutes?|h|hrs?|hours?)\b|(?<![\d:])(?!0?0:14\b)\d{1,2}:\d{2}\b|\b(ETA|estimated|expected)\b[^\n]{0,30}\d
 ---
 
 ## Project AGENTS.md

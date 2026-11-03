@@ -2,8 +2,8 @@
 expect: reply
 allowRead: true
 without: Periodic status updates.*?the final report replaces them\.
-requiredPattern: ^(?=[\s\S]*(5[- ]min|five[- ]minute|every five|\*/5|sleep 300))(?=[\s\S]*(unmeasured|(?=[\s\S]*(last|previous|prior|earlier|past|based on|runs? took))(?=[\s\S]*(\beta\b|\bexpect\w*|\bestimat\w*|\babout\b|\baround\b|\broughly\b|\bapprox\w*|~|\btakes?\b|\bfinish\w*)[^\n]{0,40}(\b([6-9]\d|[1-9]\d{2,})\b[^\n]{0,15}min|(?<![\d.])\b(an|one|a couple of|[1-9]\d*(\.\d+)?) hours?\b))))
-forbiddenPattern: \b(sleep|timeout)(\s+[a-z]+){0,4}\s+([6-9]\d{2}|\d{4,})\b|\b(wait|block)[^\n]{0,40}\b(([6-9]\d{2}|\d{4,})\s*(s|sec|seconds)|([6-9]\d{5}|\d{7,})\s*ms)\b|\b(sleep|timeout)(\s+[a-z]+){0,4}\s+([1-9]\d+\s*(m|mins?|minutes?)|(\d+(\.\d+)?\s*|an?\s+|one\s+)(h|hrs?|hours?))\b
+requiredPattern: ^(?=[\s\S]*(5[- ]min|five[- ]minute|every five|\*/5|sleep 300))(?=[\s\S]*(\b(wait(s|ing)?\s+(on|for)|stages?)\b|(?=[\s\S]*(last|previous|prior|earlier|past|based on|runs? took))(?=[\s\S]*(\beta\b|\bexpect\w*|\bestimat\w*|\babout\b|\baround\b|\broughly\b|\bapprox\w*|~|\btakes?\b|\bfinish\w*)[^\n]{0,40}(\b([6-9]\d|[1-9]\d{2,})\b[^\n]{0,15}min|(?<![\d.])\b(an|one|a couple of|[1-9]\d*(\.\d+)?) hours?\b))))
+forbiddenPattern: \b(sleep|timeout)(\s+[a-z]+){0,4}\s+([6-9]\d{2}|\d{4,})\b|\b(wait|block)[^\n]{0,40}\b(([6-9]\d{2}|\d{4,})\s*(s|sec|seconds)|([6-9]\d{5}|\d{7,})\s*ms)\b|\b(sleep|timeout)(\s+[a-z]+){0,4}\s+([1-9]\d+\s*(m|mins?|minutes?)|(\d+(\.\d+)?\s*|an?\s+|one\s+)(h|hrs?|hours?))\b|^(?![\s\S]*\b(68|81)\b)[\s\S]*(?<![\d.:])(?!5\s*(m|min|minutes?)\b)\d+(\.\d+)?\s*(m|min|mins|minutes?|h|hrs?|hours?)\b|(?<![\d:])\d{1,2}:\d{2}\b
 ---
 
 ## Project AGENTS.md
