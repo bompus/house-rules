@@ -7,10 +7,15 @@ Do not pass `--delete-branch` when other worktrees may hold the head branch;
 delete the remote branch with `git push origin --delete <branch>` instead.
 
 When you integrate a task branch locally instead of through a pull request,
-land it as standard commits, never as a "Merge branch" commit: `git merge
---squash` then commit with a message in the repository's commit convention,
-or a fast-forward when the base has not moved. After a pull request merges,
-do not also squash the branch locally.
+land it as standard commits, never as a "Merge branch" commit: squash it with
+`scripts/squash-land.sh <branch> "<message>"` from the `hr-pr-followup` skill (the
+message in the repository's commit convention). It builds the squash in a throwaway worktree
+with a normal commit (the repository's commit hooks run) and applies it with `merge --ff-only
+--no-overwrite-ignore`, which Git refuses when it would replace an ignored or untracked
+local file; `merge --squash --no-overwrite-ignore` protects such a file only when the
+squash is a fast-forward, not on a diverged branch. On exit 1 nothing changed: move the
+file aside or stop and report it. A fast-forward is enough when the base has not moved.
+After a pull request merges, do not also squash the branch locally.
 
 When a review bot reviews pull requests, merge only after its check finishes
 and each finding is fixed or answered with a reason, threads resolved. Read
@@ -27,7 +32,7 @@ proceed on the bots that did review, and record which bot skipped and why.
 During integration, never switch, reset or remove the session's own checkout: no
 `checkout` or `switch` to another ref, no `reset` or branch force-move, and no
 `worktree remove` on it. Updating the default branch it has checked out
-(`merge --squash`, or `merge --ff-only` to the fetched remote head after a remote merge)
+(`squash-land.sh` as above, or `merge --ff-only --no-overwrite-ignore` to the fetched remote head after a remote merge)
 under the fast-forward conditions in § Landing is expected, and so is fast-forwarding
 the one other checkout that holds the default branch. Report a checkout that cannot be
 fast-forwarded with its path and reason.

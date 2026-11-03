@@ -222,10 +222,10 @@ reset, switch or delete a checkout.
 - `verify-landed.sh --commit <sha> [--ff]` fetches, checks that the default branch
   contains the commit, and checks the local default. `--ff` brings the local default
   current: it moves the branch ref when no checkout has it, and runs
-  `merge --ff-only <sha>` in the one checkout that has it when that checkout is on the
+  `merge --ff-only --no-overwrite-ignore <sha>` in the one checkout that has it when that checkout is on the
   default branch, free of uncommitted changes to tracked files and of an unfinished Git
   operation, and strictly behind. Untracked files may stay; Git refuses a fast-forward
-  that would overwrite one. Sessions,
+  that would overwrite one, an ignored file included. Sessions,
   processes and roster entries are never inputs. Any other checkout is left alone and
   reported on one line, `sync skipped at <path>: <reason>`, with a reason of
   `working tree dirty` (tracked changes), `diverged from <remote>/<default>`, `on branch

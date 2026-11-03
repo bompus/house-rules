@@ -399,6 +399,28 @@ test("a fast-forward that would overwrite an untracked file is refused by Git an
   expect(sh(work, "git", "status", "--porcelain")).toBe("?? added.txt");
 });
 
+test("a fast-forward that would overwrite an ignored local file is refused and skipped", () => {
+  const { root, remote, work } = fixture();
+  writeFileSync(join(work, ".gitignore"), "local.env\n");
+  sh(work, "git", "add", ".gitignore");
+  sh(work, "git", "commit", "-m", "ignore local.env");
+  sh(work, "git", "push", "origin", "main");
+  const other = join(root, "other");
+  sh(root, "git", "clone", remote, other);
+  writeFileSync(join(other, "local.env"), "committed\n");
+  sh(other, "git", "add", "-f", "local.env");
+  sh(other, "git", "commit", "-m", "upstream tracks local.env");
+  sh(other, "git", "push", "origin", "main");
+  const sha = sh(other, "git", "rev-parse", "HEAD");
+  const before = sh(work, "git", "rev-parse", "HEAD");
+  writeFileSync(join(work, "local.env"), "local secret\n");
+  const r = runScript(work, "--commit", sha, "--ff");
+  expect(r.code).toBe(3);
+  expect(r.out).toContain(`sync skipped at ${work}: fast-forward refused: `);
+  expect(sh(work, "git", "rev-parse", "HEAD")).toBe(before);
+  expect(readFileSync(join(work, "local.env"), "utf8")).toBe("local secret\n");
+});
+
 for (const flag of ["--idle-primary", "--preflight"]) {
   test(`the removed ${flag} flag is an unknown argument and moves nothing`, () => {
     const { work, wt, sha } = primaryBehind();

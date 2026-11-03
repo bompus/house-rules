@@ -8,10 +8,10 @@
 # it is checked out nowhere (a ref update), or when the one checkout that holds it is on the default
 # branch, free of uncommitted changes to tracked files and of an unfinished Git operation, and
 # strictly behind: then
-# `merge --ff-only <sha>` runs there. It uses the verified remote commit rather than `pull`, because
+# `merge --ff-only --no-overwrite-ignore <sha>` runs there. It uses the verified remote commit rather than `pull`, because
 # `pull` re-fetches into the shared FETCH_HEAD, which a concurrent fetch in the same checkout can
 # overwrite ("Cannot fast-forward to multiple branches"). Untracked files may stay: Git keeps them
-# and refuses a fast-forward that would overwrite one.
+# and refuses a fast-forward that would overwrite one, ignored files included (`--no-overwrite-ignore`).
 #
 # A checkout that fails any of those conditions is left alone and reported on one line:
 #   sync skipped at <path>: <reason>
@@ -324,7 +324,7 @@ if git show-ref --verify --quiet "refs/heads/$DEFAULT"; then
       if [ -z "$REASON" ]; then REASON="$(permission_blocker "$HOLDER" "$LOCAL" "$UPSTREAM")"; fi
       if [ -n "$REASON" ]; then
         skip "$HOLDER" "$REASON"
-      elif MERGE_ERR="$(git -C "$HOLDER" merge --quiet --ff-only "$UPSTREAM" 2>&1)"; then
+      elif MERGE_ERR="$(git -C "$HOLDER" merge --quiet --ff-only --no-overwrite-ignore "$UPSTREAM" 2>&1)"; then
         if [ "$HOLDER" = "$HERE" ]; then
           echo "local $DEFAULT: fast-forwarded $BEHIND commit(s) to $UPSTREAM (checked out here)"
         else
