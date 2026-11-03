@@ -12,7 +12,7 @@ At task completion, unlanded or uncommitted task changes get one landing option,
 Never reset, stash, switch or merge-commit a checkout to make it match the default.
 A session or job running in it is not a reason to wait or ask. A checkout of the
 default branch that is strictly behind, with no uncommitted changes to tracked files, is fast-forwarded
-with `git merge --ff-only <sha>`. Leave a dirty, diverged or mid-operation one, report its path and reason,
+with `git merge --ff-only --no-overwrite-ignore <sha>`. Leave a dirty, diverged or mid-operation one, report its path and reason,
 and do not ask the user.
 Landing never waits on a local checkout, and a roster entry in one is not an input either: the
 checkout's own state decides whether it can be fast-forwarded (below). Removing a worktree is
@@ -22,7 +22,7 @@ After integration:
 
 - Fetch, then bring the local default branch current, whoever else has it open.
   When no checkout has it, fast-forward the branch ref. When one checkout has it
-  (your own, the primary or another linked worktree), run `git merge --ff-only <sha>`
+  (your own, the primary or another linked worktree), run `git merge --ff-only --no-overwrite-ignore <sha>`
   there with the remote head you just fetched and verified, provided that checkout
   is on the default branch, has no uncommitted changes to tracked files and no
   unfinished Git operation (merge, rebase, cherry-pick, revert, bisect), and is

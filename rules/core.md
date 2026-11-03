@@ -276,7 +276,7 @@ Before integration, updating a default checkout or deleting a landed branch, rea
 Never reset, stash, switch or merge-commit a checkout to make it match the default.
 A session or job running in it is not a reason to wait or ask. A checkout of the
 default branch that is strictly behind, with no uncommitted changes to tracked files, is fast-forwarded
-with `git merge --ff-only <sha>`. Leave a dirty, diverged or mid-operation one, report its path and reason,
+with `git merge --ff-only --no-overwrite-ignore <sha>`. Leave a dirty, diverged or mid-operation one, report its path and reason,
 and do not ask the user.
 
 Before the first publish step of a version bump (tag, publish, release, announcement), review unreleased changelog entries and public materials (READMEs, charts, graphics with alt text, listing text, announcement, repository description and social preview) and fix what is stale first; an urgent release may limit only the materials to what it affects.

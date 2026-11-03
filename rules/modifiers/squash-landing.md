@@ -1,6 +1,7 @@
 ---
 description: Pull requests land by squash merge after review-bot findings are handled, and the session's checkout moves off the landed branch.
 after: Landing
+requires: hr-pr-followup
 reference: ../references/squash-landing.md
 core: true
 ---
