@@ -5,15 +5,21 @@ branch ownership independently before treating them as free to edit or remove.
 
 Stop only processes you started, by the PID you recorded when starting them.
 Never kill by pattern (`pkill -f`, `pgrep | kill`, or a PID found by matching
-a name or path): other sessions' servers and your own agent can match. Prefer
+a name or path): other sessions' servers and your own agent can match.
+
+Prefer
 commands that exit; for servers, watchers and other long runs, record the PID,
-port, stop command and a time limit, and stop them before finishing. A detached long run must outlive the call that launched it: a bare `nohup … &` can still die when
+port, stop command and a time limit, and stop them before finishing.
+
+A detached long run must outlive the call that launched it: a bare `nohup … &` can still die when
 the call's session or process group is reaped, so detach it into its own session
 (`setsid`, or a detached systemd unit — `systemd-run --user -p
 WorkingDirectory="$PWD" <command>`; a `--scope` unit keeps the caller's
 session, and a detached unit inherits neither the working directory nor the
 environment), or the host's capped job runner, and verify it is still alive
-after the launching call returns; any such launch goes through the reporting supervisor described next. Reuse a running
+after the launching call returns; any such launch goes through the reporting supervisor described next.
+
+Reuse a running
 server, browser, watcher, emulator or test runner only when its working
 directory is your own checkout.
 

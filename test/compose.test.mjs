@@ -588,6 +588,41 @@ test("each core section with a reference text carries every sentence of the shor
   }
 });
 
+// A modifier's reference that restates a modifier section verbatim must keep every paragraph of the
+// short section, the same rule as for core above. The summary-excerpt modifiers paraphrase instead,
+// so their written paragraphs are deliberately absent from the reference.
+const SUMMARY_EXCERPT_MODIFIERS = new Set(["multi-agent", "squash-landing"]);
+test("each modifier reference that restates a section carries every paragraph of the short section", () => {
+  /** @param {string} text */
+  const flat = (text) => text.replace(/\s+/g, " ").trim();
+  let checked = 0;
+  for (const file of readdirSync(join(root, "rules/modifiers"))) {
+    if (SUMMARY_EXCERPT_MODIFIERS.has(file.replace(/\.md$/, ""))) {
+      continue;
+    }
+    const text = readFileSync(join(root, "rules/modifiers", file), "utf8");
+    const ref = parseFragment(text, file).meta.reference;
+    if (!ref) {
+      continue;
+    }
+    const referenceText = readFileSync(join(root, "rules/modifiers", ref), "utf8");
+    const heading = /^## (.+)$/m.exec(referenceText)?.[1];
+    const section = splitSections(text).sections.find((s) => s.heading === heading);
+    if (!section) {
+      continue;
+    }
+    checked += 1;
+    const reference = flat(referenceText);
+    const missing = section.text
+      .replace(/^## .+$/m, "")
+      .split(/\n\n+/)
+      .map(flat)
+      .filter((p) => p && !p.includes("](") && !reference.includes(p));
+    assert.deepEqual(missing, [], `${ref} lacks paragraphs the short section in ${file} has`);
+  }
+  assert(checked > 0);
+});
+
 // Owned utility entry points must follow their Bun default even when invoked directly.
 // compose.mjs deliberately keeps its npm/Node consumer header; parser fixture strings are data.
 test("shared utility entry points and ordinary test children keep the selected runtime", () => {

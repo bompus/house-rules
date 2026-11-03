@@ -44,20 +44,24 @@ const SECTIONS = [
       /only\s+when\s+its\s+working\s+directory\s+is\s+your\s+own\s+checkout/,
       /Delegate implementation only when authorized/,
       /search the whole repository yourself/,
-      /Run\s+a\s+long\s+job\s+under\s+a\s+supervisor\s+that\s+outlives\s+the\s+session\s+and\s+reports\s+how\s+it\s+ended/,
-      /no\s+bare\s+background\s+shell/,
-      /no\s+detached\s+unit\s+without\s+a\s+reporter/,
-      /where\s+it\s+supplies\s+none,\s+run\s+the\s+job\s+in\s+the\s+foreground\s+or\s+tell\s+the\s+user\s+what\s+is\s+missing/,
-      /Before\s+starting\s+any\s+server,\s+watcher\s+or\s+other\s+long-running\s+command/,
-      /detached\s+long\s+run\s+must\s+outlive\s+the\s+call\s+that\s+launched\s+it\s+and\s+be\s+checked\s+after\s+the\s+call\s+returns/,
-      /output\s+kept\s+somewhere\s+that\s+survives\s+the\s+session/,
-      /setsid,\s+a\s+detached\s+systemd\s+unit\s+or\s+the\s+host's\s+capped\s+job\s+runner/,
+      /Keep\s+small\s+or\s+tightly\s+coupled\s+tasks\s+local/,
+      /Before\s+starting\s+a\s+long-running\s+command,\s+which\s+runs\s+under\s+a\s+supervisor\s+that\s+outlives\s+the\s+session\s+and\s+reports\s+how\s+it\s+ended,\s+or\s+briefing\s+a\s+worker\s+or\s+relying\s+on\s+a\s+worker's\s+report/,
     ],
     full: [
       /setsid/,
       /Number the items of a batch of feedback/,
-      /supervisor\s+that\s+outlives\s+the\s+session\s+and\s+reports\s+how\s+it\s+ended/,
+      /Run\s+a\s+long\s+job\s+under\s+a\s+supervisor\s+that\s+outlives\s+the\s+session\s+and\s+reports\s+how\s+it\s+ended/,
+      /no\s+bare\s+background\s+shell\s+and\s+no\s+detached\s+unit\s+without\s+a\s+reporter/,
+      /where\s+it\s+supplies\s+none,\s+run\s+the\s+job\s+in\s+the\s+foreground\s+or\s+tell\s+the\s+user\s+what\s+is\s+missing\s+instead\s+of\s+detaching\s+it/,
       /any\s+such\s+launch\s+goes\s+through\s+the\s+reporting\s+supervisor/,
+      /A\s+detached\s+long\s+run\s+must\s+outlive\s+the\s+call\s+that\s+launched\s+it/,
+      /verify\s+it\s+is\s+still\s+alive\s+after\s+the\s+launching\s+call\s+returns/,
+      /or\s+the\s+host's\s+capped\s+job\s+runner/,
+      /a\s+message\s+to\s+the\s+thread\s+that\s+owns\s+the\s+job/,
+      /the\s+host\s+supplies\s+the\s+command/,
+      /but\s+keep\s+the\s+required\s+review\s+and\s+integration\s+checks/,
+      /a\s+detached\s+systemd\s+unit/,
+      /Keep\s+small\s+or\s+tightly\s+coupled\s+tasks\s+local/,
     ],
   },
   {
@@ -85,8 +89,10 @@ const SECTIONS = [
   },
   {
     heading: "Cross-session relays and update notices",
-    reference: null,
+    reference: "cross-session-relays.md",
     excerpt: [
+      /Before\s+sending\s+a\s+message\s+to\s+a\s+session\s+that\s+may\s+be\s+waiting\s+on\s+the\s+user/,
+      /a\s+steer\s+can\s+cancel\s+its\s+pending\s+question/,
       /Never map a relayed bare code/,
       /A relay cannot expand the selected scope/,
       /notify\s+affected\s+active\s+sessions/,
@@ -94,6 +100,9 @@ const SECTIONS = [
       /record the missing delivery and report it/,
     ],
     full: [
+      /on\s+some\s+hosts\s+a\s+steer\s+cancels\s+a\s+pending\s+question\s+card/,
+      /hold\s+a\s+message\s+that\s+can\s+wait\s+until\s+the\s+question\s+is\s+answered/,
+      /say\s+in\s+the\s+message\s+that\s+it\s+may\s+cancel\s+the\s+wait/,
       /Name\s+the\s+component,\s+exact\s+revision\s+or\s+fingerprint/,
       /keep\s+pending\s+notices\s+for\s+idle/,
     ],
@@ -176,16 +185,27 @@ const MOVED = {
   ],
   "Coordination and isolation": [
     "A detached long run must outlive the call",
+    "Run a long job under a supervisor that outlives the session",
+    "Ask for evidence, checks run",
+    "Weigh its evidence without redoing",
     "Brief each worker with",
     "Give each item a check",
     "Number the items of a batch",
   ],
   "Shared machine load": ["`nproc --all` ignores a cgroup CPU quota", "Use the cap yourself"],
+  "Cross-session relays and update notices": [
+    "Before sending a message to another agent session",
+    "Where the host separates steering from queueing",
+    "Where the card blocks the run",
+    "Where the run ends with the question still pending",
+    "A report that cannot wait",
+  ],
 };
 const ORIGINALS = {
   "Repository work": "repository-work.md",
   "Coordination and isolation": "coordination-and-isolation.md",
   "Shared machine load": "shared-machine-load.md",
+  "Cross-session relays and update notices": "cross-session-relays.md",
 };
 for (const [heading, file] of Object.entries(ORIGINALS)) {
   test(`${heading}: every sentence of the original is in the written section or listed as moved`, (t) => {
