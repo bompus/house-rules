@@ -100,3 +100,4 @@ priority. Small examples help investigation; they do not guarantee action or a f
 When a fix build is available, test the same reproduction and report the
 revision and before/after result. Distinguish triage, an open fix, a merged fix
 and a released fix. Verify the affected behavior before calling it resolved.
+Before agreeing that a reported problem is still unfixed, anchor the report's date to released, merged-but-unreleased or in-progress state, because a report written before a release describes the code as it was then.

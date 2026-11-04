@@ -29,10 +29,12 @@ configuration change; check each figure against its source before opening the
 pull request or pushing. Review bots and the repository's own review requirements still
 apply; neither replaces this review.
 
+Run each check or test gate bare, or redirected to a log you read after it exits, and never pipe it into `head`, `tail` or `grep`, because the consumer can hide a failure or end the gate early.
+
 Before filing a bug in any repository, follow the `hr-diagnosing-bugs` skill's
 `references/reporting.md`: reduce and verify the reproduction before submitting.
 For fixes intended for pull requests, try the simplest adequate change first;
-keep the diff focused, and write the pull request from the final diff with concrete behavior and the proof you ran.
+keep the diff focused, and write the pull request from the final diff with concrete behavior and the proof you ran. Do not run a formatter where the repository configures none, because it reflows every file and buries the change; match the surrounding style by hand.
 
 Fetch before updating a feature branch. Prefer rebasing unpublished commits this task owns; merge the fetched base into published or shared branches.
 Do not rewrite history another person or agent may rely on.
