@@ -4,6 +4,7 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- The `hr-diagnosing-bugs` skill now sends an agent following up on an existing report to its reporting reference, not only one filing an upstream bug, so the check that anchors a report's date to released, merged and in-progress state is read there.
 - The ACP panel client (`hr-code-review`) no longer discards a review because a seat's runtime wrote its own bundled skills. It now compares Git status per path, with untracked files listed one by one, and leaves out untracked files under `skills/system/` in the launch directory (Codex writes them at session start). Any other new, changed or removed file still exits 4, and the log names up to ten changed paths. A Git status that fails inside a checkout now counts as a change, not as nothing to compare.
 - The Repository work rules say to run each check or test gate bare, or redirected to a log read after it exits, and never to pipe it into `head`, `tail` or `grep`, because the consumer can hide a failure or end the gate early. Its reference adds that a formatter is not run where the repository configures none. The web-image-formats reference adds that unsigned README image URLs carry a `v=N` query parameter that is bumped with the asset, because GitHub caches README images. The bug-reporting reference adds that a report's date is anchored to released, merged-but-unreleased and in-progress state before agreeing a problem is still unfixed.
 
