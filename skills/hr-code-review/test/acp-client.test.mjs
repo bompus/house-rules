@@ -9,7 +9,7 @@ import {
   symlinkSync,
   existsSync,
 } from "node:fs";
-import { devNull, tmpdir } from "node:os";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
@@ -312,25 +312,31 @@ test("a checkout that is no longer a checkout at the end is a change", () => {
   assert.match(r.error, /git status failed/);
 });
 test("two renames that swap their sources are a change", () => {
-  const git = (/** @type {string} */ root, /** @type {string[]} */ ...args) =>
-    assert.equal(
-      spawnSync(
-        "git",
-        [
-          "-C",
-          root,
-          "-c",
-          "user.name=t",
-          "-c",
-          "user.email=t@t",
-          "-c",
-          "commit.gpgsign=false",
-          ...args,
-        ],
-        { env: { ...process.env, GIT_CONFIG_GLOBAL: devNull, GIT_CONFIG_SYSTEM: devNull } },
-      ).status,
-      0,
+  // An empty file, not the null device: git on Windows cannot read "\\.\nul" as a config file.
+  const cfgDir = mkdtempSync(join(process.env.HOUSE_RULES_TEST_TMP || tmpdir(), "acp-gitcfg-"));
+  const emptyConfig = join(cfgDir, "empty");
+  writeFileSync(emptyConfig, "");
+  const git = (/** @type {string} */ root, /** @type {string[]} */ ...args) => {
+    const result = spawnSync(
+      "git",
+      [
+        "-C",
+        root,
+        "-c",
+        "user.name=t",
+        "-c",
+        "user.email=t@t",
+        "-c",
+        "commit.gpgsign=false",
+        ...args,
+      ],
+      {
+        encoding: "utf8",
+        env: { ...process.env, GIT_CONFIG_GLOBAL: emptyConfig, GIT_CONFIG_SYSTEM: emptyConfig },
+      },
     );
+    assert.equal(result.status, 0, `git ${args.join(" ")}: ${result.stderr}`);
+  };
   const prepare = (/** @type {string} */ root) => {
     assert.equal(spawnSync("git", ["init", "-q", root]).status, 0);
     writeFileSync(join(root, "old-a"), "content of a\n".repeat(20));
@@ -340,19 +346,23 @@ test("two renames that swap their sources are a change", () => {
     git(root, "mv", "old-a", "new-a");
     git(root, "mv", "old-b", "new-b");
   };
-  const r = run(
-    {
-      git: [
-        ["mv", "new-a", "tmp"],
-        ["mv", "new-b", "new-a"],
-        ["mv", "tmp", "new-b"],
-      ],
-    },
-    [],
-    prepare,
-  );
-  assert.equal(r.code, 4);
-  assert.match(r.error, /new-a, new-b/);
+  try {
+    const r = run(
+      {
+        git: [
+          ["mv", "new-a", "tmp"],
+          ["mv", "new-b", "new-a"],
+          ["mv", "tmp", "new-b"],
+        ],
+      },
+      [],
+      prepare,
+    );
+    assert.equal(r.code, 4);
+    assert.match(r.error, /new-a, new-b/);
+  } finally {
+    rmSync(cfgDir, { recursive: true, force: true });
+  }
 });
 test("a git failure that is not 'not a git repository' is a failure to check, not a non-checkout", () => {
   const dir = mkdtempSync(join(process.env.HOUSE_RULES_TEST_TMP || tmpdir(), "acp-badcfg-"));
