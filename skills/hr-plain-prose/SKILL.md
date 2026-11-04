@@ -214,6 +214,13 @@ the code alone and write the comment. A repository's own comment rules win. Leav
 comment alone unless your change makes it false, and then fix or delete it in
 that change.
 
+Do not carry the conversation, the prompt or your edit history into code
+comments, commit messages or pull request text. Wording such as "changed from",
+"used to be", "formerly" and "as requested" usually marks it. Write for a reader
+who never saw the session, and say what the code does now and why. Where an old
+behavior must be kept, name the actual constraint instead of writing "preserve
+the existing behavior".
+
 ## Do not overcorrect
 
 - Judge by density. One "robust" or one list of three is fine; a paragraph built
