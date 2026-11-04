@@ -38,9 +38,9 @@ const serverCmd = JSON.parse(serverCmdJson);
 const cwd = realpathSync(cwdArg || process.cwd());
 const promptText = readFileSync(promptFile, "utf8");
 const HARD_TIMEOUT_MS = timeoutMin * 60 * 1000;
-// Only git's own "not a git repository" means there is nothing to compare. Any other failure (a bad config,
-// a checkout git refuses as owned by someone else) propagates: treating it as "not a checkout" would skip the
-// comparison and let a seat's writes pass.
+// Only git's own "not a git repository", or no git program at all, means there is nothing to compare. Any
+// other failure (a bad config, a checkout git refuses as owned by someone else) propagates: treating it as
+// "not a checkout" would skip the comparison and let a seat's writes pass.
 function inGitCheckout() {
   try {
     execFileSync("git", ["-C", cwd, "rev-parse", "--is-inside-work-tree"], {
@@ -50,7 +50,10 @@ function inGitCheckout() {
     });
     return true;
   } catch (e) {
-    const stderr = /** @type {{ stderr?: string }} */ (e).stderr ?? "";
+    const { code, stderr = "" } = /** @type {{ code?: string, stderr?: string }} */ (e);
+    if (code === "ENOENT") {
+      return false;
+    }
     // Git's own discovery message names the parent directories it searched; "not a git repository: <path>"
     // is a GIT_DIR or --git-dir that cannot be opened, which is a failure to check.
     if (/not a git repository \(or any of the parent directories\)/i.test(stderr)) {
@@ -116,17 +119,20 @@ function statusEntries(listing) {
   }
   return out;
 }
-// A path shown in the log: valid UTF-8 as text, otherwise each byte outside printable ASCII as \xNN, so two
-// names that differ only in bytes that are not valid UTF-8 stay distinguishable.
+// A path shown in the log: valid UTF-8 as text with control characters (a newline in a name could forge a
+// log line) written as \xNN; otherwise each byte outside printable ASCII as \xNN, so two names that differ
+// only in bytes that are not valid UTF-8 stay distinguishable.
 /** @param {string} path latin1-decoded bytes */
 function displayPath(path) {
+  const escape = (/** @type {string} */ c) => `\\x${c.charCodeAt(0).toString(16).padStart(2, "0")}`;
   try {
-    return new TextDecoder("utf-8", { fatal: true }).decode(Buffer.from(path, "latin1"));
+    const text = new TextDecoder("utf-8", { fatal: true }).decode(Buffer.from(path, "latin1"));
+    return text
+      .split("")
+      .map((c) => (c < " " || c === "\x7f" ? escape(c) : c))
+      .join("");
   } catch {
-    return path.replace(
-      /[^\x20-\x7e]/g,
-      (c) => `\\x${c.charCodeAt(0).toString(16).padStart(2, "0")}`,
-    );
+    return path.replace(/[^\x20-\x7e]/g, escape);
   }
 }
 /**

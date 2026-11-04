@@ -404,6 +404,30 @@ test("an enclosing checkout found after the launch checkout is gone does not mak
   assert.equal(r.code, 4);
   assert.match(r.error, /the git repository changed/);
 });
+test(
+  "without a git program there is nothing to compare, as before",
+  { skip: process.platform !== "linux" },
+  () => {
+    const empty = mkdtempSync(join(process.env.HOUSE_RULES_TEST_TMP || tmpdir(), "acp-nogit-"));
+    try {
+      const r = run({ env: { PATH: empty }, writeFiles: ["stray.txt"] }, [], gitRepoWithTracked);
+      assert.equal(r.code, 0);
+      assert.doesNotMatch(r.error, /FATAL/);
+    } finally {
+      rmSync(empty, { recursive: true, force: true });
+    }
+  },
+);
+// A newline in a file name is not allowed on Windows.
+test(
+  "a control character in a file name cannot forge a log line",
+  { skip: process.platform !== "linux" },
+  () => {
+    const r = run({ writeFiles: ["a\nb.txt"] }, [], gitRepoWithTracked);
+    assert.equal(r.code, 4);
+    assert.match(r.error, /the seat wrote files: a\\x0ab\.txt\n/);
+  },
+);
 // Linux only: other platforms reject a file name that is not valid UTF-8.
 test(
   "file names that differ only in bytes that are not valid UTF-8 are different files",
