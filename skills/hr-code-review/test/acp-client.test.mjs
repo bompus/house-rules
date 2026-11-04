@@ -9,7 +9,7 @@ import {
   symlinkSync,
   existsSync,
 } from "node:fs";
-import { tmpdir } from "node:os";
+import { devNull, tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
@@ -97,7 +97,7 @@ function run(
         ...flags,
       ],
       {
-        env: { ...process.env, FAKE_CONFIG: JSON.stringify(config), FAKE_LOG: log },
+        env: { ...process.env, ...config.env, FAKE_CONFIG: JSON.stringify(config), FAKE_LOG: log },
         encoding: "utf8",
         timeout: config.hard ? 75000 : 12000,
       },
@@ -314,7 +314,21 @@ test("a checkout that is no longer a checkout at the end is a change", () => {
 test("two renames that swap their sources are a change", () => {
   const git = (/** @type {string} */ root, /** @type {string[]} */ ...args) =>
     assert.equal(
-      spawnSync("git", ["-C", root, "-c", "user.name=t", "-c", "user.email=t@t", ...args]).status,
+      spawnSync(
+        "git",
+        [
+          "-C",
+          root,
+          "-c",
+          "user.name=t",
+          "-c",
+          "user.email=t@t",
+          "-c",
+          "commit.gpgsign=false",
+          ...args,
+        ],
+        { env: { ...process.env, GIT_CONFIG_GLOBAL: devNull, GIT_CONFIG_SYSTEM: devNull } },
+      ).status,
       0,
     );
   const prepare = (/** @type {string} */ root) => {
@@ -322,7 +336,7 @@ test("two renames that swap their sources are a change", () => {
     writeFileSync(join(root, "old-a"), "content of a\n".repeat(20));
     writeFileSync(join(root, "old-b"), "content of b\n".repeat(20));
     git(root, "add", "-A");
-    git(root, "commit", "-q", "-m", "init");
+    git(root, "commit", "-q", "--no-verify", "-m", "init");
     git(root, "mv", "old-a", "new-a");
     git(root, "mv", "old-b", "new-b");
   };
@@ -340,6 +354,18 @@ test("two renames that swap their sources are a change", () => {
   assert.equal(r.code, 4);
   assert.match(r.error, /new-a, new-b/);
 });
+test("a git failure that is not 'not a git repository' is a failure to check, not a non-checkout", () => {
+  const dir = mkdtempSync(join(process.env.HOUSE_RULES_TEST_TMP || tmpdir(), "acp-badcfg-"));
+  try {
+    const bad = join(dir, "gitconfig");
+    writeFileSync(bad, "[core\nthis is not a config file\n");
+    const r = run({ env: { GIT_CONFIG_GLOBAL: bad } }, [], gitRepoWithTracked);
+    assert.equal(r.code, 1);
+    assert.match(r.error, /FATAL: git status failed at launch/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
 // Linux only: other platforms reject a file name that is not valid UTF-8.
 test(
   "file names that differ only in bytes that are not valid UTF-8 are different files",
@@ -354,6 +380,8 @@ test(
     };
     const r = run({ renameBytes: [["\xff.txt", "\xfe.txt"]] }, [], prepare);
     assert.equal(r.code, 4);
+    // Both names are in the log, each byte written out; neither is a replacement character.
+    assert.match(r.error, /\\xfe\.txt, \\xff\.txt|\\xff\.txt, \\xfe\.txt/);
   },
 );
 test("idle deadline cancels and reaps a silent adapter", () => {

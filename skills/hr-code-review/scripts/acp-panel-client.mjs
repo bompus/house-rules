@@ -38,12 +38,23 @@ const serverCmd = JSON.parse(serverCmdJson);
 const cwd = realpathSync(cwdArg || process.cwd());
 const promptText = readFileSync(promptFile, "utf8");
 const HARD_TIMEOUT_MS = timeoutMin * 60 * 1000;
+// Only git's own "not a git repository" means there is nothing to compare. Any other failure (a bad config,
+// a checkout git refuses as owned by someone else) propagates: treating it as "not a checkout" would skip the
+// comparison and let a seat's writes pass.
 function inGitCheckout() {
   try {
-    execFileSync("git", ["-C", cwd, "rev-parse", "--is-inside-work-tree"], { stdio: "ignore" });
+    execFileSync("git", ["-C", cwd, "rev-parse", "--is-inside-work-tree"], {
+      encoding: "utf8",
+      env: { ...process.env, LC_ALL: "C" },
+      stdio: ["ignore", "ignore", "pipe"],
+    });
     return true;
-  } catch {
-    return false;
+  } catch (e) {
+    const stderr = /** @type {{ stderr?: string }} */ (e).stderr ?? "";
+    if (/not a git repository/i.test(stderr)) {
+      return false;
+    }
+    throw e;
   }
 }
 // Both listings come from `git status --porcelain -z --untracked-files=all`: -z gives raw, unquoted paths
@@ -95,6 +106,19 @@ function statusEntries(listing) {
   }
   return out;
 }
+// A path shown in the log: valid UTF-8 as text, otherwise each byte outside printable ASCII as \xNN, so two
+// names that differ only in bytes that are not valid UTF-8 stay distinguishable.
+/** @param {string} path latin1-decoded bytes */
+function displayPath(path) {
+  try {
+    return new TextDecoder("utf-8", { fatal: true }).decode(Buffer.from(path, "latin1"));
+  } catch {
+    return path.replace(
+      /[^\x20-\x7e]/g,
+      (c) => `\\x${c.charCodeAt(0).toString(16).padStart(2, "0")}`,
+    );
+  }
+}
 /**
  * Paths whose status differs between the launch and final listings, leaving out untracked files the
  * runtime added under skills/system/.
@@ -113,9 +137,7 @@ function changedPaths(before, after, prefix) {
     (e) => !wasKeys.has(key(e)) && !(e.status === "??" && e.path.startsWith(prefix + RUNTIME_DIR)),
   );
   const removed = was.filter((e) => !nowKeys.has(key(e)));
-  return [
-    ...new Set([...added, ...removed].map((e) => Buffer.from(e.path, "latin1").toString("utf8"))),
-  ];
+  return [...new Set([...added, ...removed].map((e) => e.path))].map(displayPath);
 }
 /** @type {string | null} */
 let statusBefore;
