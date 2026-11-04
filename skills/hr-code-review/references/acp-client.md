@@ -28,7 +28,12 @@ These controls govern client-provided ACP capabilities. They do not sandbox an
 agent's own tools, prevent dishonest setting reports, or eliminate filesystem
 races during concurrent replacement. The caller must qualify the provider's
 own read-only route. Git status comparison detects some workspace changes; it
-does not detect ignored-file writes or prove that no writes occurred.
+does not detect ignored-file writes or prove that no writes occurred. The
+comparison is per path and lists each untracked file. It leaves out untracked
+files under `skills/system/` in the launch directory, which a seat's runtime
+(Codex) writes by itself at session start, so a seat's own new file there goes
+undetected; a tracked change there, or a file that was there at launch and is
+gone at the end, still counts.
 
 The output contains collected agent text. Exit codes are:
 
@@ -36,7 +41,7 @@ The output contains collected agent text. Exit codes are:
 - 1: setup/protocol failure
 - 2: missing arguments
 - 3: incomplete verdict
-- 4: changed Git status (the answer file is written after this comparison)
+- 4: changed Git status, with the changed paths in the log (the answer file is written after this comparison)
 - 124: deadline, even when the agent honors the cancel
 
 A permission-cancelled turn may continue within `--max-turns`. A matching marker

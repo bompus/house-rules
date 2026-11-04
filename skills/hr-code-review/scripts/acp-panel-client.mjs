@@ -38,14 +38,95 @@ const serverCmd = JSON.parse(serverCmdJson);
 const cwd = realpathSync(cwdArg || process.cwd());
 const promptText = readFileSync(promptFile, "utf8");
 const HARD_TIMEOUT_MS = timeoutMin * 60 * 1000;
-function gitStatus() {
+function inGitCheckout() {
   try {
-    return execFileSync("git", ["-C", cwd, "status", "--porcelain"], { encoding: "utf8" });
+    execFileSync("git", ["-C", cwd, "rev-parse", "--is-inside-work-tree"], { stdio: "ignore" });
+    return true;
   } catch {
-    return null;
+    return false;
   }
 }
-const statusBefore = gitStatus();
+// Both listings come from `git status --porcelain -z --untracked-files=all`: -z gives raw, unquoted paths
+// (no escapes, no arrows), and --untracked-files=all lists each new file instead of collapsing a new
+// directory into one `?? skills/` entry that cannot be told from the seat's own files. A status that
+// fails inside a git checkout throws: that is a failure to check, not "nothing to compare". The listing is
+// read as latin1, one character per byte, so two different file names never decode to the same string (a
+// name that is not valid UTF-8 would otherwise turn into U+FFFD); changedPaths decodes the names it reports.
+function gitStatus() {
+  if (!inGitCheckout()) {
+    return null; // not a git checkout: nothing to compare
+  }
+  return execFileSync("git", ["-C", cwd, "status", "--porcelain", "-z", "--untracked-files=all"], {
+    encoding: "latin1",
+    maxBuffer: 512 * 1024 * 1024,
+  });
+}
+// Porcelain paths are relative to the repository root; the launch directory's path inside it is the prefix
+// (empty at the root). Only the output's final newline goes: a directory name may begin or end with a space.
+// It is read as latin1 like the listing. A failure throws: the runtime exemption would otherwise apply to
+// the wrong directory.
+function gitPrefix() {
+  return execFileSync("git", ["-C", cwd, "rev-parse", "--show-prefix"], {
+    encoding: "latin1",
+  }).replace(/\n$/, "");
+}
+// A seat's runtime can write its own files into the launch directory without the seat doing anything:
+// Codex materializes its bundled system skills (for example run-workflow) under skills/system/ when a
+// session starts. Untracked files there are not the seat's changes. A tracked change, and a file that was
+// under skills/system/ at launch and is gone at the end, still count.
+const RUNTIME_DIR = "skills/system/";
+/**
+ * @param {string} listing
+ * @returns {{ status: string, path: string, from: string }[]}
+ */
+function statusEntries(listing) {
+  const parts = listing.split("\0");
+  const out = [];
+  for (let i = 0; i < parts.length; i++) {
+    const part = parts[i] ?? "";
+    if (part.length < 4) {
+      continue;
+    }
+    const status = part.slice(0, 2);
+    // A rename or copy is followed by its original path, which is not an entry of its own but is part of
+    // what the entry says: two renames that swap their sources are a change.
+    const from = /[RC]/.test(status) ? (parts[++i] ?? "") : "";
+    out.push({ status, path: part.slice(3), from });
+  }
+  return out;
+}
+/**
+ * Paths whose status differs between the launch and final listings, leaving out untracked files the
+ * runtime added under skills/system/.
+ * @param {string} before
+ * @param {string} after
+ * @param {string} prefix
+ */
+function changedPaths(before, after, prefix) {
+  const key = (/** @type {{ status: string, path: string, from: string }} */ e) =>
+    `${e.status}\0${e.path}\0${e.from}`;
+  const was = statusEntries(before);
+  const now = statusEntries(after);
+  const wasKeys = new Set(was.map(key));
+  const nowKeys = new Set(now.map(key));
+  const added = now.filter(
+    (e) => !wasKeys.has(key(e)) && !(e.status === "??" && e.path.startsWith(prefix + RUNTIME_DIR)),
+  );
+  const removed = was.filter((e) => !nowKeys.has(key(e)));
+  return [
+    ...new Set([...added, ...removed].map((e) => Buffer.from(e.path, "latin1").toString("utf8"))),
+  ];
+}
+/** @type {string | null} */
+let statusBefore;
+try {
+  statusBefore = gitStatus();
+} catch (e) {
+  console.error(
+    "[client] FATAL: git status failed at launch: " + (e instanceof Error ? e.message : String(e)),
+  );
+  process.exit(1);
+}
 const child = spawn(serverCmd[0], serverCmd.slice(1), {
   cwd,
   env: process.env,
@@ -345,10 +426,22 @@ try {
   child.stdin.end();
   setTimeout(() => child.kill(), 1000).unref();
   const ok = verdictMarker ? collected.includes(verdictMarker) : true;
-  const changed = statusBefore !== null && gitStatus() !== statusBefore;
+  let changedFiles = /** @type {string[]} */ ([]);
+  if (statusBefore !== null) {
+    try {
+      const statusAfter = gitStatus();
+      changedFiles =
+        statusAfter === null
+          ? ["(git status failed)"]
+          : changedPaths(statusBefore, statusAfter, gitPrefix());
+    } catch {
+      changedFiles = ["(git status failed)"];
+    }
+  }
+  const changed = changedFiles.length > 0;
   if (changed) {
     console.error(
-      `[client] WORKSPACE CHANGED: git status in ${cwd} differs from launch; the seat wrote files`,
+      `[client] WORKSPACE CHANGED: git status in ${cwd} differs from launch; the seat wrote files: ${changedFiles.slice(0, 10).join(", ")}`,
     );
   }
   // The answer is written after the status comparison so an output path inside the review

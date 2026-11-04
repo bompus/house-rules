@@ -17,6 +17,7 @@ const client = fileURLToPath(new URL("../scripts/acp-panel-client.mjs", import.m
 const fake = `
 import readline from 'node:readline';
 import fs from 'node:fs';
+import {execFileSync} from 'node:child_process';
 const cfg=JSON.parse(process.env.FAKE_CONFIG);let options=[{id:'model',currentValue:'default',options:[{value:'chosen'}]},{id:cfg.effortId||'effort',currentValue:'medium',options:[{value:'high'}]},{id:'mode',currentValue:'write',options:[{value:'read-only'}]}];
 if(cfg.noMode) options=options.filter(o=>o.id!=='mode');
 if(cfg.noEffort) options=options.filter(o=>!o.id.includes('effort'));
@@ -45,6 +46,11 @@ readline.createInterface({input:process.stdin}).on('line',async line=>{
   const results=[];
   for(const request of cfg.requests||[])results.push(await ask(request.method,request.params));
   if(cfg.mutate)fs.writeFileSync('tracked.txt','changed');
+  for(const f of cfg.writeFiles||[]){fs.mkdirSync(f.slice(0,f.lastIndexOf('/')+1)||'.',{recursive:true});fs.writeFileSync(f,'written');}
+  for(const f of cfg.removeFiles||[])fs.rmSync(f);
+  for(const [a,b] of cfg.renameBytes||[])fs.renameSync(Buffer.from(a,'latin1'),Buffer.from(b,'latin1'));
+  if(cfg.removeGit)fs.rmSync('.git',{recursive:true,force:true});
+  for(const args of cfg.git||[])execFileSync('git',args);
   const chunk=text=>send({method:'session/update',params:{sessionId:'s',update:{sessionUpdate:'agent_message_chunk',content:{type:'text',text}}}});
   const finish=()=>{chunk(JSON.stringify({results,options})+(cfg.noVerdict?'':'\\nVERDICT: A'));send({id:m.id,result:{stopReason:cfg.cancelled?'cancelled':'end_turn'}});};
   if(cfg.chatty){const timer=setInterval(()=>chunk('.'),100);setTimeout(()=>{clearInterval(timer);finish();},1800);}else finish();
@@ -232,6 +238,124 @@ test("preserves workspace-change exit status", () => {
   });
   assert.equal(r.code, 4);
 });
+// A seat's runtime writes its own bundled skills under skills/system/ (Codex does this at session start).
+const RUNTIME_SKILL = "skills/system/run-workflow/SKILL.md";
+/** @param {string} root */
+function gitRepoWithTracked(root) {
+  assert.equal(spawnSync("git", ["init", "-q", root]).status, 0);
+  writeFileSync(join(root, "tracked.txt"), "before");
+  assert.equal(spawnSync("git", ["-C", root, "add", "tracked.txt"]).status, 0);
+}
+test("an untracked skills/system file the runtime writes is not a workspace change", () => {
+  const r = run({ writeFiles: [RUNTIME_SKILL] }, [], gitRepoWithTracked);
+  assert.equal(r.code, 0);
+  assert.match(r.text, /VERDICT:/);
+  assert.doesNotMatch(r.error, /WORKSPACE CHANGED/);
+});
+test("any other new file is a workspace change and the log names it", () => {
+  const r = run(
+    { writeFiles: [RUNTIME_SKILL, "stray.txt", "skills/mine/SKILL.md"] },
+    [],
+    gitRepoWithTracked,
+  );
+  assert.equal(r.code, 4);
+  assert.match(r.error, /WORKSPACE CHANGED.*skills\/mine\/SKILL\.md, stray\.txt/);
+  assert.doesNotMatch(r.error, /run-workflow/);
+  assert.match(r.text, /VERDICT:/);
+});
+test("a launch directory below the repository root has its own skills/system directory", () => {
+  const prepare = (/** @type {string} */ root) => {
+    gitRepoWithTracked(root);
+    mkdirSync(join(root, "packages", "app"), { recursive: true });
+    writeFileSync(join(root, "packages", "app", "a.txt"), "x");
+    assert.equal(spawnSync("git", ["-C", root, "add", "packages"]).status, 0);
+    return join(root, "packages", "app");
+  };
+  assert.equal(run({ writeFiles: [RUNTIME_SKILL] }, [], prepare).code, 0);
+  const r = run({ writeFiles: ["../../skills/system/x/SKILL.md"] }, [], prepare);
+  assert.equal(r.code, 4);
+  assert.match(r.error, /skills\/system\/x\/SKILL\.md/);
+});
+test("a tracked skills/system file that changes still counts", () => {
+  const prepare = (/** @type {string} */ root) => {
+    gitRepoWithTracked(root);
+    mkdirSync(join(root, "skills", "system"), { recursive: true });
+    writeFileSync(join(root, "skills", "system", "kept.md"), "before");
+    assert.equal(spawnSync("git", ["-C", root, "add", "skills"]).status, 0);
+  };
+  const r = run({ writeFiles: ["skills/system/kept.md"] }, [], prepare);
+  assert.equal(r.code, 4);
+  assert.match(r.error, /skills\/system\/kept\.md/);
+});
+test("a skills/system file that existed at launch and is gone at the end still counts", () => {
+  const prepare = (/** @type {string} */ root) => {
+    gitRepoWithTracked(root);
+    mkdirSync(join(root, "skills", "system"), { recursive: true });
+    writeFileSync(join(root, "skills", "system", "draft.md"), "untracked at launch");
+  };
+  const r = run({ removeFiles: ["skills/system/draft.md"] }, [], prepare);
+  assert.equal(r.code, 4);
+  assert.match(r.error, /skills\/system\/draft\.md/);
+});
+// No quote or arrow in the name: Windows rejects both in a file name.
+test("paths with spaces and non-ASCII characters come through unquoted", () => {
+  const r = run({ writeFiles: ["a space é.txt"] }, [], gitRepoWithTracked);
+  assert.equal(r.code, 4);
+  assert.match(r.error, /a space é\.txt/);
+});
+test("a checkout that is no longer a checkout at the end is a change", () => {
+  // A clean checkout: an empty listing at launch must not be mistaken for an empty listing at the end.
+  const r = run({ removeGit: true }, [], (root) => {
+    assert.equal(spawnSync("git", ["init", "-q", root]).status, 0);
+  });
+  assert.equal(r.code, 4);
+  assert.match(r.error, /git status failed/);
+});
+test("two renames that swap their sources are a change", () => {
+  const git = (/** @type {string} */ root, /** @type {string[]} */ ...args) =>
+    assert.equal(
+      spawnSync("git", ["-C", root, "-c", "user.name=t", "-c", "user.email=t@t", ...args]).status,
+      0,
+    );
+  const prepare = (/** @type {string} */ root) => {
+    assert.equal(spawnSync("git", ["init", "-q", root]).status, 0);
+    writeFileSync(join(root, "old-a"), "content of a\n".repeat(20));
+    writeFileSync(join(root, "old-b"), "content of b\n".repeat(20));
+    git(root, "add", "-A");
+    git(root, "commit", "-q", "-m", "init");
+    git(root, "mv", "old-a", "new-a");
+    git(root, "mv", "old-b", "new-b");
+  };
+  const r = run(
+    {
+      git: [
+        ["mv", "new-a", "tmp"],
+        ["mv", "new-b", "new-a"],
+        ["mv", "tmp", "new-b"],
+      ],
+    },
+    [],
+    prepare,
+  );
+  assert.equal(r.code, 4);
+  assert.match(r.error, /new-a, new-b/);
+});
+// Linux only: other platforms reject a file name that is not valid UTF-8.
+test(
+  "file names that differ only in bytes that are not valid UTF-8 are different files",
+  { skip: process.platform !== "linux" },
+  () => {
+    const prepare = (/** @type {string} */ root) => {
+      gitRepoWithTracked(root);
+      writeFileSync(
+        Buffer.concat([Buffer.from(root + "/"), Buffer.from("\xff.txt", "latin1")]),
+        "x",
+      );
+    };
+    const r = run({ renameBytes: [["\xff.txt", "\xfe.txt"]] }, [], prepare);
+    assert.equal(r.code, 4);
+  },
+);
 test("idle deadline cancels and reaps a silent adapter", () => {
   const r = run({ silent: true }, ["--idle-min", "0.01"]);
   assert.equal(r.code, 124);
