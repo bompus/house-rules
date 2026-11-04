@@ -51,7 +51,9 @@ function inGitCheckout() {
     return true;
   } catch (e) {
     const stderr = /** @type {{ stderr?: string }} */ (e).stderr ?? "";
-    if (/not a git repository/i.test(stderr)) {
+    // Git's own discovery message names the parent directories it searched; "not a git repository: <path>"
+    // is a GIT_DIR or --git-dir that cannot be opened, which is a failure to check.
+    if (/not a git repository \(or any of the parent directories\)/i.test(stderr)) {
       return false;
     }
     throw e;
@@ -67,10 +69,18 @@ function gitStatus() {
   if (!inGitCheckout()) {
     return null; // not a git checkout: nothing to compare
   }
-  return execFileSync("git", ["-C", cwd, "status", "--porcelain", "-z", "--untracked-files=all"], {
+  return execFileSync(
+    "git",
+    ["-C", cwd, "status", "--porcelain", "-z", "--untracked-files=all", "--renames"],
+    { encoding: "latin1", maxBuffer: 512 * 1024 * 1024 },
+  );
+}
+// The repository the comparison belongs to. If the checkout at launch is gone at the end and git finds an
+// enclosing one, a clean listing from that one says nothing about the launch directory's files.
+function gitDir() {
+  return execFileSync("git", ["-C", cwd, "rev-parse", "--absolute-git-dir"], {
     encoding: "latin1",
-    maxBuffer: 512 * 1024 * 1024,
-  });
+  }).replace(/\n$/, "");
 }
 // Porcelain paths are relative to the repository root; the launch directory's path inside it is the prefix
 // (empty at the root). Only the output's final newline goes: a directory name may begin or end with a space.
@@ -141,8 +151,11 @@ function changedPaths(before, after, prefix) {
 }
 /** @type {string | null} */
 let statusBefore;
+/** @type {string | null} */
+let gitDirBefore = null;
 try {
   statusBefore = gitStatus();
+  gitDirBefore = statusBefore === null ? null : gitDir();
 } catch (e) {
   console.error(
     "[client] FATAL: git status failed at launch: " + (e instanceof Error ? e.message : String(e)),
@@ -455,7 +468,9 @@ try {
       changedFiles =
         statusAfter === null
           ? ["(git status failed)"]
-          : changedPaths(statusBefore, statusAfter, gitPrefix());
+          : gitDir() !== gitDirBefore
+            ? ["(the git repository changed)"]
+            : changedPaths(statusBefore, statusAfter, gitPrefix());
     } catch {
       changedFiles = ["(git status failed)"];
     }

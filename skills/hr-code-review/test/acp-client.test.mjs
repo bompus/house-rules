@@ -328,6 +328,8 @@ test("two renames that swap their sources are a change", () => {
         "user.email=t@t",
         "-c",
         "commit.gpgsign=false",
+        "-c",
+        `core.hooksPath=${cfgDir}`,
         ...args,
       ],
       {
@@ -338,7 +340,7 @@ test("two renames that swap their sources are a change", () => {
     assert.equal(result.status, 0, `git ${args.join(" ")}: ${result.stderr}`);
   };
   const prepare = (/** @type {string} */ root) => {
-    assert.equal(spawnSync("git", ["init", "-q", root]).status, 0);
+    git(root, "init", "-q", "--template=");
     writeFileSync(join(root, "old-a"), "content of a\n".repeat(20));
     writeFileSync(join(root, "old-b"), "content of b\n".repeat(20));
     git(root, "add", "-A");
@@ -349,6 +351,12 @@ test("two renames that swap their sources are a change", () => {
   try {
     const r = run(
       {
+        // Rename detection switched off by configuration must not hide the swap.
+        env: {
+          GIT_CONFIG_COUNT: "1",
+          GIT_CONFIG_KEY_0: "status.renames",
+          GIT_CONFIG_VALUE_0: "false",
+        },
         git: [
           ["mv", "new-a", "tmp"],
           ["mv", "new-b", "new-a"],
@@ -375,6 +383,26 @@ test("a git failure that is not 'not a git repository' is a failure to check, no
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
+});
+test("a GIT_DIR that cannot be opened is a failure to check, not a non-checkout", () => {
+  const r = run(
+    { env: { GIT_DIR: join(tmpdir(), "acp-no-such-git-dir") } },
+    [],
+    gitRepoWithTracked,
+  );
+  assert.equal(r.code, 1);
+  assert.match(r.error, /FATAL: git status failed at launch/);
+});
+test("an enclosing checkout found after the launch checkout is gone does not make a change look clean", () => {
+  const prepare = (/** @type {string} */ root, /** @type {string} */ dir) => {
+    // The launch directory is a clean checkout inside an ignored directory of another clean checkout.
+    assert.equal(spawnSync("git", ["init", "-q", dir]).status, 0);
+    writeFileSync(join(dir, ".gitignore"), "repo/\n");
+    assert.equal(spawnSync("git", ["init", "-q", root]).status, 0);
+  };
+  const r = run({ removeGit: true, writeFiles: ["stray.txt"] }, [], prepare);
+  assert.equal(r.code, 4);
+  assert.match(r.error, /the git repository changed/);
 });
 // Linux only: other platforms reject a file name that is not valid UTF-8.
 test(
