@@ -46,7 +46,7 @@ readline.createInterface({input:process.stdin}).on('line',async line=>{
   const results=[];
   for(const request of cfg.requests||[])results.push(await ask(request.method,request.params));
   if(cfg.mutate)fs.writeFileSync('tracked.txt','changed');
-  for(const f of cfg.writeFiles||[]){fs.mkdirSync(f.slice(0,f.lastIndexOf('/')+1)||'.',{recursive:true});fs.writeFileSync(f,'written');}
+  for(const f of cfg.writeFiles||[]){const d=f.slice(0,f.lastIndexOf('/')+1);if(d)fs.mkdirSync(d,{recursive:true});fs.writeFileSync(f,'written');}
   for(const f of cfg.removeFiles||[])fs.rmSync(f);
   for(const [a,b] of cfg.renameBytes||[])fs.renameSync(Buffer.from(a,'latin1'),Buffer.from(b,'latin1'));
   if(cfg.removeGit)fs.rmSync('.git',{recursive:true,force:true});
