@@ -21,7 +21,7 @@ user, check whether your host's send can steer a running turn and cancel that
 wait: on some hosts a steer cancels a pending question card (T3 Code, measured;
 pingdotgg/t3code#26841 reports approvals too); a steer, including an auto send to a running thread,
 also interrupts the receiving thread's foreground tool call after about 5 seconds on T3 Code's Claude threads
-(measured 2026-11-05), and T3's Follow-up behavior setting (Queue or Steer) decides how a message typed into a
+(measured), and T3's Follow-up behavior setting (Queue or Steer) decides how a message typed into a
 running thread is sent. Where the host separates steering from queueing, queue
 the message. Where the card blocks the run, a queued message waits for the
 answer. Where the run ends with the question still pending, a queued message
