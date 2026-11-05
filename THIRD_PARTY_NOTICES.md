@@ -15,7 +15,21 @@ https://x.com/nateberkopec/status/2114819619513135180.
   No post text or screenshot is reproduced. The posts state no reuse licence;
   this repository's MIT licence applies to its newly written guidance.
 
-## Cursor workflow ideas
+## Session history in comments
+
+Sources: https://github.com/astral-sh/uv/blob/main/AGENTS.md (compared at
+revision `c5fed68440e161dfd18b2c2b2dd5a8744ef824a5`, licensed under Apache-2.0 or MIT)
+and https://x.com/davekiss/status/2118094079879794894.
+
+- `skills/hr-plain-prose/SKILL.md`: independently written guidance informed by
+  uv's rules against leaking conversation or iteration history into comments and
+  pull request text and against past-facing wording. It quotes one phrase from
+  uv's file, "preserve the existing behavior", as an example of that wording.
+  No other uv text is reproduced, and the post's script and screenshots are not
+  reproduced.
+
+This repository's MIT licence applies to the newly written guidance, not to uv's
+file or the post.
 
 Source: https://cursor.com/docs/skills
 
