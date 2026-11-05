@@ -1,0 +1,16 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+  - package-ecosystem: bun
+    directory: /
+    schedule:
+      interval: monthly
+    ignore:
+      # typescript is pinned to its beta tag (7.1.0-beta). Without this rule Dependabot proposes the nightly 7.1.0-dev.*
+      # builds, which sort above the beta; this range covers those and leaves betas, rcs and releases alone.
+      # Move the range to the new minor when the pin moves.
+      - dependency-name: typescript
+        versions: [">=7.1.0-dev <7.1.0-rc"]
