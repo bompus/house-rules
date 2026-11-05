@@ -37,6 +37,8 @@ const SECTIONS = [
       /updating\s+or\s+disabling/,
       /sends\s+no\s+"nothing\s+to\s+report"\s+message/,
       /until\s+the\s+job\s+ends/,
+      /no\s+metered\s+route\s+unless\s+approved/,
+      /change\s+in\s+a\s+supported\s+forecast/,
       /longer than about 10 minutes/,
       /status update on its\s+own schedule/,
       /fire condition/,
