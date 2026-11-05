@@ -31,6 +31,8 @@ and https://x.com/davekiss/status/2118094079879794894.
 This repository's MIT licence applies to the newly written guidance, not to uv's
 file or the post.
 
+## Cursor workflow ideas
+
 Source: https://cursor.com/docs/skills
 
 - `skills/hr-writing-pr/references/splitting.md`: independently written workflow informed by the
