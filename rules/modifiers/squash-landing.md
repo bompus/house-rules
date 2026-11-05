@@ -15,8 +15,7 @@ answer all findings, resolve threads, and read the full review body. A bot that
 reports no quota or capacity is skipped; record which and why.
 
 During integration, never switch, reset, force-move or remove the session's
-checkout. Default-branch updates must meet the fast-forward
-conditions in § Landing. After the merge, fetch first; move off a landed branch
+checkout. After the merge, fetch first; move off a landed branch
 only when its content is in the base and the tree is clean. When the base is
 checked out elsewhere, detach at the fetched base. Never merge, reset or stash
 to move the checkout. Leave app-managed checkouts for the app to retire.
