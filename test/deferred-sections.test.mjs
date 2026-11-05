@@ -35,6 +35,8 @@ const SECTIONS = [
     excerpt: [
       /posted\s+even\s+when\s+nothing\s+changed/,
       /updating\s+or\s+disabling/,
+      /taking\s+over\s+or\s+resuming/,
+      /whole-task\s+ETA/,
       /sends\s+no\s+"nothing\s+to\s+report"\s+message/,
       /until\s+the\s+job\s+ends/,
       /no\s+metered\s+route\s+unless\s+approved/,
