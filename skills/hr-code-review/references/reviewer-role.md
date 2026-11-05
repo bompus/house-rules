@@ -1,8 +1,10 @@
 # Independent review role
 
 Use this brief when a host lets you define a standing reviewer, or when you hand
-a review to a read-only sub-agent. The parent supplies intent, the diff, changed
-paths and verification evidence. The reviewer works within that scope.
+a review to a read-only sub-agent. The parent supplies intent, the head or diff, changed
+paths and verification evidence, and names every model that wrote any part of the
+reviewed head (vendor, name, version, effort if known), so the reviewer can check
+that it is not one of them. The reviewer works within that scope.
 
 ## Method
 
