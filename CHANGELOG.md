@@ -4,6 +4,8 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- The `hr-ordering-tests` skill's first step now says that when you do not yet know which status fields or flag combinations the code treats as states, list each one first, with its states and the transitions the code makes (file and line), and take the invariants from that list.
+
 ## 0.20.0 - 2026-11-06
 
 - Add the opt-in `skill-routing` modifier. At the start of each task the agent checks what the user is doing, picks the available skill that best fits and uses any other that clearly applies; a follow-up or small edit on the same task keeps that skill and adds another when it reveals details that skill covers, a new task or changed goal picks again, and when none fits it uses none and does not mention it. An A/B test of the first version of the modifier (its wording said to pick the one best-fitting skill and keep it for follow-ups; the "also use any other that clearly applies" and "add another when a follow-up reveals details it covers" wording came after and was not re-measured), on a 60-skill catalog with Claude Code 2.1.318 (10 new prompts, 3 runs each, a full set of user rules in both arms), found that the five bullets raised skill calls on the prompts that fit a skill from 13 to 18 of 18 on Sonnet and from 11 to 14 of 18 on Haiku, and four prompts that fit no skill called none in every arm (12 of 12 each). The test was small and not held out, and covered only the first message of a task.

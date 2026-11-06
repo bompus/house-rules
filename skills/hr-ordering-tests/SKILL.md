@@ -15,7 +15,10 @@ the implementation instead of a separate model that can drift from it.
 
 1. **Name the invariants.** State what must hold after any sequence, such as
    "a completed record never reopens" or "the stored timestamp never goes
-   back". Done when each one is a yes/no check on observable state.
+   back". Done when each one is a yes/no check on observable state. When you
+   do not yet know which status fields or flag combinations the code treats as
+   states, list them first, each with its states and the transitions the code
+   makes (file and line), and take the invariants from that list.
 2. **List the events.** Include each distinct write, message, restart or reset
    an actor can produce, with the variants that take different code paths:
    an older, equal and newer timestamp; a field left out; another identity
