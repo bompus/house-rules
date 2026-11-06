@@ -144,9 +144,9 @@ Pick with these in mind; none of them is free.
     to a thread with a pending question where the host allows it; the
     `cross-session-relay` rule says so.
   - Text written before a card may not display on some hosts
-    ([issue 28775](https://github.com/pingdotgg/t3code/issues/28775)), so each card's
-    options say what they do and name any material kept in the text offer, which
-    stays complete beside them.
+    ([issue 28775](https://github.com/pingdotgg/t3code/issues/28775)), so each card
+    stands alone: its question names any material kept in the text offer, which stays
+    complete beside it, and each option says what it decides.
   - Some hosts expose no card tool to some providers
     ([issue 22736](https://github.com/pingdotgg/t3code/issues/22736)), and a card can be
     dismissed or skipped.
