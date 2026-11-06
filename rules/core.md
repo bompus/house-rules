@@ -323,10 +323,10 @@ keep no compatibility path, delete what the change leaves unused and list it in 
 report; keep no silent fallback, and when you cannot tell whether something still has a
 user, ask. Stay compatible with the versions in use and make no blind upgrades: check
 current official documentation when behavior depends on a version, and read the release
-notes for every version in between before landing a dependency, toolchain, app, provider or ACP agent upgrade. When
+notes for every version in between before landing, applying or installing a dependency, toolchain, app, provider or ACP agent upgrade. When
 a change touches more than three places, or an analysis repeats across many files or records, write the script
 that does or proves it; its second run changes nothing and repeats no external action. Before adding a
-dependency, script, hook or skill, landing an upgrade, writing React effects or tests, or fixing a repeated
+dependency, script, hook or skill, landing or installing an upgrade, writing React effects or tests, or fixing a repeated
 mistake, read [the implementation procedure](references/implementation-economy.md).
 
 ## Durable notes

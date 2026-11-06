@@ -35,11 +35,11 @@
   the script must change nothing and repeat no external action, such as a
   push or a sent message.
 - Check current official documentation when behavior depends on a version, and
-  stay compatible with the versions in use; no blind upgrades. Before landing an
-  upgrade of a dependency, toolchain, app, provider or ACP agent, read the
-  release notes and migration notes for every version in between (the upstream
-  source when they are thin), apply their migration steps and config changes,
-  and report: what affects this setup, fixes for bugs already hit, useful
+  stay compatible with the versions in use; no blind upgrades. Before landing,
+  applying or installing an upgrade of a dependency, toolchain, app, provider
+  or ACP agent, read the release notes and migration notes for every version in
+  between (the upstream source when they are thin), apply their migration steps
+  and config changes, and report: what affects this setup, fixes for bugs already hit, useful
   additions, changes the user must make, and new features, rules or options
   worth adopting or researching. Scale the report to the change: a patch bump
   with no behavior change can be one line.
