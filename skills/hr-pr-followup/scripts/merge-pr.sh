@@ -69,7 +69,9 @@
 #
 # --wait [--timeout <minutes>] is passed to check-pr-review.ts, which then polls while a review or another
 # check on the head is still running (30 minutes by default) and reports as usual afterwards. A timeout or any
-# open finding still refuses, so nothing is landed on a review that has not finished. --timeout needs --wait.
+# open finding still refuses, so nothing is landed on a review that has not finished. After a wait the script
+# reads the PR again, and refuses when it is no longer open, its base or head changed, or an open PR now
+# targets its head. --timeout needs --wait.
 #
 # Exit status: 0 landed and every local default current; 1 refused or failed; 2 usage; 3 landed, local sync pending.
 #
@@ -86,6 +88,7 @@ REMOTE=""
 EXPLAIN=0
 WAIT=0
 WAIT_TIMEOUT=""
+TIMEOUT_SET=0
 UNMET=0
 STRATEGY=--squash
 SYNC_ARGS=(--ff)
@@ -114,6 +117,7 @@ while [ $# -gt 0 ]; do
         exit 2
       fi
       WAIT_TIMEOUT="$2"
+      TIMEOUT_SET=1
       shift 2
       ;;
     --repo)
@@ -129,14 +133,14 @@ done
 
 # The review checker's own flags. --timeout is minutes and means nothing without --wait.
 WAIT_ARGS=()
-if [ -n "$WAIT_TIMEOUT" ] && [ "$WAIT" != 1 ]; then
+if [ "$TIMEOUT_SET" = 1 ] && [ "$WAIT" != 1 ]; then
   echo "--timeout needs --wait" >&2
   echo "$USAGE" >&2
   exit 2
 fi
 if [ "$WAIT" = 1 ]; then
   WAIT_ARGS=(--wait)
-  if [ -n "$WAIT_TIMEOUT" ]; then
+  if [ "$TIMEOUT_SET" = 1 ]; then
     if ! [[ "$WAIT_TIMEOUT" =~ ^[0-9]+([.][0-9]+)?$ ]] || ! awk -v t="$WAIT_TIMEOUT" 'BEGIN { exit !(t > 0) }'; then
       echo "--timeout takes a positive number of minutes, not '$WAIT_TIMEOUT'" >&2
       exit 2
@@ -329,6 +333,33 @@ if [ "$EXPLAIN" != 1 ]; then
   if ! bun_isolated "$CHECKER" "$PR" --repo "$REPO" ${WAIT_ARGS[@]+"${WAIT_ARGS[@]}"}; then
     echo "refused: review feedback is open (check-pr-review.ts); PR $PR is not merged" >&2
     exit 1
+  fi
+  # A wait can last 30 minutes, so what was read before it is read again before anything lands: the PR must
+  # still be open, on the same base and head, with no open PR targeting its head.
+  if [ "$WAIT" = 1 ]; then
+    HEAD_AGAIN="" OID_AGAIN="" BASE_AGAIN="" STATE_AGAIN=""
+    IFS=$'\t' read -r HEAD_AGAIN OID_AGAIN BASE_AGAIN STATE_AGAIN _ < <(gh pr view "$PR" --repo "$REPO" \
+      --json headRefName,headRefOid,baseRefName,state,isCrossRepository \
+      --jq '[.headRefName, .headRefOid, .baseRefName, .state, .isCrossRepository] | @tsv') || true
+    if [ -z "$STATE_AGAIN" ]; then
+      echo "refused: could not read PR $PR again after the wait; PR $PR is not merged" >&2
+      exit 1
+    elif [ "$STATE_AGAIN" != OPEN ]; then
+      echo "refused: PR $PR is $STATE_AGAIN after the wait; PR $PR is not merged" >&2
+      exit 1
+    elif [ "$BASE_AGAIN" != "$BASE" ] || [ "$HEAD_AGAIN" != "$HEAD" ] || [ "$OID_AGAIN" != "$OID" ]; then
+      echo "refused: PR $PR changed base or head during the wait; rerun to review the new state; PR $PR is not merged" >&2
+      exit 1
+    fi
+    if ! DEPENDENTS="$(gh pr list --repo "$REPO" --state open --base "$HEAD" --json number --jq '.[].number')"; then
+      echo "refused: could not list the open PRs that target $HEAD after the wait; PR $PR is not merged" >&2
+      exit 1
+    fi
+    DEPENDENTS="$(echo "$DEPENDENTS" | tr '\n' ' ')"
+    if [ -n "${DEPENDENTS// /}" ]; then
+      echo "refused: open PRs target $HEAD after the wait: ${DEPENDENTS% }; retarget them first: gh pr edit <n> --base $BASE; PR $PR is not merged" >&2
+      exit 1
+    fi
   fi
 else
   # The checker prints each open item as an indented line on stderr. Sort them into the conditions they break.

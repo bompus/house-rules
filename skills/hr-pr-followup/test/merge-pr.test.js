@@ -79,7 +79,7 @@ function stub(bin, name, body) {
  *   racingFetch?: boolean, baseCurrent?: boolean, errexitOff?: boolean, advanceHead?: boolean,
  *   sharing?: string[], sharingFails?: boolean, upstream?: boolean, originUrl?: string,
  *   botReviews?: number, alias?: boolean, silentReviewFailure?: boolean,
- *   checks?: object[] | null, helperBunfig?: boolean, bunCalls?: boolean, checkerArgs?: boolean, workName?: string,
+ *   checks?: object[] | null, helperBunfig?: boolean, bunCalls?: boolean, checkerArgs?: boolean, afterWait?: string | null, workName?: string,
  *   executableFiles?: string[] }} [options]
  */
 function fixture({
@@ -134,6 +134,9 @@ function fixture({
   bunCalls = false,
   // Record every argument of each call to the review checker, one line per call.
   checkerArgs = false,
+  // What the second read of the pull request finds, as after a wait: closed, retargeted, a moved head or an
+  // open PR that targets the head.
+  afterWait = null,
 } = {}) {
   const root = mkdtempSync(join(process.env.HOUSE_RULES_TEST_TMP ?? tmpdir(), "merge-pr-"));
   roots.push(root);
@@ -200,8 +203,11 @@ exec bash -c "$(printf '%s' "\${@: -1}" | sed -e "s#^git-#git #" -e "s#'[^']*'#'
     `echo "$*" >> "${log}"
 case "$*" in
   *mergeCommit*) echo "${queued ? "" : squash}";;
-  "pr view"*) printf 'feature\\t${oid}\\tmain\\tOPEN\\tfalse\\n';;
-  "pr list"*) printf '%s' "${dependents}";;
+  "pr view"*) n=$(cat "${root}/prview.count" 2>/dev/null || echo 0); echo $((n+1)) > "${root}/prview.count"
+    if [ "$n" -ge 1 ]; then printf 'feature\\t${afterWait === "moved" ? "0".repeat(40) : oid}\\t${afterWait === "retarget" ? "release" : "main"}\\t${afterWait === "closed" ? "CLOSED" : "OPEN"}\\tfalse\\n'
+    else printf 'feature\\t${oid}\\tmain\\tOPEN\\tfalse\\n'; fi;;
+  "pr list"*) n=$(cat "${root}/prlist.count" 2>/dev/null || echo 0); echo $((n+1)) > "${root}/prlist.count"
+    if [ "$n" -ge 1 ] && [ "${afterWait}" = dependent ]; then printf '9\\n'; else printf '%s' "${dependents}"; fi;;
   "repo view"*) echo "${upstream ? "pingdotgg/t3code" : repo}";;
   "api repos"*reviews*) echo "${botReviews}";;
   "api graphql"*associatedPullRequests*) ${sharingFails ? "exit 1" : `printf '%s\\n' ${[`https://github.com/${repo}/pull/7`, ...sharing].map((url) => `'${url}'`).join(" ")}`};;
@@ -1235,6 +1241,40 @@ test("--timeout takes decimal minutes in either order and a bare --timeout is a 
   const bare = run("--wait", "--timeout");
   expect(bare.code).toBe(2);
   expect(bare.err).toContain("--timeout takes a number of minutes");
+});
+
+// The wait can last half an hour, so the pull request is read again before it lands.
+/** @type {[string, string, string][]} */
+const changesDuringWait = [
+  ["closed", "was closed", "is CLOSED after the wait"],
+  ["retarget", "was retargeted", "changed base or head during the wait"],
+  ["moved", "had its head moved", "changed base or head during the wait"],
+  ["dependent", "gained a dependent", "open PRs target feature after the wait: 9"],
+];
+for (const [change, what, text] of changesDuringWait) {
+  test(`--wait refuses a pull request that ${what} during the wait and lands nothing`, () => {
+    const { log, run } = fixture({ afterWait: change });
+    const r = run("--wait");
+    expect(r.code).toBe(1);
+    expect(r.err).toContain(text);
+    expect(readFileSync(log, "utf8")).not.toContain("pr merge");
+  });
+}
+
+test("without --wait nothing is rechecked: a later change does not stop the landing", () => {
+  const { log, run } = fixture({ afterWait: "closed" });
+  expect(run().code).toBe(0);
+  expect(readFileSync(log, "utf8")).toContain("pr merge 7 --squash");
+});
+
+test("an empty --timeout is not the same as none", () => {
+  const { run } = fixture();
+  const alone = run("--timeout", "");
+  expect(alone.code).toBe(2);
+  expect(alone.err).toContain("--timeout needs --wait");
+  const empty = run("--wait", "--timeout", "");
+  expect(empty.code).toBe(2);
+  expect(empty.err).toContain("--timeout takes a positive number of minutes");
 });
 
 test("a review checker that refuses under --wait lands nothing", () => {
