@@ -50,10 +50,11 @@ they cannot attribute activity to the workload.
 Host-wide swap page-ins (`pswpin`, `zswpin`) can move by a few pages while CPU,
 memory pressure and I/O are quiet. Record them as a diagnostic; do not reject a
 run on them alone. Reject a run on swap-outs or writeback (`pswpout`, `zswpout`,
-`zswpwb`) in a phase that measures storage and record them elsewhere (the observer
-rejects them only with `--storage-phase`); reject on growth of the workload
-cgroup's own `memory.swap.current` or `memory.zswap.current`, or on cgroup high,
-max or OOM events. A stricter criterion declared in the run plan still applies.
+`zswpwb`), on growth of the workload cgroup's own `memory.swap.current` or
+`memory.zswap.current`, or on cgroup high, max or OOM events. A stricter
+criterion declared in the run plan still applies. The observer enforces the
+host swap-out and writeback rejection only with `--storage-phase`; for any other
+run, read its recorded per-interval deltas and reject on them yourself.
 
 Use [cgroup swap and zswap accounting](https://www.kernel.org/doc/html/latest/admin-guide/cgroup-v2.html)
 (`memory.swap.current`, `memory.zswap.current`) to distinguish the workload
