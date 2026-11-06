@@ -31,6 +31,20 @@ and https://x.com/davekiss/status/2118094079879794894.
 This repository's MIT licence applies to the newly written guidance, not to uv's
 file or the post.
 
+## Untangle-codebase skill
+
+Source: https://github.com/caldoai/skills, `skills/untangle-codebase/SKILL.md`
+(compared at revision `f3cf477`, MIT licence).
+
+- `skills/hr-maintainability-review/SKILL.md`: the special-cases wording and the
+  "Pieces that change together without showing it" check are independently
+  written guidance informed by that skill's "should these pieces change
+  together?" framing and its reading of special cases as missing requirements.
+  No text from the skill is reproduced.
+
+This repository's MIT licence applies to the newly written guidance, not to the
+source skill.
+
 ## Cursor workflow ideas
 
 Source: https://cursor.com/docs/skills
