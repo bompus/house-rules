@@ -40,19 +40,22 @@ checks. The pull request body names the findings fixed and says when no
 further round ran. Required repository checks and review gates still apply.
 
 Cut review rounds before they start; none of this skips a required round or a
-repository's review gate. For a change of more than a few lines, write its
-contract before the code, in the plan or the pull request body: what it must
-do, what it must not change, and the residuals you accept (known gaps you will
-not close, each with its reason), and have a reviewer read that contract once
-before you build. Run the first review as one wide pass: two or three
-reviewers of different model families in the same round, the author's family
-excluded, not one reviewer per round in series. Use the families that are
-available and say which were not. Give every later-round reviewer, a review bot
-included, the accepted-residuals list from the first round and the findings
-already answered, in the pull request body where a bot reads it, so it does not
-report them again. Before building across repositories, check the scope against
-the question that was asked: that the change answers it, and that each
-repository named needs the change.
+repository's review gate, and a change that gets no model review needs none of
+it. For a change that will get a model review, write its contract before the
+code, in the plan (copy it into the pull request body when you open one): what
+it must do, what it must not change, and the residuals you accept (known gaps
+you will not close, each with its reason), and have a reviewer read that
+contract once before you build. Run the first review as one wide pass: two or
+three reviewers of different model families in parallel in the same round, the
+author's family excluded, not one reviewer per round in series. When fewer than
+two other families are available, run the ones that are (with a fresh-context
+reviewer when none is, as `hr-code-review` says) and name the families that were
+not. Give every later-round reviewer, a review bot included, the
+accepted-residuals list from the first round and the findings already answered,
+in the pull request body where a bot reads it, so it does not report them
+again. Before building across repositories, check the scope against the
+question that was asked: that the change answers it, and that each repository
+named needs the change.
 
 Before cleaning up a branch, directory or worktree by hand or on a schedule,
 check that no session of any installed agent host uses it: session records and
