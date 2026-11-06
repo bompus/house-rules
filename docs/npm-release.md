@@ -33,6 +33,10 @@ The last step waits about five minutes for `npm view` to show the version, since
 the registry can lag behind a publish that succeeded, and fails naming the
 package and version if it never appears.
 
+Never rerun the failed npm publish run for v0.12.0 (run 38615008492): it would
+publish 0.12.0 from the old workflow after later versions. npm has no 0.12.0;
+0.11.0 is followed by 0.13.0.
+
 The workflow uses a GitHub-hosted runner and npm's OIDC trusted publishing,
 which the package's npm settings must name: GitHub user `bompus`, repository
 `house-rules`, workflow filename `npm-publish.yml`, with direct `npm publish`

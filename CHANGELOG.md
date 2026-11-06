@@ -290,6 +290,7 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## 0.12.0 - 2026-10-14
 
+- This version was never published to npm (its publish job failed with ENEEDAUTH, run 38615008492); npm goes from 0.11.0 to 0.13.0. Install 0.13.0 or later.
 - **Breaking for configs that list it:** the `swarmail` modifier is removed. It only told an agent
   where to find the instructions of one agent-mail product, so it was not general guidance. A
   `house-rules.json` that still lists `swarmail` under `modifiers` now fails. `compose.mjs`, the
