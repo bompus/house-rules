@@ -394,6 +394,14 @@ test("the observer budgets compare the figures before they are rounded", { skip 
     hasReason(rss.reasons, "observer resident memory over budget: 128.04 > 128"),
     String(rss.reasons),
   );
+  // An overrun below the old display precision is still shown in full, so the reason substantiates it.
+  const small = budgetReasons(0.5, 0.4, 0.41, 0.15, { rssMib: 128.00001, maxRssMib: 128 });
+  assert.ok(
+    hasReason(small.reasons, "observer resident memory over budget: 128.00001 > 128"),
+    String(small.reasons),
+  );
+  const tiny = budgetReasons(0.5, 0.4, 0.43000006, 0.15);
+  assert.ok(hasReason(tiny.reasons, "observer CPU over budget: 0.2000004"), String(tiny.reasons));
   // Exactly on the budget is within it.
   const within = budgetReasons(0.5, 0.4, 0.41, 0.15, { rssMib: 128, maxRssMib: 128 });
   assert.ok(!hasReason(within.reasons, "observer resident memory over budget"));
@@ -561,6 +569,21 @@ test("a final sample whose reads block past the sampling limit rejects the unit"
   assert.deepEqual(quick.reasons, []);
 });
 
+test("a stalled sample does not hide the other failures", { skip }, () => {
+  // 300 ms of I/O stall in the second interval, then a final sample whose reads end 2.71 s later.
+  const { reasons, out } = judgeRows([
+    [0, 0, 0],
+    [1, 0, 300000],
+    [2, 0, 300000, 2, 2, 4.71],
+  ]);
+  assert.ok(
+    reasons.some((x) => /reads took longer than 2.5 s/.test(x)),
+    String(reasons),
+  );
+  assert.ok(stalled(reasons), String(reasons));
+  assert.ok("host_io_full_psi_ms_max" in out);
+});
+
 test("a storage phase needs the host pswpout counter in every sample", { skip }, () => {
   const rows = [
     [0, 0, 0],
@@ -619,6 +642,42 @@ async function observeToExit(args, mutate) {
     rmSync(root, { recursive: true, force: true });
   }
 }
+
+test(
+  "a first sample missing pswpout in a storage phase writes no .ready marker",
+  opts,
+  async () => {
+    const noPswpout = (/** @type {Fake} */ f) =>
+      writeFileSync(join(f.proc, "vmstat"), "zswpout 0\nzswpwb 0\npgscan_direct 0\n");
+    const r = await observeToExit(["--workload-cgroup", "{cg}", "--storage-phase"], noPswpout);
+    assert.equal(r.code, 1);
+    assert.equal(r.ready, false, ".ready was written");
+    assert.ok(
+      r.summary?.reasons.some((/** @type {string} */ x) => x.includes("swap counter unreadable")),
+      String(r.summary?.reasons),
+    );
+  },
+);
+
+test("a first sample whose reads already stalled writes no .ready marker", { skip }, () => {
+  const script = `
+import importlib.util, json
+spec = importlib.util.spec_from_file_location("observer", ${JSON.stringify(observer)})
+m = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(m)
+sample = {"t": 0.0, "t_end": 3.0, "mem_psi": 0, "io_psi": 0, "avail_gib": 64.0,
+          "vm": {"pswpout": 0}, "workload": None}
+print(json.dumps(m.first_sample_reasons(sample, None, False)))
+`;
+  const run = spawnSync("python3", ["-c", script], { encoding: "utf8" });
+  assert.equal(run.status, 0, run.stderr);
+  assert.ok(
+    JSON.parse(run.stdout).some((/** @type {string} */ x) =>
+      /reads took longer than 2.5 s/.test(x),
+    ),
+    run.stdout,
+  );
+});
 
 test(
   "a first sample that already fails writes no .ready marker and ends the run",

@@ -210,13 +210,21 @@ def take(cg):
     return sample
 
 
-def first_sample_reasons(sample, cg):
+def slow_reads(sample):
+    return sample["t_end"] - sample["t"] > MAX_GAP_S
+
+
+def first_sample_reasons(sample, cg, storage_phase):
     """Reasons the first sample already fails, so a unit is not started that cannot count."""
     reasons = []
     if sample["mem_psi"] is None or sample["io_psi"] is None:
         reasons.append("host pressure unreadable")
     if sample["avail_gib"] < MIN_AVAIL_GIB:
         reasons.append(f"available memory below {MIN_AVAIL_GIB:g} GiB")
+    if slow_reads(sample):
+        reasons.append(f"a sample's reads took longer than {MAX_GAP_S:g} s")
+    if storage_phase and "pswpout" not in sample["vm"]:
+        reasons.append("host swap counter unreadable in a storage phase")
     if cg:
         workload = sample["workload"]
         if workload is None:
@@ -239,9 +247,8 @@ def judge(samples, cg, hz, args):
     if min(gaps) <= 0 or max(gaps) > MAX_GAP_S:
         reasons.append(f"sampling interval not positive or gap above {MAX_GAP_S:g} s")
         return reasons, out
-    if max(s["t_end"] - s["t"] for s in samples) > MAX_GAP_S:
+    if any(slow_reads(s) for s in samples):
         reasons.append(f"a sample's reads took longer than {MAX_GAP_S:g} s")
-        return reasons, out
     busy = [s["busy_ticks"] for s in samples]
     if any(b < a for a, b in zip(busy, busy[1:], strict=False)):
         reasons.append("host CPU counter went backward")
@@ -400,12 +407,12 @@ def write_summary(args, samples, reasons, out, status):
         # The budgets compare the figures before they are rounded for the summary.
         if cores > args.max_observer_cores:
             reasons.append(
-                f"observer CPU over budget: {cores:.4f} > {args.max_observer_cores:g} cores"
+                f"observer CPU over budget: {cores:.10g} > {args.max_observer_cores:g} cores"
             )
         if rss_mib > args.max_observer_rss_mib:
             reasons.append(
                 "observer resident memory over budget: "
-                f"{rss_mib:.2f} > {args.max_observer_rss_mib:g} MiB"
+                f"{rss_mib:.10g} > {args.max_observer_rss_mib:g} MiB"
             )
     summary["reasons"] = reasons
     summary["clean"] = not reasons
@@ -475,7 +482,7 @@ def main():
         elif not args.host_only:
             reasons.append("no workload cgroup given")
         samples.append(take(cg))
-        doomed = first_sample_reasons(samples[0], cg)
+        doomed = first_sample_reasons(samples[0], cg, args.storage_phase)
         if doomed:
             # No .ready: the driver must not start a unit this run cannot count.
             reasons += doomed
