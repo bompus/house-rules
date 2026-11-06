@@ -16,7 +16,8 @@ schedule, read [the agent-work procedure](../references/multi-agent.md).
 An incomplete worker report is a checkpoint. A worker with a background command
 or subagent still running is not done. Verify reports against evidence and use
 host durations or timestamps for elapsed time. Keep workers from delegating
-further unless asked.
+further unless asked. Never fork a reviewer or panel seat: a fork inherits the
+author's reasoning, so it is not independent.
 
 Give implementers the task, file boundaries, public APIs and architectural
 constraints. Put mechanically enforceable standards in tooling; reserve style
