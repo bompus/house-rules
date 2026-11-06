@@ -46,24 +46,28 @@ applies where they are silent. For a change you are about to write that will
 get a model review, write its contract before the code, in the plan (copy it
 into the pull request body when you open one): what it must do, what it must
 not change, and the residuals you accept (known gaps you will not close, each
-with its reason), and have a reviewer read that contract once before you build;
+with its reason). Have a reviewer read that contract once before you build;
 when no separate reviewer can run, keep the contract in the plan and skip that
 read. Reviewing a change that already exists starts from the contract you can
-find, and says when none exists. Run the first review as one wide pass: two or
-three reviewers of different model families in parallel in the same round, the
-author's family excluded, not one reviewer per round in series; where a host or
-resource limit prevents parallel runs, run them in sequence within the same
-round. When fewer than two other families are available, run the ones that are
-(with a fresh-context reviewer when none is, as `hr-code-review` says) and name
-the families that were not. Give every later-round reviewer, a review bot
-included, the accepted-residuals list from the first round and the findings
-already answered, so it does not report them again: in the plan or the review
-brief until a pull request exists, then in the pull request body before a bot
-reviews it. An answer that still holds suppresses the repeat; a reviewer who
-finds evidence that an answer is wrong reports it, and a confirmed blocker
-counts whether or not it was reported before. Before building across
-repositories, check the scope against the question that was asked: that the
-change answers it, and that each repository named needs the change.
+find, and says when none exists.
+
+Run the first review as one wide pass: two or three reviewers of different
+model families in parallel in the same round, the author's family excluded, not
+one reviewer per round in series; where a host or resource limit prevents
+parallel runs, run them in sequence within the same round. When fewer than two
+other families are available, run the ones that are and name the families that
+were not. When none is, use a fresh-context reviewer, or review a small scope
+locally, as `hr-code-review` says, and say which you did.
+
+Give every later-round reviewer, a review bot included, the accepted-residuals
+list from the first round and the findings already answered, so it does not
+report them again: in the plan or the review brief until a pull request
+exists, then in the pull request body before a bot reviews it. An answer that
+still holds suppresses the repeat; a reviewer who finds evidence that an answer
+is wrong reports it, and a confirmed blocker counts whether or not it was
+reported before. Before building across repositories, check the scope against
+the question that was asked: that the change answers it, and that each
+repository named needs the change.
 
 Before cleaning up a branch, directory or worktree by hand or on a schedule,
 check that no session of any installed agent host uses it: session records and
