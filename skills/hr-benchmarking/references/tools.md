@@ -147,8 +147,8 @@ its own. The workload's `memory.current` peak and `io.stat` byte deltas are reco
 a counter the kernel does not provide is `unknown`.
 
 `--max-gap-s` (default 2.5) takes at least 1.5, a chosen margin: the sampling wait is 1 s, so a limit of
-1 s or less rejects every run, and one just above it passes only while reads are fast. The observer
-refuses a smaller value at start.
+1 s or less rejects every run that lasts a full wait (one stopped sooner has only its stop sample), and
+one just above it passes only while reads are fast. The observer refuses a smaller value at start.
 
 A clean summary does not qualify a run by itself. The protocol still declares the observers, budgets,
 stop rules and retries beforehand, and keeps every receipt; the cost of the observer is part of the
