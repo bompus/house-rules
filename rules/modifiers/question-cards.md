@@ -32,9 +32,10 @@ chose text only (the opt-out above).
    kept in the text offer, the card's question names it ("the discussion draft in
    my previous message"); an option that only says "post the draft above" is not
    enough. Use multi-select when options combine and the tool has it; with none,
-   say in the card's question that several may be chosen and let the user name
-   them in text, or ask one single-select question per combinable option. Leave
-   out an "Other" option; hosts add their own.
+   say in the card's question that several may be chosen and that all of them go in
+   the text reply as option codes, since a card click selects only one, or ask
+   one single-select question per combinable option. Leave out an "Other" option;
+   hosts add their own.
 3. Treat the card's answer as a typed reply naming the same options. On some
    hosts it arrives as a new turn.
 
