@@ -67,19 +67,25 @@
 # of the head and the head branch is still at the reviewed commit (the lease the push holds). It
 # runs the repository's check as a landing does. Exit 0 when every condition is met, 1 otherwise.
 #
+# --wait [--timeout <minutes>] is passed to check-pr-review.ts, which then polls while a review or another
+# check on the head is still running (30 minutes by default) and reports as usual afterwards. A timeout or any
+# open finding still refuses, so nothing is landed on a review that has not finished. --timeout needs --wait.
+#
 # Exit status: 0 landed and every local default current; 1 refused or failed; 2 usage; 3 landed, local sync pending.
 #
-# Usage: bash scripts/merge-pr.sh <owner/repo#n | PR URL | n --repo owner/repo> [--merge] [--remote <name>] [--explain]
+# Usage: bash scripts/merge-pr.sh <owner/repo#n | PR URL | n --repo owner/repo> [--merge] [--remote <name>] [--explain] [--wait [--timeout <minutes>]]
 set -euo pipefail
 
 PUSH_LANDED=" ${HR_PUSH_LANDED:-} "
-USAGE="usage: merge-pr.sh <owner/repo#n | PR URL | n --repo owner/repo> [--merge] [--remote <name>] [--explain]"
+USAGE="usage: merge-pr.sh <owner/repo#n | PR URL | n --repo owner/repo> [--merge] [--remote <name>] [--explain] [--wait [--timeout <minutes>]]"
 
 TARGET="${1:?$USAGE}"
 shift
 NAMED_REPO=""
 REMOTE=""
 EXPLAIN=0
+WAIT=0
+WAIT_TIMEOUT=""
 UNMET=0
 STRATEGY=--squash
 SYNC_ARGS=(--ff)
@@ -97,6 +103,19 @@ while [ $# -gt 0 ]; do
       EXPLAIN=1
       shift
       ;;
+    --wait)
+      WAIT=1
+      shift
+      ;;
+    --timeout)
+      if [ $# -lt 2 ]; then
+        echo "--timeout takes a number of minutes" >&2
+        echo "$USAGE" >&2
+        exit 2
+      fi
+      WAIT_TIMEOUT="$2"
+      shift 2
+      ;;
     --repo)
       NAMED_REPO="${2:?}"
       shift 2
@@ -107,6 +126,24 @@ while [ $# -gt 0 ]; do
       ;;
   esac
 done
+
+# The review checker's own flags. --timeout is minutes and means nothing without --wait.
+WAIT_ARGS=()
+if [ -n "$WAIT_TIMEOUT" ] && [ "$WAIT" != 1 ]; then
+  echo "--timeout needs --wait" >&2
+  echo "$USAGE" >&2
+  exit 2
+fi
+if [ "$WAIT" = 1 ]; then
+  WAIT_ARGS=(--wait)
+  if [ -n "$WAIT_TIMEOUT" ]; then
+    if ! [[ "$WAIT_TIMEOUT" =~ ^[0-9]+([.][0-9]+)?$ ]] || ! awk -v t="$WAIT_TIMEOUT" 'BEGIN { exit !(t > 0) }'; then
+      echo "--timeout takes a positive number of minutes, not '$WAIT_TIMEOUT'" >&2
+      exit 2
+    fi
+    WAIT_ARGS+=(--timeout "$WAIT_TIMEOUT")
+  fi
+fi
 
 if [[ "$TARGET" =~ ^https://github\.com/([^/]+/[^/]+)/pull/([0-9]+)/?$ ]] \
   || [[ "$TARGET" =~ ^([^/#[:space:]]+/[^/#[:space:]]+)#([0-9]+)$ ]]; then
@@ -289,14 +326,14 @@ bun_isolated() {
   (cd / && exec bun --config=/dev/null --no-env-file "$@")
 }
 if [ "$EXPLAIN" != 1 ]; then
-  if ! bun_isolated "$CHECKER" "$PR" --repo "$REPO"; then
+  if ! bun_isolated "$CHECKER" "$PR" --repo "$REPO" ${WAIT_ARGS[@]+"${WAIT_ARGS[@]}"}; then
     echo "refused: review feedback is open (check-pr-review.ts); PR $PR is not merged" >&2
     exit 1
   fi
 else
   # The checker prints each open item as an indented line on stderr. Sort them into the conditions they break.
   REVIEW_CODE=0
-  REVIEW_ERR="$(bun_isolated "$CHECKER" "$PR" --repo "$REPO" 2>&1 >/dev/null)" || REVIEW_CODE=$?
+  REVIEW_ERR="$(bun_isolated "$CHECKER" "$PR" --repo "$REPO" ${WAIT_ARGS[@]+"${WAIT_ARGS[@]}"} 2>&1 >/dev/null)" || REVIEW_CODE=$?
   THREADS="" BOT="" CHECKS="" OTHER=""
   if [ "$REVIEW_CODE" = 1 ]; then
     while IFS= read -r LINE; do

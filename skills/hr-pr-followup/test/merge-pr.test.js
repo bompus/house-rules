@@ -79,7 +79,7 @@ function stub(bin, name, body) {
  *   racingFetch?: boolean, baseCurrent?: boolean, errexitOff?: boolean, advanceHead?: boolean,
  *   sharing?: string[], sharingFails?: boolean, upstream?: boolean, originUrl?: string,
  *   botReviews?: number, alias?: boolean, silentReviewFailure?: boolean,
- *   checks?: object[] | null, helperBunfig?: boolean, bunCalls?: boolean, workName?: string,
+ *   checks?: object[] | null, helperBunfig?: boolean, bunCalls?: boolean, checkerArgs?: boolean, workName?: string,
  *   executableFiles?: string[] }} [options]
  */
 function fixture({
@@ -132,6 +132,8 @@ function fixture({
   helperBunfig = false,
   // Record the directory and the first arguments of each Bun call the helper makes.
   bunCalls = false,
+  // Record every argument of each call to the review checker, one line per call.
+  checkerArgs = false,
 } = {}) {
   const root = mkdtempSync(join(process.env.HOUSE_RULES_TEST_TMP ?? tmpdir(), "merge-pr-"));
   roots.push(root);
@@ -214,6 +216,15 @@ esac
       bin,
       "bun",
       `echo "$PWD $1 $2 $3" >> "${bunLog}"\necho "GH_CONFIG_DIR[$PWD]=$GH_CONFIG_DIR" >> "${bunLog}"\necho "PATH[$PWD]=$PATH" >> "${bunLog}"\nexec "${bun}" "$@"\n`,
+    );
+  }
+  const checkerLog = join(root, "checker.log");
+  if (checkerArgs) {
+    const bun = Bun.which("bun");
+    stub(
+      bin,
+      "bun",
+      `for a in "$@"; do case "$a" in *check-pr-review.ts) echo "$*" >> "${checkerLog}";; esac; done\nexec "${bun}" "$@"\n`,
     );
   }
   if (silentReviewFailure) {
@@ -332,6 +343,7 @@ exit $code
     log,
     pmLog,
     bunLog,
+    checkerLog,
     bin,
     run,
     runTarget,
@@ -1175,6 +1187,62 @@ test("the gate and the package.json read run from the root with an empty Bun con
   for (const line of calls) {
     expect(line).toMatch(/^\/ --config=\/dev\/null --no-env-file /);
   }
+});
+
+// --wait and --timeout go to the review checker, which polls while a review or check is running.
+test("--wait is passed to the review checker, with --timeout when given, and the landing goes on", () => {
+  const { checkerLog, log, run } = fixture({ checkerArgs: true });
+  expect(run("--wait").code).toBe(0);
+  expect(run("--wait", "--timeout", "5").code).toBe(0);
+  const calls = readFileSync(checkerLog, "utf8").trim().split("\n");
+  expect(calls.length).toBe(2);
+  expect(calls[0]).toMatch(/check-pr-review\.ts 7 --repo [^ ]+ --wait$/);
+  expect(calls[1]).toMatch(/check-pr-review\.ts 7 --repo [^ ]+ --wait --timeout 5$/);
+  expect(readFileSync(log, "utf8")).toContain("pr merge 7 --squash");
+});
+
+test("without --wait the review checker is called as before", () => {
+  const { checkerLog, run } = fixture({ checkerArgs: true });
+  expect(run().code).toBe(0);
+  expect(readFileSync(checkerLog, "utf8").trim()).toMatch(/check-pr-review\.ts 7 --repo [^ ]+$/);
+});
+
+test("--explain passes --wait to the review checker too and lands nothing", () => {
+  const { checkerLog, log, run } = fixture({ checkerArgs: true });
+  const r = run("--explain", "--wait", "--timeout", "2");
+  expect(r.code).toBe(0);
+  expect(readFileSync(checkerLog, "utf8").trim()).toMatch(/--wait --timeout 2$/);
+  expect(readFileSync(log, "utf8")).not.toContain("pr merge");
+});
+
+test("--timeout without --wait, or with a value that is not a positive number, is a usage error", () => {
+  const { log, run } = fixture();
+  const alone = run("--timeout", "5");
+  expect(alone.code).toBe(2);
+  expect(alone.err).toContain("--timeout needs --wait");
+  for (const value of ["0", "abc", "-1", "5m"]) {
+    const r = run("--wait", "--timeout", value);
+    expect(r.code).toBe(2);
+    expect(r.err).toContain("--timeout takes a positive number of minutes");
+  }
+  expect(existsSync(log) ? readFileSync(log, "utf8") : "").not.toContain("pr merge");
+});
+
+test("--timeout takes decimal minutes in either order and a bare --timeout is a usage error", () => {
+  const { checkerLog, run } = fixture({ checkerArgs: true });
+  expect(run("--timeout", "0.5", "--wait").code).toBe(0);
+  expect(readFileSync(checkerLog, "utf8").trim()).toMatch(/--wait --timeout 0\.5$/);
+  const bare = run("--wait", "--timeout");
+  expect(bare.code).toBe(2);
+  expect(bare.err).toContain("--timeout takes a number of minutes");
+});
+
+test("a review checker that refuses under --wait lands nothing", () => {
+  const { log, run } = fixture({ silentReviewFailure: true });
+  const r = run("--wait", "--timeout", "1");
+  expect(r.code).toBe(1);
+  expect(r.err).toContain("refused: review feedback is open");
+  expect(readFileSync(log, "utf8")).not.toContain("pr merge");
 });
 
 // The gate runs after `cd /`, so a relative PATH entry or a relative GH_CONFIG_DIR would stop meaning

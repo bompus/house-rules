@@ -183,7 +183,7 @@ It does not clear that gate's review-body findings or change the landing workflo
 Three scripts in `scripts/` implement the landing steps § Landing describes. They never
 reset, switch or delete a checkout.
 
-- `merge-pr.sh <owner/repo#n | PR URL | n --repo owner/repo> [--merge] [--remote <name>] [--explain]`
+- `merge-pr.sh <owner/repo#n | PR URL | n --repo owner/repo> [--merge] [--remote <name>] [--explain] [--wait [--timeout <minutes>]]`
   squash-merges (or merge-commits) an open pull request. It refuses a bare number, which gh would
   resolve against the current directory's repository. The named repository is the only one it
   uses: every gh call carries it, and it never asks gh which repository the current directory
@@ -195,7 +195,9 @@ reset, switch or delete a checkout.
   line for each and exits 0 only when all are met. It deletes the remote head without `gh pr merge --delete-branch`, which
   removes other sessions' linked worktrees, and with `git push --no-verify`, so a failing
   pre-push hook cannot stop the landing report; a delete that fails anyway leaves the branch
-  for `verify-landed.sh` to report (exit 1). It
+  for `verify-landed.sh` to report (exit 1). `--wait [--timeout <minutes>]` goes to the review checker, which
+  then polls while a review or another check on the head is still running (30 minutes by default); a
+  timeout or an open finding still refuses, so nothing lands on a review that has not finished. It
   refuses while review feedback is open (`check-pr-review.ts`), while another open pull
   request targets the head. When another open pull request in any repository has the same
   branch as its head (a fork's mirror of an upstream pull request), deleting the branch would
