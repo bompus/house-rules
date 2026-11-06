@@ -1237,7 +1237,11 @@ test("--timeout without --wait, or with a value that is not a positive number, i
 test("--timeout takes decimal minutes in either order and a bare --timeout is a usage error", () => {
   const { checkerLog, run } = fixture({ checkerArgs: true });
   expect(run("--timeout", "0.5", "--wait").code).toBe(0);
-  expect(readFileSync(checkerLog, "utf8").trim()).toMatch(/--wait --timeout 0\.5$/);
+  expect(run("--wait", "--timeout", ".5").code).toBe(0);
+  expect(run("--wait", "--timeout", "5.").code).toBe(0);
+  expect(readFileSync(checkerLog, "utf8")).toMatch(/--wait --timeout 0\.5$/m);
+  expect(readFileSync(checkerLog, "utf8")).toMatch(/--wait --timeout \.5$/m);
+  expect(readFileSync(checkerLog, "utf8")).toMatch(/--wait --timeout 5\.$/m);
   const bare = run("--wait", "--timeout");
   expect(bare.code).toBe(2);
   expect(bare.err).toContain("--timeout takes a number of minutes");
@@ -1260,6 +1264,24 @@ for (const [change, what, text] of changesDuringWait) {
     expect(readFileSync(log, "utf8")).not.toContain("pr merge");
   });
 }
+
+test("--explain --wait reports a change during the wait as unmet and lands nothing", () => {
+  const { log, run } = fixture({ afterWait: "closed" });
+  const r = run("--explain", "--wait");
+  expect(r.code).toBe(1);
+  expect(r.out).toContain("UNMET  PR is still open on the same base and head after the wait");
+  expect(readFileSync(log, "utf8")).not.toContain("pr merge");
+  const dependent = fixture({ afterWait: "dependent" }).run("--explain", "--wait");
+  expect(dependent.code).toBe(1);
+  expect(dependent.out).toContain("UNMET  no open PR targets the head branch after the wait");
+});
+
+test("--explain --wait with no change reports the post-wait conditions met", () => {
+  const r = fixture().run("--explain", "--wait");
+  expect(r.code).toBe(0);
+  expect(r.out).toContain("met    PR is still open on the same base and head after the wait");
+  expect(r.out).toContain("met    no open PR targets the head branch after the wait");
+});
 
 test("without --wait nothing is rechecked: a later change does not stop the landing", () => {
   const { log, run } = fixture({ afterWait: "closed" });

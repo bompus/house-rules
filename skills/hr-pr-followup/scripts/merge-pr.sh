@@ -141,7 +141,7 @@ fi
 if [ "$WAIT" = 1 ]; then
   WAIT_ARGS=(--wait)
   if [ "$TIMEOUT_SET" = 1 ]; then
-    if ! [[ "$WAIT_TIMEOUT" =~ ^[0-9]+([.][0-9]+)?$ ]] || ! awk -v t="$WAIT_TIMEOUT" 'BEGIN { exit !(t > 0) }'; then
+    if ! [[ "$WAIT_TIMEOUT" =~ ^([0-9]+([.][0-9]*)?|[.][0-9]+)$ ]] || ! awk -v t="$WAIT_TIMEOUT" 'BEGIN { exit !(t > 0) }'; then
       echo "--timeout takes a positive number of minutes, not '$WAIT_TIMEOUT'" >&2
       exit 2
     fi
@@ -329,38 +329,42 @@ esac
 bun_isolated() {
   (cd / && exec bun --config=/dev/null --no-env-file "$@")
 }
+# A wait can last 30 minutes, so what was read before it is read again after it, before anything lands (or, under
+# --explain, before the conditions are reported): the PR must still be open, on the same base and head, with no
+# open PR targeting its head.
+recheck_after_wait() {
+  local head_again="" oid_again="" base_again="" state_again="" open_prs=""
+  IFS=$'\t' read -r head_again oid_again base_again state_again _ < <(gh pr view "$PR" --repo "$REPO" \
+    --json headRefName,headRefOid,baseRefName,state,isCrossRepository \
+    --jq '[.headRefName, .headRefOid, .baseRefName, .state, .isCrossRepository] | @tsv') || true
+  if [ -z "$state_again" ]; then
+    unmet "PR is still open on the same base and head after the wait" "refused: could not read PR $PR again after the wait; PR $PR is not merged"
+    return 0
+  elif [ "$state_again" != OPEN ]; then
+    unmet "PR is still open on the same base and head after the wait" "refused: PR $PR is $state_again after the wait; PR $PR is not merged"
+    return 0
+  elif [ "$base_again" != "$BASE" ] || [ "$head_again" != "$HEAD" ] || [ "$oid_again" != "$OID" ]; then
+    unmet "PR is still open on the same base and head after the wait" "refused: PR $PR changed base or head during the wait; rerun to review the new state; PR $PR is not merged"
+    return 0
+  fi
+  met "PR is still open on the same base and head after the wait"
+  if ! open_prs="$(gh pr list --repo "$REPO" --state open --base "$HEAD" --json number --jq '.[].number')"; then
+    unmet "no open PR targets the head branch after the wait" "refused: could not list the open PRs that target $HEAD after the wait; PR $PR is not merged"
+    return 0
+  fi
+  open_prs="$(echo "$open_prs" | tr '\n' ' ')"
+  if [ -n "${open_prs// /}" ]; then
+    unmet "no open PR targets the head branch after the wait" "refused: open PRs target $HEAD after the wait: ${open_prs% }; retarget them first: gh pr edit <n> --base $BASE; PR $PR is not merged"
+  else
+    met "no open PR targets the head branch after the wait"
+  fi
+}
 if [ "$EXPLAIN" != 1 ]; then
   if ! bun_isolated "$CHECKER" "$PR" --repo "$REPO" ${WAIT_ARGS[@]+"${WAIT_ARGS[@]}"}; then
     echo "refused: review feedback is open (check-pr-review.ts); PR $PR is not merged" >&2
     exit 1
   fi
-  # A wait can last 30 minutes, so what was read before it is read again before anything lands: the PR must
-  # still be open, on the same base and head, with no open PR targeting its head.
-  if [ "$WAIT" = 1 ]; then
-    HEAD_AGAIN="" OID_AGAIN="" BASE_AGAIN="" STATE_AGAIN=""
-    IFS=$'\t' read -r HEAD_AGAIN OID_AGAIN BASE_AGAIN STATE_AGAIN _ < <(gh pr view "$PR" --repo "$REPO" \
-      --json headRefName,headRefOid,baseRefName,state,isCrossRepository \
-      --jq '[.headRefName, .headRefOid, .baseRefName, .state, .isCrossRepository] | @tsv') || true
-    if [ -z "$STATE_AGAIN" ]; then
-      echo "refused: could not read PR $PR again after the wait; PR $PR is not merged" >&2
-      exit 1
-    elif [ "$STATE_AGAIN" != OPEN ]; then
-      echo "refused: PR $PR is $STATE_AGAIN after the wait; PR $PR is not merged" >&2
-      exit 1
-    elif [ "$BASE_AGAIN" != "$BASE" ] || [ "$HEAD_AGAIN" != "$HEAD" ] || [ "$OID_AGAIN" != "$OID" ]; then
-      echo "refused: PR $PR changed base or head during the wait; rerun to review the new state; PR $PR is not merged" >&2
-      exit 1
-    fi
-    if ! DEPENDENTS="$(gh pr list --repo "$REPO" --state open --base "$HEAD" --json number --jq '.[].number')"; then
-      echo "refused: could not list the open PRs that target $HEAD after the wait; PR $PR is not merged" >&2
-      exit 1
-    fi
-    DEPENDENTS="$(echo "$DEPENDENTS" | tr '\n' ' ')"
-    if [ -n "${DEPENDENTS// /}" ]; then
-      echo "refused: open PRs target $HEAD after the wait: ${DEPENDENTS% }; retarget them first: gh pr edit <n> --base $BASE; PR $PR is not merged" >&2
-      exit 1
-    fi
-  fi
+  if [ "$WAIT" = 1 ]; then recheck_after_wait; fi
 else
   # The checker prints each open item as an indented line on stderr. Sort them into the conditions they break.
   REVIEW_CODE=0
@@ -390,6 +394,7 @@ else
     VAR="${ROW%%|*}"
     if [ -n "${!VAR}" ]; then unmet "${ROW#*|}" "${!VAR}"; else met "${ROW#*|}"; fi
   done
+  if [ "$WAIT" = 1 ]; then recheck_after_wait; fi
   CAP="${HR_REVIEW_ROUND_CAP:-6}"
   if ROUNDS="$(gh api "repos/$REPO/pulls/$PR/reviews" --paginate --jq '[.[] | select(.user.type == "Bot")] | length' 2>/dev/null)"; then
     ROUNDS="$(echo "$ROUNDS" | awk '{ n += $1 } END { print n + 0 }')"
