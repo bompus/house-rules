@@ -50,7 +50,9 @@ SWAPS = ("pswpout", "zswpout", "zswpwb")
 WORKLOAD_STAT = ("zswpin", "zswpout", "zswpwb")
 EVENTS = ("high", "max", "oom", "oom_kill")
 MAX_GAP_S = 2.5
-MIN_MAX_GAP_S = 1.5  # the loop waits 1 s between samples, so a smaller limit rejects every run
+# The loop waits 1 s between samples, so a limit of 1 s or less rejects every run and one just above
+# it passes only while reads are fast; 1.5 s is the chosen margin.
+MIN_MAX_GAP_S = 1.5
 MAX_COMPETING_CORES = 4
 MIN_AVAIL_GIB = 8
 MEM_PSI_MS = 10
