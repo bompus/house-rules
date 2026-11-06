@@ -52,7 +52,7 @@ and publish notes containing that version's complete changelog entry:
 `gh release create v<version> --target <sha> --title v<version> --notes-file <entry>`.
 
 The installers follow the default branch, so batching tags does not defer
-updates for those consumers. Existing tags and releases stay unchanged.
+updates for those consumers. Existing tags and release assets stay unchanged.
 
 ## Public repository
 
