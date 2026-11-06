@@ -41,11 +41,15 @@ further round ran. Required repository checks and review gates still apply.
 
 Cut review rounds before they start; none of this skips a required round or a
 repository's review gate, and a change that gets no model review needs none of
-it. For a change that will get a model review, write its contract before the
-code, in the plan (copy it into the pull request body when you open one): what
-it must do, what it must not change, and the residuals you accept (known gaps
-you will not close, each with its reason), and have a reviewer read that
-contract once before you build. Run the first review as one wide pass: two or
+it. A user's configured panel size and reduction policy come first; the rest
+applies where they are silent. For a change you are about to write that will
+get a model review, write its contract before the code, in the plan (copy it
+into the pull request body when you open one): what it must do, what it must
+not change, and the residuals you accept (known gaps you will not close, each
+with its reason), and have a reviewer read that contract once before you build;
+when no separate reviewer can run, keep the contract in the plan and skip that
+read. Reviewing a change that already exists starts from the contract you can
+find, and says when none exists. Run the first review as one wide pass: two or
 three reviewers of different model families in parallel in the same round, the
 author's family excluded, not one reviewer per round in series; where a host or
 resource limit prevents parallel runs, run them in sequence within the same
