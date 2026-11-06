@@ -52,7 +52,17 @@ not reviewed. Report gaps rather than claiming a complete audit from a sample.
 
 - **Special cases in shared flows.** An `if` for one caller, one tenant or one
   feature inside a path everyone uses. Ask whether the case belongs at the
-  caller, in data, or in a separate path.
+  caller, in data, or in a separate path. Several special cases often come from
+  one requirement the design did not account for; when you can name that
+  requirement and the change that makes them unnecessary, report the one
+  change rather than each case.
+- **Pieces that change together without showing it.** Copies of a value that
+  must be edited in step, a module that reads a global or file another module
+  sets, an undocumented call order callers must follow. Ask what a typical
+  change touches; files that repeatedly change in the same commits are
+  evidence, but a file and its own tests or docs are not. Also check imports
+  that point from stable code to something more volatile; report one only
+  when reversing it deletes a layer, branch or copy.
 - **Files past what a reader can hold.** When a file grows large enough that
   nobody can keep its whole shape in mind, ask whether it should be split
   before this change lands, and where the seam is. A change that takes a
