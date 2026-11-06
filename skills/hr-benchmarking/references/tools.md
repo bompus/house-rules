@@ -132,7 +132,9 @@ subtract, so the unit's own CPU counts); and, comparing every sample with the fi
 `memory.swap.current` or `memory.zswap.current`, any change of `zswpin`, `zswpout`, `zswpwb` or of
 `memory.events` high, max, oom or oom_kill, a replaced directory, an unreadable required counter, a
 changed set of optional counters, or a `memory.current` or `io.stat` that was readable and later is not (one never readable stays `unknown`). A
-host or workload CPU counter or a PSI total that goes backward also rejects. If the first sample
+host or workload CPU counter or a PSI total that goes backward also rejects.
+
+If the first sample
 already fails (unreadable PSI, available memory under the floor, an unreadable workload counter, reads
 that took longer than 2.5 s, or no `pswpout` in a `--storage-phase` run) the
 observer writes no `<output>.ready`, exits 1 and the summary says why, so the unit is not started.
