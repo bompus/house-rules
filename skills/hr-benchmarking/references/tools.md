@@ -50,9 +50,10 @@ they cannot attribute activity to the workload.
 Host-wide swap page-ins (`pswpin`, `zswpin`) can move by a few pages while CPU,
 memory pressure and I/O are quiet. Record them as a diagnostic; do not reject a
 run on them alone. Reject a run on swap-outs or writeback (`pswpout`, `zswpout`,
-`zswpwb`), on growth of the workload cgroup's own `memory.swap.current` or
-`memory.zswap.current`, or on cgroup high, max or OOM events. A stricter
-criterion declared in the run plan still applies.
+`zswpwb`) in a phase that measures storage and record them elsewhere (the observer
+rejects them only with `--storage-phase`); reject on growth of the workload
+cgroup's own `memory.swap.current` or `memory.zswap.current`, or on cgroup high,
+max or OOM events. A stricter criterion declared in the run plan still applies.
 
 Use [cgroup swap and zswap accounting](https://www.kernel.org/doc/html/latest/admin-guide/cgroup-v2.html)
 (`memory.swap.current`, `memory.zswap.current`) to distinguish the workload
@@ -124,7 +125,7 @@ full PSI over 10 ms or 100 ms per observation interval (unreadable PSI also reje
 interval is scaled to a nominal second by the time between the reads of that total, and PSI reads
 more than the gap limit apart also reject, and none counts as shorter than half a second);
 a gap over
-2.5 s, a non-positive interval or fewer than two samples; competing CPU, the mean over the run of
+2.5 s, a sample whose reads took longer than 2.5 s, a non-positive interval or fewer than two samples; competing CPU, the mean over the run of
 host busy cores minus the workload cgroup's own CPU, over 4 (`--host-only` has no workload to
 subtract, so the unit's own CPU counts); and, comparing every sample with the first, growth of
 `memory.swap.current` or `memory.zswap.current`, any change of `zswpin`, `zswpout`, `zswpwb` or of
@@ -135,7 +136,8 @@ already fails (unreadable PSI, available memory under the floor, an unreadable w
 observer writes no `<output>.ready`, exits 1 and the summary says why, so the unit is not started.
 
 Host-wide swap-out and zswap activity is recorded per interval and rejects only with
-`--storage-phase`. Observer cost (CPU, resident peak, and the size of the samples file) is recorded and checked against
+`--storage-phase`, which also rejects a run whose `pswpout` (or a zswap counter the first sample had) is
+missing from any sample. Observer cost (CPU, resident peak, and the size of the samples file) is recorded and checked against
 `--max-observer-cores` (default 0.05) and `--max-observer-rss-mib` (default 128); a protocol declares
 its own. The workload's `memory.current` peak and `io.stat` byte deltas are recorded for attribution;
 a counter the kernel does not provide is `unknown`.

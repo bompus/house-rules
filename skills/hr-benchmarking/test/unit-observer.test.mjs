@@ -331,14 +331,21 @@ test(
   },
 );
 
+/**
+ * @param {string[]} reasons
+ * @param {string} prefix
+ */
+const hasReason = (reasons, prefix) => reasons.some((r) => r.startsWith(prefix));
+
 // The budget arithmetic with controlled counters: no sleeping, no process timing.
 /**
  * @param {number} lifetime process CPU in seconds, from os.times()
  * @param {number} first observer CPU at the first sample
  * @param {number} last observer CPU at the last sample
  * @param {number} span seconds between the samples
+ * @param {{ rssMib?: number, maxRssMib?: number }} [options] the resident peak the observer reports and its budget
  */
-function budgetReasons(lifetime, first, last, span) {
+function budgetReasons(lifetime, first, last, span, { rssMib = 1, maxRssMib = 1e9 } = {}) {
   const root = mkdtempSync(join(tmpdir(), "unit-observer-budget-"));
   try {
     const script = `
@@ -347,10 +354,11 @@ spec = importlib.util.spec_from_file_location("observer", ${JSON.stringify(obser
 m = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(m)
 os.times = lambda: (${lifetime}, 0.0, 0.0, 0.0, 0.0)
+m.self_status = lambda field: ${rssMib} * 1024
 class A:
     output = ${JSON.stringify(join(root, "out.json"))}
     max_observer_cores = 0.2
-    max_observer_rss_mib = 1e9
+    max_observer_rss_mib = ${maxRssMib}
 samples = [{"t": 0.0, "wall": 1.0, "cpu": ${first}}, {"t": ${span}, "wall": 2.0, "cpu": ${last}}]
 m.write_summary(A, samples, [], {"scope": "host-only", "workload_cgroup": None}, "ok")
 print(json.dumps(json.load(open(A.output))))
@@ -366,12 +374,29 @@ print(json.dumps(json.load(open(A.output))))
 test("observer CPU budget uses the CPU between the first and last sample", { skip }, () => {
   // 0.5 s of start-up CPU before the first sample, 0.15 s between samples with 0.01 s spent.
   const quiet = budgetReasons(0.5, 0.4, 0.41, 0.15);
-  assert.ok(!quiet.reasons.includes("observer CPU over budget"), String(quiet.reasons));
+  assert.ok(!hasReason(quiet.reasons, "observer CPU over budget"), String(quiet.reasons));
   assert.equal(quiet.observer_cpu_s, 0.5);
   assert.equal(quiet.observer_cpu_interval_s, 0.01);
   // The same lifetime CPU but 0.1 s spent inside the interval is 0.67 cores: over the 0.2 budget.
   const busy = budgetReasons(0.5, 0.4, 0.5, 0.15);
-  assert.ok(busy.reasons.includes("observer CPU over budget"));
+  assert.ok(hasReason(busy.reasons, "observer CPU over budget"));
+});
+
+test("the observer budgets compare the figures before they are rounded", { skip }, () => {
+  // 0.03006 s of CPU in 0.15 s is 0.2004 cores, which the summary rounds to 0.2: still over a 0.2 budget.
+  const cpu = budgetReasons(0.5, 0.4, 0.43006, 0.15);
+  assert.equal(cpu.observer_cpu_cores_mean, 0.2);
+  assert.ok(hasReason(cpu.reasons, "observer CPU over budget: 0.2004 > 0.2"), String(cpu.reasons));
+  // 128.04 MiB resident is reported as 128 and is over a 128 MiB budget.
+  const rss = budgetReasons(0.5, 0.4, 0.41, 0.15, { rssMib: 128.04, maxRssMib: 128 });
+  assert.equal(rss.observer_rss_peak_mib, 128);
+  assert.ok(
+    hasReason(rss.reasons, "observer resident memory over budget: 128.04 > 128"),
+    String(rss.reasons),
+  );
+  // Exactly on the budget is within it.
+  const within = budgetReasons(0.5, 0.4, 0.41, 0.15, { rssMib: 128, maxRssMib: 128 });
+  assert.ok(!hasReason(within.reasons, "observer resident memory over budget"));
 });
 
 test(
@@ -406,27 +431,32 @@ test(
 );
 
 /**
- * Runs the observer's `judge` on synthetic host samples, as [monotonic seconds, memory PSI µs, I/O PSI µs].
  * Runs the observer's `judge` on synthetic host samples, as [monotonic seconds, memory PSI µs, I/O PSI µs],
  * with optional fourth and fifth elements: the times the memory and I/O PSI totals were read, when they
- * differ from the sample start.
+ * differ from the sample start, and a sixth: the time the sample's reads ended, when it differs from the
+ * sample start.
  * @param {number[][]} rows
+ * @param {{ storagePhase?: boolean, vms?: Record<string, number>[] }} [options] the storage-phase flag,
+ * and each sample's host swap counters
  * @returns {{ reasons: string[], out: Record<string, number> }}
  */
-function judgeRows(rows) {
+function judgeRows(rows, { storagePhase = false, vms = [] } = {}) {
   const script = `
 import importlib.util, json, sys
 spec = importlib.util.spec_from_file_location("observer", ${JSON.stringify(observer)})
 m = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(m)
 class Args:
-    storage_phase = False
+    storage_phase = ${storagePhase ? "True" : "False"}
 rows = json.loads(sys.stdin.read())
+vms = json.loads(${JSON.stringify(JSON.stringify(vms))})
 samples = [{"t": r[0], "wall": r[0], "cpu": 0.0, "busy_ticks": 0, "mem_psi": r[1], "io_psi": r[2],
             "mem_psi_t": r[3] if len(r) > 3 else r[0],
             "io_psi_t": r[4] if len(r) > 4 else (r[3] if len(r) > 3 else r[0]),
             "psi_t": max(r[3:5]) if len(r) > 3 else r[0],
-            "avail_gib": 64.0, "vm": {}, "workload": None} for r in rows]
+            "t_end": r[5] if len(r) > 5 else r[0],
+            "avail_gib": 64.0, "vm": vms[i] if i < len(vms) else {}, "workload": None}
+           for i, r in enumerate(rows)]
 reasons, out = m.judge(samples, None, 100.0, Args)
 print(json.dumps({"reasons": reasons, "out": out}))
 `;
@@ -508,6 +538,54 @@ test("a gap over the sampling limit rejects the unit", { skip }, () => {
     reasons.some((x) => /gap above 2.5 s/.test(x)),
     String(reasons),
   );
+});
+
+test("a final sample whose reads block past the sampling limit rejects the unit", { skip }, () => {
+  // The sample starts 1 s after the previous one but its reads end 2.71 s later: a gap measured only
+  // between sample starts would call this clean.
+  const stall = judgeRows([
+    [0, 0, 0],
+    [1, 0, 0],
+    [2, 0, 0, 2, 2, 4.71],
+  ]);
+  assert.ok(
+    stall.reasons.some((x) => /reads took longer than 2.5 s/.test(x)),
+    String(stall.reasons),
+  );
+  // Reads that end within the limit are clean.
+  const quick = judgeRows([
+    [0, 0, 0],
+    [1, 0, 0],
+    [2, 0, 0, 2, 2, 2.4],
+  ]);
+  assert.deepEqual(quick.reasons, []);
+});
+
+test("a storage phase needs the host pswpout counter in every sample", { skip }, () => {
+  const rows = [
+    [0, 0, 0],
+    [1, 0, 0],
+    [2, 0, 0],
+  ];
+  const have = { pswpout: 0, zswpout: 0, zswpwb: 0 };
+  const unreadable = (/** @type {string[]} */ reasons) =>
+    reasons.some((x) => x.includes("swap counter unreadable"));
+  assert.deepEqual(judgeRows(rows, { storagePhase: true, vms: [have, have, have] }).reasons, []);
+  // Missing from every sample, and vanishing after the first.
+  assert.ok(unreadable(judgeRows(rows, { storagePhase: true, vms: [{}, {}, {}] }).reasons));
+  assert.ok(unreadable(judgeRows(rows, { storagePhase: true, vms: [have, have, {}] }).reasons));
+  // A zswap counter the first sample had must stay readable; a host without zswap is not rejected for it.
+  const pswpoutOnly = { pswpout: 0 };
+  assert.ok(
+    unreadable(judgeRows(rows, { storagePhase: true, vms: [have, have, pswpoutOnly] }).reasons),
+  );
+  assert.ok(
+    !unreadable(
+      judgeRows(rows, { storagePhase: true, vms: [pswpoutOnly, pswpoutOnly, pswpoutOnly] }).reasons,
+    ),
+  );
+  // Outside a storage phase the counter is only recorded.
+  assert.ok(!unreadable(judgeRows(rows, { vms: [{}, {}, {}] }).reasons));
 });
 
 /**

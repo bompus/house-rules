@@ -13,7 +13,8 @@ Limits are these defaults; a protocol that declares others applies its own, thro
 at least 8 GiB in every sample (unrounded); memory full PSI at most 10 ms and I/O full PSI at most
 100 ms per observation interval (each measured interval is scaled to one second by the time
 between the reads of that total, and none counts as shorter than half a second); coverage with no
-gap over 2.5 s (monotonic clock) and at least two samples; PSI must be readable. Competing CPU:
+gap over 2.5 s (monotonic clock) and no sample whose reads took longer than that, and at least two
+samples; PSI must be readable. Competing CPU:
 the mean over the whole run of host busy cores minus the workload cgroup's own CPU (usage_usec,
 descendants included) is at most 4; with --host-only there is no workload to subtract, so the
 unit's own CPU counts. Workload scope (the cgroup given with --workload-cgroup, or `auto` for the
@@ -25,7 +26,8 @@ optional counters (zswap) as in the first sample, and a memory.current or io.sta
 readable once it has been. A CPU or PSI counter that goes backward is a failure.
 
 Host-wide swap-out and zswap activity (pswpout, zswpout, zswpwb) is recorded for every interval
-and rejects the unit only with --storage-phase, the phases the rules name.
+and rejects the unit only with --storage-phase, the phases the rules name; a storage phase also
+requires pswpout (and a zswap counter the first sample had) in every sample.
 
 Observer cost is recorded (CPU, resident peak, output bytes) and checked against budgets
 (--max-observer-cores, default 0.05, over the collection interval from the first to the last
@@ -204,6 +206,7 @@ def take(cg):
     sample["avail_gib"] = avail_gib()
     sample["vm"] = vmstat()
     sample["workload"] = workload_sample(cg) if cg else None
+    sample["t_end"] = time.monotonic()  # a read that blocks past the limit is not a clean sample
     return sample
 
 
@@ -236,6 +239,9 @@ def judge(samples, cg, hz, args):
     if min(gaps) <= 0 or max(gaps) > MAX_GAP_S:
         reasons.append(f"sampling interval not positive or gap above {MAX_GAP_S:g} s")
         return reasons, out
+    if max(s["t_end"] - s["t"] for s in samples) > MAX_GAP_S:
+        reasons.append(f"a sample's reads took longer than {MAX_GAP_S:g} s")
+        return reasons, out
     busy = [s["busy_ticks"] for s in samples]
     if any(b < a for a, b in zip(busy, busy[1:], strict=False)):
         reasons.append("host CPU counter went backward")
@@ -255,6 +261,10 @@ def judge(samples, cg, hz, args):
     out["host_swap_deltas_by_interval"] = swaps
     if args.storage_phase and any(v for d in swaps for v in d.values()):
         reasons.append("host swap-out or zswap activity in a storage phase")
+    # pswpout is required; a zswap counter is required once the first sample has it.
+    needed = {"pswpout", *samples[0]["vm"]}
+    if args.storage_phase and any(k not in x["vm"] for x in samples for k in needed):
+        reasons.append("host swap counter unreadable in a storage phase")
     workload = [s["workload"] for s in samples]
     w_cores = 0.0
     if cg:
@@ -379,17 +389,24 @@ def write_summary(args, samples, reasons, out, status):
         cpu_s = sum(os.times()[:2])
         interval_cpu_s = samples[-1]["cpu"] - samples[0]["cpu"]
         span = max(samples[-1]["t"] - samples[0]["t"], 1e-9)
+        cores, rss_mib = interval_cpu_s / span, self_status("VmHWM") / 1024
         summary.update(
             observer_cpu_s=round(cpu_s, 2),
             observer_cpu_interval_s=round(interval_cpu_s, 3),
-            observer_cpu_cores_mean=round(interval_cpu_s / span, 3),
-            observer_rss_peak_mib=round(self_status("VmHWM") / 1024, 1),
+            observer_cpu_cores_mean=round(cores, 3),
+            observer_rss_peak_mib=round(rss_mib, 1),
             samples_bytes=os.path.getsize(args.output + ".samples.jsonl"),
         )
-        if summary["observer_cpu_cores_mean"] > args.max_observer_cores:
-            reasons.append("observer CPU over budget")
-        if summary["observer_rss_peak_mib"] > args.max_observer_rss_mib:
-            reasons.append("observer resident memory over budget")
+        # The budgets compare the figures before they are rounded for the summary.
+        if cores > args.max_observer_cores:
+            reasons.append(
+                f"observer CPU over budget: {cores:.4f} > {args.max_observer_cores:g} cores"
+            )
+        if rss_mib > args.max_observer_rss_mib:
+            reasons.append(
+                "observer resident memory over budget: "
+                f"{rss_mib:.2f} > {args.max_observer_rss_mib:g} MiB"
+            )
     summary["reasons"] = reasons
     summary["clean"] = not reasons
     with open(args.output, "w") as f:
