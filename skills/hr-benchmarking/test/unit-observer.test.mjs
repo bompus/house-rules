@@ -851,6 +851,18 @@ test("the admission limit flags must be positive numbers", { skip }, () => {
   }
 });
 
+test("--max-gap-s must leave room for the 1 s sampling wait", { skip }, () => {
+  // --help exits as soon as it is parsed, after the value before it has been checked, so no run starts.
+  const run = (/** @type {string} */ value) =>
+    spawnSync("python3", [observer, "--max-gap-s", value, "--help"], { encoding: "utf8" });
+  for (const value of ["1.0", "1.49"]) {
+    const r = run(value);
+    assert.equal(r.status, 2, `--max-gap-s ${value}`);
+    assert.ok(r.stderr.includes("sampling wait is 1 s"), `--max-gap-s ${value}: ${r.stderr}`);
+  }
+  assert.equal(run("1.5").status, 0);
+});
+
 test(
   "PSI is scaled by the time between the counter reads, not between the sample starts",
   { skip },

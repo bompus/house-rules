@@ -8,9 +8,10 @@ when it may not. It writes `<output>.ready` after its first sample; start the un
 first sample that already fails writes no `.ready`: the observer exits 1 with the reasons in the
 summary.
 
-Limits are these defaults; a protocol that declares others applies its own, through --max-gap-s,
---min-avail-gib, --mem-psi-ms, --io-psi-ms and --max-competing-cores. Host scope: available memory
-at least 8 GiB in every sample (unrounded); memory full PSI at most 10 ms and I/O full PSI at most
+Limits are these defaults; a protocol that declares others applies its own, through --max-gap-s
+(at least 1.5 s, because the sampling wait is 1 s), --min-avail-gib, --mem-psi-ms, --io-psi-ms and
+--max-competing-cores. Host scope: available memory at least 8 GiB in every sample (unrounded);
+memory full PSI at most 10 ms and I/O full PSI at most
 100 ms per observation interval (each measured interval is scaled to one second by the time
 between the reads of that total, and none counts as shorter than half a second); coverage with no
 gap over 2.5 s (monotonic clock) and no sample whose reads took longer than that, and at least two
@@ -49,6 +50,7 @@ SWAPS = ("pswpout", "zswpout", "zswpwb")
 WORKLOAD_STAT = ("zswpin", "zswpout", "zswpwb")
 EVENTS = ("high", "max", "oom", "oom_kill")
 MAX_GAP_S = 2.5
+MIN_MAX_GAP_S = 1.5  # the loop waits 1 s between samples, so a smaller limit rejects every run
 MAX_COMPETING_CORES = 4
 MIN_AVAIL_GIB = 8
 MEM_PSI_MS = 10
@@ -432,6 +434,17 @@ def positive(text):
     return value
 
 
+def gap_limit(text):
+    """--max-gap-s: the sampling wait is 1 s, so the limit must leave room for the reads."""
+    value = positive(text)
+    if value < MIN_MAX_GAP_S:
+        raise argparse.ArgumentTypeError(
+            f"must be at least {MIN_MAX_GAP_S:g} s: the sampling wait is 1 s and the limit "
+            f"must leave room for reads, got {text!r}"
+        )
+    return value
+
+
 def main():
     global PROC, MAX_GAP_S, MAX_COMPETING_CORES, MIN_AVAIL_GIB, MEM_PSI_MS, IO_PSI_MS
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
@@ -439,7 +452,7 @@ def main():
     ap.add_argument("--workload-cgroup", default=os.environ.get("WORKLOAD_CGROUP"))
     ap.add_argument("--host-only", action="store_true")
     ap.add_argument("--storage-phase", action="store_true")
-    ap.add_argument("--max-gap-s", type=positive, default=MAX_GAP_S)
+    ap.add_argument("--max-gap-s", type=gap_limit, default=MAX_GAP_S)
     ap.add_argument("--min-avail-gib", type=positive, default=MIN_AVAIL_GIB)
     ap.add_argument("--mem-psi-ms", type=positive, default=MEM_PSI_MS)
     ap.add_argument("--io-psi-ms", type=positive, default=IO_PSI_MS)

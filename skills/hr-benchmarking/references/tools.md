@@ -146,6 +146,9 @@ missing from any sample. Observer cost (CPU, resident peak, and the size of the 
 its own. The workload's `memory.current` peak and `io.stat` byte deltas are recorded for attribution;
 a counter the kernel does not provide is `unknown`.
 
+`--max-gap-s` (default 2.5) takes at least 1.5: the sampling wait is 1 s, so a smaller limit would reject
+every run, and the observer refuses it at start.
+
 A clean summary does not qualify a run by itself. The protocol still declares the observers, budgets,
 stop rules and retries beforehand, and keeps every receipt; the cost of the observer is part of the
 unit's CPU, so report it beside the results and make no negligible-impact claim from a clean summary.
