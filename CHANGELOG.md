@@ -5,6 +5,7 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 ## Unreleased
 
 - The `hr-ordering-tests` skill's first step now says that when you do not yet know which status fields or flag combinations the code treats as states, list each one first, with its states and the transitions the code makes (file and line), and take the invariants from that list.
+- The `multi-agent` reference now says to brief a fresh worker by default and to fork (a worker that inherits the whole conversation, where the host offers one) only when the task depends on so many decisions from the conversation that a brief would be long or lose them, because a fork costs more context and time than a brief. A fork is never used for a reviewer or panel seat, since it inherits the author's reasoning, and a fork is also kept from delegating further. In one measured comparison, forks used about 62% more tokens and 35% more time than briefed agents on a small drafting task with similar quality (3 runs each, one task, one model, scored by the author of the briefs).
 
 ## 0.20.0 - 2026-11-06
 

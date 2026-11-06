@@ -8,7 +8,15 @@ durations or timestamps, not from its report. When wall-clock time matters,
 give a budget and restate the elapsed time in each follow-up, or say that an
 earlier correct result beats a later one; budgets are advisory, hard timeouts
 are not. Reuse workers for related follow-ups, do independent work while they
-run instead of polling, and keep workers from delegating further unless asked.
+run instead of polling, and keep workers from delegating further unless asked;
+a fork is no exception.
+
+Brief a fresh worker by default: its brief is its only context, so state the
+goal, the files and what is ruled out. Where the host offers a fork (a worker
+that inherits the whole conversation), use one only when the task depends on so
+many decisions from the conversation that a brief would be long or lose them;
+a fork costs more context and time than a brief. Never fork a reviewer or panel
+seat: it inherits the author's reasoning, so it is not independent.
 
 Split standards by where they are enforced. Give implementers the task, file
 boundaries, public APIs and load-bearing architectural constraints, even ones
