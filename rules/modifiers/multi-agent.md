@@ -8,9 +8,10 @@ core: true
 ## Working with other agents
 
 Keep delegation within the user's authorization and responsibility in the current
-conversation. Before delegating work, reviewing a worker, requesting a follow-up
-review, creating a task worktree, or cleaning up a branch, directory or worktree
-manually or on a schedule, read [the agent-work procedure](../references/multi-agent.md).
+conversation. Before delegating work, starting a change that will get a model
+review, reviewing a worker, requesting a follow-up review, creating a task
+worktree, or cleaning up a branch, directory or worktree manually or on a
+schedule, read [the agent-work procedure](../references/multi-agent.md).
 
 An incomplete worker report is a checkpoint. A worker with a background command
 or subagent still running is not done. Verify reports against evidence and use

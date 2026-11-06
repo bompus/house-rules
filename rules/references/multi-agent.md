@@ -47,15 +47,19 @@ it must do, what it must not change, and the residuals you accept (known gaps
 you will not close, each with its reason), and have a reviewer read that
 contract once before you build. Run the first review as one wide pass: two or
 three reviewers of different model families in parallel in the same round, the
-author's family excluded, not one reviewer per round in series. When fewer than
-two other families are available, run the ones that are (with a fresh-context
-reviewer when none is, as `hr-code-review` says) and name the families that were
-not. Give every later-round reviewer, a review bot included, the
-accepted-residuals list from the first round and the findings already answered,
-in the pull request body where a bot reads it, so it does not report them
-again. Before building across repositories, check the scope against the
-question that was asked: that the change answers it, and that each repository
-named needs the change.
+author's family excluded, not one reviewer per round in series; where a host or
+resource limit prevents parallel runs, run them in sequence within the same
+round. When fewer than two other families are available, run the ones that are
+(with a fresh-context reviewer when none is, as `hr-code-review` says) and name
+the families that were not. Give every later-round reviewer, a review bot
+included, the accepted-residuals list from the first round and the findings
+already answered, so it does not report them again: in the plan or the review
+brief until a pull request exists, then in the pull request body before a bot
+reviews it. An answer that still holds suppresses the repeat; a reviewer who
+finds evidence that an answer is wrong reports it, and a confirmed blocker
+counts whether or not it was reported before. Before building across
+repositories, check the scope against the question that was asked: that the
+change answers it, and that each repository named needs the change.
 
 Before cleaning up a branch, directory or worktree by hand or on a schedule,
 check that no session of any installed agent host uses it: session records and
