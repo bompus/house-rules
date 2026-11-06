@@ -1,6 +1,6 @@
 ---
 expect: reply
-without: - Check current official documentation.*?worth adopting\.\n
+without: - Check current official documentation.*?one line\.\n
 requiredPattern: TOOL_CALL[^\n]*(release notes?|changelog|migration guide)
 ---
 
