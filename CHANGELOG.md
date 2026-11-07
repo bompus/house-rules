@@ -4,7 +4,7 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
-- The implementation-economy reference now says that before adding a check, catch or retry for an edge case callers keep handling, the agent sees whether the interface can make that case valid and correct (deleting something already gone is a no-op, an out-of-range slice is clamped), and only where that result is what every caller wants. It never covers swallowing a real failure; the existing no-silent-fallback item still applies.
+- The implementation-economy reference now says that before adding a check, catch or retry for an edge case callers keep handling, the agent sees whether the interface can make that case valid and correct (deleting something already gone is a no-op, an out-of-range slice is clamped), and only where that result is what every caller wants. It never covers swallowing a real failure; the existing no-silent-fallback item still applies. The always-on pointer to that reference now also fires before duplicating edge-case handling that other callers already have.
 
 ## 0.21.0 - 2026-11-06
 

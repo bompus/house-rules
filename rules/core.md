@@ -326,8 +326,8 @@ current official documentation when behavior depends on a version, and read the 
 notes for every version in between before landing, applying or installing a dependency, toolchain, app, provider or ACP agent upgrade. When
 a change touches more than three places, or an analysis repeats across many files or records, write the script
 that does or proves it; its second run changes nothing and repeats no external action. Before adding a
-dependency, script, hook or skill, landing or installing an upgrade, writing React effects or tests, or fixing a repeated
-mistake, read [the implementation procedure](references/implementation-economy.md).
+dependency, script, hook or skill, landing or installing an upgrade, writing React effects or tests, duplicating edge-case
+handling, or fixing a repeated mistake, read [the implementation procedure](references/implementation-economy.md).
 
 ## Durable notes
 
