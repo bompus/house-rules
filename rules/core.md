@@ -314,20 +314,20 @@ Before starting a long-running command, which runs under a supervisor that outli
 
 ## Implementation economy
 
-Reuse first (existing code, the standard library, installed dependencies, supported
+Reuse first (existing code, standard library, installed dependencies, supported
 extension points) and pick the simplest solution that meets the requirements, with no
 speculative abstraction, never at the cost of security, validation or stated
 requirements. Replace rather than wrap: when nothing outside the change depends on the
 old shape (no released interface, stored data or outside caller), update every caller,
 keep no compatibility path, delete what the change leaves unused and list it in the
-report; keep no silent fallback, and when you cannot tell whether something still has a
-user, ask. Stay compatible with the versions in use and make no blind upgrades: check
-current official documentation when behavior depends on a version, and read the release
+report; keep no silent fallback; if you cannot tell whether something still has a
+user, ask. Stay compatible with the versions in use; make no blind upgrades: check
+current official documentation when behavior depends on a version, and read release
 notes for every version in between before landing, applying or installing a dependency, toolchain, app, provider or ACP agent upgrade. When
 a change touches more than three places, or an analysis repeats across many files or records, write the script
 that does or proves it; its second run changes nothing and repeats no external action. Before adding a
 dependency, script, hook or skill, landing or installing an upgrade, writing React effects or tests, duplicating edge-case
-handling, or fixing a repeated mistake, read [the implementation procedure](references/implementation-economy.md).
+handling, or fixing a repeated mistake, read [the procedure](references/implementation-economy.md).
 
 ## Durable notes
 
