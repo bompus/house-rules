@@ -25,3 +25,17 @@ test("keeps typed user turns with surrounding assistant text and skips tool resu
   expect(text).toContain("It came from the audit.");
   expect(text).not.toContain("meta note");
 });
+
+test("keeps a typed turn that starts with an angle bracket and skips host wrappers", () => {
+  const jsonl = [
+    line({ type: "assistant", message: { content: [{ type: "text", text: "Done." }] } }),
+    line({ type: "user", message: { content: "<command-name>/clear</command-name>" } }),
+    line({ type: "user", message: { content: "<local-command-stdout>ok</local-command-stdout>" } }),
+    line({ type: "user", message: { content: "<task-notification>done</task-notification>" } }),
+    line({ type: "user", message: { content: "<button> still has no accessible name; fix it" } }),
+  ].join("\n");
+  const { turns, text } = condense(jsonl);
+  expect(turns).toBe(1);
+  expect(text).toContain("<button> still has no accessible name");
+  expect(text).not.toContain("/clear");
+});

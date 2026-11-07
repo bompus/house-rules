@@ -13,6 +13,11 @@ type Line = {
   message?: { content?: string | Block[] };
 };
 
+// Tags Claude Code wraps around text it adds to a user line (slash commands, local command
+// output, notices, hook text). A typed message that merely starts with "<" is kept.
+const HOST_WRAPPER =
+  /^<(command-(name|message|args)|local-command-|system-reminder|task-notification|bash-(input|stdout|stderr)|user-prompt-submit-hook)/;
+
 const BEFORE_TAIL = 700;
 const USER_HEAD = 900;
 const AFTER_HEAD = 400;
@@ -46,7 +51,7 @@ export function condense(jsonl: string): { turns: number; text: string } {
         continue;
       }
       const text = textOf(content).trim();
-      if (text && !text.startsWith("<") && !text.slice(0, 40).includes("system-reminder")) {
+      if (text && !HOST_WRAPPER.test(text) && !text.slice(0, 40).includes("system-reminder")) {
         events.push({ role: "U", text });
       }
     }

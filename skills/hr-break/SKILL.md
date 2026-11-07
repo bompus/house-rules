@@ -7,7 +7,7 @@ metadata:
   upstream: https://github.com/jakubkrehel/skills
   upstream_ref: 592aedc44d7d5b3e29740984252902f3e5402a1c
   upstream_path: skills/break/
-  local_patches: "Manual/hr-domain routing; conditional Next server-client boundary, viewport versus containers, owned-server stop; schema/plural/missing-data axes; upstream skipped-observation/fixture/explicit-cleanup refinements; no state-machine install"
+  local_patches: "Explicit-only; routes findings to the hr-better-* skills; conditional Next server-client boundary, viewport versus containers, owned-server stop; schema/plural/missing-data axes; upstream skipped-observation/fixture/explicit-cleanup refinements; no state-machine install"
   house_rules_patches: "Portable provenance; hr- skill names"
 ---
 

@@ -7,7 +7,7 @@ metadata:
   upstream: https://github.com/jakubkrehel/skills
   upstream_ref: 592aedc44d7d5b3e29740984252902f3e5402a1c
   upstream_path: skills/better-interface/
-  local_patches: "Manual/private hr-domain routing and missing better-ui; count-first inventory, stock scanner and read-only review; selective upstream verdict/evidence-format clarity; 592aedc4 reviewed, upstream heading flattening, verify-first section order and description rewording not ported (numbered principles and the stock-scan step stay)"
+  local_patches: "Explicit-only; routes findings to the hr-better-* skills (better-ui is not included); count-first inventory, stock scanner and read-only review; selective upstream verdict/evidence-format clarity; 592aedc4 reviewed, upstream heading flattening, verify-first section order and description rewording not ported (numbered principles and the stock-scan step stay)"
   house_rules_patches: "Portable provenance; hr- skill names"
 ---
 

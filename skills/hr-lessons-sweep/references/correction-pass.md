@@ -17,7 +17,7 @@ find ~/.claude/projects -name '*.jsonl' -mtime -7 ! -path '*subagents*'
 Condense each one into a scratch folder on disk, outside the repository:
 
 ```
-bun scripts/condense-turns.ts <transcript.jsonl> <out.txt>
+bun <skill-directory>/scripts/condense-turns.ts <transcript.jsonl> <out.txt>
 ```
 
 Skip a session with fewer than five typed turns; tool-driven sessions have
