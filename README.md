@@ -297,26 +297,36 @@ changing the configuration.
 | `hr-benchmarking`           | Design, run and assess timing, CPU and memory comparisons; choose tools by the question they answer.      |
 | `hr-better-accessibility`   | Build and review keyboard access, semantics, forms, focus, motion and reflow in web UI.                   |
 | `hr-better-colors`          | Choose and check palettes, semantic tokens, themes, gamut and rendered contrast.                          |
+| `hr-better-interface`       | Review a whole screen or flow through the `hr-better-*` skills into one report; explicit-only.            |
 | `hr-better-layout`          | Build and review grouping, alignment, spacing, responsive layout and clipping.                            |
 | `hr-better-typography`      | Style and review type scales, wrapping, spacing, truncation and font loading.                             |
 | `hr-better-writing`         | Write and review interface labels, errors, empty states and product terminology.                          |
+| `hr-break`                  | Render one component with worst-case content and states and report what breaks; explicit-only.            |
 | `hr-code-review`            | Review a diff against standards and the request, and check what it can break beyond its lines.            |
+| `hr-codebase-design`        | Shape a module interface: small surface, deep implementation, a clean seam; compare two designs.          |
 | `hr-design-exploration`     | Compare visual directions, or variants of one component, and refine toward one design.                    |
 | `hr-diagnosing-bugs`        | Work a hard bug or regression to a confirmed cause.                                                       |
+| `hr-domain-modeling`        | Resolve project terminology into a `CONTEXT.md` glossary and record decisions as ADRs.                    |
 | `hr-explain-code`           | Trace how existing code works, read-only, before changing it.                                             |
+| `hr-explain-interface`      | Explain how a live page or effect was built, or rebuild one from a screenshot; explicit-only.             |
 | `hr-extract-shared-steps`   | Move operations repeated across workflows into shared functions.                                          |
 | `hr-forgotten-work-audit`   | Audit past sessions, plans and handoffs for promised work that dropped off every list.                    |
+| `hr-grilling`               | Stress-test a plan or decision through rounds of questions, each with a recommended answer.               |
 | `hr-handoff`                | Write a handoff a fresh session can resume from.                                                          |
 | `hr-house-rules-setup`      | Choose modifiers, create your layer and connect your hosts.                                               |
 | `hr-issue-tracker-setup`    | Configure project tracker, domain-term and ADR conventions; explicit-only.                                |
 | `hr-lean-plan`              | Write or tighten an implementation plan with the fewest moving parts.                                     |
+| `hr-lessons-sweep`          | Triage lesson candidates, re-check staged lessons and find unrecorded takeaways in trackers.              |
 | `hr-maintainability-review` | Review a diff or entire codebase strictly for structure, over-engineering and leftover scaffolding.       |
 | `hr-manual-qa`              | Give reproducible human checks after reporting agent verification results.                                |
+| `hr-multi-model-panel`      | Get independent opinions from different model families on a question that is not a diff.                  |
 | `hr-navigation-retro`       | Audit navigation failures in selected transcripts and propose verified findability fixes.                 |
 | `hr-ordering-tests`         | Enumerate event orderings through the real code to find race bugs.                                        |
 | `hr-plain-prose`            | Make text people read plain and specific.                                                                 |
-| `hr-progress-report`        | Report current task activity, milestone completion and remaining wall-clock time.                         |
+| `hr-ponytail`               | Prefer the simplest adequate implementation: reuse and the standard library before custom code.           |
+| `hr-ponytail-review`        | Review one diff for complexity that can be deleted without changing behavior.                             |
 | `hr-pr-followup`            | Address conflicts, feedback and failing checks for a PR; landing authority; CodeRabbit and cubic gate.    |
+| `hr-progress-report`        | Report current task activity, milestone completion and remaining wall-clock time.                         |
 | `hr-read-reddit`            | Read Reddit feed output while supported; RSS support ends November 13, 2026. Partial web-search fallback. |
 | `hr-read-x-links`           | Read the full content of X posts.                                                                         |
 | `hr-research-shared-links`  | Research a shared link or repository in depth, compare it with your setup and rate each idea.             |
@@ -335,6 +345,12 @@ file and shell access can run it. Supported inputs include Claude Code, Codex,
 OpenCode exports, Cursor CLI streams and ACP v1 recordings from other agents.
 See its [input limits](skills/hr-navigation-retro/references/inputs.md).
 It requires Python 3.11+ and keeps reports local.
+
+Two skills that fit beside these are not shipped here. [before-and-after](https://github.com/vercel-labs/before-and-after)
+adds before and after screenshots to a pull request; its licence (PolyForm
+Shield 1.0.0) does not allow copying it into an MIT project, so install it from
+its repository. The Chrome DevTools MCP server ships its own skill with the
+server; install both from [chrome-devtools-mcp](https://github.com/ChromeDevTools/chrome-devtools-mcp).
 
 ## Checking the rules against your models
 

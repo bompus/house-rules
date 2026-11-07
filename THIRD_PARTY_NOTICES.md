@@ -77,6 +77,14 @@ Source: https://github.com/mattpocock/skills (compared at revision `d81f3a1`)
 
 - `skills/hr-tdd/`: adapted from `skills/engineering/tdd/` at revision
   `f3fc5632f401156837ee3872f14fe33ccf1024ea`. The bundle carries its MIT notice.
+- `skills/hr-codebase-design/`: adapted from `skills/engineering/codebase-design/`
+  at revision `a496f5513d4a4cf889bc48e189e579f4b0bdf6aa`.
+- `skills/hr-domain-modeling/`: adapted from `skills/engineering/domain-modeling/`
+  at revision `24fe0ef7737efae15c87225755e9f6f5965e4888`.
+- `skills/hr-grilling/`: adapted from `skills/productivity/grilling/` at revision
+  `a496f5513d4a4cf889bc48e189e579f4b0bdf6aa`.
+
+  These three bundles carry their MIT notice.
 
 Copyright (c) 2026 Matt Pocock
 
@@ -160,6 +168,10 @@ Source: https://github.com/jakubkrehel/skills (compared at revision `267330e1adf
 - `skills/hr-better-accessibility/`, `skills/hr-better-colors/`, `skills/hr-better-layout/`,
   `skills/hr-better-typography/` and `skills/hr-better-writing/`: adapted skill bundles,
   including their supporting references and discovery metadata.
+- `skills/hr-better-interface/` and `skills/hr-break/` (revision
+  `592aedc44d7d5b3e29740984252902f3e5402a1c`) and `skills/hr-explain-interface/`
+  (revision `d574cc8a576dc24256ad38268b8d03d86724a1b3`): adapted skill bundles that
+  carry their MIT notice.
 
 Copyright (c) 2026 Jakub Krehel
 
@@ -235,6 +247,19 @@ Source: https://github.com/t3dotgg/tstack (revision `1085050f3baed1ac724caa4a816
   `skills/full-send/SKILL.md`.
 
 Copyright (c) 2026 Theo Browne
+
+## DietrichGebert/ponytail
+
+Source: https://github.com/DietrichGebert/ponytail
+
+- `skills/hr-ponytail/`: adapted from `skills/ponytail/SKILL.md` at revision
+  `6f1c2bfff0c837d268929a7c4e490918eb4fab29`.
+- `skills/hr-ponytail-review/`: adapted from `skills/ponytail-review/SKILL.md` at
+  revision `2961b52fc1fe6a5a87c7a959a79512e5c2f3ffe5`.
+
+Both bundles carry the MIT notice.
+
+Copyright (c) 2026 DietrichGebert
 
 ## A Philosophy of Software Design (ideas)
 

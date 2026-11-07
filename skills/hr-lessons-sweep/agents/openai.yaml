@@ -1,0 +1,3 @@
+interface:
+  display_name: "Lessons Sweep"
+  short_description: "Triage, re-check and promote recorded lessons"

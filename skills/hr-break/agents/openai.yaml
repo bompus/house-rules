@@ -1,0 +1,5 @@
+interface:
+  display_name: "Break"
+  short_description: "Stress test a component with reachable states and content"
+policy:
+  allow_implicit_invocation: false

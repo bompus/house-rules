@@ -1,0 +1,5 @@
+interface:
+  display_name: "Explain Interface"
+  short_description: "Explain live pages or reconstruct screenshot effects"
+policy:
+  allow_implicit_invocation: false
