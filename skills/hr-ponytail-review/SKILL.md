@@ -1,10 +1,6 @@
 ---
 name: hr-ponytail-review
-description: >
-  Review a diff for unnecessary complexity and behavior-preserving simplifications.
-  Use only for over-engineering or simplify reviews (/hr-ponytail-review). Do not
-  use for standards/spec conformance (hr-code-review)
-  or a strict whole-repository audit (hr-maintainability-review).
+description: "Review a diff for unnecessary complexity and behavior-preserving simplifications. Use only for over-engineering or simplify reviews (/hr-ponytail-review). Do not use for standards/spec conformance (hr-code-review) or a strict whole-repository audit (hr-maintainability-review)."
 license: MIT
 metadata:
   upstream: https://github.com/DietrichGebert/ponytail

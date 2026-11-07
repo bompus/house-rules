@@ -1,6 +1,6 @@
 ---
 name: hr-codebase-design
-description: Design or improve a module interface using deep-module vocabulary (depth, seam, interface vs implementation). Use only when shaping an interface, placing a seam or package, or making code testable through a smaller interface. Do not use for actions-vs-services splits.
+description: "Design or improve a module interface using deep-module vocabulary (depth, seam, interface vs implementation). Use only when shaping an interface, placing a seam or package, or making code testable through a smaller interface. Do not use for actions-vs-services splits."
 license: MIT
 metadata:
   upstream: https://github.com/mattpocock/skills

@@ -1,6 +1,6 @@
 ---
 name: hr-domain-modeling
-description: Build and sharpen a project's domain model. Use when resolving or changing codebase terminology, writing or editing a CONTEXT.md, or recording or editing an ADR. Do not use for read-only walkthroughs.
+description: "Build and sharpen a project's domain model. Use when resolving or changing codebase terminology, writing or editing a CONTEXT.md, or recording or editing an ADR. Do not use for read-only walkthroughs."
 license: MIT
 metadata:
   upstream: https://github.com/mattpocock/skills

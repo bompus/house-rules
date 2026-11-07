@@ -1,10 +1,6 @@
 ---
 name: hr-ponytail
-description: >
-  Prefer the simplest adequate implementation: reuse, standard library and
-  platform features before custom complexity. Use for coding tasks or explicit
-  requests to apply Ponytail, YAGNI or reduce over-engineering; do not extend the
-  coding workflow to unrelated tasks.
+description: "Prefer the simplest adequate implementation: reuse, standard library and platform features before custom complexity. Use for coding tasks or explicit requests to apply Ponytail, YAGNI or reduce over-engineering; do not extend the coding workflow to unrelated tasks."
 argument-hint: "[lite|full|ultra|off]"
 license: MIT
 metadata:
@@ -23,7 +19,7 @@ when they improve that outcome.
 ## Scope and intensity
 
 Apply to coding work at **full** by default. Retain the user's chosen
-`/ponytail lite|full|ultra` intensity for later coding work in this session,
+`/hr-ponytail lite|full|ultra` intensity for later coding work in this session,
 without carrying coding procedures into unrelated tasks. "stop ponytail" or
 "normal mode" turns it off.
 

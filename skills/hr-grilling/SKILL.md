@@ -1,6 +1,6 @@
 ---
 name: hr-grilling
-description: Stress-test a plan, decision, or idea via relentless interview. Use when the user wants questions and pushback; when they also want ADRs or a glossary written as you go, pair it with hr-domain-modeling.
+description: "Stress-test a plan, decision, or idea via relentless interview. Use when the user wants questions and pushback; when they also want ADRs or a glossary written as you go, pair it with hr-domain-modeling."
 license: MIT
 metadata:
   upstream: https://github.com/mattpocock/skills

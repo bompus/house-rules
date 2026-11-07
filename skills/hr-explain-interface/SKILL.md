@@ -13,7 +13,7 @@ metadata:
 
 # Interface explanation
 
-This skill answers how something was built. `/explain-interface how the gradient on example.com was built` finds the layers producing that gradient and explains what each one contributes.
+This skill answers how something was built. `/hr-explain-interface how the gradient on example.com was built` finds the layers producing that gradient and explains what each one contributes.
 
 It explains rather than judges. There is no verdict, because how someone else built their interface is not a finding. Reviewing against a standard is `hr-code-review` and `hr-better-interface`; exploring alternatives for your own is `hr-design-exploration`.
 

@@ -1,6 +1,6 @@
 ---
 name: hr-better-interface
-description: "Whole-screen or flow UI audit that routes through the better-* skills into one ranked report. Use only when the user asks for an interface review of a screen, flow or repository; branch, PR and diff reviews belong to hr-code-review."
+description: "Whole-screen or flow UI audit that routes through the hr-better-* skills into one ranked report. Use only when the user asks for an interface review of a screen, flow or repository; branch, PR and diff reviews belong to hr-code-review."
 disable-model-invocation: true
 license: MIT
 metadata:
@@ -13,7 +13,7 @@ metadata:
 
 # Interface review
 
-This skill runs a cross-discipline review. It routes the interface to each `better-*` skill, collects their evidence and consolidates one ranked verdict.
+This skill runs a cross-discipline review. It routes the interface to each `hr-better-*` skill, collects their evidence and consolidates one ranked verdict.
 
 Orchestration is all it owns. Accessibility rules belong to `hr-better-accessibility`, structure to `hr-better-layout`, copy to `hr-better-writing`, type to `hr-better-typography`, color to `hr-better-colors`, visual polish and motion to `better-ui`, which is not vendored here. Never duplicate or override their rules here.
 

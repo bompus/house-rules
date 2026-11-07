@@ -440,6 +440,15 @@ test("a config's own directory is its layer, and layer skills replace base skill
   );
 });
 
+test("every shipped skill's description parses as one line of text", () => {
+  for (const name of readdirSync(join(root, "skills"))) {
+    const file = join(root, "skills", name, "SKILL.md");
+    const { meta } = parseFragment(readFileSync(file, "utf8"), file);
+    assert.ok((meta.description ?? "").length > 20, `${name} has a parsed description`);
+    assert.doesNotMatch(meta.description ?? "", /^[>|][+-]?$/, `${name} uses no YAML block scalar`);
+  }
+});
+
 test("the README lists every modifier with its description, and every skill", () => {
   const readme = readFileSync(join(root, "README.md"), "utf8");
   /** @param {string} s */
@@ -644,6 +653,7 @@ test("shared utility entry points and ordinary test children keep the selected r
     "skills/hr-handoff/scripts/check-reconciliation.mjs",
     "skills/hr-diagnosing-bugs/scripts/check-pr-offer.mjs",
     "skills/hr-stock-ui-audit/scripts/scan.mjs",
+    "skills/hr-lessons-sweep/scripts/condense-turns.ts",
   ];
   for (const file of utilities) {
     assert.equal(readFileSync(join(root, file), "utf8").split("\n")[0], "#!/usr/bin/env bun", file);

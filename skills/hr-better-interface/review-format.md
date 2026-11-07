@@ -24,7 +24,7 @@ One table, ordered by severity, then by reach:
 - **Location** cites `path/to/file:line`. Cite the exact screen and component when the artifact has no source files.
 - **Before** and **After** show the current implementation and an actionable replacement, each in its own cell.
 - **Why** names the violated principle and its user impact.
-- **Domain** is the owning skill without the `better-` prefix.
+- **Domain** is the owning skill without the `hr-better-` prefix.
 
 Each row is one root cause. Consolidate a repeated systemic issue into one row and list every affected location. Respect the finding cap. With no findings, omit the table and state "No actionable interface findings."
 

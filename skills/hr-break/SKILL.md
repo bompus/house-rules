@@ -1,6 +1,6 @@
 ---
 name: hr-break
-description: "Render one existing component with relevant production states and worst-case content on a temporary page; report visible breaks when browser observation is available. Use when explicitly asked to stress test or break a component. Code reviews belong to hr-code-review or better-interface."
+description: "Render one existing component with relevant production states and worst-case content on a temporary page; report visible breaks when browser observation is available. Use when explicitly asked to stress test or break a component. Code reviews belong to hr-code-review or hr-better-interface."
 disable-model-invocation: true
 license: MIT
 metadata:
