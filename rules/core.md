@@ -319,8 +319,7 @@ extension points) and pick the simplest solution that meets the requirements, wi
 speculative abstraction, never at the cost of security, validation or stated
 requirements. Replace rather than wrap: when nothing outside the change depends on the
 old shape (no released interface, stored data or outside caller), update every caller,
-keep no compatibility path, delete what the change leaves unused and list it in the
-report; keep no silent fallback, and when you cannot tell whether something still has a
+keep no compatibility path, delete what it leaves unused and report it; keep no silent fallback, and when you cannot tell whether something still has a
 user, ask. Stay compatible with the versions in use and make no blind upgrades: check
 current official documentation when behavior depends on a version, and read the release
 notes for every version in between before landing, applying or installing a dependency, toolchain, app, provider or ACP agent upgrade. When
