@@ -19,6 +19,12 @@
   failure, the evidence it can occur, and the maintenance cost. Omit speculative
   additions; ask for a decision only when the proposal expands the authorized
   scope.
+- Before adding a check, catch or retry for an edge case that callers keep
+  handling, see whether the interface can make that case valid and correct
+  instead: deleting something already gone is a no-op, an out-of-range slice
+  is clamped. Do this only where the new result is what every caller wants.
+  It never covers swallowing a real failure: a failure the caller must act on
+  stays loud, as the next item requires.
 - Replace rather than wrap. When nothing outside the change depends on the
   old shape (no released interface, stored data or outside caller), update
   every caller and keep no compatibility path, shim or migration. Delete the

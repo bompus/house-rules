@@ -4,6 +4,8 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- The implementation-economy reference now says that before adding a check, catch or retry for an edge case callers keep handling, the agent sees whether the interface can make that case valid and correct (deleting something already gone is a no-op, an out-of-range slice is clamped), and only where that result is what every caller wants. It never covers swallowing a real failure; the existing no-silent-fallback item still applies.
+
 ## 0.21.0 - 2026-11-06
 
 - The upgrade rule covers apps, providers and ACP agents as well as dependencies and toolchains, and applies before landing, applying or installing an upgrade, so a direct install of a provider CLI reads the release and migration notes first (a major version can drop a setting without a config migration). Read the notes for every version in between (the upstream source when they are thin), apply the migration steps and config changes, and report what affects this setup, fixes for bugs already hit, useful additions, changes the user must make, and new features, rules or options worth adopting or researching, scaled to the change (a patch bump with no behavior change can be one line). The always-on pointer to the implementation reference now also fires when landing or installing an upgrade.
