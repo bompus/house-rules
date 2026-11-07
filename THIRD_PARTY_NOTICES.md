@@ -236,6 +236,15 @@ Source: https://github.com/t3dotgg/tstack (revision `1085050f3baed1ac724caa4a816
 
 Copyright (c) 2026 Theo Browne
 
+## A Philosophy of Software Design (ideas)
+
+Source: John Ousterhout, _A Philosophy of Software Design_ (Yaknyam Press, 2018), chapter 10, "Define Errors Out Of Existence"
+
+- `rules/references/implementation-economy.md`: independently written guidance
+  on making an edge case valid at the interface, informed by that chapter.
+
+No source text from this book is copied here.
+
 ## MIT License text
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
