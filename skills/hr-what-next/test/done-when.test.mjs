@@ -164,13 +164,19 @@ posixOnly("without --apply it reports each line and changes nothing", () => {
   expect(result.out).toContain("L6 closeable: pr-merged acme/tool#1: merged 2026-10-30T12:00:00Z");
   expect(result.out).toContain("L7 pending: pr-merged acme/tool#2: still open");
   expect(result.out).toContain("L8 closeable: path-absent");
-  expect(result.out).not.toContain("L9");
+  // No row for line 9: the label starts a line ("L9 ..."), unlike the same text inside the printed path.
+  expect(result.out).not.toMatch(/^L9 /m);
   expect(readFileSync(plan, "utf8")).toBe(before);
 });
 
-/** A directory that exists and has nothing at ./gone. */
+/**
+ * A directory that exists and has nothing at ./gone. Its name holds "L9" on purpose: the path is printed in
+ * the report, and a test that looked for the bare text "L9" would fail on a random name that happened to hold it.
+ */
 function root0() {
-  const root = mkdtempSync(join(process.env.HOUSE_RULES_TEST_TMP ?? tmpdir(), "done-when-path-"));
+  const root = mkdtempSync(
+    join(process.env.HOUSE_RULES_TEST_TMP ?? tmpdir(), "done-when-path-L9-"),
+  );
   roots.push(root);
   return root;
 }
