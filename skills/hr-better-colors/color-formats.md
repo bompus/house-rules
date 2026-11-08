@@ -22,7 +22,7 @@ oklch(L C H / alpha)  /* alpha uses a slash, never a comma */
 
 ## Converting
 
-Convert when the user asks, when an agreed migration is in scope, or when the project is standardizing on a notation and this value is the straggler. Never convert an isolated value in a project that deliberately uses something else and never because this skill happened to load.
+Convert when the user asks, when an agreed migration is in scope or when the project is standardizing on a notation and this value is the straggler. Never convert an isolated value in a project that deliberately uses something else and never because this skill happened to load.
 
 When conversion is in scope, change the values and nothing else:
 
@@ -45,20 +45,20 @@ Bulk conversion is a migration, not cleanup. It shifts every rendered color by a
 
 ## Gamut
 
-Every sRGB color exists in Display P3, but not the reverse. P3 covers roughly 50% more colors, which matters only for the most saturated values. A color at 60% of maximum vividness looks the same on both.
+Every sRGB color exists in Display P3, but not the reverse. The extra room is only at high chroma and varies by hue. At OKLCH `L` `0.65`, green gains about `0.07` of chroma while blue gains about `0.015`.
 
 Out-of-gamut colors are mapped into the display gamut. CSS gamut mapping reduces chroma while aiming to preserve lightness and hue; browser implementations can differ. Neighboring ramp steps may lose distinctions after mapping, so inspect the rendered palette on each target gamut. Maximum vividness varies by hue and lightness, so one chroma value can exceed the gamut at some steps and fit at others.
 
 The fix is to reduce vividness while holding hue and lightness. Generate ramps against sRGB unless the product is display-restricted, and add P3 as an enhancement:
 
 ```css
-.accent {
-  background: #3b82f6;
+.success {
+  background: #11ad32; /* oklch(0.65 0.2 145), inside sRGB */
 }
 
 @media (color-gamut: p3) {
-  .accent {
-    background: oklch(0.62 0.24 259);
+  .success {
+    background: oklch(0.65 0.27 145);
   }
 }
 ```
@@ -87,4 +87,4 @@ Check the project's actual browser matrix before adding this. On a modern baseli
 - **Relative color syntax** adjusts one channel of an existing color. `oklch(from var(--color-accent-solid) calc(l - 0.1) c h)` darkens the accent by hand. Powerful and easy to overuse, since a token defined by three chained derivations is unreadable.
 - **`light-dark()`** puts both appearances in one declaration. See [palette-generation.md](palette-generation.md).
 
-All three compute at render time, so their output cannot be contrast-checked statically. Measure the rendered result.
+All three resolve at render time. Compute the resolved value with a color library, or measure the rendered result, before reporting contrast.

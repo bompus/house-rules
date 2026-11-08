@@ -1,10 +1,10 @@
 # Motion and zoom
 
-`prefers-reduced-motion`, zoom and reflow, and unit choices that respect user settings.
+`prefers-reduced-motion`, timed UI, zoom and reflow, and unit choices that respect user settings.
 
 ## prefers-reduced-motion
 
-Make motion opt-in. Wrap animations in `@media (prefers-reduced-motion: no-preference)` so users who asked for reduced motion get the static version by default, rather than you chasing every animation with an override.
+Wrap animations in `@media (prefers-reduced-motion: no-preference)`, so users who asked for reduced motion get the static version without an override per animation.
 
 ```css
 /* Good: motion is opt-in */
@@ -42,28 +42,25 @@ For an existing codebase where opt-in isn't feasible, a global reset is the fall
 
 ### What to disable vs reduce
 
-Reduced motion means reduced, not eliminated. It targets vestibular triggers, not feedback.
+Reduced motion targets vestibular triggers, not feedback.
 
-| Disable entirely                                 | Replace                                          | Keep                                            |
-| ------------------------------------------------ | ------------------------------------------------ | ----------------------------------------------- |
-| Parallax scrolling                               | Slide/scale/zoom transitions → opacity crossfade | Loading spinners and progress                   |
-| Autoplaying video, GIFs, looping decoration      | Smooth scrolling → instant jump                  | Instant state changes (hover color, focus ring) |
-| Spinning, large-scale movement across the screen | Auto-rotating carousels → start paused           | Brief functional feedback (button press)        |
-
-Animations are interruptible and driven by user input. Nothing autoplays or refuses to stop, and under reduced motion carousels start paused.
+| Disable entirely                                 | Replace                                           | Keep                                            |
+| ------------------------------------------------ | ------------------------------------------------- | ----------------------------------------------- |
+| Parallax scrolling                               | Slide/scale/zoom transitions → opacity cross-fade | Loading spinners and progress                   |
+| Autoplaying video, GIFs, looping decoration      | Smooth scrolling → instant jump                   | Instant state changes (hover color, focus ring) |
+| Spinning, large-scale movement across the screen | Auto-rotating carousels → start paused            | Brief functional feedback (button press)        |
 
 ## Autoplay and timed UI
 
-Motion the user didn't ask for and UI acting on its own schedule:
-
-- **No autoplaying media without visible controls** (WCAG 2.2.2). Anything moving, blinking, or updating on its own for more than 5 seconds needs a visible pause or stop control, muted looping hero videos included.
-- **Prefer explicit dismissal over timers.** Auto-dismissal suits low-stakes confirmations and nothing else. A toast carrying an action, an error, or information the user may need stays until dismissed. Where one must time out, 5 seconds is the floor, and hovering or focusing it pauses the timer.
+- **Visible controls on anything that moves on its own** (2.2.2). Anything moving, blinking or updating on its own for more than 5 seconds needs a visible pause or stop control, muted looping hero videos included.
+- **Explicit dismissal over timers.** Auto-dismissal suits low-stakes confirmations and nothing else. A toast carrying an action, an error or information the user may need stays until dismissed.
+- **Pause on attention.** Where a toast must time out, give it at least 5 seconds, and pause the timer while it is hovered or focused.
 - **Never put critical information only in a timed element.** A vanished toast with the only link to an undo action is data loss on a schedule.
 
 ## Zoom and reflow
 
-- **200% zoom** (WCAG 1.4.4). All content and functionality survives text scaled to 200%, and the viewport leaves the reader able to zoom.
-- **Reflow at 320px** (WCAG 1.4.10). At 400% zoom on a 1280px viewport, equivalent to a 320px one, the page must work with vertical scrolling alone. Genuinely 2D content is the exception: tables, maps and code blocks scroll inside their own container.
+- **200% text resize** (1.4.4). All content and functionality survives text scaled to 200%, and the viewport leaves the reader able to zoom.
+- **Reflow at 320px** (1.4.10). At 400% zoom on a 1280px viewport, equivalent to a 320px one, the page must work with vertical scrolling alone. Genuinely 2D content is the exception: tables, maps and code blocks scroll inside their own container.
 
 Fixed heights are what break under zoom. Use `min-height` on anything containing text and let containers grow.
 
