@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   existsSync,
   mkdirSync,
+  readdirSync,
   mkdtempSync,
   readFileSync,
   realpathSync,
@@ -546,11 +547,11 @@ test(
       const path = (/** @type {string[]} */ ...dirs) => dirs.join(delimiter);
       assert.equal(
         pathExecutable("tool", path(join(root, "node_modules", ".bin"), trusted), root),
-        join(trusted, "tool"),
+        realpathSync(join(trusted, "tool")),
       );
       assert.equal(
         pathExecutable("tool", path("node_modules/.bin", ".", "", trusted), root),
-        join(trusted, "tool"),
+        realpathSync(join(trusted, "tool")),
       );
       assert.equal(
         pathExecutable("tool", path(join(root, "node_modules", ".bin")), root),
@@ -786,7 +787,12 @@ test(
         trusted,
       ].join(delimiter);
       assert.equal(cleanPath(path, root), trusted);
-      assert.equal(cleanPath(undefined, root), "");
+      const none = cleanPath(undefined, root);
+      assert.ok(
+        none.startsWith("/") && !none.includes(delimiter),
+        "an empty folder, never an empty PATH",
+      );
+      assert.deepEqual(readdirSync(none), []);
       // The codex helper itself sees only that PATH.
       const seen = join(dir, "seen-path");
       writeFileSync(
@@ -838,6 +844,24 @@ test(
         join(dir, "adapter"),
         "acp",
       ]);
+      // The interpreter token decides, not a folder called bun; a script called bun.mjs is not Bun;
+      // a quoted runtime argument with spaces stays whole.
+      writeFileSync(join(dir, "shell-adapter"), "#!/tools/bun/sh\n", { mode: 0o755 });
+      assert.deepEqual(bunHardened([join(dir, "shell-adapter"), "acp"], root, refuseTest), [
+        join(dir, "shell-adapter"),
+        "acp",
+      ]);
+      writeFileSync(join(dir, "bun.mjs"), "#!/usr/bin/env bun\nconsole.log(1);\n", { mode: 0o755 });
+      const viaMjs = bunHardened([join(dir, "bun.mjs"), "acp"], root, refuseTest);
+      assert.equal(viaMjs.includes("--no-env-file"), true);
+      assert.equal(viaMjs.at(-2), join(dir, "bun.mjs"));
+      writeFileSync(
+        join(dir, "quoted"),
+        '#!/usr/bin/env -S bun --preload "/dir with space/p.mjs"\n',
+        { mode: 0o755 },
+      );
+      const quoted = bunHardened([join(dir, "quoted")], root, refuseTest);
+      assert.ok(quoted.includes("/dir with space/p.mjs"), quoted.join("|"));
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

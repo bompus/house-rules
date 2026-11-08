@@ -8,6 +8,7 @@ import {
   closeSync,
   constants,
   existsSync,
+  mkdirSync,
   mkdtempSync,
   openSync,
   readFileSync,
@@ -358,6 +359,16 @@ export function reviewBase(dir) {
   }
 }
 /**
+ * The words of a `#!` line after the `#!`, split on blanks, with a double- or single-quoted word kept
+ * whole (`env -S bun --preload "/dir with space/p.mjs"`) and its quotes removed.
+ * @param {string} text
+ */
+function shebangWords(text) {
+  return [...text.trim().matchAll(/"([^"]*)"|'([^']*)'|(\S+)/g)].map(
+    (m) => m[1] ?? m[2] ?? m[3] ?? "",
+  );
+}
+/**
  * `pathVar` reduced to its absolute entries outside `root`: the PATH a helper started outside the boundary
  * runs with, so an interpreter named by a helper's `#!/usr/bin/env node` line is not the checkout's.
  * @param {string | undefined} pathVar
@@ -365,7 +376,7 @@ export function reviewBase(dir) {
  */
 export function cleanPath(pathVar, root) {
   const base = realpathSync(root);
-  return (pathVar ?? "")
+  const kept = (pathVar ?? "")
     .split(delimiter)
     .filter((dir) => {
       if (!isAbsolute(dir)) {
@@ -379,6 +390,18 @@ export function cleanPath(pathVar, root) {
       }
     })
     .join(delimiter);
+  // An empty PATH makes `env` search the working directory, which is the checkout: an empty folder instead.
+  return kept === "" ? emptyBin() : kept;
+}
+/** @type {string | undefined} */
+let emptyBinPath;
+/** An empty folder in the private directory, a PATH with nothing on it. */
+function emptyBin() {
+  if (!emptyBinPath) {
+    emptyBinPath = join(privateDir(), "empty-bin");
+    mkdirSync(emptyBinPath, { mode: 0o700 });
+  }
+  return emptyBinPath;
 }
 /**
  * The first regular executable file called `name` on `pathVar`, looked up the way the shell would but
@@ -648,7 +671,8 @@ function emptyBunfig() {
  */
 export function bunHardened(cmd, root, refuse) {
   const first = cmd[0] ?? "";
-  const exe = agentExe(first);
+  // The runtime's own name: a script called `bun.mjs` is not Bun.
+  const exe = exeName(first);
   const flags = () => ["--no-env-file", `--config=${emptyBunfig()}`];
   const runner =
     exe === "bunx" || (exe === "bun" && cmd.slice(1).find((a) => !a.startsWith("-")) === "x");
@@ -695,12 +719,24 @@ export function bunHardened(cmd, root, refuse) {
       const head = Buffer.alloc(256);
       const n = readSync(fd, head, 0, head.length, 0);
       const line = head.subarray(0, n).toString("latin1").split("\n")[0] ?? "";
-      if (!(line.startsWith("#!") && /\bbun\b/.test(line))) {
+      const words = line.startsWith("#!") ? shebangWords(line.slice(2)) : [];
+      // The interpreter is the first word, or, behind `env`, the first word that is not an option or a
+      // variable assignment; its name must be bun (not a folder called bun).
+      let at = 0;
+      if (exeName(words[0] ?? "") === "env") {
+        at = 1;
+        while (
+          at < words.length &&
+          ((words[at] ?? "").startsWith("-") || /^[A-Za-z_]\w*=/.test(words[at] ?? ""))
+        ) {
+          at++;
+        }
+      }
+      if (exeName(words[at] ?? "") !== "bun") {
         return cmd;
       }
-      // The runtime arguments after `bun` on that line (`#!/usr/bin/env -S bun --conditions=x`) stay.
-      const words = line.slice(2).trim().split(/\s+/);
-      shebangArgs = words.slice(words.findIndex((w) => exeName(w) === "bun") + 1);
+      // Its runtime arguments (`#!/usr/bin/env -S bun --conditions=x`) stay.
+      shebangArgs = words.slice(at + 1);
     } finally {
       closeSync(fd);
     }
