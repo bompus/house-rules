@@ -25,6 +25,7 @@ import {
   openCodeEnv,
   rootCovers,
   runArgs,
+  findBwrap,
   sandboxArgs,
   userReadDenials,
 } from "../scripts/opencode-seat.mjs";
@@ -215,6 +216,7 @@ function withShims(
         HOME: join(state, "home"),
         XDG_DATA_HOME: join(state, "data"),
         XDG_CONFIG_HOME: join(state, "config"),
+        OPENCODE_SEAT_BWRAP: join(dir, "bwrap"),
       },
       state,
     );
@@ -865,18 +867,18 @@ test(
   LINUX_ONLY,
   () => {
     withShims((dir, env) => {
-      rmSync(join(dir, "bwrap"));
+      // An executable whose interpreter is missing cannot start: the failure comes after the copy exists.
+      writeFileSync(join(dir, "bwrap"), "#!/nonexistent/interpreter\n");
+      chmodSync(join(dir, "bwrap"), 0o755);
       const tmp = scratch("opencode-tmp");
       try {
-        // Only the folder with the opencode stand-in is on PATH, so bubblewrap is not found: the failure
-        // comes after the copy exists.
         const r = spawnSync(process.execPath, [script, "opencode-go/m", "max", "prompt.md"], {
           cwd: dir,
           encoding: "utf8",
-          env: { ...env, PATH: dir, TMPDIR: tmp },
+          env: { ...env, TMPDIR: tmp },
         });
         assert.equal(r.status, 127, r.stderr);
-        assert.match(r.stderr, /cannot start bwrap/);
+        assert.match(r.stderr, /cannot start .*bwrap/);
         assert.deepEqual(
           readdirSync(tmp).filter((n) => n.startsWith("opencode-seat-")),
           [],
@@ -918,6 +920,7 @@ test("a stop sent while opencode runs ends it and removes the copy", LINUX_ONLY,
         HOME: join(state, "home"),
         XDG_DATA_HOME: join(state, "data"),
         XDG_CONFIG_HOME: join(state, "config"),
+        OPENCODE_SEAT_BWRAP: join(dir, "bwrap"),
         TMPDIR: tmp,
       },
     });
@@ -1251,6 +1254,86 @@ test(
       });
       assert.equal(named.status, 2, named.stderr);
       assert.equal(existsSync(join(dir, "seen.bwrap")), false, "the sandbox never started");
+    });
+  },
+);
+
+test(
+  "bubblewrap is found in system folders or at an absolute override, never on PATH",
+  POSIX_ONLY,
+  () => {
+    const dir = scratch("opencode-findbwrap");
+    try {
+      mkdirSync(join(dir, "trusted"));
+      mkdirSync(join(dir, "repo-bin"));
+      writeFileSync(join(dir, "repo-bin", "bwrap"), "#!/bin/sh\n", { mode: 0o755 });
+      const trusted = [join(dir, "trusted")];
+      const env = { PATH: join(dir, "repo-bin") };
+      assert.equal(findBwrap(env, trusted), undefined, "PATH is not searched");
+      writeFileSync(join(dir, "trusted", "bwrap"), "#!/bin/sh\n", { mode: 0o755 });
+      assert.equal(findBwrap(env, trusted), join(dir, "trusted", "bwrap"));
+      const own = join(dir, "own-bwrap");
+      writeFileSync(own, "#!/bin/sh\n", { mode: 0o755 });
+      assert.equal(findBwrap({ ...env, OPENCODE_SEAT_BWRAP: own }, trusted), own);
+      assert.equal(
+        findBwrap({ ...env, OPENCODE_SEAT_BWRAP: "bwrap" }, trusted),
+        undefined,
+        "absolute only",
+      );
+      assert.equal(
+        findBwrap({ ...env, OPENCODE_SEAT_BWRAP: join(dir, "missing") }, trusted),
+        undefined,
+      );
+      mkdirSync(join(dir, "trusted2", "bwrap"), { recursive: true });
+      assert.equal(
+        findBwrap(env, [join(dir, "trusted2")]),
+        undefined,
+        "a folder is not bubblewrap",
+      );
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  },
+);
+test(
+  "a prompt that is a folder, or a link to one, refuses the run before any mount",
+  LINUX_ONLY,
+  () => {
+    withShims((dir, env) => {
+      writeFileSync(join(dir, ".env"), "PRIVATE");
+      symlinkSync("..", join(dir, "task.md"));
+      for (const prompt of ["task.md", ".."]) {
+        const r = spawnSync(process.execPath, [script, "opencode-go/m", "max", prompt], {
+          cwd: dir,
+          encoding: "utf8",
+          env,
+        });
+        assert.equal(r.status, 2, r.stderr);
+        assert.match(r.stderr, /is not a regular file/);
+      }
+      assert.equal(existsSync(join(dir, "seen.bwrap")), false, "the sandbox never started");
+    });
+  },
+);
+test(
+  "a prompt outside the checkout is copied into the seat's view, not mounted from where it is",
+  LINUX_ONLY,
+  () => {
+    withShims((dir, env, state) => {
+      const outside = join(state, "task.md");
+      writeFileSync(outside, "the task outside");
+      const r = spawnSync(process.execPath, [script, "opencode-go/m", "max", outside], {
+        cwd: dir,
+        encoding: "utf8",
+        env,
+      });
+      assert.equal(r.status, 7, r.stderr);
+      const box = readFileSync(join(dir, "seen.bwrap"), "utf8").split("\n");
+      const real = realpathSync(outside);
+      assert.equal(box.includes(real), false, "the outside path is not bound");
+      const args = readFileSync(join(dir, "seen.args"), "utf8").split("\n");
+      const file = args[args.indexOf("--file") + 1] ?? "";
+      assert.ok(file.startsWith(join(realpathSync(dir), ".panel-seat-prompt-")), file);
     });
   },
 );

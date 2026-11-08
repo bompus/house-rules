@@ -34,10 +34,13 @@ import {
   readSync,
   realpathSync,
   rmSync,
+  statSync,
+  writeFileSync,
   writeSync,
 } from "node:fs";
 import { constants, homedir, tmpdir } from "node:os";
 import { basename, delimiter, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
+import { randomBytes } from "node:crypto";
 import { fileURLToPath } from "node:url";
 
 const PASSED = [
@@ -545,6 +548,30 @@ export function userReadDenials(configDir) {
   return denied;
 }
 
+// Where bubblewrap is looked for: system folders only, never the inherited PATH, because a checkout's
+// own tooling (`node_modules/.bin`) is often first on it and the sandbox helper runs before any boundary.
+const TRUSTED_BIN = ["/usr/bin", "/bin", "/usr/local/bin", "/run/current-system/sw/bin"];
+/**
+ * The bubblewrap executable: `OPENCODE_SEAT_BWRAP` when it is an absolute path to an executable file,
+ * else the first `bwrap` in a trusted system folder, else undefined.
+ * @param {NodeJS.ProcessEnv} env
+ * @param {string[]} [trusted]
+ */
+export function findBwrap(env, trusted = TRUSTED_BIN) {
+  const usable = (/** @type {string} */ path) => {
+    try {
+      accessSync(path, fsConstants.X_OK);
+      return statSync(path).isFile();
+    } catch {
+      return false;
+    }
+  };
+  const given = env.OPENCODE_SEAT_BWRAP;
+  if (given !== undefined && given !== "") {
+    return isAbsolute(given) && usable(given) ? given : undefined;
+  }
+  return trusted.map((d) => join(d, "bwrap")).find(usable);
+}
 /**
  * The executable `name` on `pathVar`, or undefined.
  * @param {string} name
@@ -619,6 +646,13 @@ if (
       process.exit(2);
     }
     const binary = realpathSync(which);
+    const bwrap = findBwrap(process.env);
+    if (bwrap === undefined) {
+      console.error(
+        `[opencode-seat] bwrap is not in a system folder (${TRUSTED_BIN.join(", ")}) and OPENCODE_SEAT_BWRAP is not an absolute path to it`,
+      );
+      process.exit(127);
+    }
     // OpenCode 2 inside the empty home finds no saved login, so the key for the model's provider (the
     // id before `/`) comes from its auth file as OPENCODE_API_KEY; the file itself stays hidden.
     const provider = model.split("/")[0] ?? "";
@@ -653,8 +687,19 @@ if (
       console.error(`[opencode-seat] the prompt file ${given} is a file the read rules deny`);
       process.exit(2);
     }
-    // Inside the checkout the prompt is the copy's own file; only an outside prompt is mounted.
+    // The prompt is one regular file: a folder or a device would put more than the task in view.
+    try {
+      if (!statSync(prompt).isFile()) {
+        console.error(`[opencode-seat] the prompt file ${given} is not a regular file`);
+        process.exit(2);
+      }
+    } catch {
+      console.error(`[opencode-seat] the prompt file ${given} cannot be read`);
+      process.exit(2);
+    }
+    // Inside the checkout the prompt is the copy's own file; one outside it is copied into the copy.
     const promptOutside = rootCovers(dir, [prompt]) === undefined;
+    let seatPrompt = prompt;
     // The seat runs on a sanitized copy of the checkout, shown at the checkout's own path.
     try {
       await copyReviewRoot(dir, tmpdir(), denials, home, [prompt], {
@@ -662,20 +707,29 @@ if (
           sandboxCopy = made;
         },
       });
+      if (promptOutside) {
+        // A snapshot in the copy, so no outside path is mounted and a later swap changes nothing.
+        const name = `.panel-seat-prompt-${randomBytes(6).toString("hex")}.md`;
+        writeFileSync(join(String(sandboxCopy), name), readFileSync(prompt), {
+          flag: "wx",
+          mode: 0o444,
+        });
+        seatPrompt = join(dir, name);
+      }
     } catch (e) {
       console.error(`[opencode-seat] ${e instanceof Error ? e.message : String(e)}`);
       process.exit(2);
     }
     cmd = [
+      bwrap,
       ...sandboxArgs(
         home,
         [
-          ...(promptOutside ? [prompt] : []),
           // The binary alone (a self-contained executable); its folder could be the home folder.
           binary,
         ],
         [[String(sandboxCopy), dir]],
-      ),
+      ).slice(1),
       "--chdir",
       dir,
       "--setenv",
@@ -683,7 +737,7 @@ if (
       "/tmp",
       "--",
       binary,
-      ...runArgs(model, effort, prompt, title),
+      ...runArgs(model, effort, seatPrompt, title),
     ];
   }
   child = spawn(cmd[0] ?? "", cmd.slice(1), {
