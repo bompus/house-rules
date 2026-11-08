@@ -617,11 +617,21 @@ test(
         join(dir, "node-adapter"),
         "acp",
       ]);
-      assert.deepEqual(bunHardened(["bun", "--no-env-file", "x.js"], root, refuseTest), [
-        "bun",
-        "--no-env-file",
-        "x.js",
-      ]);
+      const one = bunHardened(["bun", "--no-env-file", "x.js"], root, refuseTest);
+      assert.ok(
+        one.some((a) => /^--config=.*empty-bunfig\.toml$/.test(a)),
+        "the missing flag is added",
+      );
+      assert.equal(one.filter((a) => a === "--no-env-file").length, 1);
+      const cfg = bunHardened(["bun", "--config=/own.toml", "x.js"], root, refuseTest);
+      assert.deepEqual(cfg, ["bun", "--no-env-file", "--config=/own.toml", "x.js"]);
+      const argOnly = bunHardened(
+        ["bun", "/opt/server.mjs", "--config=/etc/app.json"],
+        root,
+        refuseTest,
+      );
+      assert.equal(argOnly[1], "--no-env-file", "a server's own --config is not Bun's");
+      assert.match(argOnly[2] ?? "", /^--config=.*empty-bunfig\.toml$/);
       assert.deepEqual(bunHardened(["bunx", "codex-acp"], root, refuseTest), ["bunx", "codex-acp"]);
       for (const cmd of [
         ["bunx", "--bun", "pkg"],

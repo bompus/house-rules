@@ -592,9 +592,24 @@ export function bunHardened(cmd, root, refuse) {
     );
   }
   if (exe === "bun") {
-    return cmd.some((a) => a === "--no-env-file" || a.startsWith("--config="))
-      ? cmd
-      : [first, ...flags(), ...cmd.slice(1)];
+    // Bun's own options come before the script; each missing flag is added on its own.
+    const options = [];
+    for (const a of cmd.slice(1)) {
+      if (!a.startsWith("-")) {
+        break;
+      }
+      options.push(a);
+    }
+    const hasEnv = options.includes("--no-env-file");
+    const hasConfig = options.some(
+      (a) => a === "-c" || a === "--config" || a.startsWith("--config="),
+    );
+    return [
+      first,
+      ...(hasEnv ? [] : ["--no-env-file"]),
+      ...(hasConfig ? [] : [`--config=${emptyBunfig()}`]),
+      ...cmd.slice(1),
+    ];
   }
   if (WINDOWS || exe === "bunx") {
     return cmd;
