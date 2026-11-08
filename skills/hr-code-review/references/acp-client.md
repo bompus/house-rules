@@ -155,6 +155,8 @@ files under `HOME` can be read by the agent's own read tool. And a socket under
 `XDG_RUNTIME_DIR` (for example an agent socket at its conventional path) is
 reachable by anything the seat can run, even though `SSH_AUTH_SOCK` is withheld.
 
+Launch the client from a folder you trust and name the review root with its `[cwd]` argument. Bun reads `.env` and `bunfig.toml` (a `preload` runs code) from the launch folder before the client starts, so a client launched from inside the checkout lets the checkout set environment variables and run code ahead of every guard here.
+
 Files inside the review root are readable by the seat, `.git/config` included:
 keep no credential there (a remote URL with a token, for example).
 
