@@ -29,7 +29,7 @@ Lc, Lightness Contrast, is APCA's measure of perceived contrast. These levels si
 | Solid icons and UI components                              | Lc 30                  |
 | Non-text that only has to be discernible, such as dividers | Lc 15                  |
 
-Disabled and placeholder text are not covered by a requirement. Aim for Lc 30 so they stay legible.
+Disabled controls are exempt from a requirement; aim for Lc 30 so they stay legible. Placeholder text is text: it meets the level of the text it stands in for.
 
 Lc is signed. Positive means dark text on a light background, negative means light text on a dark background. Compare the absolute value against the threshold.
 

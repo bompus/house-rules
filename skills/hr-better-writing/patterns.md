@@ -45,12 +45,12 @@ invite.sent = {name} invited you to {project}
 
 Never hand-build a number, date or list. Pass the user's locale to `Intl`:
 
-| Value         | Call                                                                         | `en-US` output     |
-| ------------- | ---------------------------------------------------------------------------- | ------------------ |
-| Currency      | `new Intl.NumberFormat(locale, { style: "currency", currency: "EUR" })`      | `€4,320.00`        |
-| Unit          | `new Intl.NumberFormat(locale, { style: "unit", unit: "megabyte" })`         | `12 MB`            |
-| Date          | `new Intl.DateTimeFormat(locale, { dateStyle: "medium" })`                   | `Jun 30, 2026`     |
-| Relative time | `new Intl.RelativeTimeFormat(locale, { numeric: "auto" }).format(-1, "day")` | `yesterday`        |
-| List          | `new Intl.ListFormat(locale, { type: "conjunction" })`                       | `Ana, Ben, and Cy` |
+| Value         | Call                                                                                     | `en-US` output     |
+| ------------- | ---------------------------------------------------------------------------------------- | ------------------ |
+| Currency      | `new Intl.NumberFormat(locale, { style: "currency", currency: "EUR" }).format(4320)`     | `€4,320.00`        |
+| Unit          | `new Intl.NumberFormat(locale, { style: "unit", unit: "megabyte" }).format(12)`          | `12 MB`            |
+| Date          | `new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(new Date(2026, 5, 30))` | `Jun 30, 2026`     |
+| Relative time | `new Intl.RelativeTimeFormat(locale, { numeric: "auto" }).format(-1, "day")`             | `yesterday`        |
+| List          | `new Intl.ListFormat(locale, { type: "conjunction" }).format(["Ana", "Ben", "Cy"])`      | `Ana, Ben, and Cy` |
 
 `Intl.ListFormat` follows each locale's own comma and conjunction rules, so never join names with `", "` and `" and "` by hand.

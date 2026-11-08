@@ -176,10 +176,12 @@ A query styles only descendants of the container, never the container itself. `c
 ## Plan for growth and clipping
 
 ```css
-/* Good: label defines the size, and the row wraps */
+/* Good: label defines the size, a long word wraps, and the row wraps */
 .button {
   padding-inline: 16px;
   max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 .button-row {
   display: flex;
