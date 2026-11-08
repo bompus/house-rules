@@ -30,12 +30,14 @@ import {
   openSync,
   readdirSync,
   readFileSync,
+  readlinkSync,
+  readSync,
   realpathSync,
   rmSync,
-  writeFileSync,
+  writeSync,
 } from "node:fs";
 import { constants, homedir, tmpdir } from "node:os";
-import { basename, delimiter, isAbsolute, join, relative, resolve, sep } from "node:path";
+import { basename, delimiter, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const PASSED = [
@@ -163,35 +165,43 @@ const MAX_BYTES = 512 * 1024 * 1024;
  * Symlinks, special files and every `.git` entry are not copied. A file is left out when it is an
  * environment file, matches the user's own denied patterns (by file name, by path from `dir` or by
  * absolute path), is reached under a denied name through a link (`.env -> secret.txt`, or
- * `secrets -> backing` with a pattern for `secrets/*`, nested links included), or is another name of
- * a left-out file (the same device and inode). `keep` lists real paths that are copied whatever the
- * rules say (the prompt file, when it is inside `dir`). A root with more than MAX_ENTRIES entries,
- * MAX_FILES files or MAX_BYTES bytes is refused. A denied `*` (everything) leaves an empty copy.
- * @param {string} dir real path of the review root
+ * `secrets -> backing` with a pattern for `secrets/*`, every alias of a folder and nested links
+ * included), or is another name of a left-out file (the same device and inode). A `.git/config` (a
+ * remote URL may carry a token) is denied by name too, so a link or hard link to it is left out. `keep`
+ * lists real paths that are copied whatever the rules say (the prompt file, when it is inside `dir`).
+ * A root with more than `limits.entries` entries, `limits.files` files or `limits.bytes` bytes is
+ * refused, and so is one that changes while it is copied (a file replaced or resized, a folder swapped
+ * for a link): each file is opened without following a link and must be, by `/proc/self/fd`, the
+ * regular file that was scanned at that path. A denied `*` (everything) copies only `keep`. The copy
+ * works in slices so a stop sent meanwhile is handled; `onCreate` gets the folder as soon as it exists.
+ * @param {string} dir the review root
  * @param {string} parent folder that gets the copy
  * @param {string[]} [denied] the user's denied read patterns
  * @param {string} [home] what a leading `~` or `$HOME` in a pattern stands for
  * @param {string[]} [keep]
- * @param {{ entries: number, files: number, bytes: number }} [limits]
- * @returns {{ copy: string, files: number, bytes: number }}
+ * @param {{ limits?: { entries: number, files: number, bytes: number }, onCreate?: (copy: string) => void }} [options]
+ * @returns {Promise<{ copy: string, files: number, bytes: number }>}
  */
-export function copyReviewRoot(
+export async function copyReviewRoot(
   dir,
   parent,
   denied = [],
   home = homedir(),
   keep = [],
-  limits = { entries: MAX_ENTRIES, files: MAX_FILES, bytes: MAX_BYTES },
+  options = {},
 ) {
+  const limits = options.limits ?? { entries: MAX_ENTRIES, files: MAX_FILES, bytes: MAX_BYTES };
+  dir = realpathSync(dir);
   // OpenCode expands a leading `~` or `$HOME` in a pattern to the home folder.
   const expand = (/** @type {string} */ p) => p.replace(/^(~|\$HOME|\$\{HOME\})(?=\/|$)/, home);
   const everything = denied.includes("*");
   const patterns = denied.filter((p) => p !== "*").map((p) => globRegex(expand(p)));
   // Whether a path, as the read rules see it (`path` is what OpenCode would be asked to read), is
-  // denied: an environment file, or a match of the user's own patterns by name, by path from the
-  // checkout or by absolute path.
+  // denied: an environment file, the `config` of a `.git` folder, or a match of the user's own
+  // patterns by name, by path from the checkout or by absolute path.
   const isDenied = (/** @type {string} */ path) =>
     isEnvFile(basename(path)) ||
+    (basename(path) === "config" && basename(dirname(path)) === ".git") ||
     patterns.some((re) => re.test(basename(path)) || re.test(relative(dir, path)) || re.test(path));
   let seen = 0;
   const count = () => {
@@ -205,11 +215,18 @@ export function copyReviewRoot(
   const files = [];
   /** @type {string[]} */
   const links = [];
+  /** @type {string[]} */
+  const gitConfigs = [];
   for (const stack = [dir]; stack.length > 0;) {
     const here = /** @type {string} */ (stack.pop());
     for (const entry of readdirSync(here, { withFileTypes: true })) {
       if (entry.name === ".git") {
-        continue; // The seat has no use for it, and a file named .git points outside the root.
+        // Not copied (the seat has no use for it, and a file named .git points outside the root), but
+        // its config stays denied under every name.
+        if (entry.isDirectory()) {
+          gitConfigs.push(join(here, ".git", "config"));
+        }
+        continue;
       }
       count();
       const path = join(here, entry.name);
@@ -230,10 +247,23 @@ export function copyReviewRoot(
       omit.add(path);
     }
   }
+  for (const config of gitConfigs) {
+    try {
+      const st = lstatSync(config);
+      if (st.isSymbolicLink()) {
+        links.push(config);
+      } else if (st.isFile()) {
+        omit.add(config); // Never copied, but its hard-link aliases are found by inode below.
+      }
+    } catch {
+      // No config here.
+    }
+  }
   // A link is another way to what it points to, and OpenCode checks only the name it is asked for. The
   // links themselves are not copied, but the file behind a link whose own path is denied
   // (`.env -> secret.txt`) is left out, and a link to a directory (`secrets -> backing`) is walked
-  // as if it were that directory, so the files that its path would name as denied
+  // as if it were that directory, by every path that reaches each folder (only a folder that is
+  // already on the way down ends a walk), so the files that a path would name as denied
   // (`secrets/token.json`) are left out where they really are. A target outside the root is not in
   // the copy, so it needs nothing.
   const inside = (/** @type {string} */ link) => {
@@ -242,6 +272,32 @@ export function copyReviewRoot(
       return rootCovers(dir, [target]) === undefined ? undefined : target;
     } catch {
       return undefined; // A dangling link points to nothing.
+    }
+  };
+  const walkLinked = (
+    /** @type {string} */ real,
+    /** @type {string} */ virtual,
+    /** @type {Set<string>} */ ancestors,
+  ) => {
+    for (const entry of readdirSync(real, { withFileTypes: true })) {
+      if (entry.name === ".git") {
+        continue;
+      }
+      count();
+      const path = join(real, entry.name);
+      const named = join(virtual, entry.name);
+      const actual = entry.isSymbolicLink() ? inside(path) : path;
+      if (actual === undefined) {
+        continue;
+      }
+      const kind = lstatSync(actual);
+      if (kind.isDirectory()) {
+        if (!ancestors.has(actual)) {
+          walkLinked(actual, named, new Set([...ancestors, actual]));
+        }
+      } else if (kind.isFile() && isDenied(named)) {
+        omit.add(actual);
+      }
     }
   };
   for (const link of links) {
@@ -255,27 +311,7 @@ export function copyReviewRoot(
         omit.add(target);
       }
     } else if (kind.isDirectory()) {
-      const visited = new Set([target]);
-      for (const walk = [[target, link]]; walk.length > 0;) {
-        const [real, virtual] = /** @type {[string, string]} */ (walk.pop());
-        for (const entry of readdirSync(real, { withFileTypes: true })) {
-          if (entry.name === ".git") {
-            continue;
-          }
-          count();
-          const physical = entry.isSymbolicLink() ? inside(join(real, entry.name)) : undefined;
-          const named = join(virtual, entry.name);
-          const actual = physical ?? join(real, entry.name);
-          const st =
-            physical === undefined && entry.isSymbolicLink() ? undefined : lstatSync(actual);
-          if (st?.isDirectory() && !visited.has(actual)) {
-            visited.add(actual);
-            walk.push([actual, named]);
-          } else if (st?.isFile() && isDenied(named)) {
-            omit.add(actual);
-          }
-        }
-      }
+      walkLinked(target, link, new Set([target]));
     }
   }
   // A hard link is the same file under another name, and the copy is made by path: every other name
@@ -292,10 +328,23 @@ export function copyReviewRoot(
     }
   }
   const kept = new Set(keep);
+  // A kept file that a rule denies (an env file, a pattern, another name of a denied inode) is not
+  // overridden: the run is refused, not given the secret.
+  for (const path of kept) {
+    const file = files.find((f) => f.path === path);
+    if (
+      omit.has(path) ||
+      (file !== undefined && file.st.nlink > 1 && linked.has(`${file.st.dev}:${file.st.ino}`))
+    ) {
+      throw new Error(
+        `${relative(dir, path)} is a file the read rules deny and cannot be the prompt`,
+      );
+    }
+  }
   const copied = files.filter(
     ({ path, st }) =>
-      !everything &&
-      (kept.has(path) || (!omit.has(path) && !(st.nlink > 1 && linked.has(`${st.dev}:${st.ino}`)))),
+      kept.has(path) ||
+      (!everything && !omit.has(path) && !(st.nlink > 1 && linked.has(`${st.dev}:${st.ino}`))),
   );
   const bytes = copied.reduce((sum, { st }) => sum + st.size, 0);
   if (copied.length > limits.files) {
@@ -306,22 +355,51 @@ export function copyReviewRoot(
   }
   const copy = mkdtempSync(join(parent, "opencode-seat-"));
   try {
+    options.onCreate?.(copy);
     for (const folder of folders) {
       mkdirSync(join(copy, relative(dir, folder)), { recursive: true, mode: 0o700 });
     }
+    const chunk = Buffer.allocUnsafe(1 << 20);
+    let done = 0;
     for (const { path, st } of copied) {
-      // Open without following a link swapped in since the scan, and check it is still that file.
+      // Open without following a link, then check that what is open is the file that was scanned at
+      // this very path: a link swapped in for a file or for any folder on the way fails one of these.
       const fd = openSync(path, fsConstants.O_RDONLY | fsConstants.O_NOFOLLOW);
       try {
         const now = fstatSync(fd);
-        if (now.isFile() && now.ino === st.ino && now.dev === st.dev) {
-          writeFileSync(join(copy, relative(dir, path)), readFileSync(fd), {
-            flag: "wx",
-            mode: 0o444,
-          });
+        let at = path;
+        try {
+          at = readlinkSync(`/proc/self/fd/${fd}`);
+        } catch {
+          // No /proc: the sandbox, the only user of the copy, is Linux only.
+        }
+        if (
+          !now.isFile() ||
+          now.ino !== st.ino ||
+          now.dev !== st.dev ||
+          now.size !== st.size ||
+          at !== path
+        ) {
+          throw new Error(`${relative(dir, path)} changed while the review root was copied`);
+        }
+        const out = openSync(join(copy, relative(dir, path)), "wx", 0o444);
+        try {
+          for (let left = now.size; left > 0;) {
+            const n = readSync(fd, chunk, 0, Math.min(left, chunk.length), null);
+            if (n === 0) {
+              throw new Error(`${relative(dir, path)} shrank while the review root was copied`);
+            }
+            writeSync(out, chunk, 0, n);
+            left -= n;
+          }
+        } finally {
+          closeSync(out);
         }
       } finally {
         closeSync(fd);
+      }
+      if (++done % 64 === 0) {
+        await new Promise((resume) => setImmediate(resume));
       }
     }
   } catch (e) {
@@ -534,7 +612,11 @@ if (
     }
     // The seat runs on a sanitized copy of the checkout, shown at the checkout's own path.
     try {
-      sandboxCopy = copyReviewRoot(dir, tmpdir(), denials, home, [prompt]).copy;
+      await copyReviewRoot(dir, tmpdir(), denials, home, [prompt], {
+        onCreate: (made) => {
+          sandboxCopy = made;
+        },
+      });
     } catch (e) {
       console.error(`[opencode-seat] ${e instanceof Error ? e.message : String(e)}`);
       process.exit(2);
@@ -547,7 +629,7 @@ if (
           // The binary alone (a self-contained executable); its folder could be the home folder.
           binary,
         ],
-        [[sandboxCopy, dir]],
+        [[String(sandboxCopy), dir]],
       ),
       "--chdir",
       dir,

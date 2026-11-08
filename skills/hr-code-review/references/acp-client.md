@@ -202,10 +202,12 @@ user's own denied read patterns match by name, by path from the checkout or by a
 (`.env -> secret.txt`) points to when that file is inside the checkout, and the files a link to a
 directory (`secrets -> backing`, nested links included) would name as denied
 (`secrets/token.json`), where they really are. Every other name of a left-out file (a hard link, found by device and
-inode) is left out too. A denied `*` copies nothing. The prompt file is copied when it is inside the checkout.
+inode) is left out too.
+
+A `.git/config` (a remote URL may carry a token) counts as denied, so a link or hard link to it is left out. A folder reached by two paths is checked under each. The prompt file is never copied over a denial: a prompt the rules deny refuses the run. A file hard-linked from outside the checkout under a name no rule denies is copied. A denied `*` copies only the prompt file, when it is inside the checkout.
 
 A checkout with more than 200000 entries, 100000 files or 512 MiB of copied files is refused (exit
-2), and so is a review root that is or contains the home folder or OpenCode's config or data folder, because the sandbox shows the root over its empty home. OpenCode's config folder
+2), and so is one that changes while it is copied (a file replaced or resized, a folder swapped for a link), and so is a review root that is or contains the home folder or OpenCode's config or data folder, because the sandbox shows the root over its empty home. OpenCode's config folder
 is hidden, so the key for the model's provider (the id before `/`) is read from
 OpenCode's auth file and passed as `OPENCODE_API_KEY`; the seat's own process can
 read that back through `/proc`. Only the `opencode-go` and `opencode` providers take their key that way; a model of another provider (which needs its own variable or an OAuth record) is refused with exit 2.
