@@ -117,12 +117,6 @@ When the product ships a dark appearance, every custom color needs a dark varian
   }
 }
 
-@media (prefers-contrast: more) {
-  :root {
-    --color-accent-solid: #1d4ed8;
-  }
-}
-
 @media (prefers-color-scheme: dark) and (prefers-contrast: more) {
   :root {
     --color-accent-solid: #bfdbfe;
