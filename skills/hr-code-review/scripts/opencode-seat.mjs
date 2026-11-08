@@ -8,25 +8,34 @@
 // unreadable, and refuse reads outside the working directory (external_directory). OpenCode's own
 // check treats a whole git project as inside and follows symlinks, so on Linux the seat also runs
 // under bubblewrap: the filesystem shows only the system directories (read-only), an empty home, /tmp
-// and /run, the seat's directory, the prompt file and the OpenCode binary; its config folder stays
-// hidden (the seat's rules arrive in OPENCODE_CONFIG_CONTENT, with the user's own read denials kept)
-// and the provider key arrives as OPENCODE_API_KEY, which the seat's own process can still read back
-// through /proc. A symlink in the checkout to another credential file therefore finds nothing.
+// and /run, a sanitized copy of the checkout (see copyReviewRoot: regular files only, no `.git`, and
+// without the files the read rules deny) mounted at the checkout's own path, the prompt file and the
+// OpenCode binary; its config folder stays hidden (the seat's rules arrive in OPENCODE_CONFIG_CONTENT,
+// with the user's own read denials kept) and the provider key arrives as OPENCODE_API_KEY, which the
+// seat's own process can still read back through /proc. The seat never sees the original checkout, so
+// a symlink in it to a credential file finds nothing. The copy is removed when the seat ends.
 // Project configuration and Claude Code compatibility are off, so a checkout's `.opencode` plugins or
 // `.claude` skills never load. The prompt goes in as an attached file, so a long prompt cannot exceed
 // the argument limit. See ../references/acp-client.md.
 import { spawn } from "node:child_process";
 import {
   accessSync,
+  closeSync,
   constants as fsConstants,
   existsSync,
+  fstatSync,
   lstatSync,
+  mkdirSync,
+  mkdtempSync,
+  openSync,
   readdirSync,
   readFileSync,
   realpathSync,
+  rmSync,
+  writeFileSync,
 } from "node:fs";
-import { constants, homedir } from "node:os";
-import { basename, delimiter, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
+import { constants, homedir, tmpdir } from "node:os";
+import { basename, delimiter, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const PASSED = [
@@ -144,147 +153,182 @@ const globRegex = (/** @type {string} */ pattern) =>
       .replace(/\*+/g, ".*")
       .replace(/\?/g, ".")}$`,
   );
-const MAX_MASKED = 1000;
 const MAX_ENTRIES = 200_000;
+const MAX_FILES = 100_000;
+const MAX_BYTES = 512 * 1024 * 1024;
 /**
- * The files under `dir` that the read rules deny by name: the environment files, and what the user's
- * own denied patterns match (by file name, by path from `dir` or by absolute path), and the
- * checkout's `.git/config` (a remote URL may carry a token). Links are not followed and `.git/objects`
- * is skipped. OpenCode checks the pathname it is asked to read, not what a link points to, so a link
- * named notes.txt that points to `.env` or `private.pem` passes its rules; the sandbox therefore
- * hides each of these files, whatever points at it. A checkout with more than MAX_MASKED of them, or
- * too many entries to scan, is refused. A denied `*` (everything) needs no masking.
- * @param {string} dir
+ * Copies the regular files of the review root `dir` into a new private folder under `parent` (mode
+ * 0700; files read-only) and returns its path, leaving out the files the read rules deny by name. The
+ * seat sees only this copy, so a link cannot lead it out of the checkout and nothing needs masking.
+ * Symlinks, special files and every `.git` entry are not copied. A file is left out when it is an
+ * environment file, matches the user's own denied patterns (by file name, by path from `dir` or by
+ * absolute path), is reached under a denied name through a link (`.env -> secret.txt`, or
+ * `secrets -> backing` with a pattern for `secrets/*`, nested links included), or is another name of
+ * a left-out file (the same device and inode). `keep` lists real paths that are copied whatever the
+ * rules say (the prompt file, when it is inside `dir`). A root with more than MAX_ENTRIES entries,
+ * MAX_FILES files or MAX_BYTES bytes is refused. A denied `*` (everything) leaves an empty copy.
+ * @param {string} dir real path of the review root
+ * @param {string} parent folder that gets the copy
  * @param {string[]} [denied] the user's denied read patterns
  * @param {string} [home] what a leading `~` or `$HOME` in a pattern stands for
- * @returns {string[]}
+ * @param {string[]} [keep]
+ * @param {{ entries: number, files: number, bytes: number }} [limits]
+ * @returns {{ copy: string, files: number, bytes: number }}
  */
-export function deniedFiles(dir, denied = [], home = homedir()) {
+export function copyReviewRoot(
+  dir,
+  parent,
+  denied = [],
+  home = homedir(),
+  keep = [],
+  limits = { entries: MAX_ENTRIES, files: MAX_FILES, bytes: MAX_BYTES },
+) {
   // OpenCode expands a leading `~` or `$HOME` in a pattern to the home folder.
   const expand = (/** @type {string} */ p) => p.replace(/^(~|\$HOME|\$\{HOME\})(?=\/|$)/, home);
+  const everything = denied.includes("*");
   const patterns = denied.filter((p) => p !== "*").map((p) => globRegex(expand(p)));
-  // Whether a path, as the read rules see it (`path` is what OpenCode would be asked to read), is denied:
-  // an environment file, the `config` of any `.git` folder (a remote URL may carry a token), or a match
-  // of the user's own patterns by name, by path from the checkout or by absolute path.
-  const isDenied = (/** @type {string} */ path) => {
-    const name = basename(path);
-    return (
-      isEnvFile(name) ||
-      (name === "config" && basename(dirname(path)) === ".git") ||
-      patterns.some((re) => re.test(name) || re.test(relative(dir, path)) || re.test(path))
-    );
-  };
-  /** @type {string[]} */
-  const found = [];
-  const add = (/** @type {string} */ path) => {
-    if (!found.includes(path)) {
-      found.push(path);
-      if (found.length > MAX_MASKED) {
-        throw new Error(`more than ${MAX_MASKED} denied files in the review root`);
-      }
-    }
-  };
-  /** @type {string[]} */
-  const others = [];
-  /** @type {string[]} */
-  const links = [];
-  // Git's object store is large and holds only compressed objects; it is read only for hard links.
-  /** @type {string[]} */
-  const objectDirs = [];
+  // Whether a path, as the read rules see it (`path` is what OpenCode would be asked to read), is
+  // denied: an environment file, or a match of the user's own patterns by name, by path from the
+  // checkout or by absolute path.
+  const isDenied = (/** @type {string} */ path) =>
+    isEnvFile(basename(path)) ||
+    patterns.some((re) => re.test(basename(path)) || re.test(relative(dir, path)) || re.test(path));
   let seen = 0;
   const count = () => {
-    if (++seen > MAX_ENTRIES) {
-      throw new Error(`more than ${MAX_ENTRIES} entries in the review root`);
+    if (++seen > limits.entries) {
+      throw new Error(`more than ${limits.entries} entries in the review root`);
     }
   };
+  /** @type {string[]} */
+  const folders = [];
+  /** @type {{ path: string, st: import("node:fs").Stats }[]} */
+  const files = [];
+  /** @type {string[]} */
+  const links = [];
   for (const stack = [dir]; stack.length > 0;) {
     const here = /** @type {string} */ (stack.pop());
     for (const entry of readdirSync(here, { withFileTypes: true })) {
+      if (entry.name === ".git") {
+        continue; // The seat has no use for it, and a file named .git points outside the root.
+      }
       count();
       const path = join(here, entry.name);
       if (entry.isDirectory()) {
-        if (entry.name === "objects" && basename(here) === ".git") {
-          objectDirs.push(path);
-        } else {
-          stack.push(path);
-        }
+        folders.push(path);
+        stack.push(path);
       } else if (entry.isSymbolicLink()) {
         links.push(path);
-      } else if (!entry.isFile()) {
-        continue;
-      } else if (isDenied(path)) {
-        add(path);
-      } else {
-        others.push(path);
+      } else if (entry.isFile()) {
+        files.push({ path, st: lstatSync(path) });
       }
     }
   }
-  // A link is another way to what it points to, and OpenCode checks only the name it is asked for:
-  // a link whose own path is denied (`.env -> secret.txt`) masks the file it points to, and a link to a
-  // directory (`secrets -> backing`) is walked as if it were that directory, so the files that its
-  // path would name as denied (`secrets/token.json`) are masked where they really are.
-  for (const link of links) {
-    let target;
-    try {
-      target = realpathSync(link);
-    } catch {
-      continue; // A dangling link points to nothing.
+  /** @type {Set<string>} */
+  const omit = new Set();
+  for (const { path } of files) {
+    if (isDenied(path)) {
+      omit.add(path);
     }
-    if (rootCovers(dir, [target]) === undefined) {
-      continue; // Outside the root, so outside the sandbox.
+  }
+  // A link is another way to what it points to, and OpenCode checks only the name it is asked for. The
+  // links themselves are not copied, but the file behind a link whose own path is denied
+  // (`.env -> secret.txt`) is left out, and a link to a directory (`secrets -> backing`) is walked
+  // as if it were that directory, so the files that its path would name as denied
+  // (`secrets/token.json`) are left out where they really are. A target outside the root is not in
+  // the copy, so it needs nothing.
+  const inside = (/** @type {string} */ link) => {
+    try {
+      const target = realpathSync(link);
+      return rootCovers(dir, [target]) === undefined ? undefined : target;
+    } catch {
+      return undefined; // A dangling link points to nothing.
+    }
+  };
+  for (const link of links) {
+    const target = inside(link);
+    if (target === undefined) {
+      continue;
     }
     const kind = lstatSync(target);
     if (kind.isFile()) {
       if (isDenied(link)) {
-        add(target);
+        omit.add(target);
       }
     } else if (kind.isDirectory()) {
       const visited = new Set([target]);
       for (const walk = [[target, link]]; walk.length > 0;) {
         const [real, virtual] = /** @type {[string, string]} */ (walk.pop());
         for (const entry of readdirSync(real, { withFileTypes: true })) {
+          if (entry.name === ".git") {
+            continue;
+          }
           count();
-          const physical = join(real, entry.name);
+          const physical = entry.isSymbolicLink() ? inside(join(real, entry.name)) : undefined;
           const named = join(virtual, entry.name);
-          if (entry.isDirectory() && !visited.has(physical)) {
-            visited.add(physical);
-            walk.push([physical, named]);
-          } else if (entry.isFile() && isDenied(named)) {
-            add(physical);
+          const actual = physical ?? join(real, entry.name);
+          const st =
+            physical === undefined && entry.isSymbolicLink() ? undefined : lstatSync(actual);
+          if (st?.isDirectory() && !visited.has(actual)) {
+            visited.add(actual);
+            walk.push([actual, named]);
+          } else if (st?.isFile() && isDenied(named)) {
+            omit.add(actual);
           }
         }
       }
     }
   }
-  // A hard link is the same file under another name, and the sandbox masks by path: every other name
-  // of a denied file inside the root is masked too.
-  const linked = new Set(
-    found
-      .map((p) => lstatSync(p))
-      .filter((st) => st.nlink > 1)
-      .map((st) => `${st.dev}:${st.ino}`),
-  );
-  if (linked.size > 0) {
-    // The object directories hold files too, and a hard link could be hidden among them.
-    for (const stack = [...objectDirs]; stack.length > 0;) {
-      const here = /** @type {string} */ (stack.pop());
-      for (const entry of readdirSync(here, { withFileTypes: true })) {
-        count();
-        if (entry.isDirectory()) {
-          stack.push(join(here, entry.name));
-        } else if (entry.isFile()) {
-          others.push(join(here, entry.name));
-        }
-      }
-    }
-    for (const path of others) {
+  // A hard link is the same file under another name, and the copy is made by path: every other name
+  // of a left-out file is left out too.
+  const linked = new Set();
+  for (const path of omit) {
+    try {
       const st = lstatSync(path);
-      if (st.nlink > 1 && linked.has(`${st.dev}:${st.ino}`)) {
-        add(path);
+      if (st.nlink > 1) {
+        linked.add(`${st.dev}:${st.ino}`);
       }
+    } catch {
+      // Gone since the scan.
     }
   }
-  return found;
+  const kept = new Set(keep);
+  const copied = files.filter(
+    ({ path, st }) =>
+      !everything &&
+      (kept.has(path) || (!omit.has(path) && !(st.nlink > 1 && linked.has(`${st.dev}:${st.ino}`)))),
+  );
+  const bytes = copied.reduce((sum, { st }) => sum + st.size, 0);
+  if (copied.length > limits.files) {
+    throw new Error(`more than ${limits.files} files in the review root to copy`);
+  }
+  if (bytes > limits.bytes) {
+    throw new Error(`more than ${limits.bytes} bytes in the review root to copy`);
+  }
+  const copy = mkdtempSync(join(parent, "opencode-seat-"));
+  try {
+    for (const folder of folders) {
+      mkdirSync(join(copy, relative(dir, folder)), { recursive: true, mode: 0o700 });
+    }
+    for (const { path, st } of copied) {
+      // Open without following a link swapped in since the scan, and check it is still that file.
+      const fd = openSync(path, fsConstants.O_RDONLY | fsConstants.O_NOFOLLOW);
+      try {
+        const now = fstatSync(fd);
+        if (now.isFile() && now.ino === st.ino && now.dev === st.dev) {
+          writeFileSync(join(copy, relative(dir, path)), readFileSync(fd), {
+            flag: "wx",
+            mode: 0o444,
+          });
+        }
+      } finally {
+        closeSync(fd);
+      }
+    }
+  } catch (e) {
+    rmSync(copy, { recursive: true, force: true });
+    throw e;
+  }
+  return { copy, files: copied.length, bytes };
 }
 /**
  * The first of `protectedPaths` (real paths: the home folder, OpenCode's config and data folders) that
@@ -301,14 +345,14 @@ export function rootCovers(dir, protectedPaths) {
   });
 }
 /**
- * The bubblewrap prefix: only SYSTEM, the name-resolution files under /etc and /run and the `shown`
- * paths (real paths, read-only), with private /tmp, /dev, /proc and an empty home. Each `masked`
- * path is replaced by an empty file.
+ * The bubblewrap prefix: only SYSTEM, the name-resolution files under /etc and /run, each `mounts`
+ * pair (a real source shown read-only at the path the seat knows it by) and the `shown` paths (real
+ * paths, read-only), with private /tmp, /dev, /proc and an empty home.
  * @param {string} home the home folder
  * @param {string[]} shown
- * @param {string[]} [masked]
+ * @param {[string, string][]} [mounts]
  */
-export function sandboxArgs(home, shown, masked = []) {
+export function sandboxArgs(home, shown, mounts = []) {
   const real = (/** @type {string[]} */ paths) => [
     ...new Set(paths.filter((p) => existsSync(p)).map((p) => realpathSync(p))),
   ];
@@ -345,8 +389,8 @@ export function sandboxArgs(home, shown, masked = []) {
     "--tmpfs",
     realpathSync(home),
     ...real(["/run/systemd/resolve"]).flatMap((p) => ["--ro-bind", p, p]),
+    ...mounts.flatMap(([from, to]) => ["--ro-bind", realpathSync(from), to]),
     ...real(shown).flatMap((p) => ["--ro-bind", p, p]),
-    ...masked.flatMap((p) => ["--ro-bind", "/dev/null", p]),
   ];
 }
 
@@ -420,6 +464,27 @@ if (
   const denials = userReadDenials(join(config, "opencode"));
   const env = openCodeEnv(process.env, dir, denials);
   let cmd = ["opencode", ...runArgs(model, effort, promptFile, title)];
+  // The copy the seat runs on (Linux), removed on every way out, a stop included.
+  /** @type {string | undefined} */
+  let sandboxCopy;
+  process.on("exit", () => {
+    if (sandboxCopy !== undefined) {
+      rmSync(sandboxCopy, { recursive: true, force: true });
+    }
+  });
+  /** @type {import("node:child_process").ChildProcess | undefined} */
+  let child;
+  // A stop sent to this wrapper (a runner's deadline) goes to OpenCode too, with a forced kill after
+  // 5 s, so the model request does not outlive the seat; before OpenCode starts it ends the wrapper.
+  for (const sig of /** @type {const} */ (["SIGTERM", "SIGINT", "SIGHUP"])) {
+    process.on(sig, () => {
+      if (child === undefined) {
+        process.exit(128 + constants.signals[sig]);
+      }
+      child.kill(sig);
+      setTimeout(() => child?.kill("SIGKILL"), 5000).unref();
+    });
+  }
   if (process.platform === "linux") {
     const which = onPath("opencode", process.env.PATH);
     if (!which) {
@@ -440,14 +505,6 @@ if (
       process.exit(2);
     }
     const binary = realpathSync(which);
-    /** @type {string[]} */
-    let masked;
-    try {
-      masked = deniedFiles(dir, denials);
-    } catch (e) {
-      console.error(`[opencode-seat] ${e instanceof Error ? e.message : String(e)}`);
-      process.exit(2);
-    }
     // OpenCode 2 inside the empty home finds no saved login, so the key for the model's provider (the
     // id before `/`) comes from its auth file as OPENCODE_API_KEY; the file itself stays hidden.
     const provider = model.split("/")[0] ?? "";
@@ -468,16 +525,29 @@ if (
     } catch {
       // No auth file: OpenCode reports the missing login itself.
     }
+    // The prompt file by its real path: the sandbox shows that path, not a link to it.
+    let prompt = resolve(promptFile);
+    try {
+      prompt = realpathSync(prompt);
+    } catch {
+      // OpenCode reports a missing prompt file itself.
+    }
+    // The seat runs on a sanitized copy of the checkout, shown at the checkout's own path.
+    try {
+      sandboxCopy = copyReviewRoot(dir, tmpdir(), denials, home, [prompt]).copy;
+    } catch (e) {
+      console.error(`[opencode-seat] ${e instanceof Error ? e.message : String(e)}`);
+      process.exit(2);
+    }
     cmd = [
       ...sandboxArgs(
         home,
         [
-          dir,
-          resolve(promptFile),
+          prompt,
           // The binary alone (a self-contained executable); its folder could be the home folder.
           binary,
         ],
-        masked,
+        [[sandboxCopy, dir]],
       ),
       "--chdir",
       dir,
@@ -486,11 +556,11 @@ if (
       "/tmp",
       "--",
       binary,
-      ...cmd.slice(1),
+      ...runArgs(model, effort, prompt, title),
     ];
   }
-  const child = spawn(cmd[0] ?? "", cmd.slice(1), {
-    cwd: dir,
+  child = spawn(cmd[0] ?? "", cmd.slice(1), {
+    cwd: sandboxCopy ?? dir,
     env,
     stdio: ["ignore", "inherit", "inherit"],
   });
@@ -498,14 +568,6 @@ if (
     console.error(`[opencode-seat] cannot start ${cmd[0]}: ${e.message}`);
     process.exit(127);
   });
-  // A stop sent to this wrapper (a runner's deadline) goes to OpenCode too, with a forced kill after
-  // 5 s, so the model request does not outlive the seat.
-  for (const sig of /** @type {const} */ (["SIGTERM", "SIGINT", "SIGHUP"])) {
-    process.on(sig, () => {
-      child.kill(sig);
-      setTimeout(() => child.kill("SIGKILL"), 5000).unref();
-    });
-  }
   child.on("close", (code, signal) =>
     process.exit(code ?? (signal ? 128 + constants.signals[signal] : 1)),
   );

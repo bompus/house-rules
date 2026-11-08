@@ -2,9 +2,12 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   chmodSync,
+  existsSync,
   linkSync,
+  lstatSync,
   mkdirSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
   realpathSync,
   rmSync,
@@ -13,11 +16,11 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { delimiter, join, resolve } from "node:path";
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import {
   SEAT_AGENT,
-  deniedFiles,
+  copyReviewRoot,
   openCodeEnv,
   rootCovers,
   runArgs,
@@ -188,7 +191,7 @@ function withShims(
     const out = join(dir, "seen");
     writeFileSync(
       join(dir, "opencode"),
-      `#!/bin/sh\npwd > "${out}.cwd"\nenv > "${out}.env"\nprintf '%s\\n' "$@" > "${out}.args"\nexit 7\n`,
+      `#!/bin/sh\npwd > "${out}.cwd"\nenv > "${out}.env"\nprintf '%s\\n' "$@" > "${out}.args"\nfind . ! -name . | sort > "${out}.files"\nexit 7\n`,
     );
     writeFileSync(
       join(dir, "bwrap"),
@@ -306,140 +309,6 @@ test("a user's read denial wins over the seat's allow, whichever pattern it name
   assert.equal(decision(read(["*.pem"]), "key.pem"), "deny");
   assert.equal(decision(read(["*.pem"]), "README.md"), "allow");
 });
-test(
-  "the environment files and .git/config of a checkout are found without following links or reading .git/objects",
-  POSIX_ONLY,
-  () => {
-    const dir = scratch("opencode-env");
-    try {
-      mkdirSync(join(dir, "a", "b"), { recursive: true });
-      mkdirSync(join(dir, ".git", "objects", "ab"), { recursive: true });
-      for (const name of [
-        ".env",
-        ".env.local",
-        "a/prod.env",
-        "a/b/.env.production",
-        ".git/.env",
-        ".git/config",
-        ".git/objects/ab/.env",
-        "a/config",
-        ".env.example",
-        "README.md",
-      ]) {
-        writeFileSync(join(dir, name), "x");
-      }
-      symlinkSync(join(dir, ".env"), join(dir, "notes.txt"));
-      symlinkSync(join(dir, "a"), join(dir, "a-link"));
-      assert.deepEqual(
-        deniedFiles(dir)
-          .map((p) => p.slice(dir.length + 1))
-          .sort(),
-        [".env", ".env.local", ".git/.env", ".git/config", "a/b/.env.production", "a/prod.env"],
-      );
-    } finally {
-      rmSync(dir, { recursive: true, force: true });
-    }
-  },
-);
-test("the sandbox replaces each masked path with an empty file", LINUX_ONLY, () => {
-  const dir = scratch("opencode-mask");
-  try {
-    const home = join(dir, "home");
-    mkdirSync(home);
-    const secret = join(dir, ".env");
-    writeFileSync(secret, "x");
-    const args = sandboxArgs(home, [dir], [secret]);
-    const at = args.lastIndexOf("--ro-bind");
-    assert.deepEqual(args.slice(at, at + 3), ["--ro-bind", "/dev/null", secret]);
-    assert.ok(
-      args.lastIndexOf("--ro-bind", at - 1) < at,
-      "the mask comes after the folder it sits in",
-    );
-    assert.ok(args.indexOf(dir) < at);
-  } finally {
-    rmSync(dir, { recursive: true, force: true });
-  }
-});
-test("on Linux the script masks the checkout's .env files", LINUX_ONLY, () => {
-  withShims((dir, env) => {
-    writeFileSync(join(dir, ".env"), "SECRET=1");
-    mkdirSync(join(dir, "sub"));
-    writeFileSync(join(dir, "sub", "prod.env"), "SECRET=2");
-    writeFileSync(join(dir, ".env.example"), "SECRET=");
-    const r = spawnSync(process.execPath, [script, "opencode-go/m", "max", "prompt.md"], {
-      cwd: dir,
-      encoding: "utf8",
-      env,
-    });
-    assert.equal(r.status, 7, r.stderr);
-    const box = readFileSync(join(dir, "seen.bwrap"), "utf8").split("\n");
-    const real = (/** @type {string} */ name) => join(realpathSync(dir), name);
-    const masked = [];
-    for (let i = 0; i < box.length - 2; i++) {
-      if (box[i] === "--ro-bind" && box[i + 1] === "/dev/null") {
-        masked.push(box[i + 2]);
-      }
-    }
-    assert.deepEqual(masked.sort(), [real(".env"), real("sub/prod.env")].sort());
-  });
-});
-
-test(
-  "files the user's own config denies are masked too, by name or by path, and a deny-all needs none",
-  POSIX_ONLY,
-  () => {
-    const dir = scratch("opencode-denied");
-    try {
-      mkdirSync(join(dir, "secrets"));
-      mkdirSync(join(dir, "docs"));
-      for (const name of [
-        "private.pem",
-        "secrets/token.txt",
-        "docs/guide.md",
-        "README.md",
-        ".env",
-      ]) {
-        writeFileSync(join(dir, name), "x");
-      }
-      symlinkSync(join(dir, "private.pem"), join(dir, "notes.txt"));
-      const names = (/** @type {string[]} */ denied) =>
-        deniedFiles(dir, denied)
-          .map((p) => p.slice(dir.length + 1))
-          .sort();
-      assert.deepEqual(names([]), [".env"]);
-      assert.deepEqual(names(["*.pem"]), [".env", "private.pem"]);
-      assert.deepEqual(names(["secrets/*"]), [".env", "secrets/token.txt"]);
-      assert.deepEqual(names(["**/token.*", "docs/?uide.md"]), [
-        ".env",
-        "docs/guide.md",
-        "secrets/token.txt",
-      ]);
-      assert.deepEqual(names(["*"]), [".env"]);
-    } finally {
-      rmSync(dir, { recursive: true, force: true });
-    }
-  },
-);
-
-test("on Linux the script also masks files the user's OpenCode config denies", LINUX_ONLY, () => {
-  withShims((dir, env, state) => {
-    mkdirSync(join(state, "config", "opencode"), { recursive: true });
-    writeFileSync(
-      join(state, "config", "opencode", "opencode.json"),
-      JSON.stringify({ permission: { read: { "*.pem": "deny" } } }),
-    );
-    writeFileSync(join(dir, "private.pem"), "KEY");
-    const r = spawnSync(process.execPath, [script, "opencode-go/m", "max", "prompt.md"], {
-      cwd: dir,
-      encoding: "utf8",
-      env,
-    });
-    assert.equal(r.status, 7, r.stderr);
-    const box = readFileSync(join(dir, "seen.bwrap"), "utf8").split("\n");
-    assert.ok(box.includes(join(realpathSync(dir), "private.pem")));
-  });
-});
-
 test("a user's default that denies or asks for everything becomes a deny-all for reads", () => {
   const dir = scratch("opencode-default");
   try {
@@ -451,22 +320,6 @@ test("a user's default that denies or asks for everything becomes a deny-all for
       writeFileSync(join(dir, "opencode.json"), JSON.stringify({ permission }));
       assert.deepEqual(userReadDenials(dir), [], JSON.stringify(permission));
     }
-  } finally {
-    rmSync(dir, { recursive: true, force: true });
-  }
-});
-test("a user's denial by absolute path masks that checkout file too", POSIX_ONLY, () => {
-  const dir = scratch("opencode-absolute");
-  try {
-    writeFileSync(join(dir, "plain.txt"), "x");
-    writeFileSync(join(dir, "creds.json"), "x");
-    const names = (/** @type {string[]} */ denied) =>
-      deniedFiles(dir, denied)
-        .map((p) => p.slice(dir.length + 1))
-        .sort();
-    assert.deepEqual(names([join(dir, "creds.json")]), ["creds.json"]);
-    assert.deepEqual(names([`${dir}/*`]), ["creds.json", "plain.txt"]);
-    assert.deepEqual(names(["/somewhere/else/*"]), []);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -499,48 +352,6 @@ test(
   },
 );
 
-test("a user's denial of a file under .git masks it, objects excepted", POSIX_ONLY, () => {
-  const dir = scratch("opencode-git");
-  try {
-    mkdirSync(join(dir, ".git", "objects", "ab"), { recursive: true });
-    writeFileSync(join(dir, ".git", "HEAD"), "ref");
-    writeFileSync(join(dir, ".git", "config"), "[remote]");
-    writeFileSync(join(dir, ".git", "objects", "ab", "cd"), "x");
-    symlinkSync(join(dir, ".git", "HEAD"), join(dir, "notes.txt"));
-    const names = deniedFiles(dir, [".git/HEAD", ".git/*"])
-      .map((p) => p.slice(dir.length + 1))
-      .sort();
-    assert.deepEqual(names, [".git/HEAD", ".git/config"]);
-  } finally {
-    rmSync(dir, { recursive: true, force: true });
-  }
-});
-
-test(
-  "every other name of a denied file inside the root is masked too, hard links included",
-  POSIX_ONLY,
-  () => {
-    const dir = scratch("opencode-hardlink");
-    try {
-      writeFileSync(join(dir, ".env"), "SECRET");
-      linkSync(join(dir, ".env"), join(dir, "notes.txt"));
-      writeFileSync(join(dir, "creds.json"), "SECRET");
-      mkdirSync(join(dir, "sub"));
-      linkSync(join(dir, "creds.json"), join(dir, "sub", "copy.txt"));
-      writeFileSync(join(dir, "other.txt"), "fine");
-      writeFileSync(join(dir, "twin-a.txt"), "x");
-      linkSync(join(dir, "twin-a.txt"), join(dir, "twin-b.txt"));
-      const names = (/** @type {string[]} */ denied) =>
-        deniedFiles(dir, denied)
-          .map((p) => p.slice(dir.length + 1))
-          .sort();
-      assert.deepEqual(names([]), [".env", "notes.txt"]);
-      assert.deepEqual(names(["creds.json"]), [".env", "creds.json", "notes.txt", "sub/copy.txt"]);
-    } finally {
-      rmSync(dir, { recursive: true, force: true });
-    }
-  },
-);
 test("a review root that is or contains the home folder or OpenCode's folders is detected", () => {
   assert.equal(rootCovers("/h", ["/h"]), "/h");
   assert.equal(rootCovers("/", ["/h/u", "/h/u/.config/opencode"]), "/h/u");
@@ -567,29 +378,6 @@ test("on Linux the script refuses a review root that contains the home folder", 
   });
 });
 
-test(
-  "a user's denial written with ~ or $HOME reaches the files it names under the review root",
-  POSIX_ONLY,
-  () => {
-    const home = scratch("opencode-tilde");
-    try {
-      const dir = join(home, "project");
-      mkdirSync(join(dir, "secrets"), { recursive: true });
-      writeFileSync(join(dir, "secrets", "token.txt"), "x");
-      writeFileSync(join(dir, "plain.txt"), "x");
-      const names = (/** @type {string[]} */ denied) =>
-        deniedFiles(dir, denied, home)
-          .map((p) => p.slice(dir.length + 1))
-          .sort();
-      assert.deepEqual(names(["~/project/secrets/*"]), ["secrets/token.txt"]);
-      assert.deepEqual(names(["$HOME/project/secrets/*"]), ["secrets/token.txt"]);
-      assert.deepEqual(names(["${HOME}/project/secrets/token.txt"]), ["secrets/token.txt"]);
-      assert.deepEqual(names(["~/elsewhere/*"]), []);
-    } finally {
-      rmSync(home, { recursive: true, force: true });
-    }
-  },
-);
 test(
   "on Linux the script refuses OpenCode's data folder inside the review root and a provider it cannot supply",
   LINUX_ONLY,
@@ -647,47 +435,6 @@ test(
     }
   },
 );
-test("a hard link of a denied file hidden among the git objects is masked too", POSIX_ONLY, () => {
-  const dir = scratch("opencode-objects");
-  try {
-    mkdirSync(join(dir, ".git", "objects", "ab"), { recursive: true });
-    writeFileSync(join(dir, ".env"), "SECRET");
-    linkSync(join(dir, ".env"), join(dir, ".git", "objects", "ab", "notes.txt"));
-    writeFileSync(join(dir, ".git", "objects", "ab", "plain"), "x");
-    const names = deniedFiles(dir)
-      .map((p) => p.slice(dir.length + 1))
-      .sort();
-    assert.deepEqual(names, [".env", ".git/objects/ab/notes.txt"]);
-  } finally {
-    rmSync(dir, { recursive: true, force: true });
-  }
-});
-
-test(
-  "a link named like a denied file also hides the file it points to inside the root",
-  POSIX_ONLY,
-  () => {
-    const dir = scratch("opencode-denied-link");
-    try {
-      writeFileSync(join(dir, "secret.txt"), "SECRET");
-      symlinkSync(join(dir, "secret.txt"), join(dir, ".env"));
-      symlinkSync(join(dir, ".env"), join(dir, "notes.txt"));
-      writeFileSync(join(dir, "plain.txt"), "x");
-      symlinkSync(join(dir, "plain.txt"), join(dir, "link.txt"));
-      const names = deniedFiles(dir)
-        .map((p) => p.slice(dir.length + 1))
-        .sort();
-      assert.deepEqual(names, ["secret.txt"]);
-      // A user's pattern that names a link works the same way.
-      const byPattern = deniedFiles(dir, ["link.txt"])
-        .map((p) => p.slice(dir.length + 1))
-        .sort();
-      assert.deepEqual(byPattern, ["plain.txt", "secret.txt"]);
-    } finally {
-      rmSync(dir, { recursive: true, force: true });
-    }
-  },
-);
 test("the denials of opencode.json and opencode.jsonc both count", () => {
   const dir = scratch("opencode-both");
   try {
@@ -709,52 +456,482 @@ test("the denials of opencode.json and opencode.jsonc both count", () => {
   }
 });
 
+/**
+ * The regular files copyReviewRoot puts in its copy of `dir`, relative and sorted; the copy must hold
+ * nothing else (no link, no special file, no `.git`).
+ * @param {string} dir
+ * @param {string[]} [denied]
+ * @param {string} [home]
+ * @param {string[]} [keep]
+ */
+function copied(dir, denied = [], home = undefined, keep = []) {
+  const parent = scratch("opencode-copy-parent");
+  try {
+    const { copy } = copyReviewRoot(dir, parent, denied, home, keep);
+    /** @type {string[]} */
+    const found = [];
+    for (const stack = [copy]; stack.length > 0;) {
+      const here = /** @type {string} */ (stack.pop());
+      for (const entry of readdirSync(here, { withFileTypes: true })) {
+        const path = join(here, entry.name);
+        const rel = path.slice(copy.length + 1);
+        assert.ok(!rel.split("/").includes(".git"), `${rel} is a .git entry`);
+        if (entry.isDirectory()) {
+          stack.push(path);
+        } else {
+          assert.ok(entry.isFile(), `${rel} is neither a regular file nor a folder`);
+          found.push(rel);
+        }
+      }
+    }
+    return found.sort();
+  } finally {
+    rmSync(parent, { recursive: true, force: true });
+  }
+}
 test(
-  "files behind a directory link that a denied path would name are masked where they are",
+  "the copy holds the regular files minus the environment files, with no link and no .git",
+  POSIX_ONLY,
+  () => {
+    const dir = scratch("opencode-env");
+    try {
+      mkdirSync(join(dir, "a", "b"), { recursive: true });
+      mkdirSync(join(dir, ".git", "objects", "ab"), { recursive: true });
+      mkdirSync(join(dir, "vendor", "lib", ".git"), { recursive: true });
+      for (const name of [
+        ".env",
+        ".env.local",
+        "a/prod.env",
+        "a/b/.env.production",
+        ".git/config",
+        ".git/objects/ab/cd",
+        "vendor/lib/.git/config",
+        "vendor/lib/code.js",
+        "a/config",
+        ".env.example",
+        "README.md",
+      ]) {
+        writeFileSync(join(dir, name), "x");
+      }
+      symlinkSync(join(dir, ".env"), join(dir, "notes.txt"));
+      symlinkSync(join(dir, "a"), join(dir, "a-link"));
+      symlinkSync("/etc/hostname", join(dir, "outside"));
+      writeFileSync(join(dir, "gitfile-target"), "x");
+      symlinkSync(join(dir, "gitfile-target"), join(dir, "vendor", ".git"));
+      assert.deepEqual(copied(dir), [
+        ".env.example",
+        "README.md",
+        "a/config",
+        "gitfile-target",
+        "vendor/lib/code.js",
+      ]);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  },
+);
+test(
+  "the copy is private, its files are read-only, and it is made outside the root",
+  POSIX_ONLY,
+  () => {
+    const dir = scratch("opencode-modes");
+    const parent = scratch("opencode-modes-parent");
+    try {
+      mkdirSync(join(dir, "sub"));
+      writeFileSync(join(dir, "sub", "a.txt"), "hello");
+      writeFileSync(join(dir, "empty.txt"), "");
+      const { copy, files, bytes } = copyReviewRoot(dir, parent);
+      assert.equal(files, 2);
+      assert.equal(bytes, 5);
+      assert.equal(join(copy, ".."), parent);
+      assert.equal(lstatSync(copy).mode & 0o777, 0o700);
+      assert.equal(lstatSync(join(copy, "sub")).mode & 0o777, 0o700);
+      assert.equal(lstatSync(join(copy, "sub", "a.txt")).mode & 0o222, 0, "no write bit");
+      assert.equal(readFileSync(join(copy, "sub", "a.txt"), "utf8"), "hello");
+      assert.notEqual(
+        lstatSync(join(copy, "sub", "a.txt")).ino,
+        lstatSync(join(dir, "sub", "a.txt")).ino,
+        "a new file, not a hard link",
+      );
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+      rmSync(parent, { recursive: true, force: true });
+    }
+  },
+);
+test(
+  "files the user's own config denies are left out, by name or by path, and a deny-all leaves none",
+  POSIX_ONLY,
+  () => {
+    const dir = scratch("opencode-denied");
+    try {
+      mkdirSync(join(dir, "secrets"));
+      mkdirSync(join(dir, "docs"));
+      for (const name of [
+        "private.pem",
+        "secrets/token.txt",
+        "docs/guide.md",
+        "README.md",
+        ".env",
+      ]) {
+        writeFileSync(join(dir, name), "x");
+      }
+      symlinkSync(join(dir, "private.pem"), join(dir, "notes.txt"));
+      const all = ["README.md", "docs/guide.md", "private.pem", "secrets/token.txt"];
+      assert.deepEqual(copied(dir, []), all);
+      assert.deepEqual(
+        copied(dir, ["*.pem"]),
+        all.filter((n) => n !== "private.pem"),
+      );
+      assert.deepEqual(
+        copied(dir, ["secrets/*"]),
+        all.filter((n) => n !== "secrets/token.txt"),
+      );
+      assert.deepEqual(copied(dir, ["**/token.*", "docs/?uide.md"]), ["README.md", "private.pem"]);
+      assert.deepEqual(copied(dir, ["*"]), [], "a denied * copies nothing");
+      assert.deepEqual(
+        copied(dir, ["secrets/*"], undefined, [join(dir, "secrets/token.txt")]),
+        all,
+      );
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  },
+);
+test(
+  "a denial by absolute path leaves out that checkout file, and one elsewhere changes nothing",
+  POSIX_ONLY,
+  () => {
+    const dir = scratch("opencode-absolute");
+    try {
+      writeFileSync(join(dir, "plain.txt"), "x");
+      writeFileSync(join(dir, "creds.json"), "x");
+      assert.deepEqual(copied(dir, [join(dir, "creds.json")]), ["plain.txt"]);
+      assert.deepEqual(copied(dir, [`${dir}/*`]), []);
+      assert.deepEqual(copied(dir, ["/somewhere/else/*"]), ["creds.json", "plain.txt"]);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  },
+);
+test(
+  "a denial written with ~ or $HOME reaches the files it names under the review root",
+  POSIX_ONLY,
+  () => {
+    const home = scratch("opencode-tilde");
+    try {
+      const dir = join(home, "project");
+      mkdirSync(join(dir, "secrets"), { recursive: true });
+      writeFileSync(join(dir, "secrets", "token.txt"), "x");
+      writeFileSync(join(dir, "plain.txt"), "x");
+      for (const pattern of [
+        "~/project/secrets/*",
+        "$HOME/project/secrets/*",
+        "${HOME}/project/secrets/token.txt",
+      ]) {
+        assert.deepEqual(copied(dir, [pattern], home), ["plain.txt"], pattern);
+      }
+      assert.deepEqual(copied(dir, ["~/elsewhere/*"], home), ["plain.txt", "secrets/token.txt"]);
+    } finally {
+      rmSync(home, { recursive: true, force: true });
+    }
+  },
+);
+test("every other name of a left-out file is left out too, hard links included", POSIX_ONLY, () => {
+  const dir = scratch("opencode-hardlink");
+  try {
+    mkdirSync(join(dir, "sub"));
+    mkdirSync(join(dir, ".git", "hooks"), { recursive: true });
+    writeFileSync(join(dir, ".env"), "SECRET");
+    linkSync(join(dir, ".env"), join(dir, "notes.txt"));
+    linkSync(join(dir, ".env"), join(dir, ".git", "hooks", "alias"));
+    writeFileSync(join(dir, "creds.json"), "SECRET");
+    linkSync(join(dir, "creds.json"), join(dir, "sub", "copy.txt"));
+    writeFileSync(join(dir, "other.txt"), "fine");
+    writeFileSync(join(dir, "twin-a.txt"), "x");
+    linkSync(join(dir, "twin-a.txt"), join(dir, "twin-b.txt"));
+    assert.deepEqual(copied(dir), [
+      "creds.json",
+      "other.txt",
+      "sub/copy.txt",
+      "twin-a.txt",
+      "twin-b.txt",
+    ]);
+    assert.deepEqual(copied(dir, ["creds.json"]), ["other.txt", "twin-a.txt", "twin-b.txt"]);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+test(
+  "a link named like a denied file also leaves out the file it points to; the link itself is never copied",
+  POSIX_ONLY,
+  () => {
+    const dir = scratch("opencode-denied-link");
+    try {
+      writeFileSync(join(dir, "secret.txt"), "SECRET");
+      symlinkSync(join(dir, "secret.txt"), join(dir, ".env"));
+      symlinkSync(join(dir, ".env"), join(dir, "notes.txt"));
+      writeFileSync(join(dir, "plain.txt"), "x");
+      symlinkSync(join(dir, "plain.txt"), join(dir, "link.txt"));
+      assert.deepEqual(copied(dir), ["plain.txt"]);
+      // A user's pattern that names a link works the same way.
+      assert.deepEqual(copied(dir, ["link.txt"]), []);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  },
+);
+test(
+  "files behind a directory link that a denied path would name are left out where they are, nested links too",
   POSIX_ONLY,
   () => {
     const dir = scratch("opencode-dirlink");
     try {
       mkdirSync(join(dir, "backing", "deep"), { recursive: true });
+      mkdirSync(join(dir, "store"));
       writeFileSync(join(dir, "backing", "token.json"), "SECRET");
       writeFileSync(join(dir, "backing", "deep", "more.json"), "SECRET");
       writeFileSync(join(dir, "backing", "readme.md"), "fine");
+      writeFileSync(join(dir, "store", "key.txt"), "SECRET");
+      writeFileSync(join(dir, "exposed.txt"), "SECRET");
       symlinkSync(join(dir, "backing"), join(dir, "secrets"));
       symlinkSync(join(dir, "secrets"), join(dir, "loop-a"));
       symlinkSync(dir, join(dir, "backing", "up"));
-      const names = (/** @type {string[]} */ denied) =>
-        deniedFiles(dir, denied)
-          .map((p) => p.slice(dir.length + 1))
-          .sort();
-      assert.deepEqual(names(["secrets/*"]), [
+      // A link inside a linked folder, to a folder and to a file, is followed with its virtual name.
+      symlinkSync(join(dir, "store"), join(dir, "backing", "vault"));
+      symlinkSync(join(dir, "exposed.txt"), join(dir, "backing", "config"));
+      const kept = [
         "backing/deep/more.json",
         "backing/readme.md",
         "backing/token.json",
-      ]);
-      assert.deepEqual(names(["secrets/token.json"]), ["backing/token.json"]);
-      assert.deepEqual(names([]), []);
+        "exposed.txt",
+        "store/key.txt",
+      ];
+      assert.deepEqual(copied(dir, []), kept);
+      assert.deepEqual(copied(dir, ["secrets/*"]), []);
+      assert.deepEqual(
+        copied(dir, ["secrets/token.json"]),
+        kept.filter((n) => n !== "backing/token.json"),
+      );
+      assert.deepEqual(
+        copied(dir, ["secrets/vault/*"]),
+        kept.filter((n) => n !== "store/key.txt"),
+      );
+      assert.deepEqual(
+        copied(dir, ["secrets/config"]),
+        kept.filter((n) => n !== "exposed.txt"),
+      );
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
   },
 );
 test(
-  "a git config is masked in a nested repository and when it is a link, by default",
+  "a link to a file outside the root, in /usr or elsewhere, leaves nothing to copy or to hide",
   POSIX_ONLY,
   () => {
-    const dir = scratch("opencode-gitconfig");
+    const dir = scratch("opencode-outside");
+    const outside = scratch("opencode-outside-target");
     try {
-      mkdirSync(join(dir, "vendor", "lib", ".git"), { recursive: true });
-      writeFileSync(join(dir, "vendor", "lib", ".git", "config"), "[remote]");
-      mkdirSync(join(dir, ".git"));
-      writeFileSync(join(dir, "remote-config"), "[remote]");
-      symlinkSync(join(dir, "remote-config"), join(dir, ".git", "config"));
-      const names = deniedFiles(dir)
-        .map((p) => p.slice(dir.length + 1))
-        .sort();
-      assert.deepEqual(names, ["remote-config", "vendor/lib/.git/config"]);
+      writeFileSync(join(outside, "secret.env"), "SECRET");
+      symlinkSync(join(outside, "secret.env"), join(dir, ".env"));
+      symlinkSync(join(outside, "secret.env"), join(dir, "notes.txt"));
+      symlinkSync(outside, join(dir, "linked-folder"));
+      writeFileSync(join(dir, "plain.txt"), "x");
+      assert.deepEqual(copied(dir, ["linked-folder/*"]), ["plain.txt"]);
+      assert.ok(existsSync(join(outside, "secret.env")), "the outside file is untouched");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+      rmSync(outside, { recursive: true, force: true });
+    }
+  },
+);
+test(
+  "the copy refuses a root over the entry, file or byte limit and leaves no folder behind",
+  POSIX_ONLY,
+  () => {
+    const dir = scratch("opencode-cap");
+    const parent = scratch("opencode-cap-parent");
+    try {
+      for (const name of ["a", "b", "c"]) {
+        writeFileSync(join(dir, name), "12345");
+      }
+      assert.throws(
+        () => copyReviewRoot(dir, parent, [], undefined, [], { entries: 2, files: 10, bytes: 100 }),
+        /more than 2 entries/,
+      );
+      assert.throws(
+        () => copyReviewRoot(dir, parent, [], undefined, [], { entries: 10, files: 2, bytes: 100 }),
+        /more than 2 files/,
+      );
+      assert.throws(
+        () => copyReviewRoot(dir, parent, [], undefined, [], { entries: 10, files: 10, bytes: 14 }),
+        /more than 10 files or 14 bytes|14 bytes/,
+      );
+      assert.deepEqual(readdirSync(parent), [], "nothing is left in the parent");
+      assert.equal(
+        copyReviewRoot(dir, parent, [], undefined, [], { entries: 3, files: 3, bytes: 15 }).files,
+        3,
+      );
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+      rmSync(parent, { recursive: true, force: true });
+    }
+  },
+);
+test(
+  "the sandbox shows a mount's source at the path the seat knows, after the empty home",
+  LINUX_ONLY,
+  () => {
+    const dir = scratch("opencode-mount");
+    try {
+      const home = join(dir, "home");
+      mkdirSync(home);
+      mkdirSync(join(dir, "src"));
+      const args = sandboxArgs(home, [], [[join(dir, "src"), "/checkout"]]);
+      const at = args.indexOf("/checkout");
+      assert.deepEqual(args.slice(at - 2, at + 1), [
+        "--ro-bind",
+        realpathSync(join(dir, "src")),
+        "/checkout",
+      ]);
+      assert.ok(args.indexOf("--tmpfs") < at, "the empty home comes first");
+      assert.equal(args.includes("/dev/null"), false, "nothing is masked");
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
   },
 );
+test(
+  "on Linux the seat runs on a copy shown at the checkout's path, never the checkout",
+  LINUX_ONLY,
+  () => {
+    withShims((dir, env, state) => {
+      mkdirSync(join(state, "config", "opencode"), { recursive: true });
+      writeFileSync(
+        join(state, "config", "opencode", "opencode.json"),
+        JSON.stringify({ permission: { read: { "*.pem": "deny" } } }),
+      );
+      writeFileSync(join(dir, ".env"), "SECRET=1");
+      mkdirSync(join(dir, "sub"));
+      writeFileSync(join(dir, "sub", "prod.env"), "SECRET=2");
+      writeFileSync(join(dir, ".env.example"), "SECRET=");
+      writeFileSync(join(dir, "private.pem"), "KEY");
+      mkdirSync(join(dir, ".git"));
+      writeFileSync(join(dir, ".git", "config"), "[remote]");
+      symlinkSync("/etc/hostname", join(dir, "hostname-link"));
+      const r = spawnSync(process.execPath, [script, "opencode-go/m", "max", "prompt.md"], {
+        cwd: dir,
+        encoding: "utf8",
+        env,
+      });
+      assert.equal(r.status, 7, r.stderr);
+      const real = realpathSync(dir);
+      const box = readFileSync(join(dir, "seen.bwrap"), "utf8").split("\n");
+      const at = box.findIndex((a, i) => a === "--ro-bind" && box[i + 2] === real);
+      assert.notEqual(at, -1, "a bind to the checkout's path");
+      const copy = box[at + 1] ?? "";
+      assert.notEqual(copy, real, "the source is not the checkout");
+      assert.equal(
+        box.some((a, i) => a === "--ro-bind" && box[i + 1] === real),
+        false,
+        "the checkout itself is never bound",
+      );
+      assert.equal(box.includes("/dev/null"), false, "no path is masked");
+      assert.equal(box[box.indexOf("--chdir") + 1], real);
+      assert.equal(
+        readFileSync(join(dir, "seen.cwd"), "utf8").trim(),
+        copy,
+        "the seat starts in the copy",
+      );
+      assert.equal(
+        readFileSync(join(dir, "seen.files"), "utf8"),
+        ["./.env.example", "./opencode", "./bwrap", "./prompt.md", "./seen", "./sub"]
+          .filter((n) => n !== "./seen")
+          .sort()
+          .join("\n") + "\n",
+        "the seat's folder holds the checkout's files without its secrets, links or .git",
+      );
+      assert.equal(existsSync(copy), false, "the copy is removed when the seat ends");
+    });
+  },
+);
+test("the copy is removed when opencode cannot start", LINUX_ONLY, () => {
+  withShims((dir, env) => {
+    rmSync(join(dir, "opencode"));
+    writeFileSync(join(dir, "opencode"), "not an executable\n");
+    chmodSync(join(dir, "opencode"), 0o644);
+    const tmp = scratch("opencode-tmp");
+    try {
+      const r = spawnSync(process.execPath, [script, "opencode-go/m", "max", "prompt.md"], {
+        cwd: dir,
+        encoding: "utf8",
+        env: { ...env, TMPDIR: tmp },
+      });
+      assert.notEqual(r.status, 7);
+      assert.deepEqual(
+        readdirSync(tmp).filter((n) => n.startsWith("opencode-seat-")),
+        [],
+        r.stderr,
+      );
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
+  });
+});
+test("a stop sent while opencode runs ends it and removes the copy", LINUX_ONLY, async () => {
+  const dir = scratch("opencode-stop");
+  const state = scratch("opencode-stop-state");
+  try {
+    const shim = join(dir, "opencode");
+    writeFileSync(shim, `#!/bin/sh\necho $$ > "${join(dir, "ready")}"\nexec sleep 30\n`);
+    writeFileSync(
+      join(dir, "bwrap"),
+      `#!/bin/sh\nprintf '%s\\n' "$@" > "${join(dir, "box")}"\nwhile [ "$1" != "--" ]; do shift; done\nshift\nexec "$@"\n`,
+    );
+    chmodSync(shim, 0o755);
+    chmodSync(join(dir, "bwrap"), 0o755);
+    writeFileSync(join(dir, "prompt.md"), "task");
+    writeFileSync(join(dir, ".env"), "SECRET");
+    mkdirSync(join(state, "home"));
+    mkdirSync(join(state, "data", "opencode"), { recursive: true });
+    writeFileSync(
+      join(state, "data", "opencode", "auth.json"),
+      JSON.stringify({ "opencode-go": { key: "k" } }),
+    );
+    const tmp = scratch("opencode-stop-tmp");
+    const child = spawn(process.execPath, [script, "opencode-go/m", "max", "prompt.md"], {
+      cwd: dir,
+      stdio: "ignore",
+      env: {
+        ...PARENT,
+        PATH: `${dir}${delimiter}${process.env.PATH}`,
+        HOME: join(state, "home"),
+        XDG_DATA_HOME: join(state, "data"),
+        XDG_CONFIG_HOME: join(state, "config"),
+        TMPDIR: tmp,
+      },
+    });
+    const closed = new Promise((done) => child.on("close", (code) => done(code)));
+    for (let i = 0; i < 200 && !existsSync(join(dir, "ready")); i++) {
+      await new Promise((r) => setTimeout(r, 50));
+    }
+    assert.ok(existsSync(join(dir, "ready")), "opencode started");
+    assert.equal(
+      readdirSync(tmp).filter((n) => n.startsWith("opencode-seat-")).length,
+      1,
+      "one copy exists while the seat runs",
+    );
+    child.kill("SIGTERM");
+    assert.equal(await closed, 128 + 15);
+    assert.deepEqual(
+      readdirSync(tmp).filter((n) => n.startsWith("opencode-seat-")),
+      [],
+      "the copy is gone",
+    );
+    rmSync(tmp, { recursive: true, force: true });
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+    rmSync(state, { recursive: true, force: true });
+  }
+});

@@ -185,26 +185,32 @@ with a forced kill after 5 seconds.
 
 On Linux it also runs OpenCode under bubblewrap (`bwrap` must be installed; the
 seat exits 127 without it), because OpenCode treats a whole git project as inside
-and follows symlinks. The seat then sees only the system folders (read-only), the
+and follows symlinks. The seat sees only the system folders (read-only), the
 name-resolution, public TLS (`/etc/ssl/certs` and the like, never `/etc/ssl/private`) and loader files under `/etc`, an empty home, a private
-`/tmp`, the seat's directory, the prompt file and the OpenCode binary itself.
+`/tmp`, a sanitized copy of the checkout, the prompt file and the OpenCode binary itself.
+The original checkout is never mounted.
 
-A
-symlink in the checkout to another file finds nothing. OpenCode checks the
-pathname it is asked to read, not what a link points to, so each `.env` file in
-the checkout (`*.env` and `*.env.*`, not `*.env.example`), and each file the
-user's own denied read patterns match by name, by path from the checkout or by absolute path (a leading `~` or `$HOME` in a pattern is the home folder, as in OpenCode)
-(`*` and `**` match any run of characters, `?` one; links are not followed and
-`.git/objects` is skipped), and the checkout's `.git/config` (a remote URL may carry a token), is also replaced by an empty file inside the sandbox, so a link
-to one finds nothing.
+Before the sandbox starts, the seat copies the checkout into a private folder (mode 0700, under
+`TMPDIR`) and shows it read-only at the checkout's own path, where the seat starts. The copy
+holds regular files only. Symlinks, special files and every `.git` entry are not copied, so a link
+cannot lead out of the checkout and the seat has no git history or `.git/config`. Empty folders keep their place; files are copied, never
+hard-linked, and the folder is removed when the seat ends, including after a stop sent to it.
 
-Every other name of such a file inside the checkout (a hard link, `.git/objects` included) is hidden too, and so is the file a denied-named link (`.env -> secret.txt`) points to when it is inside the checkout; a link to a directory (`secrets -> backing`) is walked as that directory, so the files its path would name as denied (`secrets/token.json`) are hidden where they are.
+The copy leaves out each `.env` file (`*.env` and `*.env.*`, not `*.env.example`) and each file the
+user's own denied read patterns match by name, by path from the checkout or by absolute path (a leading `~` or `$HOME` in a pattern is the home folder, as in OpenCode;
+`*` and `**` match any run of characters, `?` one). It also leaves out the file a denied-named link
+(`.env -> secret.txt`) points to when that file is inside the checkout, and the files a link to a
+directory (`secrets -> backing`, nested links included) would name as denied
+(`secrets/token.json`), where they really are. Every other name of a left-out file (a hard link, found by device and
+inode) is left out too. A denied `*` copies nothing. The prompt file is copied when it is inside the checkout.
 
-The `config` of every `.git` folder, nested repositories and links included, is hidden by default. A checkout with more than 1000 such files is refused (exit
+A checkout with more than 200000 entries, 100000 files or 512 MiB of copied files is refused (exit
 2), and so is a review root that is or contains the home folder or OpenCode's config or data folder, because the sandbox shows the root over its empty home. OpenCode's config folder
 is hidden, so the key for the model's provider (the id before `/`) is read from
 OpenCode's auth file and passed as `OPENCODE_API_KEY`; the seat's own process can
-read that back through `/proc`. Only the `opencode-go` and `opencode` providers take their key that way; a model of another provider (which needs its own variable or an OAuth record) is refused with exit 2. On other systems there is no filesystem boundary
+read that back through `/proc`. Only the `opencode-go` and `opencode` providers take their key that way; a model of another provider (which needs its own variable or an OAuth record) is refused with exit 2.
+
+A layout that relies on links inside the checkout loses them in the copy. On other systems there is no copy and no filesystem boundary
 beyond OpenCode's own rules.
 
 ## What the client holds
