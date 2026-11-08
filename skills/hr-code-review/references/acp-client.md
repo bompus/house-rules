@@ -160,7 +160,7 @@ Launch the client from a folder you trust and name the review root with its `[cw
 Files inside the review root are readable by the seat, `.git/config` included:
 keep no credential there (a remote URL with a token, for example).
 
-The server starts in the review root, and a Bun process reads `.env` and `bunfig.toml` (a `preload` runs code) from where it starts. A launch whose executable is `bun` therefore gets `--no-env-file --config=EMPTY` (an empty file in the client's private folder) after it, and a script whose `#!` line names bun runs as `bun --no-env-file --config=EMPTY SCRIPT`. `bunx --bun` and `bun x --bun` cannot be told the same and are refused (exit 2). A package `bunx` runs under Node, as `codex-acp` and `claude-agent-acp` are, never reads either file. A bun command inside `env` or `sh -c` is not rewritten.
+The server starts in the review root, and a Bun process reads `.env` and `bunfig.toml` (a `preload` runs code) from where it starts. A launch whose executable is `bun` therefore gets `--no-env-file` and `--config=EMPTY` (an empty file in the client's private folder), each added when Bun's options before the script lack it; a script whose `#!` line names bun runs as `bun` with them and the line's own runtime arguments. `bunx --bun` and `bun x --bun` are refused (exit 2). `bunx` and `bun x` cannot take the flags: a package they run reads both files if its executable's `#!` line names bun, which the usual adapters (`codex-acp`, `claude-agent-acp`) do not. A bun command inside `env` or `sh -c` is not rewritten.
 
 This narrows what a seat can pick up from its environment, shell and MCP tools.
 It does not sandbox the agent. Outside a sandbox (a process namespace and a
@@ -170,7 +170,7 @@ without asking is covered only by its environment. Run a review that matters
 inside a sandbox.
 
 The client runs `git status` in the review root, using the first `git` on an absolute `PATH` entry outside the checkout (the nearest parent of the review root holding `.git` or `.jj`, else the review root; none there: no comparison), with the same narrowed
-environment (plus the variables that point git at a repository) and with
+environment, a `PATH` cut to absolute entries outside the checkout, (plus the variables that point git at a repository) and with
 `core.fsmonitor` switched off on the command line, because the repository's own
 configuration can name programs git runs. A seat that writes git configuration
 there (a clean filter, for example) can still get a command run, with that

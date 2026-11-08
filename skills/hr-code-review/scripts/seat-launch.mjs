@@ -179,6 +179,28 @@ export function seatAgent(cmd) {
   return AGENTS.find(([, re]) => names.some((n) => re.test(n)))?.[0];
 }
 /**
+ * The environment git runs with: a seat's narrowed one plus the variables that locate a repository,
+ * and a PATH of absolute entries outside the checkout (a `#!` interpreter git or a hook names is
+ * not the checkout's).
+ * @param {string} root the review checkout
+ * @returns {Record<string, string | undefined>}
+ */
+export function gitEnvironment(root) {
+  const env = {
+    ...seatEnv(
+      process.env,
+      [],
+      "GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY GIT_CEILING_DIRECTORIES GIT_DISCOVERY_ACROSS_FILESYSTEM GIT_CONFIG_GLOBAL GIT_CONFIG_SYSTEM GIT_CONFIG_NOSYSTEM GIT_EXEC_PATH GIT_TEMPLATE_DIR".split(
+        " ",
+      ),
+    ),
+    LC_ALL: "C",
+  };
+  const path = cleanPath(envPath(env), root);
+  const rest = Object.entries(env).filter(([key]) => key.toUpperCase() !== "PATH");
+  return { ...Object.fromEntries(rest), PATH: path };
+}
+/**
  * The git program the client runs, from outside the review root (see pathExecutable). None there is
  * "no git program": the error carries `code: "ENOENT"`, as a missing executable does.
  * @param {Record<string, string | undefined>} env
@@ -314,6 +336,29 @@ export function reviewBase(dir) {
       return realpathSync(dir);
     }
   }
+}
+/**
+ * `pathVar` reduced to its absolute entries outside `root`: the PATH a helper started outside the boundary
+ * runs with, so an interpreter named by a helper's `#!/usr/bin/env node` line is not the checkout's.
+ * @param {string | undefined} pathVar
+ * @param {string} root the review checkout
+ */
+export function cleanPath(pathVar, root) {
+  const base = realpathSync(root);
+  return (pathVar ?? "")
+    .split(delimiter)
+    .filter((dir) => {
+      if (!isAbsolute(dir)) {
+        return false;
+      }
+      try {
+        const real = realpathSync(dir);
+        return real !== base && !real.startsWith(base + sep);
+      } catch {
+        return false;
+      }
+    })
+    .join(delimiter);
 }
 /**
  * The first regular executable file called `name` on `pathVar`, looked up the way the shell would but
@@ -457,7 +502,7 @@ export function codexWrapper(env, offline, cwd, refuse) {
     servers = JSON.parse(
       execFileSync(real, ["mcp", "list", "--json"], {
         encoding: "utf8",
-        env,
+        env: { ...env, PATH: cleanPath(envPath(env), reviewBase(cwd)) },
         cwd,
         timeout: 30_000,
       }),
@@ -585,13 +630,14 @@ export function bunHardened(cmd, root, refuse) {
   const first = cmd[0] ?? "";
   const exe = agentExe(first);
   const flags = () => ["--no-env-file", `--config=${emptyBunfig()}`];
-  const runner = exe === "bunx" || (exe === "bun" && cmd[1] === "x");
+  const runner =
+    exe === "bunx" || (exe === "bun" && cmd.slice(1).find((a) => !a.startsWith("-")) === "x");
   if (runner && cmd.some((a) => a === "--bun")) {
     return refuse(
       "the launch runs a package under Bun (bunx --bun), which would read the checkout's .env and bunfig.toml and cannot be told not to; launch a Node adapter, or run `bun --no-env-file --config=EMPTY <script>`",
     );
   }
-  if (exe === "bun") {
+  if (exe === "bun" && !runner) {
     // Bun's own options come before the script; each missing flag is added on its own.
     const options = [];
     for (const a of cmd.slice(1)) {
@@ -611,10 +657,12 @@ export function bunHardened(cmd, root, refuse) {
       ...cmd.slice(1),
     ];
   }
-  if (WINDOWS || exe === "bunx") {
+  if (WINDOWS || runner) {
     return cmd;
   }
   // A script with a bun `#!` line, by path or by a name found outside the review root.
+  /** @type {string[]} */
+  let shebangArgs = [];
   const script = /[\\/]/.test(first)
     ? resolve(root, first)
     : pathExecutable(first, envPath(process.env), reviewBase(root));
@@ -630,6 +678,9 @@ export function bunHardened(cmd, root, refuse) {
       if (!(line.startsWith("#!") && /\bbun\b/.test(line))) {
         return cmd;
       }
+      // The runtime arguments after `bun` on that line (`#!/usr/bin/env -S bun --conditions=x`) stay.
+      const words = line.slice(2).trim().split(/\s+/);
+      shebangArgs = words.slice(words.findIndex((w) => exeName(w) === "bun") + 1);
     } finally {
       closeSync(fd);
     }
@@ -643,7 +694,7 @@ export function bunHardened(cmd, root, refuse) {
   if (!bun) {
     return refuse("the launch is a Bun script and bun is not on PATH outside the review root");
   }
-  return [bun, ...flags(), script, ...cmd.slice(1)];
+  return [bun, ...flags(), ...shebangArgs, script, ...cmd.slice(1)];
 }
 /**
  * @param {string[]} cmd

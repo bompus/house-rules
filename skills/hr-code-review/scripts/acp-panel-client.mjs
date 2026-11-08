@@ -22,6 +22,7 @@ import { pathToFileURL } from "node:url";
 import {
   AGY_UNMASKED,
   bunHardened,
+  gitEnvironment,
   codexWrapper,
   devinConfig,
   gitProgram,
@@ -204,17 +205,8 @@ if (policyPath) {
 const refuseLaunch = /** @type {(message: string) => never} */ (refuse);
 // Git runs in the review root after the seat worked there, and runs programs the repository's
 // configuration names, so it gets a seat's narrowed environment (plus the variables that locate a
-// repository) and the filesystem monitor is switched off on the command line.
-const gitEnv = {
-  ...seatEnv(
-    process.env,
-    [],
-    "GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY GIT_CEILING_DIRECTORIES GIT_DISCOVERY_ACROSS_FILESYSTEM GIT_CONFIG_GLOBAL GIT_CONFIG_SYSTEM GIT_CONFIG_NOSYSTEM GIT_EXEC_PATH GIT_TEMPLATE_DIR".split(
-      " ",
-    ),
-  ),
-  LC_ALL: "C",
-};
+// repository, and a PATH outside the checkout) and the filesystem monitor is switched off.
+const gitEnv = gitEnvironment(reviewBase(cwd));
 /**
  * @param {string[]} args
  * @param {"utf8" | "latin1"} encoding

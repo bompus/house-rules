@@ -15,6 +15,7 @@ import { tmpdir } from "node:os";
 import { delimiter, join } from "node:path";
 import {
   bunHardened,
+  cleanPath,
   codexWrapper,
   devinConfig,
   envPath,
@@ -735,6 +736,84 @@ test(
       assert.equal(reviewBase(join(repo, "plain", "sub")), join(repo, "plain", "sub"));
     } finally {
       process.env.HOME = savedHome;
+      rmSync(dir, { recursive: true, force: true });
+    }
+  },
+);
+
+test(
+  "cleanPath keeps absolute entries outside the checkout; a codex helper runs with that PATH",
+  { skip: process.platform === "win32" },
+  () => {
+    const dir = mkdtempSync(join(tmpdir(), "clean-path-"));
+    try {
+      const root = join(dir, "root");
+      const trusted = join(dir, "trusted");
+      mkdirSync(join(root, "bin"), { recursive: true });
+      mkdirSync(trusted);
+      symlinkSync(join(root, "bin"), join(dir, "alias-into-root"));
+      const path = [
+        join(root, "bin"),
+        "node_modules/.bin",
+        ".",
+        "",
+        join(dir, "alias-into-root"),
+        trusted,
+      ].join(delimiter);
+      assert.equal(cleanPath(path, root), trusted);
+      assert.equal(cleanPath(undefined, root), "");
+      // The codex helper itself sees only that PATH.
+      const seen = join(dir, "seen-path");
+      writeFileSync(
+        join(trusted, "codex"),
+        `#!/bin/sh\nprintf '%s' "$PATH" > "${seen}"\necho '[]'\n`,
+        { mode: 0o755 },
+      );
+      const refuse = /** @type {(m: string) => never} */ (
+        (m) => {
+          throw new Error(m);
+        }
+      );
+      codexWrapper({ PATH: path }, false, root, refuse);
+      assert.equal(readFileSync(seen, "utf8"), trusted);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  },
+);
+test(
+  "bun x is left to bunx's own rules, and a shebang's runtime arguments are kept",
+  { skip: !UNDER_BUN || process.platform === "win32" },
+  () => {
+    const dir = mkdtempSync(join(tmpdir(), "bun-x-"));
+    try {
+      const root = join(dir, "root");
+      mkdirSync(root);
+      assert.deepEqual(bunHardened(["bun", "x", "--no-install", "pkg"], root, refuseTest), [
+        "bun",
+        "x",
+        "--no-install",
+        "pkg",
+      ]);
+      assert.deepEqual(bunHardened(["bun", "--silent", "x", "pkg"], root, refuseTest), [
+        "bun",
+        "--silent",
+        "x",
+        "pkg",
+      ]);
+      writeFileSync(
+        join(dir, "adapter"),
+        "#!/usr/bin/env -S bun --conditions=review-seat --smol\nconsole.log(1);\n",
+        { mode: 0o755 },
+      );
+      const out = bunHardened([join(dir, "adapter"), "acp"], root, refuseTest);
+      assert.deepEqual(out.slice(-4), [
+        "--conditions=review-seat",
+        "--smol",
+        join(dir, "adapter"),
+        "acp",
+      ]);
+    } finally {
       rmSync(dir, { recursive: true, force: true });
     }
   },
