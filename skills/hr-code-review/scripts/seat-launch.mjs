@@ -3,7 +3,9 @@
 // See ../references/acp-client.md. Imported by the client; keep this file beside it.
 import { execFileSync } from "node:child_process";
 import {
+  accessSync,
   chmodSync,
+  constants,
   existsSync,
   mkdtempSync,
   readFileSync,
@@ -192,25 +194,53 @@ export function mayStartAgy(cmd, pathVar = process.env.PATH, cwd = process.cwd()
     // A script file also counts by the agent folder it sits in, as seatAgent reads it.
     return AGY_NAME.test(base) || (SCRIPT_FILE.test(token) && scriptAgent(token) === "agy");
   };
-  const pathDirs = (pathVar ?? "")
-    .split(delimiter)
-    .filter((d) => d !== "")
+  // A literal `PATH=...` in the command (`env PATH=/x antigravity`) is searched before the inherited
+  // PATH; an empty entry means the working directory.
+  const assigned = cmd.flatMap((arg) =>
+    arg
+      .split(/[\s;&|()<>"'`]+/)
+      .filter((t) => t.startsWith("PATH="))
+      .map((t) => t.slice(5)),
+  );
+  const pathDirs = [...assigned, pathVar ?? ""]
+    .flatMap((value) => value.split(delimiter))
     .map((d) => resolve(cwd, d));
-  // Whether a word is a link to agy: by its path from `cwd`, or, for a bare word, on PATH.
-  const resolvesToAgy = (/** @type {string} */ word) =>
-    (/[\\/]/.test(word)
-      ? [resolve(cwd, word)]
-      : /^[\w.@+-]+$/.test(word)
-        ? pathDirs.map((d) => join(d, word))
-        : []
-    ).some((c) => {
+  const real = (/** @type {string} */ candidate) => {
+    try {
+      return realpathSync(candidate);
+    } catch {
+      return undefined;
+    }
+  };
+  // Whether a word is a link to agy: by its path from `cwd`, or, for a bare word, the first executable
+  // of that name on PATH (the one the shell would run).
+  const resolvesToAgy = (/** @type {string} */ word) => {
+    if (/[\\/]/.test(word)) {
+      const target = real(resolve(cwd, word));
+      return target !== undefined && named(target);
+    }
+    if (!/^[\w.@+-]+$/.test(word)) {
+      return false;
+    }
+    for (const dir of pathDirs) {
+      const candidate = join(dir, word);
       try {
-        return named(realpathSync(c));
+        accessSync(candidate, constants.X_OK);
       } catch {
-        return false;
+        continue;
       }
-    });
+      const target = real(candidate);
+      return target !== undefined && named(target);
+    }
+    return false;
+  };
+  const counts = (/** @type {string} */ word) =>
+    word !== "" && (named(word) || resolvesToAgy(word));
   for (const arg of cmd) {
+    // The argument as written (a path with spaces in it), then its words.
+    if (counts(arg)) {
+      return true;
+    }
     for (const token of arg.split(/[\s;&|()<>"'`]+/)) {
       // An option's attached value counts too (`--split-string=agy acp`, `-Sagy`).
       const forms = [token];
@@ -220,7 +250,7 @@ export function mayStartAgy(cmd, pathVar = process.env.PATH, cwd = process.cwd()
       if (/^-S./.test(token)) {
         forms.push(token.slice(2));
       }
-      if (forms.some((f) => f !== "" && (named(f) || resolvesToAgy(f)))) {
+      if (forms.some(counts)) {
         return true;
       }
     }

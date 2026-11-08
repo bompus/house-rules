@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { delimiter, join } from "node:path";
 import {
   devinConfig,
   exeName,
@@ -410,6 +410,35 @@ test("an executable that is a link to agy, on PATH or by path, is agy", () => {
     assert.equal(mayStartAgy(["./antigravity", "acp"], "/nowhere", bin), true);
     assert.equal(mayStartAgy(["antigravity", "acp"], "bin", dir), true, "a relative PATH entry");
     assert.equal(mayStartAgy(["./other", "acp"], "/nowhere", bin), false);
+    // A path with spaces, an empty PATH entry, a PATH set by `env`, and a shadowed name.
+    mkdirSync(join(dir, "IDE Tools"));
+    symlinkSync(join(bin, "agy"), join(dir, "IDE Tools", "antigravity"));
+    assert.equal(mayStartAgy(["./IDE Tools/antigravity", "acp"], "/nowhere", dir), true);
+    symlinkSync(join(bin, "agy"), join(dir, "antigravity"));
+    assert.equal(mayStartAgy(["antigravity", "acp"], `/usr/bin${delimiter}`, dir), true);
+    assert.equal(mayStartAgy(["antigravity", "acp"], `${delimiter}/usr/bin`, dir), true);
+    assert.equal(mayStartAgy(["env", `PATH=${bin}`, "antigravity", "acp"], "/usr/bin", dir), true);
+    mkdirSync(join(dir, "first"));
+    mkdirSync(join(dir, "second"));
+    writeFileSync(join(dir, "first", "claude-agent-acp"), "#!/bin/sh\n", { mode: 0o755 });
+    symlinkSync(join(bin, "agy"), join(dir, "second", "claude-agent-acp"));
+    assert.equal(
+      mayStartAgy(
+        ["claude-agent-acp"],
+        `${join(dir, "first")}${delimiter}${join(dir, "second")}`,
+        dir,
+      ),
+      false,
+      "the first executable on PATH is the one that runs",
+    );
+    assert.equal(
+      mayStartAgy(
+        ["claude-agent-acp"],
+        `${join(dir, "second")}${delimiter}${join(dir, "first")}`,
+        dir,
+      ),
+      true,
+    );
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
