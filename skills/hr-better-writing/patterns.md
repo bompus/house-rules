@@ -4,13 +4,13 @@ Templates for destructive flows and status copy, and recipes for plurals and loc
 
 ## Destructive flows
 
-| Situation                        | Copy                                                                                                                            |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| Reversible, frequent action      | Toast: "Project archived" with an `Undo` action                                                                                 |
-| Irreversible, one item           | Title: "Delete 'Q3 report'?" Body: "This permanently deletes the report and its 4 comments." Buttons: `Delete report`, `Cancel` |
-| Irreversible, many items         | Title: "Delete 12 files?" Body: "You can't undo this." Buttons: `Delete 12 files`, `Cancel`                                     |
-| Affects other people             | Body names who: "The 8 members of Design lose access."                                                                          |
-| Account, workspace or repository | Field label: "Type 'acme-web' to confirm". The button stays disabled until it matches                                           |
+| Situation                        | Copy                                                                                                                                                               |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Reversible, frequent action      | Toast: "Project archived" with an `Undo` action                                                                                                                    |
+| Irreversible, one item           | Title: "Delete 'Q3 report'?" Body: "This permanently deletes the report and its 4 comments." Buttons: `Delete report`, `Cancel`                                    |
+| Irreversible, many items         | Title: "Delete 12 files?" Body: "You can't undo this." Buttons: `Delete 12 files`, `Cancel`                                                                        |
+| Affects other people             | Body names who: "The 8 members of Design lose access."                                                                                                             |
+| Account, workspace or repository | Field label: "Type 'acme-web' to confirm". Keep the button enabled and show an inline error when it does not match, or use `aria-disabled="true"` until it matches |
 
 An undo toast carries an action, so how long it stays on screen is `hr-better-accessibility`'s.
 

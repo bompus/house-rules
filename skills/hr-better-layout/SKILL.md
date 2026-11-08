@@ -6,7 +6,7 @@ metadata:
   upstream: https://github.com/jakubkrehel/skills
   upstream_ref: 157da62016338e8693dcff93d47154a9e36f2157
   upstream_path: skills/better-layout/
-  local_patches: "Use-when description; better-ui handoff dropped (not vendored); dvh/svh, viewport-fit, theme-color and row-squeeze rules (from emilkowalski/skills)"
+  local_patches: "Use-when description; peek-scroller arithmetic; better-ui handoff dropped (not vendored); dvh/svh, viewport-fit, theme-color and row-squeeze rules (from emilkowalski/skills)"
   house_rules_patches: "Portable provenance and review verdict"
   mobile_native_source: https://github.com/emilkowalski/skills/blob/e8a175de22ae1e49370fc144c1f3bb9aeedf988d/skills/mobile-native/SKILL.md
   break_ui_source: https://github.com/emilkowalski/skills/blob/e8a175de22ae1e49370fc144c1f3bb9aeedf988d/skills/break-ui/SKILL.md

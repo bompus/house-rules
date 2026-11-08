@@ -103,7 +103,7 @@ Confirm before acting when the action cannot be reversed, affects other people o
 - The buttons are verb plus object, `Delete project` and `Cancel`, never `Yes` and `No`.
 - For an account, a workspace or a repository, ask the person to type the object's name.
 
-Templates are in [patterns.md](patterns.md#destructive-flows). The destructive button's distinct color is `hr-hr-better-colors`'.
+Templates are in [patterns.md](patterns.md#destructive-flows). The destructive button's distinct color is `hr-better-colors`'.
 
 ## Empty states point forward
 

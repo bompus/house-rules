@@ -59,7 +59,7 @@ The button can still span the full content width inside the margins.
 - **Disclosure controls.** A collapsed section gets a chevron or a "Show more" control naming what is hidden: "Show 12 more results", not "More".
 - **Truncated values.** Pair the clamp with an expand control, a link to a detail view or a tooltip that also opens on keyboard focus. A hover-only `title` attribute does not count, because keyboard and touch users never see it.
 
-The item width sets the peek: width = `100%` + gap − peek, since `100%` is the container's content box. Scroll padding keeps snapped items on the content edge.
+In the peeking-scroller recipe, the container's padding creates the peek and snap points stay on the content edge. A percentage basis resolves against the content box, which already excludes that padding, so each item subtracts only the gap and the next item shows through the `24px` inline padding.
 
 ```css
 .scroller {
@@ -71,13 +71,13 @@ The item width sets the peek: width = `100%` + gap − peek, since `100%` is the
   scroll-snap-type: x mandatory;
 }
 .scroller > * {
-  flex: 0 0 calc(100% - 12px); /* content box + 12px gap - 24px peek */
+  flex: 0 0 calc(100% - 12px); /* content box minus the gap; the peek is the 24px padding */
   scroll-snap-align: start;
 }
 ```
 
 ```html
-<!-- Tailwind: the same 24px peek -->
+<!-- Tailwind: the content box minus the gap leaves the next card's leading 24px visible -->
 <div class="flex gap-3 overflow-x-auto px-6 scroll-px-6 snap-x snap-mandatory">
   <div class="w-[calc(100%-12px)] shrink-0 snap-start">…</div>
   <div class="w-[calc(100%-12px)] shrink-0 snap-start">…</div>

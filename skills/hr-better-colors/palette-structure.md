@@ -38,7 +38,7 @@ The two conventions differ in kind, not only in numbering:
 
 Match whichever the project uses. For a new system prefer Radix's model, because a role-defined step survives a theme change that a lightness-defined step does not. On Tailwind, keep `50`–`950` and put the role mapping in the semantic tier.
 
-Solid fill sits on `600` because white text on most Tailwind `500` hues fails 4.5:1. Where the table repeats a step, those roles render identically. A design that needs, say, component hover and subtle border to differ needs a 12-step ramp.
+Solid fill sits on `600` for blue and red because white text on most Tailwind `500` hues fails 4.5:1; green, teal, cyan, sky, lime, yellow, amber and orange need `700` or darker, so measure the pair. Where the table repeats a step, those roles render identically. A design that needs, say, component hover and subtle border to differ needs a 12-step ramp.
 
 ## Neutrals
 
