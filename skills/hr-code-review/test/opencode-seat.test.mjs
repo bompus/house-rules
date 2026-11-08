@@ -26,6 +26,7 @@ import {
   rootCovers,
   runArgs,
   findBwrap,
+  readPrompt,
   sandboxArgs,
   userReadDenials,
 } from "../scripts/opencode-seat.mjs";
@@ -216,7 +217,6 @@ function withShims(
         HOME: join(state, "home"),
         XDG_DATA_HOME: join(state, "data"),
         XDG_CONFIG_HOME: join(state, "config"),
-        OPENCODE_SEAT_BWRAP: join(dir, "bwrap"),
       },
       state,
     );
@@ -232,7 +232,7 @@ test(
     withShims((dir, env) => {
       const r = spawnSync(
         process.execPath,
-        [script, "opencode-go/m", "max", "prompt.md", "title"],
+        [script, "opencode-go/m", "max", "prompt.md", "title", "--bwrap", join(dir, "bwrap")],
         {
           cwd: dir,
           encoding: "utf8",
@@ -262,7 +262,7 @@ test(
     withShims((dir, env) => {
       const r = spawnSync(
         process.execPath,
-        [script, "opencode-go/m", "max", "prompt.md", "title"],
+        [script, "opencode-go/m", "max", "prompt.md", "title", "--bwrap", join(dir, "bwrap")],
         {
           cwd: dir,
           encoding: "utf8",
@@ -369,7 +369,7 @@ test("on Linux the script refuses a review root that contains the home folder", 
   withShims((dir, env, state) => {
     const r = spawnSync(
       process.execPath,
-      [script, "opencode-go/m", "max", join(dir, "prompt.md")],
+      [script, "opencode-go/m", "max", join(dir, "prompt.md"), "--bwrap", join(dir, "bwrap")],
       {
         cwd: state,
         encoding: "utf8",
@@ -388,25 +388,37 @@ test(
     withShims((dir, env) => {
       mkdirSync(join(dir, "data", "opencode"), { recursive: true });
       writeFileSync(join(dir, "data", "opencode", "auth.json"), "{}");
-      const inside = spawnSync(process.execPath, [script, "opencode-go/m", "max", "prompt.md"], {
-        cwd: dir,
-        encoding: "utf8",
-        env: { ...env, XDG_DATA_HOME: join(dir, "data") },
-      });
+      const inside = spawnSync(
+        process.execPath,
+        [script, "opencode-go/m", "max", "prompt.md", "--bwrap", join(dir, "bwrap")],
+        {
+          cwd: dir,
+          encoding: "utf8",
+          env: { ...env, XDG_DATA_HOME: join(dir, "data") },
+        },
+      );
       assert.equal(inside.status, 2, inside.stderr);
       assert.match(inside.stderr, /the review root contains .*opencode/);
-      const other = spawnSync(process.execPath, [script, "openai/gpt", "max", "prompt.md"], {
-        cwd: dir,
-        encoding: "utf8",
-        env,
-      });
+      const other = spawnSync(
+        process.execPath,
+        [script, "openai/gpt", "max", "prompt.md", "--bwrap", join(dir, "bwrap")],
+        {
+          cwd: dir,
+          encoding: "utf8",
+          env,
+        },
+      );
       assert.equal(other.status, 2, other.stderr);
       assert.match(other.stderr, /provider openai is not supported/);
-      const supported = spawnSync(process.execPath, [script, "opencode/m", "max", "prompt.md"], {
-        cwd: dir,
-        encoding: "utf8",
-        env,
-      });
+      const supported = spawnSync(
+        process.execPath,
+        [script, "opencode/m", "max", "prompt.md", "--bwrap", join(dir, "bwrap")],
+        {
+          cwd: dir,
+          encoding: "utf8",
+          env,
+        },
+      );
       assert.equal(supported.status, 7, supported.stderr);
     });
   },
@@ -826,11 +838,15 @@ test(
       mkdirSync(join(dir, ".git"));
       writeFileSync(join(dir, ".git", "config"), "[remote]");
       symlinkSync("/etc/hostname", join(dir, "hostname-link"));
-      const r = spawnSync(process.execPath, [script, "opencode-go/m", "max", "prompt.md"], {
-        cwd: dir,
-        encoding: "utf8",
-        env,
-      });
+      const r = spawnSync(
+        process.execPath,
+        [script, "opencode-go/m", "max", "prompt.md", "--bwrap", join(dir, "bwrap")],
+        {
+          cwd: dir,
+          encoding: "utf8",
+          env,
+        },
+      );
       assert.equal(r.status, 7, r.stderr);
       const real = realpathSync(dir);
       const box = readFileSync(join(dir, "seen.bwrap"), "utf8").split("\n");
@@ -872,11 +888,15 @@ test(
       chmodSync(join(dir, "bwrap"), 0o755);
       const tmp = scratch("opencode-tmp");
       try {
-        const r = spawnSync(process.execPath, [script, "opencode-go/m", "max", "prompt.md"], {
-          cwd: dir,
-          encoding: "utf8",
-          env: { ...env, TMPDIR: tmp },
-        });
+        const r = spawnSync(
+          process.execPath,
+          [script, "opencode-go/m", "max", "prompt.md", "--bwrap", join(dir, "bwrap")],
+          {
+            cwd: dir,
+            encoding: "utf8",
+            env: { ...env, TMPDIR: tmp },
+          },
+        );
         assert.equal(r.status, 127, r.stderr);
         assert.match(r.stderr, /cannot start .*bwrap/);
         assert.deepEqual(
@@ -911,19 +931,22 @@ test("a stop sent while opencode runs ends it and removes the copy", LINUX_ONLY,
       JSON.stringify({ "opencode-go": { key: "k" } }),
     );
     const tmp = scratch("opencode-stop-tmp");
-    const child = spawn(process.execPath, [script, "opencode-go/m", "max", "prompt.md"], {
-      cwd: dir,
-      stdio: "ignore",
-      env: {
-        ...PARENT,
-        PATH: `${dir}${delimiter}${process.env.PATH}`,
-        HOME: join(state, "home"),
-        XDG_DATA_HOME: join(state, "data"),
-        XDG_CONFIG_HOME: join(state, "config"),
-        OPENCODE_SEAT_BWRAP: join(dir, "bwrap"),
-        TMPDIR: tmp,
+    const child = spawn(
+      process.execPath,
+      [script, "opencode-go/m", "max", "prompt.md", "--bwrap", join(dir, "bwrap")],
+      {
+        cwd: dir,
+        stdio: "ignore",
+        env: {
+          ...PARENT,
+          PATH: `${dir}${delimiter}${process.env.PATH}`,
+          HOME: join(state, "home"),
+          XDG_DATA_HOME: join(state, "data"),
+          XDG_CONFIG_HOME: join(state, "config"),
+          TMPDIR: tmp,
+        },
       },
-    });
+    );
     const closed = new Promise((done) => child.on("close", (code) => done(code)));
     for (let i = 0; i < 200 && !existsSync(join(dir, "ready")); i++) {
       await new Promise((r) => setTimeout(r, 50));
@@ -1213,11 +1236,15 @@ test(
   LINUX_ONLY,
   () => {
     withShims((dir, env) => {
-      const r = spawnSync(process.execPath, [script, "opencode-go/m", "max", "prompt.md"], {
-        cwd: dir,
-        encoding: "utf8",
-        env,
-      });
+      const r = spawnSync(
+        process.execPath,
+        [script, "opencode-go/m", "max", "prompt.md", "--bwrap", join(dir, "bwrap")],
+        {
+          cwd: dir,
+          encoding: "utf8",
+          env,
+        },
+      );
       assert.equal(r.status, 7, r.stderr);
       const prompt = join(realpathSync(dir), "prompt.md");
       const box = readFileSync(join(dir, "seen.bwrap"), "utf8").split("\n");
@@ -1239,19 +1266,27 @@ test(
     withShims((dir, env, state) => {
       writeFileSync(join(state, "secret.env"), "PRIVATE");
       symlinkSync(join(state, "secret.env"), join(dir, "prompt-link.md"));
-      const link = spawnSync(process.execPath, [script, "opencode-go/m", "max", "prompt-link.md"], {
-        cwd: dir,
-        encoding: "utf8",
-        env,
-      });
+      const link = spawnSync(
+        process.execPath,
+        [script, "opencode-go/m", "max", "prompt-link.md", "--bwrap", join(dir, "bwrap")],
+        {
+          cwd: dir,
+          encoding: "utf8",
+          env,
+        },
+      );
       assert.equal(link.status, 2, link.stderr);
       assert.match(link.stderr, /prompt file .* is a file the read rules deny/);
       writeFileSync(join(dir, "task.env"), "task");
-      const named = spawnSync(process.execPath, [script, "opencode-go/m", "max", "task.env"], {
-        cwd: dir,
-        encoding: "utf8",
-        env,
-      });
+      const named = spawnSync(
+        process.execPath,
+        [script, "opencode-go/m", "max", "task.env", "--bwrap", join(dir, "bwrap")],
+        {
+          cwd: dir,
+          encoding: "utf8",
+          env,
+        },
+      );
       assert.equal(named.status, 2, named.stderr);
       assert.equal(existsSync(join(dir, "seen.bwrap")), false, "the sandbox never started");
     });
@@ -1259,7 +1294,7 @@ test(
 );
 
 test(
-  "bubblewrap is found in system folders or at an absolute override, never on PATH",
+  "bubblewrap is found in system folders or at an absolute --bwrap, never on PATH or in the environment",
   POSIX_ONLY,
   () => {
     const dir = scratch("opencode-findbwrap");
@@ -1268,25 +1303,17 @@ test(
       mkdirSync(join(dir, "repo-bin"));
       writeFileSync(join(dir, "repo-bin", "bwrap"), "#!/bin/sh\n", { mode: 0o755 });
       const trusted = [join(dir, "trusted")];
-      const env = { PATH: join(dir, "repo-bin") };
-      assert.equal(findBwrap(env, trusted), undefined, "PATH is not searched");
+      assert.equal(findBwrap(undefined, trusted), undefined, "no PATH search");
       writeFileSync(join(dir, "trusted", "bwrap"), "#!/bin/sh\n", { mode: 0o755 });
-      assert.equal(findBwrap(env, trusted), join(dir, "trusted", "bwrap"));
+      assert.equal(findBwrap(undefined, trusted), join(dir, "trusted", "bwrap"));
       const own = join(dir, "own-bwrap");
       writeFileSync(own, "#!/bin/sh\n", { mode: 0o755 });
-      assert.equal(findBwrap({ ...env, OPENCODE_SEAT_BWRAP: own }, trusted), own);
-      assert.equal(
-        findBwrap({ ...env, OPENCODE_SEAT_BWRAP: "bwrap" }, trusted),
-        undefined,
-        "absolute only",
-      );
-      assert.equal(
-        findBwrap({ ...env, OPENCODE_SEAT_BWRAP: join(dir, "missing") }, trusted),
-        undefined,
-      );
+      assert.equal(findBwrap(own, trusted), own);
+      assert.equal(findBwrap("bwrap", trusted), undefined, "absolute only");
+      assert.equal(findBwrap(join(dir, "missing"), trusted), undefined);
       mkdirSync(join(dir, "trusted2", "bwrap"), { recursive: true });
       assert.equal(
-        findBwrap(env, [join(dir, "trusted2")]),
+        findBwrap(undefined, [join(dir, "trusted2")]),
         undefined,
         "a folder is not bubblewrap",
       );
@@ -1303,11 +1330,15 @@ test(
       writeFileSync(join(dir, ".env"), "PRIVATE");
       symlinkSync("..", join(dir, "task.md"));
       for (const prompt of ["task.md", ".."]) {
-        const r = spawnSync(process.execPath, [script, "opencode-go/m", "max", prompt], {
-          cwd: dir,
-          encoding: "utf8",
-          env,
-        });
+        const r = spawnSync(
+          process.execPath,
+          [script, "opencode-go/m", "max", prompt, "--bwrap", join(dir, "bwrap")],
+          {
+            cwd: dir,
+            encoding: "utf8",
+            env,
+          },
+        );
         assert.equal(r.status, 2, r.stderr);
         assert.match(r.stderr, /is not a regular file/);
       }
@@ -1320,20 +1351,76 @@ test(
   LINUX_ONLY,
   () => {
     withShims((dir, env, state) => {
+      // The stand-in opencode reads the attached file from its working directory (the copy; a real sandbox
+      // shows the copy at the checkout's path), so the bytes the seat gets are checked.
+      writeFileSync(
+        join(dir, "opencode"),
+        `#!/bin/sh\nprev=""\nfor a in "$@"; do [ "$prev" = "--file" ] && { cat "./$(basename "$a")" > "${join(dir, "seen.prompt")}"; printf '%s' "$a" > "${join(dir, "seen.promptpath")}"; }; prev="$a"; done\nexit 7\n`,
+      );
+      chmodSync(join(dir, "opencode"), 0o755);
       const outside = join(state, "task.md");
       writeFileSync(outside, "the task outside");
-      const r = spawnSync(process.execPath, [script, "opencode-go/m", "max", outside], {
-        cwd: dir,
-        encoding: "utf8",
-        env,
-      });
+      const r = spawnSync(
+        process.execPath,
+        [script, "opencode-go/m", "max", outside, "--bwrap", join(dir, "bwrap")],
+        {
+          cwd: dir,
+          encoding: "utf8",
+          env,
+        },
+      );
       assert.equal(r.status, 7, r.stderr);
       const box = readFileSync(join(dir, "seen.bwrap"), "utf8").split("\n");
-      const real = realpathSync(outside);
-      assert.equal(box.includes(real), false, "the outside path is not bound");
-      const args = readFileSync(join(dir, "seen.args"), "utf8").split("\n");
-      const file = args[args.indexOf("--file") + 1] ?? "";
+      assert.equal(box.includes(realpathSync(outside)), false, "the outside path is not bound");
+      assert.equal(readFileSync(join(dir, "seen.prompt"), "utf8"), "the task outside");
+      const file = readFileSync(join(dir, "seen.promptpath"), "utf8");
       assert.ok(file.startsWith(join(realpathSync(dir), ".panel-seat-prompt-")), file);
     });
+  },
+);
+
+test(
+  "an environment variable cannot choose the sandbox helper, as a checkout's .env could set it",
+  LINUX_ONLY,
+  () => {
+    withShims((dir, env) => {
+      writeFileSync(
+        join(dir, "evilwrap"),
+        `#!/bin/sh\ntouch "${join(dir, "evil-ran")}"\nexit 9\n`,
+        {
+          mode: 0o755,
+        },
+      );
+      const r = spawnSync(process.execPath, [script, "opencode-go/m", "max", "prompt.md"], {
+        cwd: dir,
+        encoding: "utf8",
+        env: { ...env, OPENCODE_SEAT_BWRAP: join(dir, "evilwrap") },
+      });
+      assert.equal(existsSync(join(dir, "evil-ran")), false, r.stderr);
+    });
+  },
+);
+test(
+  "the prompt is read from one verified descriptor: a swapped link, a folder and a denied name fail",
+  POSIX_ONLY,
+  () => {
+    const dir = scratch("opencode-readprompt");
+    try {
+      const real = realpathSync(dir);
+      writeFileSync(join(real, "task.md"), "the task");
+      writeFileSync(join(real, "secret.env"), "PRIVATE");
+      const denies = (/** @type {string} */ p) => p.endsWith(".env");
+      assert.equal(readPrompt(join(real, "task.md"), denies).toString(), "the task");
+      assert.throws(() => readPrompt(join(real, "secret.env"), denies), /read rules deny/);
+      rmSync(join(real, "task.md"));
+      symlinkSync(join(real, "secret.env"), join(real, "task.md"));
+      assert.throws(() => readPrompt(join(real, "task.md"), denies));
+      mkdirSync(join(real, "folder"));
+      assert.throws(() => readPrompt(join(real, "folder"), denies));
+      writeFileSync(join(real, "big.md"), "x".repeat(20));
+      assert.throws(() => readPrompt(join(real, "big.md"), () => false, 10), /over 10 bytes/);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   },
 );

@@ -1,7 +1,7 @@
 // One OpenCode panel seat: `opencode run` in the current directory with read-only tools, an empty
 // environment and, on Linux, a filesystem boundary. OpenCode is not an ACP agent, so it does not go
 // through acp-panel-client.mjs.
-// Usage: bun opencode-seat.mjs <model-id> <effort> <prompt-file> [title]
+// Usage: bun opencode-seat.mjs <model-id> <effort> <prompt-file> [title] [--bwrap ABSOLUTE-PATH]
 // The seat sees PATH, HOME, TMPDIR, LANG and the XDG directories only, so no other vendor's key or SSH
 // agent reaches it, and OpenCode logs in from its own auth file. Its permissions deny every tool except
 // read, glob and list (no grep: its rules match search patterns, not files), keep `.env` files
@@ -552,12 +552,14 @@ export function userReadDenials(configDir) {
 // own tooling (`node_modules/.bin`) is often first on it and the sandbox helper runs before any boundary.
 const TRUSTED_BIN = ["/usr/bin", "/bin", "/usr/local/bin", "/run/current-system/sw/bin"];
 /**
- * The bubblewrap executable: `OPENCODE_SEAT_BWRAP` when it is an absolute path to an executable file,
- * else the first `bwrap` in a trusted system folder, else undefined.
- * @param {NodeJS.ProcessEnv} env
+ * The bubblewrap executable: `override` (the `--bwrap` argument) when it is an absolute path to an
+ * executable file, else the first `bwrap` in a trusted system folder, else undefined. No environment
+ * variable chooses it: Bun reads a `.env` file from the working directory, the checkout, into the
+ * environment before this script runs.
+ * @param {string | undefined} override
  * @param {string[]} [trusted]
  */
-export function findBwrap(env, trusted = TRUSTED_BIN) {
+export function findBwrap(override, trusted = TRUSTED_BIN) {
   const usable = (/** @type {string} */ path) => {
     try {
       accessSync(path, fsConstants.X_OK);
@@ -566,11 +568,53 @@ export function findBwrap(env, trusted = TRUSTED_BIN) {
       return false;
     }
   };
-  const given = env.OPENCODE_SEAT_BWRAP;
-  if (given !== undefined && given !== "") {
-    return isAbsolute(given) && usable(given) ? given : undefined;
+  if (override !== undefined) {
+    return isAbsolute(override) && usable(override) ? override : undefined;
   }
   return trusted.map((d) => join(d, "bwrap")).find(usable);
+}
+/**
+ * The bytes of the prompt file at its real path, read from one verified descriptor: opened without
+ * following a link, a regular file whose `/proc/self/fd` path is that path, and not a file the rules
+ * deny. A swap after the check changes nothing, because the open descriptor is what is read.
+ * @param {string} prompt real path
+ * @param {(path: string) => boolean} denies
+ * @param {number} [limit]
+ */
+export function readPrompt(prompt, denies, limit = 16 * 1024 * 1024) {
+  const fd = openSync(
+    prompt,
+    fsConstants.O_RDONLY | fsConstants.O_NOFOLLOW | fsConstants.O_NONBLOCK,
+  );
+  try {
+    const st = fstatSync(fd);
+    let at = prompt;
+    try {
+      at = readlinkSync(`/proc/self/fd/${fd}`);
+    } catch {
+      // No /proc: the sandbox, the only user of this, is Linux only.
+    }
+    if (!st.isFile() || at !== prompt) {
+      throw new Error(`the prompt file ${prompt} is not a regular file at that path`);
+    }
+    if (denies(at)) {
+      throw new Error(`the prompt file ${prompt} is a file the read rules deny`);
+    }
+    if (st.size > limit) {
+      throw new Error(`the prompt file ${prompt} is over ${limit} bytes`);
+    }
+    const buffer = Buffer.alloc(st.size);
+    for (let got = 0; got < buffer.length;) {
+      const n = readSync(fd, buffer, got, buffer.length - got, null);
+      if (n === 0) {
+        throw new Error(`the prompt file ${prompt} shrank while it was read`);
+      }
+      got += n;
+    }
+    return buffer;
+  } finally {
+    closeSync(fd);
+  }
 }
 /**
  * The executable `name` on `pathVar`, or undefined.
@@ -594,9 +638,17 @@ if (
   process.argv[1] &&
   realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url))
 ) {
-  const [model, effort, promptFile, title = "panel-seat"] = process.argv.slice(2);
-  if (!model || !effort || !promptFile) {
-    console.error("usage: bun opencode-seat.mjs <model-id> <effort> <prompt-file> [title]");
+  // `--bwrap PATH` (an absolute path) names the bubblewrap executable, for a caller that installs it
+  // outside the system folders; it is an argument, not an environment variable, which a checkout's
+  // `.env` could set.
+  const argv = process.argv.slice(2);
+  const bwrapAt = argv.indexOf("--bwrap");
+  const bwrapOverride = bwrapAt === -1 ? undefined : (argv.splice(bwrapAt, 2)[1] ?? "");
+  const [model, effort, promptFile, title = "panel-seat"] = argv;
+  if (!model || !effort || !promptFile || bwrapOverride === "") {
+    console.error(
+      "usage: bun opencode-seat.mjs <model-id> <effort> <prompt-file> [title] [--bwrap ABSOLUTE-PATH]",
+    );
     process.exit(2);
   }
   const dir = realpathSync(process.cwd());
@@ -646,10 +698,10 @@ if (
       process.exit(2);
     }
     const binary = realpathSync(which);
-    const bwrap = findBwrap(process.env);
+    const bwrap = findBwrap(bwrapOverride);
     if (bwrap === undefined) {
       console.error(
-        `[opencode-seat] bwrap is not in a system folder (${TRUSTED_BIN.join(", ")}) and OPENCODE_SEAT_BWRAP is not an absolute path to it`,
+        `[opencode-seat] bwrap is not in a system folder (${TRUSTED_BIN.join(", ")}) and --bwrap is not an absolute path to it`,
       );
       process.exit(127);
     }
@@ -710,7 +762,7 @@ if (
       if (promptOutside) {
         // A snapshot in the copy, so no outside path is mounted and a later swap changes nothing.
         const name = `.panel-seat-prompt-${randomBytes(6).toString("hex")}.md`;
-        writeFileSync(join(String(sandboxCopy), name), readFileSync(prompt), {
+        writeFileSync(join(String(sandboxCopy), name), readPrompt(prompt, denies), {
           flag: "wx",
           mode: 0o444,
         });

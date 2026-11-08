@@ -166,7 +166,7 @@ narrowed environment; the status comparison does not see the file because
 ## OpenCode
 
 OpenCode is not an ACP agent. `../scripts/opencode-seat.mjs <model-id> <effort>
-<prompt-file> [title]` runs `opencode run --standalone` in the current
+<prompt-file> [title] [--bwrap PATH]` runs `opencode run --standalone` in the current
 directory with an empty environment (`PATH`, `HOME`, `TMPDIR`, `LANG` and the
 XDG directories). Permissions deny every tool except read, glob and list (no
 grep: its rules match search patterns, not files), keep `.env` files unreadable
@@ -208,7 +208,7 @@ A denied file inside a `.git` folder (its object store excepted), such as the `c
 
 A prompt file the rules deny, under the name given or as the file it resolves to (a link to an outside `.env`), refuses the run (exit 2), and so does a prompt that is not a regular file (a folder would put more than the task in view). A prompt inside the checkout is the copy's own file; one outside it is copied into the copy under a `.panel-seat-prompt-` name, so no outside path is mounted.
 
-Bubblewrap is found in a system folder (`/usr/bin`, `/bin`, `/usr/local/bin`, `/run/current-system/sw/bin`) or at the absolute path in `OPENCODE_SEAT_BWRAP`, never on `PATH`, because a checkout's own tooling is often first there and this helper runs before any boundary. A file hard-linked from outside the checkout under a name no rule denies is copied. A denied `*` copies only the prompt file, when it is inside the checkout.
+Bubblewrap is found in a system folder (`/usr/bin`, `/bin`, `/usr/local/bin`, `/run/current-system/sw/bin`) or at the absolute path given as `--bwrap PATH` after the other arguments, never on `PATH` and never from an environment variable: a checkout's own tooling is often first on `PATH`, Bun reads the checkout's `.env` into the environment, and this helper runs before any boundary. The outside prompt is read once from a verified descriptor (no link followed, a regular file, not a denied name). A file hard-linked from outside the checkout under a name no rule denies is copied. A denied `*` copies only the prompt file, when it is inside the checkout.
 
 A checkout with more than 200000 entries, 100000 files or 512 MiB of copied files is refused (exit
 2), and so is one that changes while it is copied (a file replaced or resized, a folder swapped for a link), and so is a review root that is or contains the home folder or OpenCode's config or data folder, because the sandbox shows the root over its empty home. OpenCode's config folder
