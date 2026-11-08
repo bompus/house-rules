@@ -8,7 +8,7 @@ metadata:
   upstream_ref: d574cc8a576dc24256ad38268b8d03d86724a1b3
   upstream_path: skills/explain-interface/
   local_patches: "Explicit-only; routes findings to the hr-better-* skills; follows the host's browser and scratch rules; stacking-context and CSSImportRule guards; selected callable/token/range/keyframe/inference recipes; passive media inventory avoids context creation; screenshot-description reconstruction boundary"
-  house_rules_patches: "Portable provenance; hr- skill names"
+  house_rules_patches: "Portable provenance; hr- skill names; theme tokens compared by computed value; pseudo-element geometry from its own computed style; translucent and overlay background colors in the layer search"
 ---
 
 # Interface explanation

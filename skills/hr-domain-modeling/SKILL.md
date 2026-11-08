@@ -7,7 +7,7 @@ metadata:
   upstream_ref: 24fe0ef7737efae15c87225755e9f6f5965e4888
   upstream_path: skills/engineering/domain-modeling/
   local_patches: "Description limits terminology triggers to resolving or changing the model"
-  house_rules_patches: "Portable provenance; hr- skill names"
+  house_rules_patches: "Portable provenance; hr- skill names; reuse a project's existing glossary and decision-record locations"
 ---
 
 # Domain modeling
@@ -43,6 +43,8 @@ If a `CONTEXT-MAP.md` exists at the root, the repo has multiple contexts. The ma
 │       ├── CONTEXT.md
 │       └── docs/adr/
 ```
+
+When the project already keeps a glossary or decision records elsewhere (its agent guidance, README or docs say where), use those files and their format; the layout above applies only when no convention exists.
 
 Create files lazily: only when you have something to write. If no `CONTEXT.md` exists, create one when the first term is resolved. If no `docs/adr/` exists, create it when the first ADR is needed.
 

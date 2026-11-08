@@ -240,5 +240,5 @@ Compare observed breakpoints with the framework version in use. A match with def
 Everything above reads one state at one width. Before writing the explanation, at minimum:
 
 - Resize to 375px and re-run the spacing and breakpoint snippets. The values that change are what is fluid.
-- Toggle the theme and re-run the token snippet. The tokens that change are the themed layer, the ones that do not are the primitives.
+- Toggle the theme and compare computed values, not the snippet's authored list (it skips selectors such as `:root.dark`). For each token name it found, read `getComputedStyle(document.documentElement).getPropertyValue(name)` in both states. The tokens whose computed value changes are the themed layer; the ones that do not are the primitives.
 - Tab to the first interactive control and read its `:focus-visible` styles, since a focus ring is one of the most common absences.

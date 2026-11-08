@@ -12,7 +12,10 @@ the different families are what make a panel worth its cost.
 
 This skill covers panels on a question that is not a change review. A review of
 a diff, branch or pull request uses `hr-code-review`, which also owns the panel
-machinery this skill reuses:
+machinery this skill reuses. Enable `hr-code-review` alongside this skill; without
+it, launch each seat through the host's own route and apply the citation check
+by hand (open every cited `path:line` and drop a finding whose citation does not
+show it):
 
 - seats, efforts and limits: `hr-code-review`'s panel setup and panel plan
   references (`scripts/panel-plan.mjs` resolves the seats without calling a
@@ -69,10 +72,12 @@ graded by code instead of adjudicated.
    `TOOL_CALL: <tool> <what>` where the agent would call a tool.
 2. Write the grader before the first run: one pass or fail per reply from
    regular expressions or parsing, never a model's judgment.
-3. Run the seats you expect to fail first, and widen to every seat only when
-   they pass. Run each cell more than once; one run per cell is an anecdote.
-4. Done when every cell has a reply and the grader's tally is recorded with the
-   runs per cell, the model versions and the date.
+3. Run every requested seat and cell. To save quota while a wording is still
+   being drafted, you may run the seats you expect to fail first and stop when
+   they fail; report that grid as partial. Run each cell more than once; one
+   run per cell is an anecdote.
+4. Done when every requested cell has a reply and the grader's tally is
+   recorded with the runs per cell, the model versions and the date.
 
 A wording change that the check supports still follows `hr-writing-for-agents`.
 

@@ -20,8 +20,8 @@ Condense each one into a scratch folder on disk, outside the repository:
 bun <skill-directory>/scripts/condense-turns.ts <transcript.jsonl> <out.txt>
 ```
 
-Skip a session with fewer than five typed turns; tool-driven sessions have
-almost no user words to read.
+Skip a session with fewer than two typed turns: a correction needs a request
+and a later reply to the agent.
 
 ## 2. Extract
 

@@ -10,13 +10,16 @@ Three independent phases; run all three unless the argument names one. A fourth,
 `corrections`, runs only when named. A lessons-only request runs only the
 selected phases.
 
-The lesson lifecycle (fields, statuses, promotion order, `check:`, supersession)
-is in the `hr-agent-guidance-audit` skill's
-`references/records-and-lessons.md`; this skill applies it and does not restate
-it. Each lesson is one file with a status of `candidate`, `staged`, `accepted`,
+Each lesson is one file with a status of `candidate`, `staged`, `accepted`,
 `rejected` or `retired`, and the fields condition, recommendation, reason,
-evidence and obsolete-when. The lessons folder is a staging area, not the final
-home for anything load-bearing.
+evidence and obsolete-when. Promote an accepted lesson into the strongest
+mechanism that can hold it: a type, lint rule, test or check script, shared
+helper or runtime check, and only then prose in the owning rules or guidance.
+Record `check:` with the check that would fail on a recurrence, or `none` and
+why. The lessons folder is a staging area, not the final home for anything
+load-bearing. When the `hr-agent-guidance-audit` skill is installed, its
+`references/records-and-lessons.md` has the full lifecycle, including
+supersession.
 
 ## Where lessons live
 

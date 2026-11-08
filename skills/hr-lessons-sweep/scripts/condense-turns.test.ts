@@ -39,3 +39,37 @@ test("keeps a typed turn that starts with an angle bracket and skips host wrappe
   expect(text).toContain("<button> still has no accessible name");
   expect(text).not.toContain("/clear");
 });
+
+test("strips host wrappers but keeps the user's own text, including a plain mention of a tag name", () => {
+  const jsonl = [
+    line({ type: "assistant", message: { content: [{ type: "text", text: "Fixed." }] } }),
+    line({
+      type: "user",
+      message: { content: "<system-reminder>hidden</system-reminder>\nno, you skipped the test" },
+    }),
+    line({ type: "user", message: { content: "The system-reminder tag is leaking; remove it" } }),
+  ].join("\n");
+  const { turns, text } = condense(jsonl);
+  expect(turns).toBe(2);
+  expect(text).toContain("no, you skipped the test");
+  expect(text).not.toContain("hidden");
+  expect(text).toContain("The system-reminder tag is leaking");
+});
+
+test("ignores sidechain assistant text and marks a truncated user turn", () => {
+  const long = "x".repeat(2000) + " you missed the failing test";
+  const jsonl = [
+    line({ type: "assistant", message: { content: [{ type: "text", text: "Main reply." }] } }),
+    line({
+      type: "assistant",
+      isSidechain: true,
+      message: { content: [{ type: "text", text: "Subagent reply." }] },
+    }),
+    line({ type: "user", message: { content: long } }),
+  ].join("\n");
+  const { text } = condense(jsonl);
+  expect(text).toContain("Main reply.");
+  expect(text).not.toContain("Subagent reply.");
+  expect(text).toContain("you missed the failing test");
+  expect(text).toMatch(/characters omitted/);
+});

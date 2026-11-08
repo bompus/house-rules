@@ -35,17 +35,26 @@ Run these through whatever browser tooling is available: `evaluate_script` in th
         const v = p === "maskImage" ? s.maskImage || s.webkitMaskImage : s[p];
         if (!dead(v)) found[p] = String(v).slice(0, 200);
       }
+      // A solid colour counts as a layer when it is translucent or sits on top as an overlay.
+      const bg = s.backgroundColor;
+      const translucent = /rgba?\([^)]*,\s*0?\.\d+\)|\/\s*0?\.\d+/.test(bg) || found.opacity;
+      const overlay = ["absolute", "fixed"].includes(s.position);
+      if (bg && bg !== "rgba(0, 0, 0, 0)" && bg !== "transparent" && (translucent || overlay)) {
+        found.backgroundColor = bg;
+      }
       if (!Object.keys(found).length) continue;
       if (Object.keys(found).length === 1 && found.opacity) continue; // opacity alone is not an effect
       const r = el.getBoundingClientRect();
-      const host = getComputedStyle(el);
       hits.push({
         tag: el.tagName.toLowerCase(),
         pseudo: pseudo ?? "element",
         cls: (el.getAttribute("class") ?? "").slice(0, 90),
-        position: host.position,
-        z: host.zIndex,
-        box: `${Math.round(r.width)}x${Math.round(r.height)} @ x${Math.round(r.left)} y${Math.round(r.top)}`,
+        position: s.position,
+        z: s.zIndex,
+        // A pseudo-element has no rect of its own: give its computed size and offsets and the host's rect.
+        box: pseudo
+          ? `${s.width} by ${s.height} inset ${s.top} ${s.left} (computed); host ${Math.round(r.width)}x${Math.round(r.height)} @ x${Math.round(r.left)} y${Math.round(r.top)}`
+          : `${Math.round(r.width)}x${Math.round(r.height)} @ x${Math.round(r.left)} y${Math.round(r.top)}`,
         found,
       });
     }
@@ -56,7 +65,7 @@ Run these through whatever browser tooling is available: `evaluate_script` in th
 
 Read the result for the stack, not for one row:
 
-- **Compare `box` against the viewport.** An element wider than `window.innerWidth`, or with a negative offset, is oversized on purpose so its edges never show.
+- **Compare `box` against the viewport.** For a pseudo-element, `box` gives its computed size and offsets, which can be `auto`; its painted rectangle is unmeasured unless those resolve, so say so rather than reporting the host's rectangle as the layer's. An element wider than `window.innerWidth`, or with a negative offset, is oversized on purpose so its edges never show.
 - **Work out paint order from stacking contexts, not coordinates.** `y` is geometry, and `z-index` only compares elements inside the same stacking context; DOM order and positioning decide the rest. Check which ancestors create a stacking context before asserting that one layer sits above another, and use `elementsFromPoint` below to confirm the order at a sampled pixel. The gradient is usually the lowest layer and the frosted panel the one above it.
 - **`backdropFilter` on any row.** That layer frosts something beneath it, so the layer beneath is part of the answer.
 - **`mixBlendMode` on any row.** The layer's color depends on what it covers, so you cannot explain it without naming what is underneath.
