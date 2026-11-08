@@ -67,7 +67,7 @@ maintenance problem and the remedy reduces it without weakening required behavio
 State the consequence and any equivalence assumptions; otherwise omit the finding.
 
 - **Naming:** does ambiguity cause a concrete misunderstanding at a call site?
-- **Duplication and repeated branches:** must these sites evolve together, or do they express independent policies? Extraction or polymorphism must earn its coupling and indirection.
+- **Duplication and repeated branches:** must these sites evolve together, or do they express independent policies? Extraction or polymorphism must earn its coupling and indirection. A literal repeated at sites that must change together (one status string, one limit) is the common case where a named constant earns its place.
 - **Grouped data and domain primitives:** are invalid combinations or repeated invariant checks causing problems that a type would actually prevent?
 - **Module boundaries and data access:** does current coupling force scattered edits, expose internals or mix unrelated responsibilities? Moving code must improve the boundary rather than merely rearrange it.
 - **Delegation and inheritance:** does a wrapper or interface provide a useful contract, isolation or adaptation? One caller or implementation is not itself a defect.
@@ -90,10 +90,13 @@ before the next attempt, and whether one failing item stops the items after it
 when the loop's contract says they should continue. For code that changes state
 (installers, releases, backups, migrations, files other runs read), ask what
 happens if it runs twice and if the previous run stopped at each step. Each step
-should work from the state it finds; a leftover lock or marker should be judged
-stale by evidence (the tool's own stale check, a process that is gone), not
-cleared blindly; a file other runs read should be written to a temporary path
-and renamed into place. Where two actors write one file, key or directory, check
+should work from the state it finds. A leftover lock or marker should be judged
+stale by evidence that covers every process that could still hold it (the
+tool's own stale check, or a lock the operating system releases when its holder
+exits), not cleared blindly; an exited process is not that evidence, since a
+child can still hold an inherited lock. A file that readers reopen to read
+should be written to a temporary path and renamed into place; an append-only
+log or a database keeps its own update protocol. Where two actors write one file, key or directory, check
 whether each can get its own before accepting a lock. Split a large scope into groups of about three files,
 one reviewer per group. Do not assign this work to a reviewer focused on
 structure or maintainability.
