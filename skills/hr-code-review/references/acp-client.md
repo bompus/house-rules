@@ -108,7 +108,7 @@ agent cannot obtain it through its own approved route.
   cannot be turned off safely, and on Windows, where it cannot start a Codex seat
   at all. `CODEX_CONFIG` (JSON the caller sets for codex-acp) passes through
   without its `mcp_servers` table, which codex-acp would add to the session
-  without `codex mcp list` showing it; invalid JSON in it refuses the launch.
+  without `codex mcp list` showing it; invalid JSON in it refuses the launch. The wrapper reaches Codex through `CODEX_PATH`, which codex-acp honors; an adapter that starts Codex another way is not covered.
 
 ## Environment
 
