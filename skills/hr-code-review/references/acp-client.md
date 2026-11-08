@@ -104,8 +104,8 @@ agent cannot obtain it through its own approved route.
   to the git root, from the files alone, at the first prompt; the marker declares that the caller has
   covered those folders (for example by mounting empty directories over them). Any argument that names
   agy counts (`agy`, `agy-acp`, `agy_acp_server.par`, also behind `env`, `sh -c`, a runner or an
-  interpreter's script), and so does an executable that is a link to agy or that `PATH` resolves to
-  it. A name written to hide it (shell quoting inside the name, a renamed copy) is not detected:
+  interpreter's script), and so does any word that is a link to agy, by its path from the working directory or on `PATH`, behind a
+  wrapper too. An option's attached value counts (`env --split-string="agy acp"`, `env -Sagy`). The check runs before a `--policy` module is imported, and a policy cannot set the marker. A name written to hide it (shell quoting inside the name, a renamed copy) is not detected:
   the check catches a mistake, it does not stop a caller that hides the launch.
 - **Codex** (recognized from the launch command: its executable, package,
   script, or a launch it cannot read that could still start `codex-acp` by the same rule as Devin's (the executable, a runner's package, an interpreter's scripts); an agent that only names itself Codex after

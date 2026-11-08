@@ -174,6 +174,15 @@ const promptText = readFileSync(promptFile, "utf8");
 const HARD_TIMEOUT_MS = timeoutMin * 60 * 1000;
 // The caller's launch policy module (a `check({ model, effort, command, options })` export, or a default
 // function) throws to refuse; a refusal exits 2 before any server starts.
+// `agy acp` starts the MCP servers, plugins and hooks found in the agent folders of the working directory
+// and of each directory up to the git root, from the files alone. The caller declares the seat masked
+// (those folders covered) with `--policy-option agy-masked`; without it an agy launch is refused,
+// before a policy module is imported (it could set the option itself or run code at import).
+if (mayStartAgy(serverCmd, process.env.PATH, cwd) && policyOptions["agy-masked"] !== "true") {
+  refuse(
+    "the launch may start agy, which runs the hooks, plugins and MCP servers in the .agents, .agent, _agents and _agent folders of the working directory and its parents; mask those folders and pass --policy-option agy-masked",
+  );
+}
 if (policyPath) {
   try {
     const mod = await import(pathToFileURL(resolve(policyPath)).href);
@@ -334,14 +343,6 @@ try {
     "[client] FATAL: git status failed at launch: " + (e instanceof Error ? e.message : String(e)),
   );
   process.exit(1);
-}
-// `agy acp` starts the MCP servers, plugins and hooks found in the agent folders of the working directory
-// and of each directory up to the git root, from the files alone. The caller declares the seat masked
-// (those folders covered) with `--policy-option agy-masked`; without it an agy launch is refused.
-if (mayStartAgy(serverCmd) && policyOptions["agy-masked"] !== "true") {
-  refuse(
-    "the launch may start agy, which runs the hooks, plugins and MCP servers in the .agents, .agent, _agents and _agent folders of the working directory and its parents; mask those folders and pass --policy-option agy-masked",
-  );
 }
 const launchCmd = devinConfig(serverCmd, noWeb, cwd, refuseLaunch);
 // Codex is recognized by seatAgent, or when a launch it cannot read could still start codex-acp (its

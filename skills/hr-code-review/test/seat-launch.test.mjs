@@ -372,6 +372,9 @@ test("a launch that may start agy is recognized in every form a caller writes it
     ["node", "/opt/agy-acp/index.js"],
     ["timeout", "600", "nice", "agy", "acp"],
     ["python3", "agy_acp_server.par"],
+    ["env", "--split-string=agy acp"],
+    ["env", "-Sagy acp"],
+    ["env", "-S", "agy acp"],
   ]) {
     assert.equal(mayStartAgy(cmd, "/nowhere"), true, cmd.join(" "));
   }
@@ -399,6 +402,14 @@ test("an executable that is a link to agy, on PATH or by path, is agy", () => {
     assert.equal(mayStartAgy(["antigravity", "acp"], join(dir, "bin")), true);
     assert.equal(mayStartAgy([join(dir, "bin", "antigravity"), "acp"], "/nowhere"), true);
     assert.equal(mayStartAgy(["other", "acp"], join(dir, "bin")), false);
+    // Behind a wrapper, and relative to the directory the launch runs in.
+    const bin = join(dir, "bin");
+    assert.equal(mayStartAgy(["env", "X=1", join(bin, "antigravity"), "acp"], "/nowhere"), true);
+    assert.equal(mayStartAgy(["sh", "-c", `${join(bin, "antigravity")} acp`], "/nowhere"), true);
+    assert.equal(mayStartAgy(["env", "X=1", "antigravity", "acp"], bin), true);
+    assert.equal(mayStartAgy(["./antigravity", "acp"], "/nowhere", bin), true);
+    assert.equal(mayStartAgy(["antigravity", "acp"], "bin", dir), true, "a relative PATH entry");
+    assert.equal(mayStartAgy(["./other", "acp"], "/nowhere", bin), false);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

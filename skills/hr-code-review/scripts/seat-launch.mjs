@@ -178,39 +178,54 @@ const AGY_NAME = /^(agy|agy-acp|agy_acp_server\.par)$/i;
  * Whether a launch command may start Antigravity's `agy acp`, which runs the MCP servers, plugins and
  * hooks it finds in the working directory's agent folders at the first prompt. Any argument counts
  * where it names agy (after splitting on spaces and shell punctuation, so `sh -c "agy acp"`, `env X=1
- * agy acp`, a runner's package and a script path all match), and so does an executable that is a link
- * to agy or that PATH resolves to it. A name written to hide it (shell quoting inside the name, a
- * renamed copy) is not detected; the check catches a mistake, it is not a boundary against a caller
- * that hides the launch.
+ * agy acp`, `env --split-string="agy acp"`, a runner's package and a script path all match), and so
+ * does any word that is, or that `PATH` resolves to, a link to agy (looked up from `cwd`, where the
+ * launch runs). A name written to hide it (shell quoting inside the name, a renamed copy) is not
+ * detected; the check catches a mistake, it is not a boundary against a caller that hides the launch.
  * @param {string[]} cmd
  * @param {string} [pathVar] the PATH to look the executable up on
+ * @param {string} [cwd] the directory the launch runs in
  */
-export function mayStartAgy(cmd, pathVar = process.env.PATH) {
+export function mayStartAgy(cmd, pathVar = process.env.PATH, cwd = process.cwd()) {
   const named = (/** @type {string} */ token) => {
     const base = agentExe(token).replace(/^(.+)@[^/@]*$/, "$1");
     // A script file also counts by the agent folder it sits in, as seatAgent reads it.
     return AGY_NAME.test(base) || (SCRIPT_FILE.test(token) && scriptAgent(token) === "agy");
   };
+  const pathDirs = (pathVar ?? "")
+    .split(delimiter)
+    .filter((d) => d !== "")
+    .map((d) => resolve(cwd, d));
+  // Whether a word is a link to agy: by its path from `cwd`, or, for a bare word, on PATH.
+  const resolvesToAgy = (/** @type {string} */ word) =>
+    (/[\\/]/.test(word)
+      ? [resolve(cwd, word)]
+      : /^[\w.@+-]+$/.test(word)
+        ? pathDirs.map((d) => join(d, word))
+        : []
+    ).some((c) => {
+      try {
+        return named(realpathSync(c));
+      } catch {
+        return false;
+      }
+    });
   for (const arg of cmd) {
-    if (arg.split(/[\s;&|()<>"'`]+/).some((t) => t !== "" && named(t))) {
-      return true;
+    for (const token of arg.split(/[\s;&|()<>"'`]+/)) {
+      // An option's attached value counts too (`--split-string=agy acp`, `-Sagy`).
+      const forms = [token];
+      if (token.includes("=")) {
+        forms.push(token.slice(token.indexOf("=") + 1));
+      }
+      if (/^-S./.test(token)) {
+        forms.push(token.slice(2));
+      }
+      if (forms.some((f) => f !== "" && (named(f) || resolvesToAgy(f)))) {
+        return true;
+      }
     }
   }
-  const first = cmd[0] ?? "";
-  /** @type {string[]} */
-  const candidates = /[\\/]/.test(first)
-    ? [first]
-    : (pathVar ?? "")
-        .split(delimiter)
-        .filter((d) => d !== "")
-        .map((d) => join(d, first));
-  return candidates.some((c) => {
-    try {
-      return named(realpathSync(c));
-    } catch {
-      return false;
-    }
-  });
+  return false;
 }
 // Claude Code's reading of a switch such as CLAUDE_CODE_USE_BEDROCK.
 /** @param {string | undefined} v */

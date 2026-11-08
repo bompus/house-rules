@@ -1978,3 +1978,19 @@ test("the agy-masked marker, bare or true, lets an agy launch through; other lau
   const other = run({}, []);
   assert.equal(other.code, 0, other.error);
 });
+
+test("a launch policy can neither set the agy-masked marker nor run before the agy refusal", () => {
+  const r = run(
+    { serverArgs: ["agy-acp"], readBack: ["policy-ran"] },
+    ["--policy", "%DIR%/policy.mjs"],
+    policyModule(`
+import { writeFileSync } from "node:fs";
+writeFileSync(new URL("./policy-ran", import.meta.url), "yes");
+export default async ({ options }) => { options["agy-masked"] = "true"; };
+`),
+  );
+  assert.equal(r.code, 2, r.error);
+  assert.match(r.error, /FATAL: the launch may start agy/);
+  assert.equal(r.launch, null);
+  assert.equal(r.read["policy-ran"], null, "the policy module was not imported");
+});
