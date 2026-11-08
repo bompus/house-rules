@@ -439,6 +439,43 @@ test("an executable that is a link to agy, on PATH or by path, is agy", () => {
       ),
       true,
     );
+    // A PATH with spaces, quoted paths, layered env wrappers and a directory in the way.
+    const spaced = join(dir, "IDE Tools", "bin");
+    mkdirSync(spaced, { recursive: true });
+    symlinkSync(join(bin, "agy"), join(spaced, "antigravity"));
+    assert.equal(
+      mayStartAgy(["env", `PATH=${spaced}`, "antigravity", "acp"], "/usr/bin", dir),
+      true,
+    );
+    assert.equal(
+      mayStartAgy(["sh", "-c", `"${join(spaced, "antigravity")}" acp`], "/nowhere", dir),
+      true,
+    );
+    assert.equal(
+      mayStartAgy(["sh", "-c", `PATH="${spaced}" antigravity acp`], "/usr/bin", dir),
+      true,
+    );
+    mkdirSync(join(dir, "third"));
+    writeFileSync(join(dir, "third", "antigravity"), "#!/bin/sh\n", { mode: 0o755 });
+    mkdirSync(join(dir, "fourth", "antigravity"), { recursive: true });
+    assert.equal(
+      mayStartAgy(
+        ["env", `PATH=${join(dir, "third")}`, "/usr/bin/env", `PATH=${spaced}`, "antigravity"],
+        "/usr/bin",
+        dir,
+      ),
+      true,
+      "a later env PATH replaces an earlier one",
+    );
+    assert.equal(
+      mayStartAgy(
+        ["env", `PATH=${join(dir, "fourth")}${delimiter}${spaced}`, "antigravity", "acp"],
+        "/usr/bin",
+        dir,
+      ),
+      true,
+      "a directory of that name is not the executable",
+    );
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

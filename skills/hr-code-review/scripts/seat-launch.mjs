@@ -11,6 +11,7 @@ import {
   readFileSync,
   realpathSync,
   rmSync,
+  statSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -194,17 +195,19 @@ export function mayStartAgy(cmd, pathVar = process.env.PATH, cwd = process.cwd()
     // A script file also counts by the agent folder it sits in, as seatAgent reads it.
     return AGY_NAME.test(base) || (SCRIPT_FILE.test(token) && scriptAgent(token) === "agy");
   };
-  // A literal `PATH=...` in the command (`env PATH=/x antigravity`) is searched before the inherited
-  // PATH; an empty entry means the working directory.
-  const assigned = cmd.flatMap((arg) =>
-    arg
-      .split(/[\s;&|()<>"'`]+/)
-      .filter((t) => t.startsWith("PATH="))
-      .map((t) => t.slice(5)),
-  );
-  const pathDirs = [...assigned, pathVar ?? ""]
-    .flatMap((value) => value.split(delimiter))
-    .map((d) => resolve(cwd, d));
+  // Each literal `PATH=...` in the command (`env PATH=/x antigravity`, quoted values with spaces
+  // included) is a PATH the command may run with, besides the inherited one; every one is searched
+  // on its own, because a later `env PATH=...` replaces an earlier one.
+  const lists = [
+    // An argument that is itself the assignment holds the whole value, spaces included.
+    ...cmd.filter((arg) => arg.startsWith("PATH=")).map((arg) => arg.slice(5)),
+    ...cmd.flatMap((arg) =>
+      [...arg.matchAll(/(?:^|[\s;&|()<>])PATH=(?:"([^"]*)"|'([^']*)'|([^\s;&|()<>"'`]*))/g)].map(
+        (m) => m[1] ?? m[2] ?? m[3] ?? "",
+      ),
+    ),
+    pathVar ?? "",
+  ].map((value) => value.split(delimiter).map((d) => resolve(cwd, d)));
   const real = (/** @type {string} */ candidate) => {
     try {
       return realpathSync(candidate);
@@ -222,17 +225,23 @@ export function mayStartAgy(cmd, pathVar = process.env.PATH, cwd = process.cwd()
     if (!/^[\w.@+-]+$/.test(word)) {
       return false;
     }
-    for (const dir of pathDirs) {
-      const candidate = join(dir, word);
-      try {
-        accessSync(candidate, constants.X_OK);
-      } catch {
-        continue;
+    return lists.some((dirs) => {
+      for (const dir of dirs) {
+        const candidate = join(dir, word);
+        try {
+          // The first regular executable file of that name, as the shell would find it.
+          accessSync(candidate, constants.X_OK);
+          if (!statSync(candidate).isFile()) {
+            continue;
+          }
+        } catch {
+          continue;
+        }
+        const target = real(candidate);
+        return target !== undefined && named(target);
       }
-      const target = real(candidate);
-      return target !== undefined && named(target);
-    }
-    return false;
+      return false;
+    });
   };
   const counts = (/** @type {string} */ word) =>
     word !== "" && (named(word) || resolvesToAgy(word));
@@ -241,7 +250,9 @@ export function mayStartAgy(cmd, pathVar = process.env.PATH, cwd = process.cwd()
     if (counts(arg)) {
       return true;
     }
-    for (const token of arg.split(/[\s;&|()<>"'`]+/)) {
+    // A quoted path (`sh -c '"/opt/IDE Tools/agy" acp'`) is a word of its own.
+    const quoted = [...arg.matchAll(/"([^"]*)"|'([^']*)'/g)].map((m) => m[1] ?? m[2] ?? "");
+    for (const token of [...quoted, ...arg.split(/[\s;&|()<>"'`]+/)]) {
       // An option's attached value counts too (`--split-string=agy acp`, `-Sagy`).
       const forms = [token];
       if (token.includes("=")) {
