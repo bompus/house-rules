@@ -19,7 +19,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { delimiter, dirname, isAbsolute, join, resolve, sep } from "node:path";
+import { basename, delimiter, dirname, isAbsolute, join, resolve, sep } from "node:path";
 
 // A seat's environment: named locale, path, proxy and certificate variables plus its own agent's login
 // variables; other keys, GH_TOKEN and SSH_AUTH_SOCK stay out. ACP_PANEL_PASS_ENV adds prefixes.
@@ -398,53 +398,6 @@ function firstOnPath(name, pathVar, from) {
   return undefined;
 }
 /**
- * The words of a `#!` line after the `#!`, split on blanks, with quoted text kept whole inside or around a
- * word (`--preload "/dir with space/p.mjs"`, `--conditions="a b"`) and its quotes removed; null when the line
- * uses syntax that is not interpreted here (a backslash, `$`, a backtick, `#`, an unterminated quote).
- * @param {string} text
- * @returns {string[] | null}
- */
-function shebangWords(text) {
-  // Characters whose meaning `env -S` or a shell would apply (escapes, variables, command substitution,
-  // comments) are not interpreted here: such a line is "unsupported", not guessed at.
-  if (/[\\$`#]/.test(text)) {
-    return null;
-  }
-  /** @type {string[]} */
-  const words = [];
-  let word = "";
-  let started = false;
-  /** @type {string | undefined} */
-  let quote;
-  for (const ch of text.trim()) {
-    if (quote) {
-      if (ch === quote) {
-        quote = undefined;
-      } else {
-        word += ch;
-      }
-    } else if (ch === '"' || ch === "'") {
-      quote = ch;
-      started = true;
-    } else if (/\s/.test(ch)) {
-      if (started || word !== "") {
-        words.push(word);
-        word = "";
-        started = false;
-      }
-    } else {
-      word += ch;
-    }
-  }
-  if (quote) {
-    return null; // An unterminated quote.
-  }
-  if (started || word !== "") {
-    words.push(word);
-  }
-  return words;
-}
-/**
  * `pathVar` reduced to its absolute entries outside `root`: the PATH a helper started outside the boundary
  * runs with, so an interpreter named by a helper's `#!/usr/bin/env node` line is not the checkout's.
  * @param {string | undefined} pathVar
@@ -507,7 +460,7 @@ export function pathExecutable(name, pathVar, root, canonical = true) {
         const target = realpathSync(candidate);
         if (statSync(target).isFile() && !inside(target) && !inside(realpathSync(dir))) {
           // The canonical path, not the entry's alias: a link swapped after this check changes nothing.
-          return canonical ? target : candidate;
+          return canonical ? target : join(realpathSync(dir), basename(candidate));
         }
       } catch {
         // Not here.
@@ -767,7 +720,6 @@ export function bunHardened(cmd, root, refuse) {
     cmd = [named, ...cmd.slice(1)];
   }
   const first = cmd[0] ?? "";
-  const flags = () => ["--no-env-file", `--config=${emptyBunfig()}`];
   const runner =
     exe === "bunx" || (exe === "bun" && cmd.slice(1).find((a) => !a.startsWith("-")) === "x");
   if (runner && cmd.some((a) => a === "--bun")) {
@@ -798,12 +750,10 @@ export function bunHardened(cmd, root, refuse) {
   if (WINDOWS || runner) {
     return cmd;
   }
-  // A script with a bun `#!` line: the file the launch will actually run, by path or, for a bare name, the
-  // first executable on PATH as the launch finds it (relative entries from the review root).
-  /** @type {string[]} */
-  let shebangArgs = [];
-  /** @type {string | undefined} */
-  let unsupported;
+  // A script whose `#!` line names bun runs under Bun, which would read the checkout's .env and bunfig.toml.
+  // Such a launch cannot be rewritten safely (`env -S` options and quoting, the kernel's cut at 255
+  // bytes, directory and environment changes), so it is refused: the file the launch will actually run is
+  // read, by path or, for a bare name, the first executable on PATH as the launch finds it.
   const script = /[\\/]/.test(first)
     ? resolve(root, first)
     : firstOnPath(first, envPath(process.env), root);
@@ -813,57 +763,25 @@ export function bunHardened(cmd, root, refuse) {
   if (!/[\\/]/.test(first) && isInside(reviewBase(root), script)) {
     return refuse(`the server command resolves to ${script}, inside the review checkout`);
   }
+  let line = "";
   try {
     const fd = openSync(script, "r");
     try {
       const head = Buffer.alloc(256);
       const n = readSync(fd, head, 0, head.length, 0);
-      const line = head.subarray(0, n).toString("latin1").split("\n")[0] ?? "";
-      const parsed = line.startsWith("#!") ? shebangWords(line.slice(2)) : [];
-      if (parsed === null) {
-        // Not parsed, not guessed: a line that may name bun is refused (below) rather than rewritten wrongly.
-        if (!/\bbun\b/.test(line)) {
-          return cmd;
-        }
-        unsupported = line;
-      }
-      const words = parsed ?? [];
-      // The interpreter is the first word, or, behind `env`, the first word that is not an option or a
-      // variable assignment; its name must be bun (not a folder called bun).
-      let at = 0;
-      if (exeName(words[0] ?? "") === "env") {
-        at = 1;
-        while (
-          at < words.length &&
-          ((words[at] ?? "").startsWith("-") || /^[A-Za-z_]\w*=/.test(words[at] ?? ""))
-        ) {
-          at++;
-        }
-      }
-      if (unsupported === undefined && exeName(words[at] ?? "") !== "bun") {
-        return cmd;
-      }
-      // Its runtime arguments (`#!/usr/bin/env -S bun --conditions=x`) stay.
-      shebangArgs = words.slice(at + 1);
+      line = head.subarray(0, n).toString("latin1").split("\n")[0] ?? "";
     } finally {
       closeSync(fd);
     }
   } catch {
     return cmd; // Not readable here: the spawn reports it.
   }
-  if (unsupported !== undefined) {
+  if (line.startsWith("#!") && /\bbun\b/.test(line)) {
     return refuse(
-      `the #! line of ${script} uses syntax that is not interpreted here: ${unsupported}`,
+      `${script} starts with a #! line that names bun, which would read the checkout's .env and bunfig.toml; launch it as \`bun --no-env-file --config=EMPTY ${script}\`, or use a Node adapter`,
     );
   }
-  const bun =
-    exeName(process.execPath) === "bun"
-      ? process.execPath
-      : pathExecutable("bun", envPath(process.env), reviewBase(root));
-  if (!bun) {
-    return refuse("the launch is a Bun script and bun is not on PATH outside the review root");
-  }
-  return [bun, ...flags(), ...shebangArgs, script, ...cmd.slice(1)];
+  return cmd;
 }
 /**
  * @param {string[]} cmd

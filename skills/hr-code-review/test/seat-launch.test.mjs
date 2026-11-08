@@ -634,10 +634,10 @@ test(
       writeFileSync(join(dir, "adapter"), "#!/usr/bin/env bun\nconsole.log('adapter');\n", {
         mode: 0o755,
       });
-      const viaShebang = bunHardened([join(dir, "adapter"), "acp"], root, refuseTest);
-      assert.deepEqual(viaShebang.slice(1, 2), ["--no-env-file"]);
-      assert.equal(viaShebang.at(-2), join(dir, "adapter"));
-      assert.equal(viaShebang.at(-1), "acp");
+      assert.throws(
+        () => bunHardened([join(dir, "adapter"), "acp"], root, refuseTest),
+        /names bun, which would read the checkout/,
+      );
       // A Node script and a plain executable are left alone; flags already given are not doubled.
       writeFileSync(join(dir, "node-adapter"), "#!/usr/bin/env node\n", { mode: 0o755 });
       assert.deepEqual(bunHardened([join(dir, "node-adapter"), "acp"], root, refuseTest), [
@@ -815,58 +815,6 @@ test(
     }
   },
 );
-test(
-  "bun x is left to bunx's own rules, and a shebang's runtime arguments are kept",
-  { skip: !UNDER_BUN || process.platform === "win32" },
-  () => {
-    const dir = mkdtempSync(join(tmpdir(), "bun-x-"));
-    try {
-      const root = join(dir, "root");
-      mkdirSync(root);
-      assert.deepEqual(
-        bunHardened(["bun", "x", "--no-install", "pkg"], root, refuseTest).slice(1),
-        ["x", "--no-install", "pkg"],
-      );
-      assert.deepEqual(bunHardened(["bun", "--silent", "x", "pkg"], root, refuseTest).slice(1), [
-        "--silent",
-        "x",
-        "pkg",
-      ]);
-      writeFileSync(
-        join(dir, "adapter"),
-        "#!/usr/bin/env -S bun --conditions=review-seat --smol\nconsole.log(1);\n",
-        { mode: 0o755 },
-      );
-      const out = bunHardened([join(dir, "adapter"), "acp"], root, refuseTest);
-      assert.deepEqual(out.slice(-4), [
-        "--conditions=review-seat",
-        "--smol",
-        join(dir, "adapter"),
-        "acp",
-      ]);
-      // The interpreter token decides, not a folder called bun; a script called bun.mjs is not Bun;
-      // a quoted runtime argument with spaces stays whole.
-      writeFileSync(join(dir, "shell-adapter"), "#!/tools/bun/sh\n", { mode: 0o755 });
-      assert.deepEqual(bunHardened([join(dir, "shell-adapter"), "acp"], root, refuseTest), [
-        join(dir, "shell-adapter"),
-        "acp",
-      ]);
-      writeFileSync(join(dir, "bun.mjs"), "#!/usr/bin/env bun\nconsole.log(1);\n", { mode: 0o755 });
-      const viaMjs = bunHardened([join(dir, "bun.mjs"), "acp"], root, refuseTest);
-      assert.equal(viaMjs.includes("--no-env-file"), true);
-      assert.equal(viaMjs.at(-2), join(dir, "bun.mjs"));
-      writeFileSync(
-        join(dir, "quoted"),
-        '#!/usr/bin/env -S bun --preload "/dir with space/p.mjs"\n',
-        { mode: 0o755 },
-      );
-      const quoted = bunHardened([join(dir, "quoted")], root, refuseTest);
-      assert.ok(quoted.includes("/dir with space/p.mjs"), quoted.join("|"));
-    } finally {
-      rmSync(dir, { recursive: true, force: true });
-    }
-  },
-);
 
 test(
   "reviewBase takes the outermost marker, so a nested .jj cannot hide the checkout around it",
@@ -922,11 +870,9 @@ test(
         () => bunHardened(["adapter", "acp"], root, refuseTest),
         /inside the review checkout/,
       );
-      // Only the outside one on PATH: it is the file that runs, and its bun shebang is hardened.
+      // Only the outside one on PATH: it is the file that runs, and its bun shebang is refused.
       process.env.PATH = outside;
-      const out = bunHardened(["adapter", "acp"], root, refuseTest);
-      assert.equal(out.includes("--no-env-file"), true);
-      assert.equal(out.at(-2), join(outside, "adapter"));
+      assert.throws(() => bunHardened(["adapter", "acp"], root, refuseTest), /names bun/);
     } finally {
       process.env.PATH = saved;
       rmSync(dir, { recursive: true, force: true });
@@ -935,54 +881,7 @@ test(
 );
 
 test(
-  "shebang words keep quotes inside words; unsupported syntax is refused, not guessed",
-  { skip: !UNDER_BUN || process.platform === "win32" },
-  () => {
-    const dir = mkdtempSync(join(tmpdir(), "shebang-words-"));
-    try {
-      const root = join(dir, "root");
-      mkdirSync(root);
-      const script = (/** @type {string} */ line) => {
-        const path = join(dir, `adapter-${Math.random().toString(36).slice(2)}`);
-        writeFileSync(path, `${line}\nconsole.log(1);\n`, { mode: 0o755 });
-        return path;
-      };
-      const attached = bunHardened(
-        [script('#!/usr/bin/env -S bun --conditions="review main.mjs"')],
-        root,
-        refuseTest,
-      );
-      assert.ok(attached.includes("--conditions=review main.mjs"), attached.join("|"));
-      const preload = bunHardened(
-        [script('#!/usr/bin/env -S bun --preload="/dir with space/p.mjs" --smol')],
-        root,
-        refuseTest,
-      );
-      assert.ok(
-        preload.includes("--preload=/dir with space/p.mjs") && preload.includes("--smol"),
-        preload.join("|"),
-      );
-      for (const line of [
-        '#!/usr/bin/env -S bun --conditions="unterminated',
-        "#!/usr/bin/env -S bun --define X=\\ y",
-        "#!/usr/bin/env -S bun --preload $HOME/p.mjs",
-      ]) {
-        assert.throws(
-          () => bunHardened([script(line)], root, refuseTest),
-          /not interpreted here/,
-          line,
-        );
-      }
-      // A shebang without bun is left alone whatever its syntax.
-      const other = script('#!/usr/bin/env -S node --x="a b"');
-      assert.deepEqual(bunHardened([other], root, refuseTest), [other]);
-    } finally {
-      rmSync(dir, { recursive: true, force: true });
-    }
-  },
-);
-test(
-  "a bare bun or bunx is the one outside the checkout; an explicit checkout path is the caller's choice and is hardened",
+  "a bare bun or bunx is the one outside the checkout; an explicit checkout path is the caller's choice",
   { skip: !UNDER_BUN || process.platform === "win32" },
   () => {
     const dir = mkdtempSync(join(tmpdir(), "bare-bun-"));
@@ -1002,14 +901,87 @@ test(
         /not on PATH outside/,
       );
       assert.throws(() => bunHardened(["bunx", "pkg"], root, refuseTest), /not on PATH outside/);
-      // An explicit path into the checkout is not refused; its bun shebang is still hardened.
-      writeFileSync(join(root, "adapter"), "#!/usr/bin/env bun\nconsole.log(1);\n", {
-        mode: 0o755,
-      });
+      // An explicit path into the checkout is the caller's choice: not refused for its location, but a
+      // bun shebang is refused wherever it is.
       process.env.PATH = realBunDir;
-      const explicit = bunHardened([join(root, "adapter"), "acp"], root, refuseTest);
-      assert.equal(explicit.includes("--no-env-file"), true);
-      assert.equal(explicit.at(-2), join(root, "adapter"));
+      writeFileSync(join(root, "node-adapter"), "#!/usr/bin/env node\n", { mode: 0o755 });
+      assert.deepEqual(bunHardened([join(root, "node-adapter"), "acp"], root, refuseTest), [
+        join(root, "node-adapter"),
+        "acp",
+      ]);
+      writeFileSync(join(root, "adapter"), "#!/usr/bin/env bun\n", { mode: 0o755 });
+      assert.throws(
+        () => bunHardened([join(root, "adapter"), "acp"], root, refuseTest),
+        /names bun/,
+      );
+    } finally {
+      process.env.PATH = saved;
+      rmSync(dir, { recursive: true, force: true });
+    }
+  },
+);
+
+test(
+  "no #! line is rewritten: any line naming bun is refused, whatever its syntax; others pass through",
+  { skip: process.platform === "win32" },
+  () => {
+    const dir = mkdtempSync(join(tmpdir(), "shebang-refuse-"));
+    try {
+      const root = join(dir, "root");
+      mkdirSync(root);
+      const script = (/** @type {string} */ line, /** @type {string} */ name) => {
+        const path = join(dir, name);
+        writeFileSync(path, `${line}\nconsole.log(1);\n`, { mode: 0o755 });
+        return path;
+      };
+      let n = 0;
+      for (const line of [
+        "#!/usr/bin/env bun",
+        '#!/usr/bin/env -S bun --conditions="review main.mjs"',
+        '#!/usr/bin/env -S --chdir="/trusted dir" bun chosen.mjs',
+        "#!/trusted/bun --conditions=review chosen.mjs",
+        "#!/usr/bin/env -i /trusted/bun",
+        "#!/usr/bin/env -u NAME bun",
+        `#!/usr/bin/env -S bun --conditions=${"a".repeat(230)} z extra`,
+      ]) {
+        const path = script(line, `adapter-${n++}`);
+        assert.throws(() => bunHardened([path, "acp"], root, refuseTest), /names bun/, line);
+      }
+      for (const line of [
+        "#!/usr/bin/env node",
+        "#!/bin/sh",
+        "#!/usr/bin/env -S node --x='a b'",
+        "no shebang",
+      ]) {
+        const path = script(line, `plain-${n++}`);
+        assert.deepEqual(bunHardened([path, "acp"], root, refuseTest), [path, "acp"], line);
+      }
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  },
+);
+test(
+  "the entry that a bare bunx is found by keeps its name under the canonical folder",
+  { skip: !UNDER_BUN || process.platform === "win32" },
+  () => {
+    const dir = mkdtempSync(join(tmpdir(), "bunx-alias-"));
+    const saved = process.env.PATH;
+    try {
+      const root = join(dir, "root");
+      const trusted = join(dir, "trusted");
+      mkdirSync(root);
+      mkdirSync(trusted);
+      symlinkSync(process.execPath, join(trusted, "bunx"));
+      symlinkSync(trusted, join(dir, "tools-alias"));
+      process.env.PATH = join(dir, "tools-alias");
+      const out = bunHardened(["bunx", "pkg"], root, refuseTest);
+      assert.equal(
+        out[0],
+        join(realpathSync(trusted), "bunx"),
+        "canonical folder, the entry's own name",
+      );
+      assert.equal(out[1], "pkg");
     } finally {
       process.env.PATH = saved;
       rmSync(dir, { recursive: true, force: true });
