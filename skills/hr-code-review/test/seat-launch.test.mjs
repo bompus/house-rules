@@ -1,9 +1,16 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { devinConfig, exeName, mayStart, seatAgent, seatEnv } from "../scripts/seat-launch.mjs";
+import {
+  devinConfig,
+  exeName,
+  mayStart,
+  mayStartAgy,
+  seatAgent,
+  seatEnv,
+} from "../scripts/seat-launch.mjs";
 
 const ENV = {
   PATH: "/bin",
@@ -343,4 +350,56 @@ test("an extensionless entry script named like an agent counts, and so does a sc
   assert.equal(seatAgent(["./devin.mjs"]), "devin");
   assert.equal(mayStart(["/opt/bin/codex-acp.js"], "codex"), true);
   assert.equal(mayStart(["/opt/bin/other.js"], "codex"), false);
+});
+
+test("a launch that may start agy is recognized in every form a caller writes it", () => {
+  for (const cmd of [
+    ["agy", "acp"],
+    ["/home/u/.local/bin/agy", "acp"],
+    ["agy-acp"],
+    ["/opt/agy-acp/current/agy_acp_server.par", "--uid="],
+    ["C:\\tools\\agy.exe", "acp"],
+    ["AGY", "acp"],
+    ["env", "GEMINI_API_KEY=x", "agy", "acp"],
+    ["env", "-i", "/usr/local/bin/agy", "acp"],
+    ["sh", "-c", "agy acp"],
+    ["bash", "-lc", "cd /work && exec agy acp"],
+    ["sh", "-c", 'FOO=1 "/opt/tools/agy" acp'],
+    ["sh", "-c", "(agy acp)"],
+    ["sh", "-c", "true;agy acp"],
+    ["bunx", "agy-acp"],
+    ["npx", "--yes", "@google/agy@1.5.3", "acp"],
+    ["node", "/opt/agy-acp/index.js"],
+    ["timeout", "600", "nice", "agy", "acp"],
+    ["python3", "agy_acp_server.par"],
+  ]) {
+    assert.equal(mayStartAgy(cmd, "/nowhere"), true, cmd.join(" "));
+  }
+});
+test("other launches are not taken for agy", () => {
+  for (const cmd of [
+    ["codex-acp"],
+    ["claude-agent-acp"],
+    ["devin", "acp"],
+    ["node", "/work/magyar/server.mjs"],
+    ["bunx", "@agentclientprotocol/claude-agent-acp", "--cwd=/work/agyx"],
+    ["cursor-agent", "acp", "--title", "legacy review"],
+    ["sh", "-c", "echo agyx"],
+  ]) {
+    assert.equal(mayStartAgy(cmd, "/nowhere"), false, cmd.join(" "));
+  }
+});
+test("an executable that is a link to agy, on PATH or by path, is agy", () => {
+  const dir = mkdtempSync(join(tmpdir(), "agy-link-"));
+  try {
+    mkdirSync(join(dir, "bin"));
+    writeFileSync(join(dir, "bin", "agy"), "#!/bin/sh\n", { mode: 0o755 });
+    writeFileSync(join(dir, "bin", "other"), "#!/bin/sh\n", { mode: 0o755 });
+    symlinkSync(join(dir, "bin", "agy"), join(dir, "bin", "antigravity"));
+    assert.equal(mayStartAgy(["antigravity", "acp"], join(dir, "bin")), true);
+    assert.equal(mayStartAgy([join(dir, "bin", "antigravity"), "acp"], "/nowhere"), true);
+    assert.equal(mayStartAgy(["other", "acp"], join(dir, "bin")), false);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });

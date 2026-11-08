@@ -1943,3 +1943,37 @@ test(
     assert.equal(run({ devinShim: true, env }, [], prepare).code, 0);
   },
 );
+
+test("an agy launch is refused before any server starts unless the caller declares the seat masked", () => {
+  for (const config of [
+    { launcher: "agy" },
+    { serverArgs: ["-c", "env X=1 agy acp"] },
+    { serverArgs: ["--", "agy-acp"] },
+    { serverArgs: ["/opt/agy-acp/current/agy_acp_server.par"] },
+  ]) {
+    for (const flags of [
+      [],
+      ["--policy-option", "agy-masked=false"],
+      ["--policy-option", "agy-masked=yes"],
+      ["--policy-option", "agy-masked-ish"],
+    ]) {
+      const r = run(config, flags);
+      assert.equal(r.code, 2, `${JSON.stringify(config)} ${flags.join(" ")}`);
+      assert.match(r.error, /\[client\] FATAL: the launch may start agy/);
+      assert.match(r.error, /--policy-option agy-masked/);
+      assert.equal(r.launch, null, "no server was started");
+    }
+  }
+});
+test("the agy-masked marker, bare or true, lets an agy launch through; other launches never need it", () => {
+  for (const flags of [
+    ["--policy-option", "agy-masked"],
+    ["--policy-option", "agy-masked=true"],
+  ]) {
+    const r = run({ launcher: "agy" }, flags);
+    assert.equal(r.code, 0, r.error);
+    assert.notEqual(r.launch, null, "the server started");
+  }
+  const other = run({}, []);
+  assert.equal(other.code, 0, other.error);
+});

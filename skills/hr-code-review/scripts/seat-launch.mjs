@@ -12,7 +12,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { delimiter, dirname, join, resolve } from "node:path";
 
 // A seat's environment: named locale, path, proxy and certificate variables plus its own agent's login
 // variables; other keys, GH_TOKEN and SSH_AUTH_SOCK stay out. ACP_PANEL_PASS_ENV adds prefixes.
@@ -171,6 +171,46 @@ export function seatAgent(cmd) {
     names = [exe];
   }
   return AGENTS.find(([, re]) => names.some((n) => re.test(n)))?.[0];
+}
+// The names `agy` goes by: the CLI, its ACP server wrapper and its packaged server.
+const AGY_NAME = /^(agy|agy-acp|agy_acp_server\.par)$/i;
+/**
+ * Whether a launch command may start Antigravity's `agy acp`, which runs the MCP servers, plugins and
+ * hooks it finds in the working directory's agent folders at the first prompt. Any argument counts
+ * where it names agy (after splitting on spaces and shell punctuation, so `sh -c "agy acp"`, `env X=1
+ * agy acp`, a runner's package and a script path all match), and so does an executable that is a link
+ * to agy or that PATH resolves to it. A name written to hide it (shell quoting inside the name, a
+ * renamed copy) is not detected; the check catches a mistake, it is not a boundary against a caller
+ * that hides the launch.
+ * @param {string[]} cmd
+ * @param {string} [pathVar] the PATH to look the executable up on
+ */
+export function mayStartAgy(cmd, pathVar = process.env.PATH) {
+  const named = (/** @type {string} */ token) => {
+    const base = agentExe(token).replace(/^(.+)@[^/@]*$/, "$1");
+    // A script file also counts by the agent folder it sits in, as seatAgent reads it.
+    return AGY_NAME.test(base) || (SCRIPT_FILE.test(token) && scriptAgent(token) === "agy");
+  };
+  for (const arg of cmd) {
+    if (arg.split(/[\s;&|()<>"'`]+/).some((t) => t !== "" && named(t))) {
+      return true;
+    }
+  }
+  const first = cmd[0] ?? "";
+  /** @type {string[]} */
+  const candidates = /[\\/]/.test(first)
+    ? [first]
+    : (pathVar ?? "")
+        .split(delimiter)
+        .filter((d) => d !== "")
+        .map((d) => join(d, first));
+  return candidates.some((c) => {
+    try {
+      return named(realpathSync(c));
+    } catch {
+      return false;
+    }
+  });
 }
 // Claude Code's reading of a switch such as CLAUDE_CODE_USE_BEDROCK.
 /** @param {string | undefined} v */

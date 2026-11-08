@@ -19,7 +19,14 @@ import { constants as osConstants } from "node:os";
 import { createHash } from "node:crypto";
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
-import { codexWrapper, devinConfig, mayStart, seatAgent, seatEnv } from "./seat-launch.mjs";
+import {
+  codexWrapper,
+  devinConfig,
+  mayStart,
+  mayStartAgy,
+  seatAgent,
+  seatEnv,
+} from "./seat-launch.mjs";
 const rawArgs = process.argv.slice(2);
 // A client log line. Control characters in seat-supplied text are written as \xNN, so a seat cannot
 // start a line of its own, such as a forged `[client] FATAL:` record.
@@ -327,6 +334,14 @@ try {
     "[client] FATAL: git status failed at launch: " + (e instanceof Error ? e.message : String(e)),
   );
   process.exit(1);
+}
+// `agy acp` starts the MCP servers, plugins and hooks found in the agent folders of the working directory
+// and of each directory up to the git root, from the files alone. The caller declares the seat masked
+// (those folders covered) with `--policy-option agy-masked`; without it an agy launch is refused.
+if (mayStartAgy(serverCmd) && policyOptions["agy-masked"] !== "true") {
+  refuse(
+    "the launch may start agy, which runs the hooks, plugins and MCP servers in the .agents, .agent, _agents and _agent folders of the working directory and its parents; mask those folders and pass --policy-option agy-masked",
+  );
 }
 const launchCmd = devinConfig(serverCmd, noWeb, cwd, refuseLaunch);
 // Codex is recognized by seatAgent, or when a launch it cannot read could still start codex-acp (its
