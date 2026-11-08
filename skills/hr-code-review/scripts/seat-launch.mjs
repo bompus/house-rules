@@ -5,17 +5,20 @@ import { execFileSync } from "node:child_process";
 import {
   accessSync,
   chmodSync,
+  closeSync,
   constants,
   existsSync,
   mkdtempSync,
+  openSync,
   readFileSync,
+  readSync,
   realpathSync,
   rmSync,
   statSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { delimiter, dirname, join, resolve } from "node:path";
+import { delimiter, dirname, isAbsolute, join, resolve, sep } from "node:path";
 
 // A seat's environment: named locale, path, proxy and certificate variables plus its own agent's login
 // variables; other keys, GH_TOKEN and SSH_AUTH_SOCK stay out. ACP_PANEL_PASS_ENV adds prefixes.
@@ -175,6 +178,22 @@ export function seatAgent(cmd) {
   }
   return AGENTS.find(([, re]) => names.some((n) => re.test(n)))?.[0];
 }
+/**
+ * The git program the client runs, from outside the review root (see pathExecutable). None there is
+ * "no git program": the error carries `code: "ENOENT"`, as a missing executable does.
+ * @param {Record<string, string | undefined>} env
+ * @param {string} root
+ */
+export function gitProgram(env, root) {
+  const program = pathExecutable("git", envPath(env), root);
+  if (!program) {
+    throw Object.assign(new Error("no git outside the review root"), { code: "ENOENT" });
+  }
+  return program;
+}
+/** The refusal for an agy launch the caller has not declared masked. */
+export const AGY_UNMASKED =
+  "the launch may start agy, which runs the hooks, plugins and MCP servers in the .agents, .agent, _agents and _agent folders of the working directory and its parents; mask those folders and pass --policy-option agy-masked";
 // The names `agy` goes by: the CLI, its ACP server wrapper and its packaged server.
 const AGY_NAME = /^(agy|agy-acp|agy_acp_server\.par)$/i;
 /**
@@ -268,6 +287,67 @@ export function mayStartAgy(cmd, pathVar = process.env.PATH, cwd = process.cwd()
   }
   return false;
 }
+/**
+ * The PATH of an environment copied into a plain object: on Windows the variable is `Path` or `PATH`.
+ * @param {Record<string, string | undefined>} env
+ */
+export const envPath = (env) =>
+  WINDOWS ? Object.entries(env).find(([key]) => key.toUpperCase() === "PATH")?.[1] : env.PATH;
+/**
+ * The checkout a review root belongs to: the nearest parent holding `.git` or `.jj`, so a launch below
+ * the repository root still keeps the whole checkout's tooling out of reach; the review root itself when
+ * there is none, or when that parent is the home folder or above it (a dotfiles repository).
+ * @param {string} dir
+ */
+export function reviewBase(dir) {
+  let home = "";
+  try {
+    home = process.env.HOME ? realpathSync(process.env.HOME) : "";
+  } catch {
+    // No such home folder: nothing is excused as the home folder.
+  }
+  for (let d = realpathSync(dir); ; d = dirname(d)) {
+    if (existsSync(join(d, ".git")) || existsSync(join(d, ".jj"))) {
+      return home === d || (home !== "" && home.startsWith(d + sep)) ? realpathSync(dir) : d;
+    }
+    if (dirname(d) === d) {
+      return realpathSync(dir);
+    }
+  }
+}
+/**
+ * The first regular executable file called `name` on `pathVar`, looked up the way the shell would but
+ * only in absolute PATH entries that lie outside `root` (the review checkout), and only when the file
+ * does not resolve into `root` either: a checkout's own tooling (`node_modules/.bin`, a relative entry
+ * that means the working directory) is never what a helper started outside the boundary runs.
+ * @param {string} name
+ * @param {string | undefined} pathVar
+ * @param {string} root the review checkout
+ * @returns {string | undefined}
+ */
+export function pathExecutable(name, pathVar, root) {
+  const base = realpathSync(root);
+  const inside = (/** @type {string} */ path) => path === base || path.startsWith(base + sep);
+  const names = WINDOWS ? [name, `${name}.exe`, `${name}.cmd`] : [name];
+  for (const dir of (pathVar ?? "").split(delimiter)) {
+    if (!isAbsolute(dir)) {
+      continue;
+    }
+    for (const candidate of names.map((n) => join(dir, n))) {
+      try {
+        accessSync(candidate, constants.X_OK);
+        const target = realpathSync(candidate);
+        if (statSync(target).isFile() && !inside(target) && !inside(realpathSync(dir))) {
+          // The canonical path, not the entry's alias: a link swapped after this check changes nothing.
+          return target;
+        }
+      } catch {
+        // Not here.
+      }
+    }
+  }
+  return undefined;
+}
 // Claude Code's reading of a switch such as CLAUDE_CODE_USE_BEDROCK.
 /** @param {string | undefined} v */
 const switchedOn = (v) => /^(1|true|yes|on)$/i.test(v ?? "");
@@ -324,18 +404,53 @@ function privateDir() {
 // that turns off each MCP server `codex mcp list --json` names (an override of `mcp_servers={}` would
 // merge, so each is named) and, under --no-web, web search and the apps connector.
 /**
+ * The Codex program `codex mcp list` runs: `CODEX_PATH` when set, else `codex` on PATH, each held to the
+ * rule of pathExecutable (a bare name is looked up outside the review root; an explicit path must be
+ * absolute and resolve to a regular file outside it). The canonical path, or undefined.
+ * @param {NodeJS.ProcessEnv} env
+ * @param {string} cwd the review root
+ */
+function codexProgram(env, cwd) {
+  const given = env.CODEX_PATH;
+  if (!given) {
+    return pathExecutable("codex", envPath(env), reviewBase(cwd));
+  }
+  if (!/[\\/]/.test(given)) {
+    return pathExecutable(given, envPath(env), reviewBase(cwd));
+  }
+  if (!isAbsolute(given)) {
+    return undefined;
+  }
+  try {
+    const target = realpathSync(given);
+    const base = reviewBase(cwd);
+    accessSync(target, constants.X_OK);
+    return statSync(target).isFile() && target !== base && !target.startsWith(base + sep)
+      ? target
+      : undefined;
+  } catch {
+    return undefined;
+  }
+}
+/**
  * @param {NodeJS.ProcessEnv} env
  * @param {boolean} offline
  * @param {string} cwd the review root: Codex adds that checkout's own MCP servers to the user's
  * @param {(message: string) => never} refuse
  */
 export function codexWrapper(env, offline, cwd, refuse) {
-  /** @param {string} why */
-  const cannot = (why) => refuse(`cannot turn off Codex's MCP servers: ${why}`);
+  const cannot = /** @type {(why: string) => never} */ (
+    (/** @type {string} */ why) => refuse(`cannot turn off Codex's MCP servers: ${why}`)
+  );
   if (process.platform === "win32") {
     cannot("unsupported on Windows");
   }
-  const real = env.CODEX_PATH || "codex";
+  const real = codexProgram(env, cwd);
+  if (!real) {
+    return cannot(
+      "`codex` (or CODEX_PATH) must name a regular executable outside the review root: a bare name is looked up on PATH outside it, an explicit path must be absolute",
+    );
+  }
   /** @type {({ name?: unknown } | null)[]} */
   let servers = [];
   try {
@@ -375,7 +490,7 @@ export function codexWrapper(env, offline, cwd, refuse) {
   const wrapper = join(privateDir(), "codex-no-web");
   writeFileSync(
     wrapper,
-    `#!/usr/bin/env bash\nexec "\${CODEX_NO_WEB_REAL:-codex}" "$@" ${off.map((o) => `-c '${o}'`).join(" ")}\n`,
+    `#!/bin/sh\nexec "\${CODEX_NO_WEB_REAL:-codex}" "$@" ${off.map((o) => `-c '${o}'`).join(" ")}\n`,
     { mode: 0o700 },
   );
   return {
@@ -442,6 +557,78 @@ function enabledMcpServers(file) {
   } catch {
     return undefined; // present but unreadable here: its servers are unknown
   }
+}
+/** @type {string | undefined} */
+let emptyBunfigPath;
+/** An existing empty TOML file for Bun's `--config=`, in the private folder. */
+function emptyBunfig() {
+  if (!emptyBunfigPath) {
+    emptyBunfigPath = join(privateDir(), "empty-bunfig.toml");
+    writeFileSync(emptyBunfigPath, "", { mode: 0o600 });
+  }
+  return emptyBunfigPath;
+}
+/**
+ * The launch command with Bun told to ignore the working directory's `.env` and `bunfig.toml`
+ * (`bun --no-env-file --config=EMPTY`). The server starts in the review root, and a Bun process reads
+ * those two files from where it starts: a checkout's `preload` would run inside the server with the
+ * seat's logins. Covered: a `bun` command, and a script whose `#!` line names bun (rewritten to run
+ * through `bun` with the flags). `bunx --bun` / `bun x --bun` run a package under Bun with no way to pass the
+ * flags on, so they are refused. A package `bunx` runs under Node (the usual adapters) never reads either file. Windows
+ * has no `#!` lines and is left alone.
+ * @param {string[]} cmd
+ * @param {string} root the review root, where the server starts
+ * @param {(message: string) => never} refuse
+ * @returns {string[]}
+ */
+export function bunHardened(cmd, root, refuse) {
+  const first = cmd[0] ?? "";
+  const exe = agentExe(first);
+  const flags = () => ["--no-env-file", `--config=${emptyBunfig()}`];
+  const runner = exe === "bunx" || (exe === "bun" && cmd[1] === "x");
+  if (runner && cmd.some((a) => a === "--bun")) {
+    return refuse(
+      "the launch runs a package under Bun (bunx --bun), which would read the checkout's .env and bunfig.toml and cannot be told not to; launch a Node adapter, or run `bun --no-env-file --config=EMPTY <script>`",
+    );
+  }
+  if (exe === "bun") {
+    return cmd.some((a) => a === "--no-env-file" || a.startsWith("--config="))
+      ? cmd
+      : [first, ...flags(), ...cmd.slice(1)];
+  }
+  if (WINDOWS || exe === "bunx") {
+    return cmd;
+  }
+  // A script with a bun `#!` line, by path or by a name found outside the review root.
+  const script = /[\\/]/.test(first)
+    ? resolve(root, first)
+    : pathExecutable(first, envPath(process.env), reviewBase(root));
+  if (!script) {
+    return cmd;
+  }
+  try {
+    const fd = openSync(script, "r");
+    try {
+      const head = Buffer.alloc(256);
+      const n = readSync(fd, head, 0, head.length, 0);
+      const line = head.subarray(0, n).toString("latin1").split("\n")[0] ?? "";
+      if (!(line.startsWith("#!") && /\bbun\b/.test(line))) {
+        return cmd;
+      }
+    } finally {
+      closeSync(fd);
+    }
+  } catch {
+    return cmd; // Not readable here: the spawn reports it.
+  }
+  const bun =
+    exeName(process.execPath) === "bun"
+      ? process.execPath
+      : pathExecutable("bun", envPath(process.env), reviewBase(root));
+  if (!bun) {
+    return refuse("the launch is a Bun script and bun is not on PATH outside the review root");
+  }
+  return [bun, ...flags(), script, ...cmd.slice(1)];
 }
 /**
  * @param {string[]} cmd

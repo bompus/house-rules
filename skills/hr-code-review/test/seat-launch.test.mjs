@@ -1,13 +1,28 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
+import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { delimiter, join } from "node:path";
 import {
+  bunHardened,
+  codexWrapper,
   devinConfig,
+  envPath,
   exeName,
   mayStart,
   mayStartAgy,
+  pathExecutable,
+  reviewBase,
   seatAgent,
   seatEnv,
 } from "../scripts/seat-launch.mjs";
@@ -480,3 +495,237 @@ test("an executable that is a link to agy, on PATH or by path, is agy", () => {
     rmSync(dir, { recursive: true, force: true });
   }
 });
+test(
+  "pathExecutable skips relative entries, entries and links inside the root, and folders",
+  { skip: process.platform === "win32" },
+  () => {
+    const dir = mkdtempSync(join(tmpdir(), "path-exec-"));
+    try {
+      const root = join(dir, "root");
+      const trusted = join(dir, "trusted");
+      const other = join(dir, "other");
+      for (const d of [
+        join(root, "node_modules", ".bin"),
+        trusted,
+        other,
+        join(other, "tool-dir"),
+      ]) {
+        mkdirSync(d, { recursive: true });
+      }
+      writeFileSync(join(root, "node_modules", ".bin", "tool"), "#!/bin/sh\n", { mode: 0o755 });
+      writeFileSync(join(trusted, "tool"), "#!/bin/sh\n", { mode: 0o755 });
+      writeFileSync(join(root, "inside-tool"), "#!/bin/sh\n", { mode: 0o755 });
+      symlinkSync(join(root, "inside-tool"), join(other, "linked-tool"));
+      mkdirSync(join(other, "folder-tool"));
+      const path = (/** @type {string[]} */ ...dirs) => dirs.join(delimiter);
+      assert.equal(
+        pathExecutable("tool", path(join(root, "node_modules", ".bin"), trusted), root),
+        join(trusted, "tool"),
+      );
+      assert.equal(
+        pathExecutable("tool", path("node_modules/.bin", ".", "", trusted), root),
+        join(trusted, "tool"),
+      );
+      assert.equal(
+        pathExecutable("tool", path(join(root, "node_modules", ".bin")), root),
+        undefined,
+      );
+      assert.equal(
+        pathExecutable("linked-tool", path(other), root),
+        undefined,
+        "a link into the root",
+      );
+      assert.equal(
+        pathExecutable("folder-tool", path(other), root),
+        undefined,
+        "a folder is not a program",
+      );
+      assert.equal(pathExecutable("tool-dir", path(other), root), undefined);
+      assert.equal(pathExecutable("missing", path(other, trusted), root), undefined);
+      // The review root named like the tool, with its parent on PATH.
+      mkdirSync(join(dir, "named", "tool"), { recursive: true });
+      assert.equal(
+        pathExecutable("tool", path(join(dir, "named")), join(dir, "named", "tool")),
+        undefined,
+      );
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  },
+);
+
+test("envPath reads PATH whatever the case on Windows and exactly PATH elsewhere", () => {
+  assert.equal(envPath({ PATH: "/a" }), "/a");
+  assert.equal(envPath({ HOME: "/h" }), undefined);
+  if (process.platform === "win32") {
+    assert.equal(envPath({ Path: "C:\\a" }), "C:\\a");
+  } else {
+    assert.equal(envPath({ Path: "/lower" }), undefined);
+  }
+});
+
+const UNDER_BUN = exeName(process.execPath) === "bun";
+const refuseTest = (/** @type {string} */ message) => {
+  throw new Error(message);
+};
+test(
+  "a bun server is started without the checkout's .env and bunfig.toml; bunx --bun is refused",
+  { skip: !UNDER_BUN || process.platform === "win32" },
+  () => {
+    const dir = mkdtempSync(join(tmpdir(), "bun-hardened-"));
+    try {
+      const root = join(dir, "checkout");
+      mkdirSync(root);
+      writeFileSync(join(root, "bunfig.toml"), 'preload = ["./pre.mjs"]\n');
+      writeFileSync(
+        join(root, "pre.mjs"),
+        `await Bun.write(${JSON.stringify(join(dir, "preload-ran"))}, "1");\n`,
+      );
+      writeFileSync(join(root, ".env"), "PROBE_FROM_ENV=1\n");
+      writeFileSync(
+        join(dir, "server.mjs"),
+        `console.log(JSON.stringify({ env: process.env.PROBE_FROM_ENV ?? null }));\n`,
+      );
+      const run = (/** @type {string[]} */ cmd) =>
+        spawnSync(cmd[0] ?? "", cmd.slice(1), {
+          cwd: root,
+          encoding: "utf8",
+          env: { PATH: process.env.PATH },
+        });
+      // Control: a plain bun launch in the checkout reads both files.
+      const plain = run([process.execPath, join(dir, "server.mjs")]);
+      assert.match(plain.stdout, /"env":"1"/, plain.stderr);
+      assert.equal(existsSync(join(dir, "preload-ran")), true, "the control preload ran");
+      rmSync(join(dir, "preload-ran"));
+      const hardened = bunHardened([process.execPath, join(dir, "server.mjs")], root, refuseTest);
+      assert.equal(hardened[1], "--no-env-file");
+      assert.match(hardened[2] ?? "", /^--config=.*empty-bunfig\.toml$/);
+      const safe = run(hardened);
+      assert.match(safe.stdout, /"env":null/, safe.stderr);
+      assert.equal(existsSync(join(dir, "preload-ran")), false, "the preload did not run");
+      // A script whose #! line names bun runs through bun with the flags.
+      writeFileSync(join(dir, "adapter"), "#!/usr/bin/env bun\nconsole.log('adapter');\n", {
+        mode: 0o755,
+      });
+      const viaShebang = bunHardened([join(dir, "adapter"), "acp"], root, refuseTest);
+      assert.deepEqual(viaShebang.slice(1, 2), ["--no-env-file"]);
+      assert.equal(viaShebang.at(-2), join(dir, "adapter"));
+      assert.equal(viaShebang.at(-1), "acp");
+      // A Node script and a plain executable are left alone; flags already given are not doubled.
+      writeFileSync(join(dir, "node-adapter"), "#!/usr/bin/env node\n", { mode: 0o755 });
+      assert.deepEqual(bunHardened([join(dir, "node-adapter"), "acp"], root, refuseTest), [
+        join(dir, "node-adapter"),
+        "acp",
+      ]);
+      assert.deepEqual(bunHardened(["bun", "--no-env-file", "x.js"], root, refuseTest), [
+        "bun",
+        "--no-env-file",
+        "x.js",
+      ]);
+      assert.deepEqual(bunHardened(["bunx", "codex-acp"], root, refuseTest), ["bunx", "codex-acp"]);
+      for (const cmd of [
+        ["bunx", "--bun", "pkg"],
+        ["bun", "x", "--bun", "pkg"],
+      ]) {
+        assert.throws(() => bunHardened(cmd, root, refuseTest), /bunx --bun/);
+      }
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  },
+);
+
+test(
+  "the Codex program is held to the same rule: CODEX_PATH inside the checkout or relative is refused, a bare name skips the checkout's bin, the canonical outside path runs",
+  { skip: process.platform === "win32" },
+  () => {
+    const dir = mkdtempSync(join(tmpdir(), "codex-lookup-"));
+    try {
+      const root = join(dir, "root");
+      const trusted = join(dir, "trusted");
+      mkdirSync(join(root, "bin"), { recursive: true });
+      mkdirSync(trusted);
+      const mark = join(dir, "checkout-codex-ran");
+      writeFileSync(join(root, "bin", "codex"), `#!/bin/sh\n: > "${mark}"\necho '[]'\n`, {
+        mode: 0o755,
+      });
+      writeFileSync(join(trusted, "codex-real"), "#!/bin/sh\necho '[]'\n", { mode: 0o755 });
+      symlinkSync(join(trusted, "codex-real"), join(trusted, "codex"));
+      const refuse = /** @type {(m: string) => never} */ (
+        (m) => {
+          throw new Error(m);
+        }
+      );
+      const path = `${join(root, "bin")}${delimiter}${trusted}`;
+      const wrap = (/** @type {string | undefined} */ given) =>
+        codexWrapper(
+          { PATH: path, ...(given === undefined ? {} : { CODEX_PATH: given }) },
+          false,
+          root,
+          refuse,
+        );
+      for (const given of ["./bin/codex", join(root, "bin", "codex")]) {
+        assert.throws(() => wrap(given), /regular executable outside the review root/, given);
+      }
+      for (const given of [undefined, "codex", join(trusted, "codex")]) {
+        const out = wrap(given);
+        assert.equal(
+          out.CODEX_NO_WEB_REAL,
+          realpathSync(join(trusted, "codex-real")),
+          String(given),
+        );
+        assert.match(readFileSync(String(out.CODEX_PATH), "utf8"), /^#!\/bin\/sh\n/);
+      }
+      assert.equal(existsSync(mark), false, "the checkout's codex never ran");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  },
+);
+test(
+  "pathExecutable returns the canonical path, not the entry's alias",
+  { skip: process.platform === "win32" },
+  () => {
+    const dir = mkdtempSync(join(tmpdir(), "path-canon-"));
+    try {
+      mkdirSync(join(dir, "real"));
+      writeFileSync(join(dir, "real", "tool-real"), "#!/bin/sh\n", { mode: 0o755 });
+      symlinkSync(join(dir, "real", "tool-real"), join(dir, "real", "tool"));
+      symlinkSync(join(dir, "real"), join(dir, "alias"));
+      const root = join(dir, "root");
+      mkdirSync(root);
+      assert.equal(
+        pathExecutable("tool", join(dir, "alias"), root),
+        realpathSync(join(dir, "real", "tool-real")),
+      );
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  },
+);
+
+test(
+  "reviewBase is the enclosing checkout, the review root itself when there is none or it is the home folder",
+  { skip: process.platform === "win32" },
+  () => {
+    const dir = mkdtempSync(join(tmpdir(), "review-base-"));
+    const savedHome = process.env.HOME;
+    try {
+      const repo = realpathSync(dir);
+      mkdirSync(join(repo, "r", ".git"), { recursive: true });
+      mkdirSync(join(repo, "r", "packages", "app"), { recursive: true });
+      mkdirSync(join(repo, "plain", "sub"), { recursive: true });
+      process.env.HOME = "/nonexistent-home";
+      assert.equal(reviewBase(join(repo, "r", "packages", "app")), join(repo, "r"));
+      assert.equal(reviewBase(join(repo, "r")), join(repo, "r"));
+      assert.equal(reviewBase(join(repo, "plain", "sub")), join(repo, "plain", "sub"));
+      // A dotfiles-style repository at (or above) the home folder is not the checkout.
+      mkdirSync(join(repo, "plain", ".git"));
+      process.env.HOME = join(repo, "plain");
+      assert.equal(reviewBase(join(repo, "plain", "sub")), join(repo, "plain", "sub"));
+    } finally {
+      process.env.HOME = savedHome;
+      rmSync(dir, { recursive: true, force: true });
+    }
+  },
+);

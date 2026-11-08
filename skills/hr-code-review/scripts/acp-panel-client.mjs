@@ -20,10 +20,14 @@ import { createHash } from "node:crypto";
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
 import {
+  AGY_UNMASKED,
+  bunHardened,
   codexWrapper,
   devinConfig,
+  gitProgram,
   mayStart,
   mayStartAgy,
+  reviewBase,
   seatAgent,
   seatEnv,
 } from "./seat-launch.mjs";
@@ -174,14 +178,10 @@ const promptText = readFileSync(promptFile, "utf8");
 const HARD_TIMEOUT_MS = timeoutMin * 60 * 1000;
 // The caller's launch policy module (a `check({ model, effort, command, options })` export, or a default
 // function) throws to refuse; a refusal exits 2 before any server starts.
-// `agy acp` starts the MCP servers, plugins and hooks found in the agent folders of the working directory
-// and of each directory up to the git root, from the files alone. The caller declares the seat masked
-// (those folders covered) with `--policy-option agy-masked`; without it an agy launch is refused,
-// before a policy module is imported (it could set the option itself or run code at import).
+// `agy acp` runs what it finds in the agent folders of the working directory and its parents; the caller
+// declares them covered with `--policy-option agy-masked`, checked before any policy module is imported.
 if (mayStartAgy(serverCmd, process.env.PATH, cwd) && policyOptions["agy-masked"] !== "true") {
-  refuse(
-    "the launch may start agy, which runs the hooks, plugins and MCP servers in the .agents, .agent, _agents and _agent folders of the working directory and its parents; mask those folders and pass --policy-option agy-masked",
-  );
+  refuse(AGY_UNMASKED);
 }
 if (policyPath) {
   try {
@@ -219,13 +219,18 @@ const gitEnv = {
  * @param {string[]} args
  * @param {"utf8" | "latin1"} encoding
  */
-const git = (args, encoding, stdio = /** @type {"pipe"} */ ("pipe")) =>
-  execFileSync("git", ["-c", "core.fsmonitor=false", "-C", cwd, ...args], {
-    encoding,
-    env: gitEnv,
-    stdio: ["ignore", stdio, "pipe"],
-    maxBuffer: 512 * 1024 * 1024,
-  });
+const git = (args, encoding, stdio = /** @type {"pipe"} */ ("pipe")) => {
+  return execFileSync(
+    gitProgram(gitEnv, reviewBase(cwd)),
+    ["-c", "core.fsmonitor=false", "-C", cwd, ...args],
+    {
+      encoding,
+      env: gitEnv,
+      stdio: ["ignore", stdio, "pipe"],
+      maxBuffer: 512 * 1024 * 1024,
+    },
+  );
+};
 // Only git's own "not a git repository", or no git program at all, means there is nothing to compare. Any
 // other failure (a bad config, a checkout git refuses as owned by someone else) propagates: treating it as
 // "not a checkout" would skip the comparison and let a seat's writes pass.
@@ -344,7 +349,7 @@ try {
   );
   process.exit(1);
 }
-const launchCmd = devinConfig(serverCmd, noWeb, cwd, refuseLaunch);
+const launchCmd = bunHardened(devinConfig(serverCmd, noWeb, cwd, refuseLaunch), cwd, refuseLaunch);
 // Codex is recognized by seatAgent, or when a launch it cannot read could still start codex-acp (its
 // package named after a runner option, its script beside a preload); the wrapper then applies. Its
 // login variables still follow seatAgent.

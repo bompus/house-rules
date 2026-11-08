@@ -114,7 +114,7 @@ agent cannot obtain it through its own approved route.
   project servers are included) (a seat never needs one, and a server runs with the
   user's own configuration); under `--no-web` the wrapper also turns off web
   search and the apps connector. The client refuses (exit 2) when that list cannot
-  be read (`CODEX_PATH`, or `codex` on `PATH`, must run it), when a server name
+  be read (`CODEX_PATH`, an absolute path to a regular executable outside the review root, or else `codex` on `PATH` outside it, must run it), when a server name
   cannot be turned off safely, and on Windows, where it cannot start a Codex seat
   at all. `CODEX_CONFIG` (JSON the caller sets for codex-acp) passes through
   without its `mcp_servers` table, which codex-acp would add to the session
@@ -160,6 +160,8 @@ Launch the client from a folder you trust and name the review root with its `[cw
 Files inside the review root are readable by the seat, `.git/config` included:
 keep no credential there (a remote URL with a token, for example).
 
+The server starts in the review root, and a Bun process reads `.env` and `bunfig.toml` (a `preload` runs code) from where it starts. A launch whose executable is `bun` therefore gets `--no-env-file --config=EMPTY` (an empty file in the client's private folder) after it, and a script whose `#!` line names bun runs as `bun --no-env-file --config=EMPTY SCRIPT`. `bunx --bun` and `bun x --bun` cannot be told the same and are refused (exit 2). A package `bunx` runs under Node, as `codex-acp` and `claude-agent-acp` are, never reads either file. A bun command inside `env` or `sh -c` is not rewritten.
+
 This narrows what a seat can pick up from its environment, shell and MCP tools.
 It does not sandbox the agent. Outside a sandbox (a process namespace and a
 filesystem view the caller builds, as a review service can) the allowlist and the
@@ -167,7 +169,7 @@ refused permission requests are the only guards: a seat whose agent runs a shell
 without asking is covered only by its environment. Run a review that matters
 inside a sandbox.
 
-The client runs `git status` in the review root with the same narrowed
+The client runs `git status` in the review root, using the first `git` on an absolute `PATH` entry outside the checkout (the nearest parent of the review root holding `.git` or `.jj`, else the review root; none there: no comparison), with the same narrowed
 environment (plus the variables that point git at a repository) and with
 `core.fsmonitor` switched off on the command line, because the repository's own
 configuration can name programs git runs. A seat that writes git configuration
@@ -199,8 +201,7 @@ On Linux it also runs OpenCode under bubblewrap (`bwrap` must be installed; the
 seat exits 127 without it), because OpenCode treats a whole git project as inside
 and follows symlinks. The seat sees only the system folders (read-only), the
 name-resolution, public TLS (`/etc/ssl/certs` and the like, never `/etc/ssl/private`) and loader files under `/etc`, an empty home, a private
-`/tmp`, a sanitized copy of the checkout, the prompt file and the OpenCode binary itself.
-The original checkout is never mounted.
+`/tmp`, a sanitized copy of the checkout, the prompt file and the OpenCode binary itself, which is the first regular executable `opencode` on an absolute `PATH` entry outside the review root (a relative entry, `node_modules/.bin`, a folder or a link into the checkout never counts; the seat exits 127 when there is none). The original checkout is never mounted.
 
 Before the sandbox starts, the seat copies the checkout into a private folder (mode 0700, under
 `TMPDIR`) and shows it read-only at the checkout's own path, where the seat starts. The copy
@@ -220,7 +221,7 @@ A denied file inside a `.git` folder (its object store excepted), such as the `c
 
 A prompt file the rules deny, under the name given or as the file it resolves to (a link to an outside `.env`), refuses the run (exit 2), and so does a prompt that is not a regular file (a folder would put more than the task in view). A prompt inside the checkout is the copy's own file; one outside it is copied into the copy under a `.panel-seat-prompt-` name, so no outside path is mounted.
 
-Bubblewrap is found in a system folder (`/usr/bin`, `/bin`, `/usr/local/bin`, `/run/current-system/sw/bin`) or at the absolute path given as `--bwrap PATH` after the other arguments, never on `PATH` and never from an environment variable: a checkout's own tooling is often first on `PATH`, Bun reads the checkout's `.env` into the environment, and this helper runs before any boundary. The outside prompt is read once from a verified descriptor (no link followed, a regular file, not a denied name).
+Bubblewrap is found in a system folder (`/usr/bin`, `/bin`, `/usr/local/bin`, `/run/current-system/sw/bin`) or at the absolute path given as `--bwrap PATH` after the other arguments, never inside the review root (a link out of it is fine), never on `PATH` and never from an environment variable: a checkout's own tooling is often first on `PATH`, Bun reads the checkout's `.env` into the environment, and this helper runs before any boundary. The outside prompt is read once from a verified descriptor (no link followed, a regular file, not a denied name).
 
 Launch the script from a folder you trust and name the checkout with `--root CHECKOUT` (default: the launch folder, with a warning on stderr, also when `--root` names the launch folder). Bun reads `.env` and `bunfig.toml` from the launch folder before the script starts: a checkout's `.env` can set `HOME`, `XDG_CONFIG_HOME` or `TMPDIR` where the real environment has none (moving the denial config the wrapper reads), and a `preload` in its `bunfig.toml` runs code before any boundary. The temporary folder that holds the copy must lie outside the checkout (exit 2 otherwise). A file hard-linked from outside the checkout under a name no rule denies is copied. A denied `*` copies only the prompt file, when it is inside the checkout.
 

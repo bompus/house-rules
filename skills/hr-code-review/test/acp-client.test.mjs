@@ -1994,3 +1994,102 @@ export default async ({ options }) => { options["agy-masked"] = "true"; };
   assert.equal(r.launch, null);
   assert.equal(r.read["policy-ran"], null, "the policy module was not imported");
 });
+test(
+  "a git program inside the review root on PATH is never the one the client runs",
+  { skip: process.platform === "win32" },
+  () => {
+    const prepare = (/** @type {string} */ root, /** @type {string} */ dir) => {
+      mkdirSync(join(root, "bin"));
+      writeFileSync(
+        join(root, "bin", "git"),
+        `#!/bin/sh\n: > "${join(dir, "git-ran")}"\nexit 0\n`,
+        {
+          mode: 0o755,
+        },
+      );
+    };
+    const r = run(
+      { env: { PATH: `%DIR%/repo/bin:${process.env.PATH}` }, readBack: ["git-ran"] },
+      [],
+      prepare,
+    );
+    assert.equal(r.code, 0, r.error);
+    assert.equal(r.read["git-ran"], null, "the checkout's git did not run");
+  },
+);
+test(
+  "with no git outside the review root the comparison is skipped, not run with the checkout's git",
+  { skip: process.platform === "win32" },
+  () => {
+    const prepare = (/** @type {string} */ root, /** @type {string} */ dir) => {
+      mkdirSync(join(root, "bin"));
+      writeFileSync(
+        join(root, "bin", "git"),
+        `#!/bin/sh\n: > "${join(dir, "git-ran")}"\nexit 0\n`,
+        {
+          mode: 0o755,
+        },
+      );
+    };
+    const r = run({ env: { PATH: "%DIR%/repo/bin" }, readBack: ["git-ran"] }, [], prepare);
+    assert.equal(r.code, 0, r.error);
+    assert.equal(r.read["git-ran"], null, "the checkout's git did not run");
+  },
+);
+
+test(
+  "a bun server never reads the checkout's bunfig.toml preload or .env",
+  { skip: process.platform === "win32" },
+  () => {
+    const prepare = (/** @type {string} */ root, /** @type {string} */ dir) => {
+      writeFileSync(join(root, "bunfig.toml"), 'preload = ["./pre.mjs"]\n');
+      writeFileSync(
+        join(root, "pre.mjs"),
+        `await Bun.write(${JSON.stringify(join(dir, "preload-ran"))}, "1");\n`,
+      );
+      writeFileSync(join(root, ".env"), "PROBE_FROM_ENV=1\nACP_PROBE_HOME=/from/checkout\n");
+    };
+    const r = run(
+      { env: { ACP_PANEL_PASS_ENV: "PROBE_,ACP_PROBE_,FAKE_" }, readBack: ["preload-ran"] },
+      [],
+      prepare,
+    );
+    assert.equal(r.code, 0, r.error);
+    assert.equal(r.read["preload-ran"], null, "the checkout's preload did not run in the server");
+    assert.ok(r.launch, "the server started");
+    assert.equal(
+      r.launch.env.includes("PROBE_FROM_ENV"),
+      false,
+      "the checkout's .env was not loaded",
+    );
+    assert.equal(r.launch.env.includes("ACP_PROBE_HOME"), false);
+  },
+);
+
+test(
+  "a git program anywhere in the checkout is refused, also when launched from below the repository root",
+  { skip: process.platform === "win32" },
+  () => {
+    const prepare = (/** @type {string} */ root, /** @type {string} */ dir) => {
+      gitRepoWithTracked(root);
+      mkdirSync(join(root, "bin"));
+      mkdirSync(join(root, "packages", "app"), { recursive: true });
+      writeFileSync(join(root, "packages", "app", "a.txt"), "x");
+      writeFileSync(
+        join(root, "bin", "git"),
+        `#!/bin/sh\n: > "${join(dir, "git-ran")}"\nexit 0\n`,
+        {
+          mode: 0o755,
+        },
+      );
+      return join(root, "packages", "app");
+    };
+    const r = run(
+      { env: { PATH: `%DIR%/repo/bin:${process.env.PATH}` }, readBack: ["git-ran"] },
+      [],
+      prepare,
+    );
+    assert.equal(r.code, 0, r.error);
+    assert.equal(r.read["git-ran"], null, "the checkout's git did not run");
+  },
+);

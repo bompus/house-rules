@@ -192,16 +192,22 @@ function withShims(
   const state = scratch("opencode-state");
   try {
     const out = join(dir, "seen");
+    // The stand-in opencode lives outside the review root, as the real one does (a binary inside the
+    // checkout is refused).
+    mkdirSync(join(state, "bin"));
     writeFileSync(
-      join(dir, "opencode"),
+      join(state, "bin", "opencode"),
       `#!/bin/sh\npwd > "${out}.cwd"\nenv > "${out}.env"\nprintf '%s\\n' "$@" > "${out}.args"\nfind . ! -name . | sort > "${out}.files"\nexit 7\n`,
     );
     writeFileSync(
-      join(dir, "bwrap"),
+      join(state, "bin", "bwrap"),
       `#!/bin/sh\nprintf '%s\\n' "$@" > "${out}.bwrap"\nwhile [ "$1" != "--" ]; do shift; done\nshift\nexec "$@"\n`,
     );
-    chmodSync(join(dir, "opencode"), 0o755);
-    chmodSync(join(dir, "bwrap"), 0o755);
+    chmodSync(join(state, "bin", "opencode"), 0o755);
+    chmodSync(join(state, "bin", "bwrap"), 0o755);
+    // The tests name the helper as join(dir, "bwrap"): a link, because a helper that lies inside the
+    // review root is refused.
+    symlinkSync(join(state, "bin", "bwrap"), join(dir, "bwrap"));
     writeFileSync(join(dir, "prompt.md"), "task");
     mkdirSync(join(state, "home"));
     mkdirSync(join(state, "data", "opencode"), { recursive: true });
@@ -213,7 +219,7 @@ function withShims(
       dir,
       {
         ...PARENT,
-        PATH: `${dir}${delimiter}${process.env.PATH}`,
+        PATH: `${join(state, "bin")}${delimiter}${process.env.PATH}`,
         HOME: join(state, "home"),
         XDG_DATA_HOME: join(state, "data"),
         XDG_CONFIG_HOME: join(state, "config"),
@@ -868,7 +874,7 @@ test(
       );
       assert.equal(
         readFileSync(join(dir, "seen.files"), "utf8"),
-        ["./.env.example", "./opencode", "./bwrap", "./prompt.md", "./seen", "./sub"]
+        ["./.env.example", "./prompt.md", "./seen", "./sub"]
           .filter((n) => n !== "./seen")
           .sort()
           .join("\n") + "\n",
@@ -914,14 +920,15 @@ test("a stop sent while opencode runs ends it and removes the copy", LINUX_ONLY,
   const dir = scratch("opencode-stop");
   const state = scratch("opencode-stop-state");
   try {
-    const shim = join(dir, "opencode");
+    mkdirSync(join(state, "bin"));
+    const shim = join(state, "bin", "opencode");
     writeFileSync(shim, `#!/bin/sh\necho $$ > "${join(dir, "ready")}"\nexec sleep 30\n`);
     writeFileSync(
-      join(dir, "bwrap"),
+      join(state, "bin", "bwrap"),
       `#!/bin/sh\nprintf '%s\\n' "$@" > "${join(dir, "box")}"\nwhile [ "$1" != "--" ]; do shift; done\nshift\nexec "$@"\n`,
     );
     chmodSync(shim, 0o755);
-    chmodSync(join(dir, "bwrap"), 0o755);
+    chmodSync(join(state, "bin", "bwrap"), 0o755);
     writeFileSync(join(dir, "prompt.md"), "task");
     writeFileSync(join(dir, ".env"), "SECRET");
     mkdirSync(join(state, "home"));
@@ -933,13 +940,13 @@ test("a stop sent while opencode runs ends it and removes the copy", LINUX_ONLY,
     const tmp = scratch("opencode-stop-tmp");
     const child = spawn(
       process.execPath,
-      [script, "opencode-go/m", "max", "prompt.md", "--bwrap", join(dir, "bwrap")],
+      [script, "opencode-go/m", "max", "prompt.md", "--bwrap", join(state, "bin", "bwrap")],
       {
         cwd: dir,
         stdio: "ignore",
         env: {
           ...PARENT,
-          PATH: `${dir}${delimiter}${process.env.PATH}`,
+          PATH: `${join(state, "bin")}${delimiter}${process.env.PATH}`,
           HOME: join(state, "home"),
           XDG_DATA_HOME: join(state, "data"),
           XDG_CONFIG_HOME: join(state, "config"),
@@ -1354,10 +1361,10 @@ test(
       // The stand-in opencode reads the attached file from its working directory (the copy; a real sandbox
       // shows the copy at the checkout's path), so the bytes the seat gets are checked.
       writeFileSync(
-        join(dir, "opencode"),
+        join(state, "bin", "opencode"),
         `#!/bin/sh\nprev=""\nfor a in "$@"; do [ "$prev" = "--file" ] && { cat "./$(basename "$a")" > "${join(dir, "seen.prompt")}"; printf '%s' "$a" > "${join(dir, "seen.promptpath")}"; }; prev="$a"; done\nexit 7\n`,
       );
-      chmodSync(join(dir, "opencode"), 0o755);
+      chmodSync(join(state, "bin", "opencode"), 0o755);
       const outside = join(state, "task.md");
       writeFileSync(outside, "the task outside");
       const r = spawnSync(
@@ -1533,6 +1540,111 @@ test(
       assert.match(r.stderr, /warning: the launch folder is the checkout/);
       const args = readFileSync(join(dir, "seen.args"), "utf8").split("\n");
       assert.equal(args[args.indexOf("--title") + 1], "--audit");
+    });
+  },
+);
+
+test(
+  "an opencode inside the review root, or a folder named opencode, is never the binary that runs",
+  LINUX_ONLY,
+  () => {
+    withShims((dir, env, state) => {
+      // Only a relative entry, an entry inside the root and a folder of that name are on PATH.
+      mkdirSync(join(dir, "node_modules", ".bin"), { recursive: true });
+      writeFileSync(join(dir, "node_modules", ".bin", "opencode"), "#!/bin/sh\nexit 5\n", {
+        mode: 0o755,
+      });
+      mkdirSync(join(state, "bin2", "opencode"), { recursive: true });
+      const r = spawnSync(
+        process.execPath,
+        [script, "opencode-go/m", "max", "prompt.md", "--bwrap", join(dir, "bwrap")],
+        {
+          cwd: dir,
+          encoding: "utf8",
+          env: {
+            ...env,
+            PATH: [
+              join(dir, "node_modules", ".bin"),
+              "node_modules/.bin",
+              ".",
+              join(state, "bin2"),
+            ].join(delimiter),
+          },
+        },
+      );
+      assert.equal(r.status, 127, r.stderr);
+      assert.match(r.stderr, /opencode is not on PATH outside the review root/);
+      assert.equal(existsSync(join(dir, "seen.bwrap")), false, "no sandbox, no bound binary");
+    });
+  },
+);
+test(
+  "a review root that is named opencode, with its parent on PATH, is not bound over the copy",
+  LINUX_ONLY,
+  () => {
+    const parent = scratch("opencode-named-root");
+    const state = scratch("opencode-named-state");
+    try {
+      const dir = join(parent, "opencode");
+      mkdirSync(dir);
+      writeFileSync(join(dir, ".env"), "PRIVATE");
+      writeFileSync(join(dir, "prompt.md"), "task");
+      writeFileSync(
+        join(dir, "bwrap"),
+        '#!/bin/sh\nprintf \'%s\\n\' "$@" > "' + join(state, "box") + '"\nexit 7\n',
+        { mode: 0o755 },
+      );
+      mkdirSync(join(state, "home"));
+      mkdirSync(join(state, "data", "opencode"), { recursive: true });
+      writeFileSync(
+        join(state, "data", "opencode", "auth.json"),
+        JSON.stringify({ "opencode-go": { key: "k" } }),
+      );
+      const r = spawnSync(
+        process.execPath,
+        [script, "opencode-go/m", "max", "prompt.md", "--bwrap", join(dir, "bwrap")],
+        {
+          cwd: dir,
+          encoding: "utf8",
+          env: {
+            ...PARENT,
+            PATH: `${parent}${delimiter}/usr/bin`,
+            HOME: join(state, "home"),
+            XDG_DATA_HOME: join(state, "data"),
+            XDG_CONFIG_HOME: join(state, "config"),
+          },
+        },
+      );
+      assert.equal(r.status, 127, r.stderr);
+      assert.equal(existsSync(join(state, "box")), false, "no mount list was ever built");
+    } finally {
+      rmSync(parent, { recursive: true, force: true });
+      rmSync(state, { recursive: true, force: true });
+    }
+  },
+);
+
+test(
+  "a bubblewrap executable inside the review root is refused, a link out of it is fine",
+  LINUX_ONLY,
+  () => {
+    withShims((dir, env) => {
+      // The fixture helper is a link to a file outside the root: accepted (every other test relies on it).
+      writeFileSync(
+        join(dir, "real-bwrap"),
+        '#!/bin/sh\ntouch "' + join(dir, "bwrap-ran") + '"\nexit 9\n',
+        {
+          mode: 0o755,
+        },
+      );
+      const r = spawnSync(
+        process.execPath,
+        [script, "opencode-go/m", "max", "prompt.md", "--bwrap", join(dir, "real-bwrap")],
+        { cwd: dir, encoding: "utf8", env },
+      );
+      assert.equal(r.status, 127, r.stderr);
+      assert.match(r.stderr, /bwrap .* is inside the review root/);
+      assert.equal(existsSync(join(dir, "bwrap-ran")), false, "the checkout's helper never ran");
     });
   },
 );

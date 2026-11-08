@@ -39,9 +39,10 @@ import {
   writeSync,
 } from "node:fs";
 import { constants, homedir, tmpdir } from "node:os";
-import { basename, delimiter, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
+import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { randomBytes } from "node:crypto";
 import { fileURLToPath } from "node:url";
+import { envPath, pathExecutable, reviewBase } from "./seat-launch.mjs";
 
 const PASSED = [
   "PATH",
@@ -616,23 +617,6 @@ export function readPrompt(prompt, denies, limit = 16 * 1024 * 1024) {
     closeSync(fd);
   }
 }
-/**
- * The executable `name` on `pathVar`, or undefined.
- * @param {string} name
- * @param {string | undefined} pathVar
- */
-function onPath(name, pathVar) {
-  for (const dir of (pathVar ?? "").split(delimiter)) {
-    const candidate = join(isAbsolute(dir) ? dir : resolve(dir), name);
-    try {
-      accessSync(candidate, fsConstants.X_OK);
-      return candidate;
-    } catch {
-      // Not here.
-    }
-  }
-  return undefined;
-}
 
 if (
   process.argv[1] &&
@@ -685,7 +669,13 @@ if (
   const config = process.env.XDG_CONFIG_HOME || join(home, ".config");
   const denials = userReadDenials(join(config, "opencode"));
   const env = openCodeEnv(process.env, dir, denials);
-  let cmd = ["opencode", ...runArgs(model, effort, promptFile, title)];
+  // OpenCode is found outside the review checkout on every system, and that file is what runs.
+  const opencode = pathExecutable("opencode", envPath(process.env), reviewBase(dir));
+  if (!opencode) {
+    console.error("[opencode-seat] opencode is not on PATH outside the review root");
+    process.exit(127);
+  }
+  let cmd = [opencode, ...runArgs(model, effort, promptFile, title)];
   // The copy the seat runs on (Linux), removed on every way out, a stop included.
   /** @type {string | undefined} */
   let sandboxCopy;
@@ -708,11 +698,7 @@ if (
     });
   }
   if (process.platform === "linux") {
-    const which = onPath("opencode", process.env.PATH);
-    if (!which) {
-      console.error("[opencode-seat] opencode is not on PATH");
-      process.exit(127);
-    }
+    const which = opencode;
     const data = env.XDG_DATA_HOME || join(home, ".local/share");
     const covered = rootCovers(
       dir,
@@ -727,11 +713,19 @@ if (
       process.exit(2);
     }
     const binary = realpathSync(which);
-    const bwrap = findBwrap(bwrapOverride);
+    let bwrap = findBwrap(bwrapOverride);
     if (bwrap === undefined) {
       console.error(
         `[opencode-seat] bwrap is not in a system folder (${TRUSTED_BIN.join(", ")}) and --bwrap is not an absolute path to it`,
       );
+      process.exit(127);
+    }
+    // Same rule as for every helper: not a program of the checkout (a link out of it is fine).
+    // Resolved once: the canonical path is what is checked and what runs, so a link swapped in the
+    // meantime changes nothing.
+    bwrap = realpathSync(bwrap);
+    if (rootCovers(reviewBase(dir), [bwrap]) !== undefined) {
+      console.error(`[opencode-seat] bwrap ${bwrap} is inside the review root`);
       process.exit(127);
     }
     // OpenCode 2 inside the empty home finds no saved login, so the key for the model's provider (the
