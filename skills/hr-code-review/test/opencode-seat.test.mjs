@@ -1445,7 +1445,7 @@ test(
         { cwd: state, encoding: "utf8", env },
       );
       assert.equal(r.status, 7, r.stderr);
-      assert.doesNotMatch(r.stderr, /warning: no --root/);
+      assert.doesNotMatch(r.stderr, /warning: the launch folder is the checkout/);
       const box = readFileSync(join(dir, "seen.bwrap"), "utf8").split("\n");
       assert.equal(box[box.indexOf("--chdir") + 1], realpathSync(dir));
       // Without it the checkout is the launch folder, and the run says so.
@@ -1459,7 +1459,7 @@ test(
         },
       );
       assert.equal(plain.status, 7, plain.stderr);
-      assert.match(plain.stderr, /warning: no --root/);
+      assert.match(plain.stderr, /warning: the launch folder is the checkout/);
     });
   },
 );
@@ -1475,7 +1475,7 @@ test(
         { cwd: dir, encoding: "utf8", env },
       );
       assert.equal(r.status, 7, r.stderr);
-      for (const extra of [["--bwrap"], ["--root", "/a", "--root", "/b"], ["t", "u"], ["--nope"]]) {
+      for (const extra of [["--bwrap"], ["--root", "/a", "--root", "/b"], ["t", "u"]]) {
         const bad = spawnSync(
           process.execPath,
           [script, "opencode-go/m", "max", "prompt.md", ...extra],
@@ -1505,6 +1505,34 @@ test(
       assert.equal(r.status, 2, r.stderr);
       assert.match(r.stderr, /temporary folder .* is inside the review root/);
       assert.equal(existsSync(join(dir, "seen.bwrap")), false);
+    });
+  },
+);
+
+test(
+  "a title that starts with -- is still a title, and --root . from the checkout still warns",
+  LINUX_ONLY,
+  () => {
+    withShims((dir, env) => {
+      const r = spawnSync(
+        process.execPath,
+        [
+          script,
+          "opencode-go/m",
+          "max",
+          "prompt.md",
+          "--audit",
+          "--root",
+          ".",
+          "--bwrap",
+          join(dir, "bwrap"),
+        ],
+        { cwd: dir, encoding: "utf8", env },
+      );
+      assert.equal(r.status, 7, r.stderr);
+      assert.match(r.stderr, /warning: the launch folder is the checkout/);
+      const args = readFileSync(join(dir, "seen.args"), "utf8").split("\n");
+      assert.equal(args[args.indexOf("--title") + 1], "--audit");
     });
   },
 );

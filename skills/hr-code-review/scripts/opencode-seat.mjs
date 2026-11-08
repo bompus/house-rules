@@ -662,7 +662,7 @@ if (
       } else {
         rootArg = value;
       }
-    } else if (title === undefined && !arg.startsWith("--")) {
+    } else if (title === undefined) {
       title = arg;
     } else {
       bad = true;
@@ -676,9 +676,9 @@ if (
   }
   title ??= "panel-seat";
   const dir = realpathSync(rootArg ?? process.cwd());
-  if (rootArg === undefined) {
+  if (dir === realpathSync(process.cwd())) {
     console.error(
-      "[opencode-seat] warning: no --root, so Bun read .env and bunfig.toml from the checkout; launch from a trusted folder with --root",
+      "[opencode-seat] warning: the launch folder is the checkout, so Bun read its .env and bunfig.toml; launch from a trusted folder with --root",
     );
   }
   const home = homedir();
