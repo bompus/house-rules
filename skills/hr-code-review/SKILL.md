@@ -97,7 +97,12 @@ exits), not cleared blindly; an exited process is not that evidence, since a
 child can still hold an inherited lock. A file that readers reopen to read
 should be written to a temporary path and renamed into place; an append-only
 log or a database keeps its own update protocol. Where two actors write one file, key or directory, check
-whether each can get its own before accepting a lock. Split a large scope into groups of about three files,
+whether each can get its own before accepting a lock. For a new or changed
+check, guard, lint rule or detector, ask whether it was run on known-good input
+as well as on the cases it should catch; one that flags clean input measures
+itself. Cleanup of temporary directories, servers, fixtures or locks should be
+registered before the work it cleans up (`trap`, `finally`, `afterEach`), so it
+runs when the work fails. Split a large scope into groups of about three files,
 one reviewer per group. Do not assign this work to a reviewer focused on
 structure or maintainability.
 
