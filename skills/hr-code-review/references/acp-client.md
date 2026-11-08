@@ -116,13 +116,18 @@ The seat starts with a narrowed environment, not the caller's: named locale,
 path, XDG, proxy and certificate variables (on Windows, also the variables a
 program needs to start), plus only the variables its own agent reads to log in
 (`CODEX_` and `OPENAI_` for Codex, `ANTHROPIC_` and `CLAUDE_` for Claude, `DEVIN_`,
-`GROK_` and `XAI_`, `GEMINI_` and `GOOGLE_` for Antigravity, `CURSOR_`). A Claude
+`GROK_` and `XAI_`, `GEMINI_` and `GOOGLE_` for Antigravity, `CURSOR_`).
+
+A Claude
 seat on Bedrock keeps `AWS_` and one on Vertex keeps its Google credential path
-and region, when `CLAUDE_CODE_USE_BEDROCK` or `CLAUDE_CODE_USE_VERTEX` is on. The
+and region, when `CLAUDE_CODE_USE_BEDROCK` or `CLAUDE_CODE_USE_VERTEX` is on.
+
+The
 agent is read from the launch executable, the package a `bunx` or `npx` runner
 starts (or its `--package=` argument), or the script an interpreter runs (a
 script files (or a path ending in an adapter's own name without an extension, such as `tools/bin/codex-acp`) named on the command line, matched on the nearest of their last four
 path segments (the file's own name counts without its extension: `devin.mjs`), never a home directory, and only when they all name the same agent:
+
 a flag's value, attached (`--import=PATH`) or separate, that looks like a script makes the launch ambiguous, and so
 does a package runner option that takes a separate value, as in `npx --cache DIR
 PACKAGE`, a runner given more than one `--package=`, or a runner whose `--package=` names another agent than the command it runs (`npx --package=<claude> codex-acp`); an ambiguous launch gets the named variables only), never from other
@@ -167,7 +172,9 @@ XDG directories). Permissions deny every tool except read, glob and list (no
 grep: its rules match search patterns, not files), keep `.env` files unreadable
 (`.env.example` stays readable) and refuse reads outside the directory; they are
 set globally and on a dedicated agent because OpenCode applies agent permissions
-after global ones. Read patterns the user's own global OpenCode config (`opencode.json` and `opencode.jsonc`, both read) denies or
+after global ones.
+
+Read patterns the user's own global OpenCode config (`opencode.json` and `opencode.jsonc`, both read) denies or
 asks about stay denied, placed after every rule of the seat's own because the last
 matching rule decides, and a default or whole-tool deny or ask there (`permission: "deny"`, `{"*": "deny"}`, or for read alone)
 becomes a final deny-all (a config this runtime cannot parse is ignored;
@@ -180,14 +187,20 @@ On Linux it also runs OpenCode under bubblewrap (`bwrap` must be installed; the
 seat exits 127 without it), because OpenCode treats a whole git project as inside
 and follows symlinks. The seat then sees only the system folders (read-only), the
 name-resolution, public TLS (`/etc/ssl/certs` and the like, never `/etc/ssl/private`) and loader files under `/etc`, an empty home, a private
-`/tmp`, the seat's directory, the prompt file and the OpenCode binary itself. A
+`/tmp`, the seat's directory, the prompt file and the OpenCode binary itself.
+
+A
 symlink in the checkout to another file finds nothing. OpenCode checks the
 pathname it is asked to read, not what a link points to, so each `.env` file in
 the checkout (`*.env` and `*.env.*`, not `*.env.example`), and each file the
 user's own denied read patterns match by name, by path from the checkout or by absolute path (a leading `~` or `$HOME` in a pattern is the home folder, as in OpenCode)
 (`*` and `**` match any run of characters, `?` one; links are not followed and
 `.git/objects` is skipped), and the checkout's `.git/config` (a remote URL may carry a token), is also replaced by an empty file inside the sandbox, so a link
-to one finds nothing. Every other name of such a file inside the checkout (a hard link, `.git/objects` included) is hidden too, and so is the file a denied-named link (`.env -> secret.txt`) points to when it is inside the checkout; a link to a directory (`secrets -> backing`) is walked as that directory, so the files its path would name as denied (`secrets/token.json`) are hidden where they are. The `config` of every `.git` folder, nested repositories and links included, is hidden by default. A checkout with more than 1000 such files is refused (exit
+to one finds nothing.
+
+Every other name of such a file inside the checkout (a hard link, `.git/objects` included) is hidden too, and so is the file a denied-named link (`.env -> secret.txt`) points to when it is inside the checkout; a link to a directory (`secrets -> backing`) is walked as that directory, so the files its path would name as denied (`secrets/token.json`) are hidden where they are.
+
+The `config` of every `.git` folder, nested repositories and links included, is hidden by default. A checkout with more than 1000 such files is refused (exit
 2), and so is a review root that is or contains the home folder or OpenCode's config or data folder, because the sandbox shows the root over its empty home. OpenCode's config folder
 is hidden, so the key for the model's provider (the id before `/`) is read from
 OpenCode's auth file and passed as `OPENCODE_API_KEY`; the seat's own process can
@@ -204,7 +217,9 @@ collected answer exceeds 32 MiB, or the seat starts more than 100000 tool calls,
 also when that happens after the last reply. A stopped client (SIGTERM, SIGINT,
 SIGHUP) stops the server, killing it after 5 seconds if it ignores SIGTERM, and
 exits 128 plus the signal number; helper processes the server started may
-outlive it. A server that exits while a helper still holds its pipes ends the run
+outlive it.
+
+A server that exits while a helper still holds its pipes ends the run
 after one second.
 Once the answer is written the client reads nothing more from the server, so
 output after that point neither grows memory nor changes the outcome. Tool-call
