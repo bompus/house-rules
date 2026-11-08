@@ -154,10 +154,29 @@ const globRegex = (/** @type {string} */ pattern) =>
       .replace(/[.+^${}()|[\]\\]/g, "\\$&")
       .replace(/\*+/g, ".*")
       .replace(/\?/g, ".")}$`,
+    "s",
   );
 const MAX_ENTRIES = 200_000;
 const MAX_FILES = 100_000;
 const MAX_BYTES = 512 * 1024 * 1024;
+/**
+ * Whether a path, as the read rules see it (`path` is what OpenCode would be asked to read), is
+ * denied: an environment file, the `config` of a `.git` folder, or a match of the user's own
+ * patterns by name, by path from the checkout or by absolute path (a leading `~` or `$HOME` in a
+ * pattern is the home folder).
+ * @param {string} dir the review root
+ * @param {string[]} denied the user's denied read patterns
+ * @param {string} home
+ * @returns {(path: string) => boolean}
+ */
+export function deniedBy(dir, denied, home) {
+  const expand = (/** @type {string} */ p) => p.replace(/^(~|\$HOME|\$\{HOME\})(?=\/|$)/, home);
+  const patterns = denied.filter((p) => p !== "*").map((p) => globRegex(expand(p)));
+  return (path) =>
+    isEnvFile(basename(path)) ||
+    (basename(path) === "config" && basename(dirname(path)) === ".git") ||
+    patterns.some((re) => re.test(basename(path)) || re.test(relative(dir, path)) || re.test(path));
+}
 /**
  * Copies the regular files of the review root `dir` into a new private folder under `parent` (mode
  * 0700; files read-only) and returns its path, leaving out the files the read rules deny by name. The
@@ -192,24 +211,17 @@ export async function copyReviewRoot(
 ) {
   const limits = options.limits ?? { entries: MAX_ENTRIES, files: MAX_FILES, bytes: MAX_BYTES };
   dir = realpathSync(dir);
-  // OpenCode expands a leading `~` or `$HOME` in a pattern to the home folder.
-  const expand = (/** @type {string} */ p) => p.replace(/^(~|\$HOME|\$\{HOME\})(?=\/|$)/, home);
   const everything = denied.includes("*");
   const byPath = denied.some((p) => p !== "*" && p.includes("/"));
-  const patterns = denied.filter((p) => p !== "*").map((p) => globRegex(expand(p)));
-  // Whether a path, as the read rules see it (`path` is what OpenCode would be asked to read), is
-  // denied: an environment file, the `config` of a `.git` folder, or a match of the user's own
-  // patterns by name, by path from the checkout or by absolute path.
-  const isDenied = (/** @type {string} */ path) =>
-    isEnvFile(basename(path)) ||
-    (basename(path) === "config" && basename(dirname(path)) === ".git") ||
-    patterns.some((re) => re.test(basename(path)) || re.test(relative(dir, path)) || re.test(path));
+  const isDenied = deniedBy(dir, denied, home);
   let seen = 0;
   const count = () => {
     if (++seen > limits.entries) {
       throw new Error(`more than ${limits.entries} entries in the review root`);
     }
   };
+  /** @type {Set<string>} */
+  const omit = new Set();
   /** @type {string[]} */
   const folders = [];
   /** @type {{ path: string, st: import("node:fs").Stats }[]} */
@@ -230,6 +242,8 @@ export async function copyReviewRoot(
           gitDirs.push(path);
         } else if (entry.isSymbolicLink()) {
           links.push(path);
+        } else if (entry.isFile() && isDenied(path)) {
+          omit.add(path); // Never copied, but its hard-link aliases are found by inode below.
         }
       } else if (entry.isDirectory()) {
         folders.push(path);
@@ -241,8 +255,6 @@ export async function copyReviewRoot(
       }
     }
   }
-  /** @type {Set<string>} */
-  const omit = new Set();
   for (const { path } of files) {
     if (isDenied(path)) {
       omit.add(path);
@@ -627,13 +639,22 @@ if (
     } catch {
       // No auth file: OpenCode reports the missing login itself.
     }
-    // The prompt file by its real path: the sandbox shows that path, not a link to it.
-    let prompt = resolve(promptFile);
+    // The prompt file by its real path: the sandbox shows that path, not a link to it. Neither the
+    // name it was given nor the file it resolves to may be one the read rules deny.
+    const given = resolve(promptFile);
+    let prompt = given;
     try {
-      prompt = realpathSync(prompt);
+      prompt = realpathSync(given);
     } catch {
       // OpenCode reports a missing prompt file itself.
     }
+    const denies = deniedBy(dir, denials, home);
+    if (denies(given) || denies(prompt)) {
+      console.error(`[opencode-seat] the prompt file ${given} is a file the read rules deny`);
+      process.exit(2);
+    }
+    // Inside the checkout the prompt is the copy's own file; only an outside prompt is mounted.
+    const promptOutside = rootCovers(dir, [prompt]) === undefined;
     // The seat runs on a sanitized copy of the checkout, shown at the checkout's own path.
     try {
       await copyReviewRoot(dir, tmpdir(), denials, home, [prompt], {
@@ -649,7 +670,7 @@ if (
       ...sandboxArgs(
         home,
         [
-          prompt,
+          ...(promptOutside ? [prompt] : []),
           // The binary alone (a self-contained executable); its folder could be the home folder.
           binary,
         ],

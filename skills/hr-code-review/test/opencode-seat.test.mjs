@@ -1175,3 +1175,82 @@ test(
     }
   },
 );
+
+test(
+  "a regular .git file that a pattern denies leaves out its hard-link aliases",
+  POSIX_ONLY,
+  async () => {
+    const dir = scratch("opencode-gitfile");
+    try {
+      writeFileSync(join(dir, ".git"), "gitdir: /private/place");
+      linkSync(join(dir, ".git"), join(dir, "notes.txt"));
+      writeFileSync(join(dir, "plain.txt"), "x");
+      assert.deepEqual(await copied(dir, [".git"]), ["plain.txt"]);
+      assert.deepEqual(await copied(dir), ["notes.txt", "plain.txt"], "no rule, no omission");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  },
+);
+test("a wildcard denial covers a file name that holds a newline", POSIX_ONLY, async () => {
+  const dir = scratch("opencode-newline");
+  try {
+    mkdirSync(join(dir, "private"));
+    writeFileSync(join(dir, "private", "token\n.txt"), "SECRET");
+    linkSync(join(dir, "private", "token\n.txt"), join(dir, "notes.txt"));
+    writeFileSync(join(dir, "plain.txt"), "x");
+    assert.deepEqual(await copied(dir, ["private/*"]), ["plain.txt"]);
+    assert.deepEqual(await copied(dir, ["private/token?.txt"]), ["plain.txt"]);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+test(
+  "a prompt inside the checkout is the copy's file, never mounted from the original",
+  LINUX_ONLY,
+  () => {
+    withShims((dir, env) => {
+      const r = spawnSync(process.execPath, [script, "opencode-go/m", "max", "prompt.md"], {
+        cwd: dir,
+        encoding: "utf8",
+        env,
+      });
+      assert.equal(r.status, 7, r.stderr);
+      const prompt = join(realpathSync(dir), "prompt.md");
+      const box = readFileSync(join(dir, "seen.bwrap"), "utf8").split("\n");
+      assert.equal(
+        box.some((a, i) => a === "--ro-bind" && box[i + 1] === prompt && box[i + 2] === prompt),
+        false,
+        "no bind of the original prompt over the copy's",
+      );
+      assert.ok(
+        box.includes("--file") || readFileSync(join(dir, "seen.args"), "utf8").includes(prompt),
+      );
+    });
+  },
+);
+test(
+  "a prompt that the rules deny, by the name given or the file it resolves to, refuses the run",
+  LINUX_ONLY,
+  () => {
+    withShims((dir, env, state) => {
+      writeFileSync(join(state, "secret.env"), "PRIVATE");
+      symlinkSync(join(state, "secret.env"), join(dir, "prompt-link.md"));
+      const link = spawnSync(process.execPath, [script, "opencode-go/m", "max", "prompt-link.md"], {
+        cwd: dir,
+        encoding: "utf8",
+        env,
+      });
+      assert.equal(link.status, 2, link.stderr);
+      assert.match(link.stderr, /prompt file .* is a file the read rules deny/);
+      writeFileSync(join(dir, "task.env"), "task");
+      const named = spawnSync(process.execPath, [script, "opencode-go/m", "max", "task.env"], {
+        cwd: dir,
+        encoding: "utf8",
+        env,
+      });
+      assert.equal(named.status, 2, named.stderr);
+      assert.equal(existsSync(join(dir, "seen.bwrap")), false, "the sandbox never started");
+    });
+  },
+);
