@@ -30,6 +30,9 @@ Run these through whatever browser tooling is available: `evaluate_script` in th
   for (const el of document.querySelectorAll("*")) {
     for (const pseudo of [null, "::before", "::after"]) {
       const s = getComputedStyle(el, pseudo);
+      // A pseudo-element with no content, or a hidden one, generates no box and paints nothing.
+      if (pseudo && (s.content === "none" || s.content === "normal" || s.display === "none"))
+        continue;
       const found = {};
       for (const p of PROPS) {
         const v = p === "maskImage" ? s.maskImage || s.webkitMaskImage : s[p];

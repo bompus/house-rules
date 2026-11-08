@@ -368,6 +368,51 @@ function loadRawFragments(config, configDir) {
   return fragments;
 }
 
+// Unprefixed names of the skills shipped when this list was frozen. A personal skill or exclusion with one of
+// these names may be an old house-rules name and must be renamed or listed in skills.independent.
+// Skills added later never shipped without the prefix, so their bare names stay free for
+// personal skills (for example a personal `grilling` beside the shipped `hr-grilling`).
+const LEGACY_SKILL_NAMES = new Set([
+  "agent-guidance-audit",
+  "agent-guidance-refresh",
+  "api-exposure-check",
+  "audit-choices",
+  "benchmarking",
+  "better-accessibility",
+  "better-colors",
+  "better-layout",
+  "better-typography",
+  "better-writing",
+  "code-review",
+  "design-exploration",
+  "diagnosing-bugs",
+  "explain-code",
+  "extract-shared-steps",
+  "forgotten-work-audit",
+  "handoff",
+  "house-rules-setup",
+  "issue-tracker-setup",
+  "lean-plan",
+  "maintainability-review",
+  "manual-qa",
+  "navigation-retro",
+  "ordering-tests",
+  "plain-prose",
+  "pr-followup",
+  "progress-report",
+  "read-reddit",
+  "read-x-links",
+  "research-shared-links",
+  "sqlite",
+  "stock-ui-audit",
+  "tdd",
+  "test-audit",
+  "usage-report",
+  "what-next",
+  "writing-for-agents",
+  "writing-pr",
+]);
+
 /**
  * Later layers' skills shadow base skills of the same name.
  * @param {Config} config
@@ -380,7 +425,9 @@ export function skillSources(config, configDir) {
     readdirSync(base).filter((name) => existsSync(join(base, name, "SKILL.md"))),
   );
   const legacyNames = new Map(
-    [...shipped].filter((name) => name.startsWith("hr-")).map((name) => [name.slice(3), name]),
+    [...shipped]
+      .filter((name) => name.startsWith("hr-") && LEGACY_SKILL_NAMES.has(name.slice(3)))
+      .map((name) => [name.slice(3), name]),
   );
   const exclude = new Set(config.skills?.exclude ?? []);
   const independent = new Set(config.skills?.independent ?? []);

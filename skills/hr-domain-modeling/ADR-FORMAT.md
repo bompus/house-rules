@@ -24,4 +24,4 @@ Only include these when they add value. Most ADRs won't need them.
 
 ## Numbering
 
-Scan `docs/adr/` for the highest existing number and increment by one.
+Scan the decision-record folder in use (`docs/adr/` by default) for the highest existing number and increment by one, following that folder's numbering convention.

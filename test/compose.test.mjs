@@ -462,6 +462,29 @@ test("the README lists every modifier with its description, and every skill", ()
   }
 });
 
+test("a personal skill named like a skill added after the prefix rename stays independent", (t) => {
+  const dir = scratch(t);
+  mkdirSync(join(dir, "skills", "grilling"), { recursive: true });
+  writeFileSync(join(dir, "skills", "grilling", "SKILL.md"), "---\nname: grilling\n---\nmine");
+  writeFileSync(
+    join(dir, "house-rules.json"),
+    JSON.stringify({ skills: { exclude: ["ponytail"] } }),
+  );
+  composeCli([
+    "--config",
+    join(dir, "house-rules.json"),
+    "--out",
+    join(dir, "rules.md"),
+    "--skills-out",
+    join(dir, "out"),
+  ]);
+  assert.equal(
+    readFileSync(join(dir, "out", "grilling", "SKILL.md"), "utf8"),
+    "---\nname: grilling\n---\nmine",
+  );
+  assert.ok(existsSync(join(dir, "out", "hr-grilling", "SKILL.md")));
+});
+
 for (const kind of ["exclusion", "override", "frontmatter"]) {
   test(`legacy skill ${kind} fails before writing output`, (t) => {
     const dir = scratch(t);

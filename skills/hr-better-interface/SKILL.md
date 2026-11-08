@@ -31,7 +31,7 @@ So the bar for reporting is evidence, not taste. The bar for `Approve` is that y
 
 Infer the screen, flow, feature, or repository scope from the request and current workspace. State the resolved scope in the output.
 
-Cover all of it across every domain skill listed under **Use domain skills as the sources of truth**, including the empty, loading, error and narrow-width states where they exist. Report at most 15 findings.
+Cover all of it across every domain skill listed under **Use domain skills as the sources of truth**, including the empty, loading, error and narrow-width states where they exist. Report at most 15 findings; confirmed escalation triggers are reported in full and do not count toward that cap.
 
 When the scope is too large to inspect credibly, narrow it to one complete flow: the one the request centers on, or failing that the entry path every user must pass through. State the boundary and what it excluded. Never imply uninspected surfaces were reviewed.
 
@@ -98,7 +98,7 @@ Within a severity, rank by how many places the finding reaches and how much one 
 - A semantic color used against its meaning, such as the danger hue on a non-destructive action.
 - A state change carried by motion alone, with no color, icon, or label left behind when the animation does not run.
 
-Triggers rank above every other finding. When more fire than the cap allows, list them first and say how many the cap excluded. A cap may shorten a report; it may never be why a blocker went unreported.
+Triggers rank above every other finding. A confirmed trigger is always reported in full, even past the cap: the cap limits the other findings, never a blocker.
 
 These set severity, not new rules. The owning skill decides whether the symptom is present; this list decides what it costs.
 

@@ -1,5 +1,8 @@
 import { expect, test } from "bun:test";
-import { condense } from "./condense-turns";
+import { mkdtempSync, symlinkSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { condense, sameFile } from "./condense-turns";
 
 const line = (o: object) => JSON.stringify(o);
 
@@ -35,9 +38,11 @@ test("keeps a typed turn that starts with an angle bracket and skips host wrappe
     line({ type: "user", message: { content: "<button> still has no accessible name; fix it" } }),
   ].join("\n");
   const { turns, text } = condense(jsonl);
-  expect(turns).toBe(1);
+  expect(turns).toBe(2);
   expect(text).toContain("<button> still has no accessible name");
-  expect(text).not.toContain("/clear");
+  expect(text).toContain("/clear");
+  expect(text).not.toContain("local-command-stdout");
+  expect(text).not.toContain("task-notification");
 });
 
 test("strips host wrappers but keeps the user's own text, including a plain mention of a tag name", () => {
@@ -72,4 +77,49 @@ test("ignores sidechain assistant text and marks a truncated user turn", () => {
   expect(text).not.toContain("Subagent reply.");
   expect(text).toContain("you missed the failing test");
   expect(text).toMatch(/characters omitted/);
+});
+
+test("keeps a skill invocation as the slash command and its arguments", () => {
+  const jsonl = [
+    line({
+      type: "user",
+      message: {
+        content:
+          "<command-message>grilling</command-message><command-name>/grilling</command-name><command-args>Choose storage</command-args>",
+      },
+    }),
+    line({ type: "assistant", message: { content: [{ type: "text", text: "First question." }] } }),
+    line({ type: "user", message: { content: "no, ask about cost first" } }),
+  ].join("\n");
+  const { turns, text } = condense(jsonl);
+  expect(turns).toBe(2);
+  expect(text).toContain("/grilling Choose storage");
+  expect(text).not.toContain("command-message");
+});
+
+test("takes assistant context only from between neighboring user turns, and names the line", () => {
+  const jsonl = [
+    line({ type: "user", message: { content: "start task one" } }),
+    line({ type: "assistant", message: { content: [{ type: "text", text: "Task one reply." }] } }),
+    line({ type: "user", message: { content: "now task two" } }),
+    line({ type: "user", message: { content: "and steer it this way" } }),
+    line({ type: "assistant", message: { content: [{ type: "text", text: "Task two reply." }] } }),
+  ].join("\n");
+  const { text } = condense(jsonl);
+  const third = text.split("### TURN 3")[1] ?? "";
+  expect(third).toContain("(transcript line 4)");
+  expect(third).toContain("[assistant before, tail]\n(none)");
+  expect(third).toContain("Task two reply.");
+  const second = (text.split("### TURN 2")[1] ?? "").split("### TURN 3")[0];
+  expect(second).toContain("[assistant after, head]\n(none)");
+});
+
+test("treats a symlink to the transcript as the same file", () => {
+  const dir = mkdtempSync(join(tmpdir(), "condense-"));
+  const input = join(dir, "t.jsonl");
+  writeFileSync(input, "");
+  symlinkSync(input, join(dir, "link.txt"));
+  expect(sameFile(input, join(dir, "link.txt"))).toBe(true);
+  expect(sameFile(input, input)).toBe(true);
+  expect(sameFile(input, join(dir, "out.txt"))).toBe(false);
 });

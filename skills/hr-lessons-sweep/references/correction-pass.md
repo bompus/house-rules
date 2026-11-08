@@ -25,7 +25,9 @@ and a later reply to the agent.
 
 ## 2. Extract
 
-Give one read-only subagent per session the condensed file, the installed
+Give one read-only subagent per session the condensed file, the transcript path
+(a turn marked `characters omitted` names its transcript line; the subagent reads
+that line before classifying the turn), the installed
 always-on guidance read in full (`~/.claude/CLAUDE.md` or the host's
 equivalent, not excerpts), and this task:
 
@@ -45,14 +47,14 @@ listed two real steering turns there instead of flagging them.
 
 ## 3. Decide
 
-- A one-off preference stays in task history. Save a lesson candidate only for a
-  standing correction.
+- A one-off preference stays in task history. Propose a lesson candidate only
+  for a standing correction.
 - Verify `Existing coverage` yourself against the guidance text before using it.
   `present-not-followed` points to a check or a structural fix, not new prose.
 - Propose a guidance or skill change only when the same cause appears in a second
   session (search earlier sessions with whatever transcript search the host
   has) or when existing sentences contradict each other. Before a recurrence,
-  record the lesson candidate and stop.
+  propose the lesson candidate and stop; write it only after the user selects it.
 - Prefer, in order: a check or script, deleting or simplifying text, replacing
   text, then adding text. For every proposal state the net lines it adds to
   always-on guidance and any size limit it counts against.

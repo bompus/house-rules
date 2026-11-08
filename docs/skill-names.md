@@ -36,7 +36,8 @@ house-rules names. It does not create an alias or replace the prefixed skill.
 `skills.exclude` uses the new names for shipped skills. An old name listed in
 `skills.independent` refers to the independent personal skill and can be excluded
 without excluding its prefixed counterpart. Unrelated personal
-names need no entry in `skills.independent`.
+names need no entry in `skills.independent`, and neither do the bare names of
+skills added after the rename, such as `grilling` beside `hr-grilling`.
 
 ## Connect hosts after composing
 

@@ -79,11 +79,16 @@ Walk nested `@layer`, `@media` and `@supports` rules plus imported stylesheets. 
   const tokens = {};
   const unreadable = [];
   const root = /(^|,)\s*(:root|html|:host)\s*(,|$)/;
+  // Theme-qualified roots such as :root.dark or html[data-theme="dark"]: names only.
+  const themedRoot = /(^|,)\s*(:root|html|:host)[.[:][^,]*(,|$)/;
+  const themed = {};
   const walk = (list) => {
     for (const r of list ?? []) {
       if (r.selectorText && root.test(r.selectorText)) {
         for (const prop of r.style)
           if (prop.startsWith("--")) tokens[prop] = r.style.getPropertyValue(prop).trim();
+      } else if (r.selectorText && themedRoot.test(r.selectorText)) {
+        for (const prop of r.style) if (prop.startsWith("--")) themed[prop] = r.selectorText;
       }
       if (r instanceof CSSImportRule) {
         try {
@@ -106,7 +111,7 @@ Walk nested `@layer`, `@media` and `@supports` rules plus imported stylesheets. 
     }
     walk(rules);
   }
-  return { tokens, unreadable, count: Object.keys(tokens).length };
+  return { tokens, themed, unreadable, count: Object.keys(tokens).length };
 };
 ```
 
@@ -240,5 +245,5 @@ Compare observed breakpoints with the framework version in use. A match with def
 Everything above reads one state at one width. Before writing the explanation, at minimum:
 
 - Resize to 375px and re-run the spacing and breakpoint snippets. The values that change are what is fluid.
-- Toggle the theme and compare computed values, not the snippet's authored list (it skips selectors such as `:root.dark`). For each token name it found, read `getComputedStyle(document.documentElement).getPropertyValue(name)` in both states. The tokens whose computed value changes are the themed layer; the ones that do not are the primitives.
+- Toggle the theme and compare computed values, not the snippet's authored list (it lists bare-root values in `tokens` and only the names declared under theme-qualified roots such as `:root.dark` in `themed`). For each name in either, read `getComputedStyle(document.documentElement).getPropertyValue(name)` in both states. The tokens whose computed value changes are the themed layer; the ones that do not are the primitives.
 - Tab to the first interactive control and read its `:focus-visible` styles, since a focus ring is one of the most common absences.
