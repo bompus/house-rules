@@ -867,3 +867,69 @@ test(
     }
   },
 );
+
+test(
+  "reviewBase takes the outermost marker, so a nested .jj cannot hide the checkout around it",
+  { skip: process.platform === "win32" },
+  () => {
+    const dir = mkdtempSync(join(tmpdir(), "review-base-nested-"));
+    const savedHome = process.env.HOME;
+    try {
+      const repo = realpathSync(dir);
+      mkdirSync(join(repo, "r", ".git"), { recursive: true });
+      mkdirSync(join(repo, "r", "packages", "app"), { recursive: true });
+      writeFileSync(join(repo, "r", "packages", "app", ".jj"), "tracked file");
+      process.env.HOME = "/nonexistent-home";
+      assert.equal(reviewBase(join(repo, "r", "packages", "app")), join(repo, "r"));
+    } finally {
+      process.env.HOME = savedHome;
+      rmSync(dir, { recursive: true, force: true });
+    }
+  },
+);
+test(
+  "cleanPath keeps the canonical folder, not the alias that was checked",
+  { skip: process.platform === "win32" },
+  () => {
+    const dir = mkdtempSync(join(tmpdir(), "clean-canon-"));
+    try {
+      const root = join(dir, "root");
+      mkdirSync(root);
+      mkdirSync(join(dir, "real"));
+      symlinkSync(join(dir, "real"), join(dir, "alias"));
+      assert.equal(cleanPath(join(dir, "alias"), root), realpathSync(join(dir, "real")));
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  },
+);
+test(
+  "a bare server command is judged by the file the launch will run: the first on PATH, relative entries included",
+  { skip: !UNDER_BUN || process.platform === "win32" },
+  () => {
+    const dir = mkdtempSync(join(tmpdir(), "first-on-path-"));
+    const saved = process.env.PATH;
+    try {
+      const root = join(dir, "root");
+      const outside = join(dir, "outside");
+      mkdirSync(join(root, "bin"), { recursive: true });
+      mkdirSync(outside);
+      writeFileSync(join(root, "bin", "adapter"), "#!/usr/bin/env node\n", { mode: 0o755 });
+      writeFileSync(join(outside, "adapter"), "#!/usr/bin/env bun\n", { mode: 0o755 });
+      // The first match is inside the checkout: refused, not the later outside bun adapter rewritten.
+      process.env.PATH = `bin${delimiter}${outside}`;
+      assert.throws(
+        () => bunHardened(["adapter", "acp"], root, refuseTest),
+        /inside the review checkout/,
+      );
+      // Only the outside one on PATH: it is the file that runs, and its bun shebang is hardened.
+      process.env.PATH = outside;
+      const out = bunHardened(["adapter", "acp"], root, refuseTest);
+      assert.equal(out.includes("--no-env-file"), true);
+      assert.equal(out.at(-2), join(outside, "adapter"));
+    } finally {
+      process.env.PATH = saved;
+      rmSync(dir, { recursive: true, force: true });
+    }
+  },
+);

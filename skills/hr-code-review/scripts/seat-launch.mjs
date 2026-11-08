@@ -337,7 +337,7 @@ export function mayStartAgy(cmd, pathVar = process.env.PATH, cwd = process.cwd()
 export const envPath = (env) =>
   WINDOWS ? Object.entries(env).find(([key]) => key.toUpperCase() === "PATH")?.[1] : env.PATH;
 /**
- * The checkout a review root belongs to: the nearest parent holding `.git` or `.jj`, so a launch below
+ * The checkout a review root belongs to: the outermost parent holding `.git` or `.jj`, so a launch below
  * the repository root still keeps the whole checkout's tooling out of reach; the review root itself when
  * there is none, or when that parent is the home folder or above it (a dotfiles repository).
  * @param {string} dir
@@ -349,14 +349,53 @@ export function reviewBase(dir) {
   } catch {
     // No such home folder: nothing is excused as the home folder.
   }
-  for (let d = realpathSync(dir); ; d = dirname(d)) {
-    if (existsSync(join(d, ".git")) || existsSync(join(d, ".jj"))) {
-      return home === d || (home !== "" && home.startsWith(d + sep)) ? realpathSync(dir) : d;
+  const start = realpathSync(dir);
+  // The outermost parent with a marker, so a nested `.jj` or `.git` (a tracked file, a submodule) cannot
+  // hide the checkout around it; the home folder and its parents never count.
+  let top = start;
+  for (let d = start; ; d = dirname(d)) {
+    const excused = home === d || (home !== "" && home.startsWith(d + sep));
+    if (!excused && (existsSync(join(d, ".git")) || existsSync(join(d, ".jj")))) {
+      top = d;
     }
     if (dirname(d) === d) {
-      return realpathSync(dir);
+      return top;
     }
   }
+}
+/**
+ * Whether `path` is `base` or inside it, by canonical path.
+ * @param {string} base
+ * @param {string} path
+ */
+function isInside(base, path) {
+  try {
+    const real = realpathSync(path);
+    return real === base || real.startsWith(base + sep);
+  } catch {
+    return false;
+  }
+}
+/**
+ * The first regular executable file `name` on `pathVar` the way `execvp` finds it: every entry counts,
+ * relative ones from `from`. Unlike pathExecutable this is the file a plain launch would run.
+ * @param {string} name
+ * @param {string | undefined} pathVar
+ * @param {string} from
+ */
+function firstOnPath(name, pathVar, from) {
+  for (const dir of (pathVar ?? "").split(delimiter)) {
+    const candidate = join(resolve(from, dir === "" ? "." : dir), name);
+    try {
+      accessSync(candidate, constants.X_OK);
+      if (statSync(candidate).isFile()) {
+        return candidate;
+      }
+    } catch {
+      // Not here.
+    }
+  }
+  return undefined;
 }
 /**
  * The words of a `#!` line after the `#!`, split on blanks, with a double- or single-quoted word kept
@@ -376,22 +415,24 @@ function shebangWords(text) {
  */
 export function cleanPath(pathVar, root) {
   const base = realpathSync(root);
-  const kept = (pathVar ?? "")
-    .split(delimiter)
-    .filter((dir) => {
-      if (!isAbsolute(dir)) {
-        return false;
+  /** @type {string[]} */
+  const kept = [];
+  for (const dir of (pathVar ?? "").split(delimiter)) {
+    if (!isAbsolute(dir)) {
+      continue;
+    }
+    try {
+      // The canonical folder is kept, not the alias that was checked: a link retargeted later changes nothing.
+      const real = realpathSync(dir);
+      if (real !== base && !real.startsWith(base + sep)) {
+        kept.push(real);
       }
-      try {
-        const real = realpathSync(dir);
-        return real !== base && !real.startsWith(base + sep);
-      } catch {
-        return false;
-      }
-    })
-    .join(delimiter);
+    } catch {
+      // Not a folder here.
+    }
+  }
   // An empty PATH makes `env` search the working directory, which is the checkout: an empty folder instead.
-  return kept === "" ? emptyBin() : kept;
+  return kept.length === 0 ? emptyBin() : kept.join(delimiter);
 }
 /** @type {string | undefined} */
 let emptyBinPath;
@@ -704,14 +745,18 @@ export function bunHardened(cmd, root, refuse) {
   if (WINDOWS || runner) {
     return cmd;
   }
-  // A script with a bun `#!` line, by path or by a name found outside the review root.
+  // A script with a bun `#!` line: the file the launch will actually run, by path or, for a bare name, the
+  // first executable on PATH as the launch finds it (relative entries from the review root).
   /** @type {string[]} */
   let shebangArgs = [];
   const script = /[\\/]/.test(first)
     ? resolve(root, first)
-    : pathExecutable(first, envPath(process.env), reviewBase(root));
+    : firstOnPath(first, envPath(process.env), root);
   if (!script) {
     return cmd;
+  }
+  if (isInside(reviewBase(root), script)) {
+    return refuse(`the server command resolves to ${script}, inside the review checkout`);
   }
   try {
     const fd = openSync(script, "r");

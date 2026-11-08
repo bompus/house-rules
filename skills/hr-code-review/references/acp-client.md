@@ -169,7 +169,7 @@ refused permission requests are the only guards: a seat whose agent runs a shell
 without asking is covered only by its environment. Run a review that matters
 inside a sandbox.
 
-The client runs `git status` in the review root, using the first `git` on an absolute `PATH` entry outside the checkout (the nearest parent of the review root holding `.git` or `.jj`, else the review root; none there: no comparison), with the same narrowed
+The client runs `git status` in the review root, using the first `git` on an absolute `PATH` entry outside the checkout (the outermost parent of the review root holding `.git` or `.jj`, else the review root; none there: no comparison), with the same narrowed
 environment, a `PATH` cut to absolute entries outside the checkout, (plus the variables that point git at a repository) and with
 `core.fsmonitor` switched off on the command line, because the repository's own
 configuration can name programs git runs. A seat that writes git configuration

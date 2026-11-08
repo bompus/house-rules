@@ -42,7 +42,7 @@ import { constants, homedir, tmpdir } from "node:os";
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { randomBytes } from "node:crypto";
 import { fileURLToPath } from "node:url";
-import { envPath, pathExecutable, reviewBase } from "./seat-launch.mjs";
+import { cleanPath, envPath, pathExecutable, reviewBase } from "./seat-launch.mjs";
 
 const PASSED = [
   "PATH",
@@ -669,6 +669,9 @@ if (
   const config = process.env.XDG_CONFIG_HOME || join(home, ".config");
   const denials = userReadDenials(join(config, "opencode"));
   const env = openCodeEnv(process.env, dir, denials);
+  // Host-side programs (bubblewrap, OpenCode before the sandbox) run with a PATH of canonical absolute
+  // folders outside the checkout, so a `#!/usr/bin/env` line in them does not pick the checkout's tool.
+  env.PATH = cleanPath(env.PATH, reviewBase(dir));
   // OpenCode is found outside the review checkout on every system, and that file is what runs.
   const opencode = pathExecutable("opencode", envPath(process.env), reviewBase(dir));
   if (!opencode) {

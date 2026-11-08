@@ -1655,3 +1655,28 @@ test(
     });
   },
 );
+
+test("OpenCode and bubblewrap run with a PATH of folders outside the checkout", LINUX_ONLY, () => {
+  withShims((dir, env) => {
+    mkdirSync(join(dir, "node_modules", ".bin"), { recursive: true });
+    const r = spawnSync(
+      process.execPath,
+      [script, "opencode-go/m", "max", "prompt.md", "--bwrap", join(dir, "bwrap")],
+      {
+        cwd: dir,
+        encoding: "utf8",
+        env: {
+          ...env,
+          PATH: [join(dir, "node_modules", ".bin"), "node_modules/.bin", env.PATH].join(delimiter),
+        },
+      },
+    );
+    assert.equal(r.status, 7, r.stderr);
+    const seen = readFileSync(join(dir, "seen.env"), "utf8");
+    const path = /^PATH=(.*)$/m.exec(seen)?.[1] ?? "";
+    assert.ok(path.length > 0);
+    for (const entry of path.split(delimiter)) {
+      assert.ok(entry.startsWith("/") && !entry.startsWith(realpathSync(dir) + "/"), entry);
+    }
+  });
+});
