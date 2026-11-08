@@ -106,7 +106,7 @@ agent cannot obtain it through its own approved route.
   agy counts (`agy`, `agy-acp`, `agy_acp_server.par`, also behind `env`, `sh -c`, a runner or an
   interpreter's script), and so does any word that is a link to agy, by its path from the working directory or on `PATH`, behind a
   wrapper too. An option's attached value counts (`env --split-string="agy acp"`, `env -Sagy`). A bare word is looked up as the shell would: the first executable of that name on `PATH`, searched after a literal `PATH=...` in the command, with an empty entry meaning the working directory. The check runs before a `--policy` module is imported, and a policy cannot set the marker. A name written to hide it (shell quoting inside the name, a renamed copy) is not detected:
-  the check catches a mistake, it does not stop a caller that hides the launch.
+  the check catches a mistake, it does not stop a caller that hides the launch. The detector is a heuristic second layer: the caller's mask over those folders is the protection, and a launch form the detector misses is not made safe by it.
 - **Codex** (recognized from the launch command: its executable, package,
   script, or a launch it cannot read that could still start `codex-acp` by the same rule as Devin's (the executable, a runner's package, an interpreter's scripts); an agent that only names itself Codex after
   `initialize` still gets read-only mode, but no wrapper) always runs through a wrapper that turns off every MCP server
