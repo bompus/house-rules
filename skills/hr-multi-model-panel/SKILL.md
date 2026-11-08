@@ -22,7 +22,7 @@ show it):
   model);
 - running a seat over ACP read-only, with a narrowed environment: its ACP client
   reference (`scripts/acp-panel-client.mjs`; an OpenCode seat, which is not ACP,
-  runs through `scripts/opencode-seat.mjs`);
+  runs through `scripts/opencode-seat.mjs`); launch both from a trusted folder, not the checkout, with the review root as an argument;
 - combining replies, the citation gate and the receipt header:
   its panel adjudication reference (`scripts/check-receipts.mjs`).
 

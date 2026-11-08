@@ -6,11 +6,14 @@ effort or review scope. It does not select a route based on whether it uses the 
 allowance. Launch it only within the user's authorization.
 
 ```sh
-bun <skill-directory>/scripts/acp-panel-client.mjs \
+cd <trusted-folder> && bun --no-env-file --config=<empty-bunfig.toml> \
+  <skill-directory>/scripts/acp-panel-client.mjs \
   '["<agent-command>","<stdio-argument>"]' brief.md answer.txt <review-root> \
   --model <advertised-model-id> --effort <advertised-effort-value> \
   --verdict 'VERDICT:' --max-turns 2 --idle-min 5 --timeout-min 60 --no-web
 ```
+
+Launch it from a folder you trust, never from inside the checkout, and pass the review root as the fourth positional argument. Bun reads `.env` and `bunfig.toml` (a `preload` runs code) from the launch folder before the script starts, so a client launched in the checkout lets the checkout set environment variables and run code ahead of every guard below. As a second layer, `--no-env-file` stops the `.env` loading and `--config=PATH` (the `=` form, an existing empty TOML file; `/dev/null` is rejected) replaces the launch folder's `bunfig.toml`; both were checked on Bun 1.4.4. `opencode-seat.mjs` takes the checkout as `--root CHECKOUT` and is launched the same way.
 
 Node 22+ and Bun can run the same file. It imports `seat-launch.mjs` from the same
 directory (the seat's environment, agent detection and the Codex and Devin

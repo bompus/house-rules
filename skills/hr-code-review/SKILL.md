@@ -16,7 +16,7 @@ configuration, or reliance on pinned dependency behavior. Follow
 subagents when the scope benefits from independent review and the host permits
 it. Missing spec material limits the Spec assessment, not all useful review.
 
-When a selected review uses an ACP stdio agent, read [the bundled client contract](references/acp-client.md) before launching it. Host orchestration and authorization still determine the route.
+When a selected review uses an ACP stdio agent, read [the bundled client contract](references/acp-client.md) before launching it, and launch it from a folder you trust (not the checkout), with the review root as an argument; the contract says why. Host orchestration and authorization still determine the route.
 
 When a panel uses stored preferences, read [the panel plan contract](references/panel-plan.md) to resolve the seats before launching any of them.
 
