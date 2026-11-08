@@ -651,7 +651,8 @@ test(
       );
       assert.equal(one.filter((a) => a === "--no-env-file").length, 1);
       const cfg = bunHardened(["bun", "--config=/own.toml", "x.js"], root, refuseTest);
-      assert.deepEqual(cfg, ["bun", "--no-env-file", "--config=/own.toml", "x.js"]);
+      assert.deepEqual(cfg.slice(1), ["--no-env-file", "--config=/own.toml", "x.js"]);
+      assert.equal(exeName(cfg[0] ?? ""), "bun");
       const argOnly = bunHardened(
         ["bun", "/opt/server.mjs", "--config=/etc/app.json"],
         root,
@@ -659,7 +660,9 @@ test(
       );
       assert.equal(argOnly[1], "--no-env-file", "a server's own --config is not Bun's");
       assert.match(argOnly[2] ?? "", /^--config=.*empty-bunfig\.toml$/);
-      assert.deepEqual(bunHardened(["bunx", "codex-acp"], root, refuseTest), ["bunx", "codex-acp"]);
+      assert.deepEqual(bunHardened(["bunx", "codex-acp"], root, refuseTest).slice(1), [
+        "codex-acp",
+      ]);
       for (const cmd of [
         ["bunx", "--bun", "pkg"],
         ["bun", "x", "--bun", "pkg"],
@@ -786,7 +789,7 @@ test(
         join(dir, "alias-into-root"),
         trusted,
       ].join(delimiter);
-      assert.equal(cleanPath(path, root), trusted);
+      assert.equal(cleanPath(path, root), realpathSync(trusted));
       const none = cleanPath(undefined, root);
       assert.ok(
         none.startsWith("/") && !none.includes(delimiter),
@@ -806,7 +809,7 @@ test(
         }
       );
       codexWrapper({ PATH: path }, false, root, refuse);
-      assert.equal(readFileSync(seen, "utf8"), trusted);
+      assert.equal(readFileSync(seen, "utf8"), realpathSync(trusted));
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
@@ -820,14 +823,11 @@ test(
     try {
       const root = join(dir, "root");
       mkdirSync(root);
-      assert.deepEqual(bunHardened(["bun", "x", "--no-install", "pkg"], root, refuseTest), [
-        "bun",
-        "x",
-        "--no-install",
-        "pkg",
-      ]);
-      assert.deepEqual(bunHardened(["bun", "--silent", "x", "pkg"], root, refuseTest), [
-        "bun",
+      assert.deepEqual(
+        bunHardened(["bun", "x", "--no-install", "pkg"], root, refuseTest).slice(1),
+        ["x", "--no-install", "pkg"],
+      );
+      assert.deepEqual(bunHardened(["bun", "--silent", "x", "pkg"], root, refuseTest).slice(1), [
         "--silent",
         "x",
         "pkg",
@@ -927,6 +927,89 @@ test(
       const out = bunHardened(["adapter", "acp"], root, refuseTest);
       assert.equal(out.includes("--no-env-file"), true);
       assert.equal(out.at(-2), join(outside, "adapter"));
+    } finally {
+      process.env.PATH = saved;
+      rmSync(dir, { recursive: true, force: true });
+    }
+  },
+);
+
+test(
+  "shebang words keep quotes inside words; unsupported syntax is refused, not guessed",
+  { skip: !UNDER_BUN || process.platform === "win32" },
+  () => {
+    const dir = mkdtempSync(join(tmpdir(), "shebang-words-"));
+    try {
+      const root = join(dir, "root");
+      mkdirSync(root);
+      const script = (/** @type {string} */ line) => {
+        const path = join(dir, `adapter-${Math.random().toString(36).slice(2)}`);
+        writeFileSync(path, `${line}\nconsole.log(1);\n`, { mode: 0o755 });
+        return path;
+      };
+      const attached = bunHardened(
+        [script('#!/usr/bin/env -S bun --conditions="review main.mjs"')],
+        root,
+        refuseTest,
+      );
+      assert.ok(attached.includes("--conditions=review main.mjs"), attached.join("|"));
+      const preload = bunHardened(
+        [script('#!/usr/bin/env -S bun --preload="/dir with space/p.mjs" --smol')],
+        root,
+        refuseTest,
+      );
+      assert.ok(
+        preload.includes("--preload=/dir with space/p.mjs") && preload.includes("--smol"),
+        preload.join("|"),
+      );
+      for (const line of [
+        '#!/usr/bin/env -S bun --conditions="unterminated',
+        "#!/usr/bin/env -S bun --define X=\\ y",
+        "#!/usr/bin/env -S bun --preload $HOME/p.mjs",
+      ]) {
+        assert.throws(
+          () => bunHardened([script(line)], root, refuseTest),
+          /not interpreted here/,
+          line,
+        );
+      }
+      // A shebang without bun is left alone whatever its syntax.
+      const other = script('#!/usr/bin/env -S node --x="a b"');
+      assert.deepEqual(bunHardened([other], root, refuseTest), [other]);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  },
+);
+test(
+  "a bare bun or bunx is the one outside the checkout; an explicit checkout path is the caller's choice and is hardened",
+  { skip: !UNDER_BUN || process.platform === "win32" },
+  () => {
+    const dir = mkdtempSync(join(tmpdir(), "bare-bun-"));
+    const saved = process.env.PATH;
+    try {
+      const root = join(dir, "root");
+      mkdirSync(join(root, "bin"), { recursive: true });
+      writeFileSync(join(root, "bin", "bun"), "#!/bin/sh\nexit 0\n", { mode: 0o755 });
+      const realBunDir = join(process.execPath, "..");
+      process.env.PATH = `${join(root, "bin")}${delimiter}${realBunDir}`;
+      const out = bunHardened(["bun", "/trusted/server.mjs"], root, refuseTest);
+      assert.equal(out[0], realpathSync(process.execPath), "the checkout's bun is skipped");
+      assert.equal(out[1], "--no-env-file");
+      process.env.PATH = join(root, "bin");
+      assert.throws(
+        () => bunHardened(["bun", "/trusted/server.mjs"], root, refuseTest),
+        /not on PATH outside/,
+      );
+      assert.throws(() => bunHardened(["bunx", "pkg"], root, refuseTest), /not on PATH outside/);
+      // An explicit path into the checkout is not refused; its bun shebang is still hardened.
+      writeFileSync(join(root, "adapter"), "#!/usr/bin/env bun\nconsole.log(1);\n", {
+        mode: 0o755,
+      });
+      process.env.PATH = realBunDir;
+      const explicit = bunHardened([join(root, "adapter"), "acp"], root, refuseTest);
+      assert.equal(explicit.includes("--no-env-file"), true);
+      assert.equal(explicit.at(-2), join(root, "adapter"));
     } finally {
       process.env.PATH = saved;
       rmSync(dir, { recursive: true, force: true });

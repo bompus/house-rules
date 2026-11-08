@@ -398,14 +398,51 @@ function firstOnPath(name, pathVar, from) {
   return undefined;
 }
 /**
- * The words of a `#!` line after the `#!`, split on blanks, with a double- or single-quoted word kept
- * whole (`env -S bun --preload "/dir with space/p.mjs"`) and its quotes removed.
+ * The words of a `#!` line after the `#!`, split on blanks, with quoted text kept whole inside or around a
+ * word (`--preload "/dir with space/p.mjs"`, `--conditions="a b"`) and its quotes removed; null when the line
+ * uses syntax that is not interpreted here (a backslash, `$`, a backtick, `#`, an unterminated quote).
  * @param {string} text
+ * @returns {string[] | null}
  */
 function shebangWords(text) {
-  return [...text.trim().matchAll(/"([^"]*)"|'([^']*)'|(\S+)/g)].map(
-    (m) => m[1] ?? m[2] ?? m[3] ?? "",
-  );
+  // Characters whose meaning `env -S` or a shell would apply (escapes, variables, command substitution,
+  // comments) are not interpreted here: such a line is "unsupported", not guessed at.
+  if (/[\\$`#]/.test(text)) {
+    return null;
+  }
+  /** @type {string[]} */
+  const words = [];
+  let word = "";
+  let started = false;
+  /** @type {string | undefined} */
+  let quote;
+  for (const ch of text.trim()) {
+    if (quote) {
+      if (ch === quote) {
+        quote = undefined;
+      } else {
+        word += ch;
+      }
+    } else if (ch === '"' || ch === "'") {
+      quote = ch;
+      started = true;
+    } else if (/\s/.test(ch)) {
+      if (started || word !== "") {
+        words.push(word);
+        word = "";
+        started = false;
+      }
+    } else {
+      word += ch;
+    }
+  }
+  if (quote) {
+    return null; // An unterminated quote.
+  }
+  if (started || word !== "") {
+    words.push(word);
+  }
+  return words;
 }
 /**
  * `pathVar` reduced to its absolute entries outside `root`: the PATH a helper started outside the boundary
@@ -452,9 +489,11 @@ function emptyBin() {
  * @param {string} name
  * @param {string | undefined} pathVar
  * @param {string} root the review checkout
+ * @param {boolean} [canonical] return the canonical path (default) or the entry's own path, for a multi-call
+ * program such as `bunx -> bun` that dispatches on the name it is started by
  * @returns {string | undefined}
  */
-export function pathExecutable(name, pathVar, root) {
+export function pathExecutable(name, pathVar, root, canonical = true) {
   const base = realpathSync(root);
   const inside = (/** @type {string} */ path) => path === base || path.startsWith(base + sep);
   const names = WINDOWS ? [name, `${name}.exe`, `${name}.cmd`] : [name];
@@ -468,7 +507,7 @@ export function pathExecutable(name, pathVar, root) {
         const target = realpathSync(candidate);
         if (statSync(target).isFile() && !inside(target) && !inside(realpathSync(dir))) {
           // The canonical path, not the entry's alias: a link swapped after this check changes nothing.
-          return target;
+          return canonical ? target : candidate;
         }
       } catch {
         // Not here.
@@ -711,9 +750,23 @@ function emptyBunfig() {
  * @returns {string[]}
  */
 export function bunHardened(cmd, root, refuse) {
-  const first = cmd[0] ?? "";
   // The runtime's own name: a script called `bun.mjs` is not Bun.
-  const exe = exeName(first);
+  const exe = exeName(cmd[0] ?? "");
+  // A bare `bun` or `bunx` is the one found outside the checkout, as its canonical path: the launch would
+  // otherwise take the first match on the caller's PATH, which may be the checkout's.
+  if ((exe === "bun" || exe === "bunx") && !/[\\/]/.test(cmd[0] ?? "")) {
+    const found = pathExecutable(exe, envPath(process.env), reviewBase(root)) ?? undefined;
+    // A program that dispatches on its name (`bunx -> bun`) keeps the name it is found by.
+    const named =
+      found !== undefined && exeName(found) !== exe
+        ? pathExecutable(exe, envPath(process.env), reviewBase(root), false)
+        : found;
+    if (!named) {
+      return refuse(`${exe} is not on PATH outside the review checkout`);
+    }
+    cmd = [named, ...cmd.slice(1)];
+  }
+  const first = cmd[0] ?? "";
   const flags = () => ["--no-env-file", `--config=${emptyBunfig()}`];
   const runner =
     exe === "bunx" || (exe === "bun" && cmd.slice(1).find((a) => !a.startsWith("-")) === "x");
@@ -749,13 +802,15 @@ export function bunHardened(cmd, root, refuse) {
   // first executable on PATH as the launch finds it (relative entries from the review root).
   /** @type {string[]} */
   let shebangArgs = [];
+  /** @type {string | undefined} */
+  let unsupported;
   const script = /[\\/]/.test(first)
     ? resolve(root, first)
     : firstOnPath(first, envPath(process.env), root);
   if (!script) {
     return cmd;
   }
-  if (isInside(reviewBase(root), script)) {
+  if (!/[\\/]/.test(first) && isInside(reviewBase(root), script)) {
     return refuse(`the server command resolves to ${script}, inside the review checkout`);
   }
   try {
@@ -764,7 +819,15 @@ export function bunHardened(cmd, root, refuse) {
       const head = Buffer.alloc(256);
       const n = readSync(fd, head, 0, head.length, 0);
       const line = head.subarray(0, n).toString("latin1").split("\n")[0] ?? "";
-      const words = line.startsWith("#!") ? shebangWords(line.slice(2)) : [];
+      const parsed = line.startsWith("#!") ? shebangWords(line.slice(2)) : [];
+      if (parsed === null) {
+        // Not parsed, not guessed: a line that may name bun is refused (below) rather than rewritten wrongly.
+        if (!/\bbun\b/.test(line)) {
+          return cmd;
+        }
+        unsupported = line;
+      }
+      const words = parsed ?? [];
       // The interpreter is the first word, or, behind `env`, the first word that is not an option or a
       // variable assignment; its name must be bun (not a folder called bun).
       let at = 0;
@@ -777,7 +840,7 @@ export function bunHardened(cmd, root, refuse) {
           at++;
         }
       }
-      if (exeName(words[at] ?? "") !== "bun") {
+      if (unsupported === undefined && exeName(words[at] ?? "") !== "bun") {
         return cmd;
       }
       // Its runtime arguments (`#!/usr/bin/env -S bun --conditions=x`) stay.
@@ -787,6 +850,11 @@ export function bunHardened(cmd, root, refuse) {
     }
   } catch {
     return cmd; // Not readable here: the spawn reports it.
+  }
+  if (unsupported !== undefined) {
+    return refuse(
+      `the #! line of ${script} uses syntax that is not interpreted here: ${unsupported}`,
+    );
   }
   const bun =
     exeName(process.execPath) === "bun"
