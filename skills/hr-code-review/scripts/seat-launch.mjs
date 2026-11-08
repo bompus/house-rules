@@ -256,18 +256,38 @@ export function mayStartAgy(cmd, pathVar = process.env.PATH, cwd = process.cwd()
       return undefined;
     }
   };
+  // The launch directory and the literal directories a wrapper changes to before it runs the command.
+  const dirs = new Set([cwd]);
+  for (const arg of cmd) {
+    for (const m of arg.matchAll(
+      /(?:--chdir[= ]|(?:^|[\s;&|(])cd\s+)(?:"([^"]*)"|'([^']*)'|([^\s;&|()<>"'`]+))/g,
+    )) {
+      dirs.add(resolve(cwd, m[1] ?? m[2] ?? m[3] ?? ""));
+    }
+  }
+  cmd.forEach((arg, i) => {
+    if ((arg === "--chdir" || arg === "-C") && cmd[i + 1]) {
+      dirs.add(resolve(cwd, cmd[i + 1] ?? ""));
+    }
+  });
   // Whether a word is a link to agy: by its path from `cwd`, or, for a bare word, the first executable
   // of that name on PATH (the one the shell would run).
   const resolvesToAgy = (/** @type {string} */ word) => {
+    // A relative word is tried from every directory the command may change to (`env --chdir=DIR`,
+    // `cd DIR &&`); a bare word is also tried as a file there, whatever its permissions (an interpreter's
+    // operand: `python3 antigravity.par`).
+    const asFile = [...dirs].map((d) => real(resolve(d, word))).filter((t) => t !== undefined);
+    if (asFile.some((t) => named(/** @type {string} */ (t)))) {
+      return true;
+    }
     if (/[\\/]/.test(word)) {
-      const target = real(resolve(cwd, word));
-      return target !== undefined && named(target);
+      return false;
     }
     if (!/^[\w.@+-]+$/.test(word)) {
       return false;
     }
-    return lists.some((dirs) => {
-      for (const dir of dirs) {
+    return lists.some((entries) => {
+      for (const dir of entries) {
         const candidate = join(dir, word);
         try {
           // The first regular executable file of that name, as the shell would find it.

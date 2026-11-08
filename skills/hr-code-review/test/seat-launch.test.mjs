@@ -471,6 +471,31 @@ test("an executable that is a link to agy, on PATH or by path, is agy", () => {
       mayStartAgy(["sh", "-c", `PATH="${spaced}" antigravity acp`], "/usr/bin", dir),
       true,
     );
+    // An interpreter's bare file operand, and relative links behind a wrapper that changes directory.
+    writeFileSync(join(dir, "agy_acp_server.par"), "archive", { mode: 0o644 });
+    symlinkSync(join(dir, "agy_acp_server.par"), join(dir, "antigravity.par"));
+    assert.equal(mayStartAgy(["python3", "antigravity.par"], "/nowhere", dir), true);
+    assert.equal(mayStartAgy(["python3", "plain.par"], "/nowhere", dir), false);
+    assert.equal(
+      mayStartAgy(["env", `--chdir=${bin}`, "./antigravity", "acp"], "/nowhere", "/"),
+      true,
+    );
+    assert.equal(
+      mayStartAgy(["env", "--chdir", bin, "./antigravity", "acp"], "/nowhere", "/"),
+      true,
+    );
+    assert.equal(
+      mayStartAgy(["sh", "-c", `cd ${bin} && exec ./antigravity acp`], "/nowhere", "/"),
+      true,
+    );
+    assert.equal(
+      mayStartAgy(["sh", "-c", `cd "${bin}"; ./antigravity acp`], "/nowhere", "/"),
+      true,
+    );
+    assert.equal(
+      mayStartAgy(["sh", "-c", `cd ${join(dir, "first")} && ./antigravity acp`], "/nowhere", "/"),
+      false,
+    );
     mkdirSync(join(dir, "third"));
     writeFileSync(join(dir, "third", "antigravity"), "#!/bin/sh\n", { mode: 0o755 });
     mkdirSync(join(dir, "fourth", "antigravity"), { recursive: true });

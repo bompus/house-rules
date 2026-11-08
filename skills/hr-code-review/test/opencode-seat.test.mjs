@@ -373,17 +373,24 @@ test("a review root that is or contains the home folder or OpenCode's folders is
 });
 test("on Linux the script refuses a review root that contains the home folder", LINUX_ONLY, () => {
   withShims((dir, env, state) => {
-    const r = spawnSync(
-      process.execPath,
-      [script, "opencode-go/m", "max", join(dir, "prompt.md"), "--bwrap", join(dir, "bwrap")],
-      {
-        cwd: state,
-        encoding: "utf8",
-        env,
-      },
-    );
-    assert.equal(r.status, 2, r.stderr);
-    assert.match(r.stderr, /the review root contains .*home/);
+    // The review root is `state`, which holds the stand-in opencode; one outside it is on PATH too.
+    const tools = scratch("opencode-tools");
+    try {
+      writeFileSync(join(tools, "opencode"), "#!/bin/sh\nexit 7\n", { mode: 0o755 });
+      const r = spawnSync(
+        process.execPath,
+        [script, "opencode-go/m", "max", join(dir, "prompt.md"), "--bwrap", join(dir, "bwrap")],
+        {
+          cwd: state,
+          encoding: "utf8",
+          env: { ...env, PATH: `${tools}${delimiter}${env.PATH}` },
+        },
+      );
+      assert.equal(r.status, 2, r.stderr);
+      assert.match(r.stderr, /the review root contains .*home/);
+    } finally {
+      rmSync(tools, { recursive: true, force: true });
+    }
   });
 });
 
