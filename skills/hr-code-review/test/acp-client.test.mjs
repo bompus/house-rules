@@ -1970,7 +1970,8 @@ test("the agy-masked marker, bare or true, lets an agy launch through; other lau
     ["--policy-option", "agy-masked"],
     ["--policy-option", "agy-masked=true"],
   ]) {
-    const r = run({ launcher: "agy" }, flags);
+    // The fake server ignores its arguments, so naming agy there stands for an agy launch on any OS.
+    const r = run({ serverArgs: ["agy-acp"] }, flags);
     assert.equal(r.code, 0, r.error);
     assert.notEqual(r.launch, null, "the server started");
   }
