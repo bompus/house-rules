@@ -711,7 +711,6 @@ test(
       writeFileSync(join(dir, "exposed.txt"), "SECRET");
       symlinkSync(join(dir, "backing"), join(dir, "secrets"));
       symlinkSync(join(dir, "secrets"), join(dir, "loop-a"));
-      symlinkSync(dir, join(dir, "backing", "up"));
       // A link inside a linked folder, to a folder and to a file, is followed with its virtual name.
       symlinkSync(join(dir, "store"), join(dir, "backing", "vault"));
       symlinkSync(join(dir, "exposed.txt"), join(dir, "backing", "config"));
@@ -1095,6 +1094,81 @@ test(
         onCreate: (made) => seenAt.push(...readdirSync(made), made),
       });
       assert.deepEqual(seenAt, [copy], "announced while empty");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+      rmSync(parent, { recursive: true, force: true });
+    }
+  },
+);
+
+test(
+  "a denied file inside .git, or inside a folder .git links to, is left out under every name",
+  POSIX_ONLY,
+  async () => {
+    const dir = scratch("opencode-gitdenied");
+    try {
+      mkdirSync(join(dir, ".git", "objects", "ab"), { recursive: true });
+      writeFileSync(join(dir, ".git", ".env"), "SECRET");
+      linkSync(join(dir, ".git", ".env"), join(dir, "notes.txt"));
+      writeFileSync(join(dir, ".git", "objects", "ab", "cd"), "object");
+      writeFileSync(join(dir, "plain.txt"), "x");
+      assert.deepEqual(await copied(dir), ["plain.txt"]);
+      const linked = scratch("opencode-gitlink");
+      try {
+        mkdirSync(join(linked, "metadata"));
+        writeFileSync(join(linked, "metadata", "config"), "[remote] url=https://token@host");
+        linkSync(join(linked, "metadata", "config"), join(linked, "alias.txt"));
+        symlinkSync(join(linked, "metadata"), join(linked, ".git"));
+        writeFileSync(join(linked, "plain.txt"), "x");
+        assert.deepEqual(await copied(linked), ["plain.txt"]);
+      } finally {
+        rmSync(linked, { recursive: true, force: true });
+      }
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  },
+);
+test(
+  "a link back to a folder above it is refused only when a denied pattern names a path",
+  POSIX_ONLY,
+  async () => {
+    const dir = scratch("opencode-cycle");
+    try {
+      mkdirSync(join(dir, "backing"));
+      writeFileSync(join(dir, "backing", "token.txt"), "SECRET");
+      symlinkSync(join(dir, "backing"), join(dir, "backing", "again"));
+      symlinkSync(join(dir, "backing"), join(dir, "secrets"));
+      await assert.rejects(
+        copied(dir, ["secrets/again/token.txt"]),
+        /links back to a folder above it/,
+      );
+      assert.deepEqual(await copied(dir, ["*.pem"]), ["backing/token.txt"]);
+      assert.deepEqual(await copied(dir), ["backing/token.txt"]);
+      assert.deepEqual(await copied(dir, ["token.txt"]), []);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  },
+);
+test(
+  "a file swapped for a named pipe after the scan fails the copy instead of hanging it",
+  POSIX_ONLY,
+  async () => {
+    const dir = scratch("opencode-fifo");
+    const parent = scratch("opencode-fifo-parent");
+    try {
+      writeFileSync(join(dir, "a.txt"), "aaaa");
+      await assert.rejects(
+        copyReviewRoot(dir, parent, [], undefined, [], {
+          onCreate: () => {
+            rmSync(join(dir, "a.txt"));
+            spawnSync("mkfifo", [join(dir, "a.txt")]);
+          },
+        }),
+        /a\.txt changed while/,
+      );
+      assert.deepEqual(readdirSync(parent), []);
     } finally {
       rmSync(dir, { recursive: true, force: true });
       rmSync(parent, { recursive: true, force: true });

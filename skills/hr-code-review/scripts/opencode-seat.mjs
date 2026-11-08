@@ -195,6 +195,7 @@ export async function copyReviewRoot(
   // OpenCode expands a leading `~` or `$HOME` in a pattern to the home folder.
   const expand = (/** @type {string} */ p) => p.replace(/^(~|\$HOME|\$\{HOME\})(?=\/|$)/, home);
   const everything = denied.includes("*");
+  const byPath = denied.some((p) => p !== "*" && p.includes("/"));
   const patterns = denied.filter((p) => p !== "*").map((p) => globRegex(expand(p)));
   // Whether a path, as the read rules see it (`path` is what OpenCode would be asked to read), is
   // denied: an environment file, the `config` of a `.git` folder, or a match of the user's own
@@ -216,21 +217,21 @@ export async function copyReviewRoot(
   /** @type {string[]} */
   const links = [];
   /** @type {string[]} */
-  const gitConfigs = [];
+  const gitDirs = [];
   for (const stack = [dir]; stack.length > 0;) {
     const here = /** @type {string} */ (stack.pop());
     for (const entry of readdirSync(here, { withFileTypes: true })) {
-      if (entry.name === ".git") {
-        // Not copied (the seat has no use for it, and a file named .git points outside the root), but
-        // its config stays denied under every name.
-        if (entry.isDirectory()) {
-          gitConfigs.push(join(here, ".git", "config"));
-        }
-        continue;
-      }
       count();
       const path = join(here, entry.name);
-      if (entry.isDirectory()) {
+      if (entry.name === ".git") {
+        // Not copied (the seat has no use for it, and a file named .git points outside the root), but
+        // what is denied inside it stays denied under every name: it is scanned below.
+        if (entry.isDirectory()) {
+          gitDirs.push(path);
+        } else if (entry.isSymbolicLink()) {
+          links.push(path);
+        }
+      } else if (entry.isDirectory()) {
         folders.push(path);
         stack.push(path);
       } else if (entry.isSymbolicLink()) {
@@ -247,16 +248,24 @@ export async function copyReviewRoot(
       omit.add(path);
     }
   }
-  for (const config of gitConfigs) {
-    try {
-      const st = lstatSync(config);
-      if (st.isSymbolicLink()) {
-        links.push(config);
-      } else if (st.isFile()) {
-        omit.add(config); // Never copied, but its hard-link aliases are found by inode below.
+  // Inside a `.git` folder (its object store excepted: hash names, and large) a denied file is found
+  // by the same rules, so its hard-link aliases outside are left out by inode, and a link in it is
+  // followed like any other.
+  for (const stack = [...gitDirs]; stack.length > 0;) {
+    const here = /** @type {string} */ (stack.pop());
+    for (const entry of readdirSync(here, { withFileTypes: true })) {
+      if (entry.name === "objects" && basename(here) === ".git") {
+        continue;
       }
-    } catch {
-      // No config here.
+      count();
+      const path = join(here, entry.name);
+      if (entry.isDirectory()) {
+        stack.push(path);
+      } else if (entry.isSymbolicLink()) {
+        links.push(path);
+      } else if (entry.isFile() && isDenied(path)) {
+        omit.add(path);
+      }
     }
   }
   // A link is another way to what it points to, and OpenCode checks only the name it is asked for. The
@@ -280,7 +289,7 @@ export async function copyReviewRoot(
     /** @type {Set<string>} */ ancestors,
   ) => {
     for (const entry of readdirSync(real, { withFileTypes: true })) {
-      if (entry.name === ".git") {
+      if (entry.name === "objects" && basename(real) === ".git") {
         continue;
       }
       count();
@@ -294,6 +303,12 @@ export async function copyReviewRoot(
       if (kind.isDirectory()) {
         if (!ancestors.has(actual)) {
           walkLinked(actual, named, new Set([...ancestors, actual]));
+        } else if (byPath) {
+          // The folder is its own ancestor, so it has endless virtual paths, and a denied path pattern
+          // could match one of them.
+          throw new Error(
+            `${relative(dir, path)} links back to a folder above it and a denied read pattern names a path`,
+          );
         }
       } else if (kind.isFile() && isDenied(named)) {
         omit.add(actual);
@@ -364,7 +379,10 @@ export async function copyReviewRoot(
     for (const { path, st } of copied) {
       // Open without following a link, then check that what is open is the file that was scanned at
       // this very path: a link swapped in for a file or for any folder on the way fails one of these.
-      const fd = openSync(path, fsConstants.O_RDONLY | fsConstants.O_NOFOLLOW);
+      const fd = openSync(
+        path,
+        fsConstants.O_RDONLY | fsConstants.O_NOFOLLOW | fsConstants.O_NONBLOCK,
+      );
       try {
         const now = fstatSync(fd);
         let at = path;
@@ -389,7 +407,13 @@ export async function copyReviewRoot(
             if (n === 0) {
               throw new Error(`${relative(dir, path)} shrank while the review root was copied`);
             }
-            writeSync(out, chunk, 0, n);
+            for (let at = 0; at < n;) {
+              const wrote = writeSync(out, chunk, at, n - at);
+              if (wrote === 0) {
+                throw new Error(`${relative(dir, path)} could not be written in full`);
+              }
+              at += wrote;
+            }
             left -= n;
           }
         } finally {

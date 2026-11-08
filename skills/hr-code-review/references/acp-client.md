@@ -204,7 +204,7 @@ directory (`secrets -> backing`, nested links included) would name as denied
 (`secrets/token.json`), where they really are. Every other name of a left-out file (a hard link, found by device and
 inode) is left out too.
 
-A `.git/config` (a remote URL may carry a token) counts as denied, so a link or hard link to it is left out. A folder reached by two paths is checked under each. The prompt file is never copied over a denial: a prompt the rules deny refuses the run. A file hard-linked from outside the checkout under a name no rule denies is copied. A denied `*` copies only the prompt file, when it is inside the checkout.
+A denied file inside a `.git` folder (its object store excepted), such as the `config` that may carry a remote URL token, is left out under every name, and a `.git` that is a link is followed. A folder reached by two paths is checked under each; a link back to a folder above it is refused when a denied pattern names a path. The prompt file is never copied over a denial: a prompt the rules deny refuses the run. A file hard-linked from outside the checkout under a name no rule denies is copied. A denied `*` copies only the prompt file, when it is inside the checkout.
 
 A checkout with more than 200000 entries, 100000 files or 512 MiB of copied files is refused (exit
 2), and so is one that changes while it is copied (a file replaced or resized, a folder swapped for a link), and so is a review root that is or contains the home folder or OpenCode's config or data folder, because the sandbox shows the root over its empty home. OpenCode's config folder
