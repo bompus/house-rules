@@ -247,7 +247,7 @@ subagent when the host runs reviews through one. Fix or answer each finding.
 Review bots and the repository's own review requirements still
 apply; neither replaces this review.
 
-Run each check or test gate bare, or redirected to a log you read after it exits, and never pipe it into `head`, `tail` or `grep`, because the consumer can hide a failure or end the gate early.
+Run each check or test gate bare, or redirected to a log you read after it exits, and never pipe it into `head`, `tail` or `grep`, because the consumer can hide a failure or end the gate early. A run in which no test ran, or every selected test was skipped, is a failure even when it exits 0: check how many tests actually ran, and say why when none did.
 
 Before filing a bug in any repository, follow the `hr-diagnosing-bugs` skill's
 `references/reporting.md`: reduce and verify the reproduction before submitting.
