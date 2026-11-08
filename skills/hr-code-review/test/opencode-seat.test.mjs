@@ -1424,3 +1424,87 @@ test(
     }
   },
 );
+
+test(
+  "--root names the checkout, so the script can be launched from a trusted folder",
+  LINUX_ONLY,
+  () => {
+    withShims((dir, env, state) => {
+      const r = spawnSync(
+        process.execPath,
+        [
+          script,
+          "opencode-go/m",
+          "max",
+          join(dir, "prompt.md"),
+          "--root",
+          dir,
+          "--bwrap",
+          join(dir, "bwrap"),
+        ],
+        { cwd: state, encoding: "utf8", env },
+      );
+      assert.equal(r.status, 7, r.stderr);
+      assert.doesNotMatch(r.stderr, /warning: no --root/);
+      const box = readFileSync(join(dir, "seen.bwrap"), "utf8").split("\n");
+      assert.equal(box[box.indexOf("--chdir") + 1], realpathSync(dir));
+      // Without it the checkout is the launch folder, and the run says so.
+      const plain = spawnSync(
+        process.execPath,
+        [script, "opencode-go/m", "max", "prompt.md", "--bwrap", join(dir, "bwrap")],
+        {
+          cwd: dir,
+          encoding: "utf8",
+          env,
+        },
+      );
+      assert.equal(plain.status, 7, plain.stderr);
+      assert.match(plain.stderr, /warning: no --root/);
+    });
+  },
+);
+test(
+  "the optional arguments are read after the three required ones, and a prompt may be named --bwrap",
+  LINUX_ONLY,
+  () => {
+    withShims((dir, env) => {
+      writeFileSync(join(dir, "--bwrap"), "task");
+      const r = spawnSync(
+        process.execPath,
+        [script, "opencode-go/m", "max", "--bwrap", "a title", "--bwrap", join(dir, "bwrap")],
+        { cwd: dir, encoding: "utf8", env },
+      );
+      assert.equal(r.status, 7, r.stderr);
+      for (const extra of [["--bwrap"], ["--root", "/a", "--root", "/b"], ["t", "u"], ["--nope"]]) {
+        const bad = spawnSync(
+          process.execPath,
+          [script, "opencode-go/m", "max", "prompt.md", ...extra],
+          {
+            cwd: dir,
+            encoding: "utf8",
+            env,
+          },
+        );
+        assert.equal(bad.status, 2, extra.join(" "));
+        assert.match(bad.stderr, /^usage:/m);
+      }
+    });
+  },
+);
+test(
+  "a temporary folder inside the checkout is refused: the copy must be out of reach of its writers",
+  LINUX_ONLY,
+  () => {
+    withShims((dir, env) => {
+      mkdirSync(join(dir, "tmp-in-root"));
+      const r = spawnSync(
+        process.execPath,
+        [script, "opencode-go/m", "max", "prompt.md", "--bwrap", join(dir, "bwrap")],
+        { cwd: dir, encoding: "utf8", env: { ...env, TMPDIR: join(dir, "tmp-in-root") } },
+      );
+      assert.equal(r.status, 2, r.stderr);
+      assert.match(r.stderr, /temporary folder .* is inside the review root/);
+      assert.equal(existsSync(join(dir, "seen.bwrap")), false);
+    });
+  },
+);

@@ -1,7 +1,7 @@
 // One OpenCode panel seat: `opencode run` in the current directory with read-only tools, an empty
 // environment and, on Linux, a filesystem boundary. OpenCode is not an ACP agent, so it does not go
 // through acp-panel-client.mjs.
-// Usage: bun opencode-seat.mjs <model-id> <effort> <prompt-file> [title] [--bwrap ABSOLUTE-PATH]
+// Usage: bun opencode-seat.mjs <model-id> <effort> <prompt-file> [title] [--root CHECKOUT] [--bwrap ABSOLUTE-PATH]
 // The seat sees PATH, HOME, TMPDIR, LANG and the XDG directories only, so no other vendor's key or SSH
 // agent reaches it, and OpenCode logs in from its own auth file. Its permissions deny every tool except
 // read, glob and list (no grep: its rules match search patterns, not files), keep `.env` files
@@ -638,20 +638,49 @@ if (
   process.argv[1] &&
   realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url))
 ) {
-  // `--bwrap PATH` (an absolute path) names the bubblewrap executable, for a caller that installs it
-  // outside the system folders; it is an argument, not an environment variable, which a checkout's
-  // `.env` could set.
-  const argv = process.argv.slice(2);
-  const bwrapAt = argv.indexOf("--bwrap");
-  const bwrapOverride = bwrapAt === -1 ? undefined : (argv.splice(bwrapAt, 2)[1] ?? "");
-  const [model, effort, promptFile, title = "panel-seat"] = argv;
-  if (!model || !effort || !promptFile || bwrapOverride === "") {
+  // After the three required arguments: an optional title and `--bwrap PATH` (the bubblewrap executable,
+  // an absolute path) and `--root DIR` (the review checkout). They are arguments, not environment
+  // variables, which a checkout's `.env` could set. Launch this script from a folder you trust and name
+  // the checkout with `--root`: Bun reads `.env` and `bunfig.toml` (a `preload` runs code) from the
+  // launch folder before the script starts, and with no `--root` that folder is the checkout.
+  const [model, effort, promptFile, ...rest] = process.argv.slice(2);
+  /** @type {string | undefined} */
+  let title;
+  /** @type {string | undefined} */
+  let bwrapOverride;
+  /** @type {string | undefined} */
+  let rootArg;
+  let bad = !model || !effort || !promptFile;
+  for (let i = 0; i < rest.length; i++) {
+    const arg = rest[i] ?? "";
+    if (arg === "--bwrap" || arg === "--root") {
+      const value = rest[++i];
+      if (value === undefined || value === "" || (arg === "--bwrap" ? bwrapOverride : rootArg)) {
+        bad = true;
+      } else if (arg === "--bwrap") {
+        bwrapOverride = value;
+      } else {
+        rootArg = value;
+      }
+    } else if (title === undefined && !arg.startsWith("--")) {
+      title = arg;
+    } else {
+      bad = true;
+    }
+  }
+  if (bad || !model || !effort || !promptFile) {
     console.error(
-      "usage: bun opencode-seat.mjs <model-id> <effort> <prompt-file> [title] [--bwrap ABSOLUTE-PATH]",
+      "usage: bun opencode-seat.mjs <model-id> <effort> <prompt-file> [title] [--root CHECKOUT] [--bwrap ABSOLUTE-PATH]",
     );
     process.exit(2);
   }
-  const dir = realpathSync(process.cwd());
+  title ??= "panel-seat";
+  const dir = realpathSync(rootArg ?? process.cwd());
+  if (rootArg === undefined) {
+    console.error(
+      "[opencode-seat] warning: no --root, so Bun read .env and bunfig.toml from the checkout; launch from a trusted folder with --root",
+    );
+  }
   const home = homedir();
   const config = process.env.XDG_CONFIG_HOME || join(home, ".config");
   const denials = userReadDenials(join(config, "opencode"));
@@ -752,9 +781,15 @@ if (
     // Inside the checkout the prompt is the copy's own file; one outside it is copied into the copy.
     const promptOutside = rootCovers(dir, [prompt]) === undefined;
     let seatPrompt = prompt;
-    // The seat runs on a sanitized copy of the checkout, shown at the checkout's own path.
+    // The seat runs on a sanitized copy of the checkout, shown at the checkout's own path. The copy
+    // lives outside the checkout, where a writer there cannot swap it.
+    const parent = realpathSync(tmpdir());
+    if (rootCovers(dir, [parent]) !== undefined) {
+      console.error(`[opencode-seat] the temporary folder ${parent} is inside the review root`);
+      process.exit(2);
+    }
     try {
-      await copyReviewRoot(dir, tmpdir(), denials, home, [prompt], {
+      await copyReviewRoot(dir, parent, denials, home, [prompt], {
         onCreate: (made) => {
           sandboxCopy = made;
         },
