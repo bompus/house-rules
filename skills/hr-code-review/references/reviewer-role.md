@@ -2,7 +2,8 @@
 
 Use this brief when a host lets you define a standing reviewer, or when you hand
 a review to a read-only sub-agent. The parent supplies intent, the diff (or, when it is too large to include, the head, the base
-and the exact comparison command), changed paths and verification evidence, and names every
+and the path of a file inside the review root where the parent wrote the diff, because a reviewer
+with only read and search tools cannot run a comparison command), changed paths and verification evidence, and names every
 model that wrote any part of the reviewed change, committed or not (vendor, name, version, effort
 if known), or says that none did, so the reviewer can check that it is not one of them. The reviewer works within that scope.
 
