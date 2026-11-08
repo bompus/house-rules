@@ -87,7 +87,14 @@ If a source arrives later or scope changes, update only the affected assessment.
 **Correctness of input-to-output code** goes in the Spec brief, using the
 evidence method above. For a retry, poll or batch loop, check what changes
 before the next attempt, and whether one failing item stops the items after it
-when the loop's contract says they should continue. Split a large scope into groups of about three files,
+when the loop's contract says they should continue. For code that changes state
+(installers, releases, backups, migrations, files other runs read), ask what
+happens if it runs twice and if the previous run stopped at each step. Each step
+should work from the state it finds; a leftover lock or marker should be judged
+stale by evidence (the tool's own stale check, a process that is gone), not
+cleared blindly; a file other runs read should be written to a temporary path
+and renamed into place. Where two actors write one file, key or directory, check
+whether each can get its own before accepting a lock. Split a large scope into groups of about three files,
 one reviewer per group. Do not assign this work to a reviewer focused on
 structure or maintainability.
 

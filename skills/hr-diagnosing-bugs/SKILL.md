@@ -96,6 +96,16 @@ the right fix when it differs, with the reason: scope, risk, blast radius or
 existing debt. Skip this when the evidence supports a single obvious fix or
 the user already prescribed the remedy.
 
+Before fixing where the symptom surfaced, ask whether the state that triggered
+it is legitimate. If the system may be in that state, the code that broke on it
+is the cause, and handling the state there is the fix. If the state should never
+exist, a guard, retry, swallowed error or clamped value at that spot hides the
+bug; find what produced the state. When a failure appears only after a restart,
+check persisted state (config, caches, lock files, serialized data) first.
+Search for the same fault elsewhere and fix every instance the task covers. When
+the deciding fact took a long dig to find, offer the cheap, always-on signal (a
+log line, a metric, an assertion) that would have shown it at once.
+
 Make the smallest fix supported by the evidence. Use a regression assertion that
 exercises the actual failure when a suitable seam exists and the change warrants
 it under project guidance. It must fail on the pre-fix code for the intended
