@@ -936,6 +936,7 @@ test(
       };
       let n = 0;
       for (const line of [
+        "#!/usr/bin/env -S 'bun --smol'",
         "#!/usr/bin/env bun",
         '#!/usr/bin/env -S bun --conditions="review main.mjs"',
         '#!/usr/bin/env -S --chdir="/trusted dir" bun chosen.mjs',
@@ -951,6 +952,8 @@ test(
         "#!/usr/bin/env node",
         "#!/bin/sh",
         "#!/usr/bin/env -S node --x='a b'",
+        "#!/usr/bin/env -S python3 -W ignore:bun",
+        "#!/tools/bun/sh",
         "no shebang",
       ]) {
         const path = script(line, `plain-${n++}`);
@@ -982,6 +985,29 @@ test(
         "canonical folder, the entry's own name",
       );
       assert.equal(out[1], "pkg");
+    } finally {
+      process.env.PATH = saved;
+      rmSync(dir, { recursive: true, force: true });
+    }
+  },
+);
+
+test(
+  "a bun.exe on a POSIX PATH is looked up by that name",
+  { skip: !UNDER_BUN || process.platform === "win32" },
+  () => {
+    const dir = mkdtempSync(join(tmpdir(), "bun-exe-"));
+    const saved = process.env.PATH;
+    try {
+      const root = join(dir, "root");
+      const trusted = join(dir, "trusted");
+      mkdirSync(root);
+      mkdirSync(trusted);
+      symlinkSync(process.execPath, join(trusted, "bun.exe"));
+      process.env.PATH = trusted;
+      const out = bunHardened(["bun.exe", "/trusted/server.mjs"], root, refuseTest);
+      assert.equal(exeName(out[0] ?? ""), "bun");
+      assert.equal(out[1], "--no-env-file");
     } finally {
       process.env.PATH = saved;
       rmSync(dir, { recursive: true, force: true });

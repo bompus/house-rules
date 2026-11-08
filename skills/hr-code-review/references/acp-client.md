@@ -163,6 +163,8 @@ keep no credential there (a remote URL with a token, for example).
 
 The server starts in the review root, and a Bun process reads `.env` and `bunfig.toml` (a `preload` runs code) from where it starts. Hardened: a launch whose executable is `bun` gets `--no-env-file` and `--config=EMPTY` (an empty file in the client's private folder), each added when Bun's options before the script lack it. A bare `bun` or `bunx` is the one on `PATH` outside the checkout. Refused (exit 2): `bunx --bun`, `bun x --bun`, and any script whose first line is a `#!` line naming bun, because that launch cannot be rewritten safely (`env -S` options and quoting, the kernel's cut at 255 bytes); launch it as `bun --no-env-file --config=EMPTY SCRIPT`. Not hardenable: `bunx` and `bun x`, whose packages read both files if their `#!` line names bun. Every adapter in use runs under Node or is native. A bun command inside `env` or `sh -c` is not rewritten.
 
+The Bun checks are a heuristic second layer, like the agy detector; a server that does not start in the checkout is the real protection. Known gaps: a `#!` line whose `bun` straddles the kernel's 255-byte cut or is spelled with quotes inside the name (`env -S b"u"n`); a Bun binary reached through a link with another name (`runtime`, `Bun`, `bun-1.4.4`); an executable-only script (mode 0111), which cannot be read and so is not inspected; and `bun -c FILE` or `bun --config FILE`, which count as protection although only the attached `--config=FILE` works in Bun 1.4.4.
+
 This narrows what a seat can pick up from its environment, shell and MCP tools.
 It does not sandbox the agent. Outside a sandbox (a process namespace and a
 filesystem view the caller builds, as a review service can) the allowlist and the

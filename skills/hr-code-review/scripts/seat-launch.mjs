@@ -690,6 +690,20 @@ function emptyBunfig() {
   return emptyBunfigPath;
 }
 /**
+ * Whether a `#!` line starts Bun: its interpreter (the first word) is called bun, or, behind `env`, any
+ * word is. A word that only contains bun (`python3 -W ignore:bun`, a folder called bun) does not count.
+ * This is a heuristic: a spelling with quotes inside the name is not seen.
+ * @param {string} line
+ */
+function namesBun(line) {
+  const words = line.slice(2).trim().split(/\s+/);
+  const isBun = (/** @type {string} */ word) =>
+    exeName(word.replace(/^['"]+/, "")).toLowerCase() === "bun";
+  // Behind `env` any word that is bun counts (its options may take values we do not parse); otherwise the
+  // interpreter is the first word.
+  return exeName(words[0] ?? "") === "env" ? words.some(isBun) : isBun(words[0] ?? "");
+}
+/**
  * The launch command with Bun told to ignore the working directory's `.env` and `bunfig.toml`
  * (`bun --no-env-file --config=EMPTY`). The server starts in the review root, and a Bun process reads
  * those two files from where it starts: a checkout's `preload` would run inside the server with the
@@ -708,11 +722,11 @@ export function bunHardened(cmd, root, refuse) {
   // A bare `bun` or `bunx` is the one found outside the checkout, as its canonical path: the launch would
   // otherwise take the first match on the caller's PATH, which may be the checkout's.
   if ((exe === "bun" || exe === "bunx") && !/[\\/]/.test(cmd[0] ?? "")) {
-    const found = pathExecutable(exe, envPath(process.env), reviewBase(root)) ?? undefined;
+    const found = pathExecutable(cmd[0] ?? exe, envPath(process.env), reviewBase(root));
     // A program that dispatches on its name (`bunx -> bun`) keeps the name it is found by.
     const named =
       found !== undefined && exeName(found) !== exe
-        ? pathExecutable(exe, envPath(process.env), reviewBase(root), false)
+        ? pathExecutable(cmd[0] ?? exe, envPath(process.env), reviewBase(root), false)
         : found;
     if (!named) {
       return refuse(`${exe} is not on PATH outside the review checkout`);
@@ -776,7 +790,7 @@ export function bunHardened(cmd, root, refuse) {
   } catch {
     return cmd; // Not readable here: the spawn reports it.
   }
-  if (line.startsWith("#!") && /\bbun\b/.test(line)) {
+  if (line.startsWith("#!") && namesBun(line)) {
     return refuse(
       `${script} starts with a #! line that names bun, which would read the checkout's .env and bunfig.toml; launch it as \`bun --no-env-file --config=EMPTY ${script}\`, or use a Node adapter`,
     );
