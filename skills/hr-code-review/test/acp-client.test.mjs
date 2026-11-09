@@ -20,7 +20,7 @@ const fake = `
 import readline from 'node:readline';
 import fs from 'node:fs';
 import {execFileSync,spawn} from 'node:child_process';
-const cfg=JSON.parse(process.env.FAKE_CONFIG);let options=[{id:'model',currentValue:'default',options:[{value:'chosen'}]},{id:cfg.effortId||'effort',currentValue:'medium',options:[{value:'high'}]},{id:'mode',currentValue:cfg.modeStart||'write',options:(cfg.modes||['read-only']).map(value=>({value}))}];
+const cfg=JSON.parse(process.env.FAKE_CONFIG);let options=[{id:'model',currentValue:'default',options:[{value:'chosen'}]},{id:cfg.effortId||'effort',currentValue:'medium',options:[{value:'high'}]},{id:'mode',currentValue:cfg.modeStart||'write',options:cfg.grouped?[{group:'sandbox-modes',name:'Sandbox Modes',options:(cfg.modes||['read-only']).map(value=>({value}))},{group:'permission-profiles',name:'Permission Profiles',options:(cfg.profiles||['profile-a']).map(value=>({value}))}]:(cfg.modes||['read-only']).map(value=>({value}))}];
 const launch={pid:process.pid,argv:process.argv.slice(2),env:Object.keys(process.env),codexPath:process.env.CODEX_PATH??null,realCodex:process.env.CODEX_NO_WEB_REAL??null,codexConfig:process.env.CODEX_CONFIG??null};
 const argAt=process.argv.indexOf('--config');
 if(argAt>=0){const file=process.argv[argAt+1];launch.devin={file,config:JSON.parse(fs.readFileSync(file,'utf8')),fileMode:fs.statSync(file).mode&0o777,dirMode:fs.statSync(file.slice(0,Math.max(file.lastIndexOf('/'),file.lastIndexOf('\\\\')))).mode&0o777};}
@@ -975,6 +975,54 @@ test("an agent in an edit-approving mode with no read-only, default or ask mode 
       false,
     );
   }
+});
+// codex-acp 2.6.0 groups its mode values under Sandbox Modes and Permission Profiles when a Codex home
+// defines a permission profile; the seat must find the values inside the groups.
+test("read-only offered inside grouped mode options is selected, in either group", () => {
+  /** @param {{ log: any[] }} r */
+  const sent = (r) =>
+    r.log.filter((m) => m.method === "session/set_config_option").map((m) => m.params.value);
+  const first = run({ grouped: true, modes: ["default", "read-only"], modeStart: "auto" });
+  assert.equal(first.code, 0, first.error);
+  assert.deepEqual(sent(first), ["read-only"]);
+  const second = run({
+    grouped: true,
+    modes: ["plan"],
+    profiles: ["read-only"],
+    modeStart: "auto",
+  });
+  assert.equal(second.code, 0, second.error);
+  assert.deepEqual(sent(second), ["read-only"]);
+});
+test("grouped mode options without read-only fall back to default, and an echo that differs is refused", () => {
+  const r = run({ grouped: true, modes: ["default", "plan"], modeStart: "auto" });
+  assert.equal(r.code, 0, r.error);
+  assert.deepEqual(
+    r.log.filter((m) => m.method === "session/set_config_option").map((m) => m.params.value),
+    ["default"],
+  );
+  const wrong = run({ grouped: true, modes: ["read-only"], modeStart: "auto", echo: "wrong" });
+  assert.equal(wrong.code, 1);
+  assert.equal(
+    wrong.log.some((m) => m.method === "session/prompt"),
+    false,
+  );
+});
+test("a grouped list with no mode the client can move to is refused when the start mode can approve edits", () => {
+  const r = run({
+    grouped: true,
+    modes: ["plan", "smart"],
+    profiles: ["profile-a"],
+    modeStart: "auto",
+  });
+  assert.equal(r.code, 1);
+  assert.match(r.error, /can approve an edit without asking/);
+  const codex = run({ codex: true, grouped: true, modes: ["default"], modeStart: "auto" });
+  assert.equal(codex.code, 1, "Codex still needs read-only inside the groups");
+  assert.equal(
+    codex.log.some((m) => m.method === "session/prompt"),
+    false,
+  );
 });
 test("Codex must still confirm read-only even when default is offered", () => {
   const r = run({ codex: true, modes: ["default"], modeStart: "auto" });
