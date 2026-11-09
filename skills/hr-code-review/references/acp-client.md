@@ -284,7 +284,7 @@ The output contains collected agent text. Exit codes are:
 - 2: missing or unknown arguments, a launch policy refusal, or a refused `--no-web` or Devin setup
 - 3: incomplete verdict
 - 4: changed Git status, with the changed paths in the log (the answer file is written after this comparison)
-- 5: under `--no-web`, a tool call that can use the network completed without having been refused (exit 4 takes precedence); a call the agent types or titles as a web search (`Web search`, `Search the web`) counts whatever kind it reports. A call the client refused is not counted, because adapters report a refused call as completed with a denial; an adapter that runs a call after the client refused it is not detected, so `--no-web` relies on the tools being removed (Claude), turned off (Codex) or denied (Devin), and exit 5 catches calls that ran without asking
+- 5: under `--no-web`, a tool call that can use the network completed without having been refused (exit 4 takes precedence); a call the agent types or titles as a web search (`Web search`, `Search the web`, on any update before the call completes) counts whatever kind it reports. A call the client refused is not counted, because adapters report a refused call as completed with a denial; an adapter that runs a call after the client refused it is not detected, so `--no-web` relies on the tools being removed (Claude), turned off (Codex) or denied (Devin), and exit 5 catches calls that ran without asking
 - 124: deadline, even when the agent honors the cancel
 
 A permission-cancelled turn may continue within `--max-turns`. A matching marker
