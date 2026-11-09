@@ -327,7 +327,8 @@ notes for every version in between before landing, applying or installing a depe
 a change touches more than three places, or an analysis repeats across many files or records, write the script
 that does or proves it; its second run changes nothing and repeats no external action. Before adding a
 dependency, script, hook or skill, landing or installing an upgrade, writing React effects or tests, duplicating edge-case
-handling, or fixing a repeated mistake, read [the procedure](references/implementation-economy.md).
+handling, fixing a repeated mistake, or bulk fetches in a script or brief, read
+[the procedure](references/implementation-economy.md).
 
 ## Durable notes
 

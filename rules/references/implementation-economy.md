@@ -40,6 +40,22 @@
   the first unit by hand and confirm the script reproduces it. A second run of
   the script must change nothing and repeat no external action, such as a
   push or a sent message.
+- A script or a worker's brief that makes many independent read requests
+  (downloads, page or API fetches that do not need each other's results)
+  runs several at once (start around 4 to 8), not one after another, and gives
+  every request a timeout so one stalled response cannot hang the run. Keep
+  dependent requests, such as cursor pagination, in order, and keep writes
+  under their own ordering and retry-safety rules. Slow down only when the
+  server signals a limit: a 429, a `Retry-After` header on a failed request,
+  or a rate-limit header whose value says the quota is used up or asks you to
+  wait (`x-ratelimit-remaining: 0`, a reset time). A header that only reports
+  quota left is not a signal. Then honour the stated wait, lower the
+  concurrency and retry the failed requests a bounded number of times. Treat
+  a 503 as the service being briefly unavailable: retry it a bounded number
+  of times, after its `Retry-After` when it gives one. A slow run with no such
+  signal is a stalled request or a client bug; time one request on its own
+  before blaming a rate limit. Keep the limits a site publishes or the task
+  states, and stay serial where the site asks for it.
 - Check current official documentation when behavior depends on a version, and
   stay compatible with the versions in use; no blind upgrades. Before landing,
   applying or installing an upgrade of a dependency, toolchain, app, provider
