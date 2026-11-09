@@ -1001,12 +1001,14 @@ test("grouped mode options without read-only fall back to default, and an echo t
     r.log.filter((m) => m.method === "session/set_config_option").map((m) => m.params.value),
     ["default"],
   );
-  const wrong = run({ grouped: true, modes: ["read-only"], modeStart: "auto", echo: "wrong" });
-  assert.equal(wrong.code, 1);
-  assert.equal(
-    wrong.log.some((m) => m.method === "session/prompt"),
-    false,
-  );
+  for (const modes of [["read-only"], ["default"]]) {
+    const wrong = run({ grouped: true, modes, modeStart: "auto", echo: "wrong" });
+    assert.equal(wrong.code, 1, modes.join());
+    assert.equal(
+      wrong.log.some((m) => m.method === "session/prompt"),
+      false,
+    );
+  }
 });
 test("a grouped list with no mode the client can move to is refused when the start mode can approve edits", () => {
   const r = run({
