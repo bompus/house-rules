@@ -1123,3 +1123,50 @@ test("absoluteFirst makes only a relative path absolute, keeps a trailing slash,
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test(
+  "absoluteFirst follows a link before a `..` the way the system does",
+  { skip: process.platform === "win32" },
+  () => {
+    const refuse = /** @type {(m: string) => never} */ (
+      (m) => {
+        throw new Error(m);
+      }
+    );
+    const dir = mkdtempSync(join(process.env.HOUSE_RULES_TEST_TMP || tmpdir(), "abs-link-"));
+    const before = process.cwd();
+    try {
+      const root = join(dir, "review");
+      mkdirSync(root);
+      mkdirSync(join(dir, "tools", "actual", "inner"), { recursive: true });
+      symlinkSync(join(dir, "tools", "actual", "inner"), join(dir, "tools", "link"));
+      mkdirSync(join(dir, "client"));
+      process.chdir(join(dir, "client"));
+      // `link/..` is `tools/actual` (the link's parent), not `tools`.
+      const out = absoluteFirst(["../tools/link/../claude-agent-acp"], root, refuse);
+      assert.equal(out[0], join(realpathSync(dir), "tools", "actual", "claude-agent-acp"));
+    } finally {
+      process.chdir(before);
+      rmSync(dir, { recursive: true, force: true });
+    }
+  },
+);
+
+test(
+  "cleanPath drops a folder whose canonical path holds the PATH delimiter",
+  { skip: process.platform === "win32" },
+  () => {
+    const dir = mkdtempSync(join(process.env.HOUSE_RULES_TEST_TMP || tmpdir(), "clean-delim-"));
+    try {
+      const root = join(dir, "review");
+      mkdirSync(root);
+      mkdirSync(join(dir, "a:b"));
+      mkdirSync(join(dir, "plain"));
+      symlinkSync(join(dir, "a:b"), join(dir, "alias"));
+      const kept = cleanPath(`${join(dir, "alias")}:${join(dir, "plain")}`, root);
+      assert.equal(kept, realpathSync(join(dir, "plain")));
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  },
+);

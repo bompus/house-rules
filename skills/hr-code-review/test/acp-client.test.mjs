@@ -166,6 +166,18 @@ function run(
       server[0] = `./${launcher}`;
     }
   }
+  if (config.bareLauncher) {
+    // A bare program name; the only copy found on an absolute PATH folder is a link into the review
+    // root, while a relative entry (from the review root) holds a harmless one.
+    mkdirSync(join(dir, "safe"));
+    mkdirSync(join(dir, "global"));
+    const body = `#!/bin/sh\nexec "${process.execPath}" "${fakePath}" "$@"\n`;
+    writeFileSync(join(dir, "safe", launcher), body, { mode: 0o755 });
+    writeFileSync(join(root, "payload"), body, { mode: 0o755 });
+    symlinkSync(join(root, "payload"), join(dir, "global", launcher));
+    server[0] = launcher;
+    env.PATH = `../safe:${join(dir, "global")}:${process.env.PATH}`;
+  }
   const outside = join(dir, "outside.txt");
   if (config.symlinkAnswer || config.hardlinkAnswer) {
     writeFileSync(outside, "keep");
@@ -218,6 +230,7 @@ function run(
       assert.ifError(result.error);
     }
     return {
+      root,
       code: result.status,
       text: existsSync(out) ? readFileSync(out, "utf8") : "",
       error: result.stderr,
@@ -2484,7 +2497,7 @@ test(
       env: { BUN_INSTALL_CACHE_DIR: "../../../repo/cache" },
     });
     assert.equal(relative.code, 2);
-    assert.match(relative.error, /is not an absolute path/);
+    assert.match(relative.error, /holds a relative path|is not an absolute path/);
     // A seat HOME inside the checkout makes every default cache location one inside it.
     const home = run({ env: { HOME: "%DIR%/repo/home" } }, [], (root) =>
       mkdirSync(join(root, "home")),
@@ -2522,7 +2535,7 @@ test(
     const entries = String(r.launch?.path ?? "").split(":");
     assert.ok(entries.length > 0);
     assert.ok(
-      entries.every((e) => e.startsWith("/") && !e.includes("/repo")),
+      entries.every((e) => e.startsWith("/") && e !== r.root && !e.startsWith(`${r.root}/`)),
       entries.join(":"),
     );
   },
@@ -2537,5 +2550,54 @@ test(
     assert.match(refused.error, /hooks-masked/);
     const masked = run(config, [...AGY_FLAGS, "--policy-option", "hooks-masked"], agyHome("t"));
     assert.equal(masked.code, 0, masked.error);
+  },
+);
+
+test(
+  "a relative path in the environment an isolated server receives is refused, and an absolute one is not",
+  POSIX_ONLY,
+  () => {
+    for (const env of [
+      { TMPDIR: "../rel-tmp" },
+      { SSL_CERT_DIR: "../../../repo/certs:/nonexistent" },
+      { XDG_CACHE_HOME: "cache" },
+      { XDG_STATE_HOME: "./state" },
+      { NODE_EXTRA_CA_CERTS: "ca.pem" },
+    ]) {
+      const r = run({ devinShim: true, serverArgs: ["acp"], env });
+      assert.equal(r.code, 2, JSON.stringify(env));
+      assert.match(r.error, /holds a relative path|is not an absolute path/);
+      assert.equal(r.launch, null);
+    }
+    const fine = run({
+      devinShim: true,
+      serverArgs: ["acp"],
+      env: { SSL_CERT_DIR: "%DIR%/certs:/nonexistent", NO_PROXY: ".local,localhost" },
+    });
+    assert.equal(fine.code, 0, fine.error);
+    // A launch that starts in the review root keeps its relative values.
+    const plain = run({ env: { SSL_CERT_DIR: "certs" } });
+    assert.equal(plain.code, 0, plain.error);
+  },
+);
+test("a path with a `..` after a link into the checkout counts as inside", POSIX_ONLY, () => {
+  const r = run({ env: { HOME: "%DIR%/outside/link/../home" } }, [], (root, dir) => {
+    mkdirSync(join(root, "sub"));
+    mkdirSync(join(root, "home"));
+    mkdirSync(join(dir, "outside"));
+    symlinkSync(join(root, "sub"), join(dir, "outside", "link"));
+  });
+  assert.equal(r.code, 2);
+  assert.match(r.error, /HOME=.* is inside the review checkout/);
+});
+
+test(
+  "a bare program name of an isolated launch is the one the checks examined, not one found after PATH is rebuilt",
+  POSIX_ONLY,
+  () => {
+    const r = run({ launcher: "claude-agent-acp", serverArgs: [], bareLauncher: true });
+    assert.equal(r.code, 2, r.error);
+    assert.match(r.error, /is not on PATH outside the review checkout/);
+    assert.equal(r.launch, null);
   },
 );
