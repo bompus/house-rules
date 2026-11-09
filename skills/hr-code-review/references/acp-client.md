@@ -86,7 +86,7 @@ agent cannot obtain it through its own approved route.
   and under `--no-web` also fetches, web search and subagents. It is built from
   the config Devin would have read (the launch's `--config PATH` or
   `--config=PATH`, resolved against the review root, else the user config with
-  its rules, but not its hooks, which are left out; comments in it are read under Bun only), written to a
+  its rules, but not its `hooks` or `mcpServers`, which are left out; comments in it are read under Bun only), written to a
   private directory and removed at exit, also when the client is stopped by
   SIGTERM, SIGINT or SIGHUP (it then exits 128 plus the signal number). In every
   mode its imports of other tools' settings (`read_config_from`: Claude, Cursor,

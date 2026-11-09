@@ -1181,6 +1181,7 @@ test(
         JSON.stringify({
           version: 1,
           hooks: { pre: "audit" },
+          mcpServers: { mine: { command: "x" }, off: { command: "y", disabled: true } },
           permissions: { deny: ["Read(~/.ssh/*)"], allow: ["Read(*)"] },
         }),
       );
@@ -1189,6 +1190,7 @@ test(
     assert.equal(r.code, 0, r.error);
     const config = r.launch?.devin.config;
     assert.deepEqual(config.hooks, {}, "the user's hooks never run in the seat");
+    assert.deepEqual(config.mcpServers, {}, "nor does a server of the config");
     assert.deepEqual(config.permissions.allow, ["Read(*)"]);
     assert.ok(config.permissions.deny.includes("Read(~/.ssh/*)"));
     assert.ok(config.permissions.deny.includes("exec"));

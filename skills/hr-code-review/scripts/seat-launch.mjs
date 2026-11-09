@@ -917,8 +917,13 @@ export function devinConfig(cmd, offline, dir, refuse) {
   const config = join(privateDir(), "devin-config.json");
   writeFileSync(
     config,
-    // The user's hooks are left out: Devin would run them in the seat.
-    JSON.stringify({ ...base, hooks: {}, permissions: { ...base.permissions, deny } }, null, 2),
+    // The user's hooks and MCP servers are left out (a seat needs neither): the hooks would run in the
+    // seat, and a server in the config would be one more place Devin could start one from.
+    JSON.stringify(
+      { ...base, hooks: {}, mcpServers: {}, permissions: { ...base.permissions, deny } },
+      null,
+      2,
+    ),
     {
       mode: 0o600,
     },
