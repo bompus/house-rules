@@ -47,12 +47,15 @@
   dependent requests, such as cursor pagination, in order, and keep writes
   under their own ordering and retry-safety rules. Slow down only when the
   server signals a limit: a 429, a `Retry-After` header on a failed request,
-  or a rate-limit header whose value says the quota is used up or asks you to
-  wait (`x-ratelimit-remaining: 0`, a reset time). A header that only reports
-  quota left is not a signal. Then honour the stated wait, lower the
-  concurrency and retry the failed requests a bounded number of times. Treat
-  a 503 as the service being briefly unavailable: retry it a bounded number
-  of times, after its `Retry-After` when it gives one. A slow run with no such
+  a rate-limit header whose value says the quota is used up
+  (`x-ratelimit-remaining: 0`), or an error whose body says the rate limit
+  was exceeded (some APIs send that with a 403). A header that only reports
+  quota left, or a reset time on its own, is not a signal; use the reset time
+  to size the wait only once one of those signals has fired. Then honour the
+  stated wait, lower the concurrency and retry the failed requests a bounded
+  number of times, backing off exponentially with jitter when the server gives
+  no wait. Treat a 503 as the service being briefly unavailable: retry it the
+  same bounded way, after its `Retry-After` when it gives one. A slow run with no such
   signal is a stalled request or a client bug; time one request on its own
   before blaming a rate limit. Keep the limits a site publishes or the task
   states, and stay serial where the site asks for it.

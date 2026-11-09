@@ -25,6 +25,7 @@ const SECTIONS = [
       /simplest solution/,
       /never\s+at\s+the\s+cost\s+of\s+security,\s+validation\s+or\s+stated\s+requirements/,
       /release\s+notes\s+for\s+every\s+version\s+in\s+between/,
+      /times\s+out\s+every\s+request/,
     ],
     full: [/useLayoutEffect/, /encode it in\s+structure before prose/, /Write regression tests/],
   },
