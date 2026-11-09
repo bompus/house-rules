@@ -847,7 +847,7 @@ test("a policy refusal, a default export, an async check and a broken module", (
   assert.equal(missing.code, 2);
   assert.equal(missing.launch, null);
 });
-test("Claude's adapter gets Read, Grep and Glob only and ignores the user's MCP servers", () => {
+test("Claude's adapter gets Read, Grep and Glob only, ignores the user's MCP servers and loads no settings file", () => {
   /** @param {string[]} flags */
   const meta = (flags) =>
     run({}, flags).log.find((m) => m.method === "session/new").params._meta.claudeCode.options;
@@ -855,6 +855,7 @@ test("Claude's adapter gets Read, Grep and Glob only and ignores the user's MCP 
     tools: ["Read", "Grep", "Glob"],
     disallowedTools: ["WebFetch", "WebSearch"],
     strictMcpConfig: true,
+    settingSources: [],
   };
   assert.deepEqual(meta([]), closed);
   assert.deepEqual(meta(["--no-web"]), closed);
@@ -862,6 +863,7 @@ test("Claude's adapter gets Read, Grep and Glob only and ignores the user's MCP 
   assert.deepEqual(meta(["--allow-reads"]), {
     tools: ["Read", "Grep", "Glob", "WebFetch", "WebSearch"],
     strictMcpConfig: true,
+    settingSources: [],
   });
 });
 /** @param {string[]} kinds */

@@ -78,7 +78,10 @@ agent cannot obtain it through its own approved route.
   refused. Any other start mode is kept.
 - **Claude's adapter** starts with `Read`, `Grep` and `Glob` as its only built-in
   tools (plus `WebFetch` and `WebSearch` only with `--allow-reads` and without
-  `--no-web`) and ignores the user's MCP servers.
+  `--no-web`) and ignores the user's MCP servers. It loads no settings file (the
+  user's, the project's or the local one: `settingSources` is empty), so no hook
+  configured in them runs in the seat, a hook in the checkout's own
+  `.claude/settings.json` included.
 - **Devin** starts with a config that denies its shell and every MCP operation,
   and under `--no-web` also fetches, web search and subagents. It is built from
   the config Devin would have read (the launch's `--config PATH` or

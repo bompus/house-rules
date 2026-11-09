@@ -774,7 +774,9 @@ const sameModel = (expected, actual) => {
   return ma === mb && (pa === undefined || pb === undefined || pa === pb);
 };
 // The Claude adapter takes `tools` as its built-in tool list (no shell) and, with strictMcpConfig,
-// ignores the user's MCP servers; web tools only with --allow-reads and no --no-web. Others ignore _meta.
+// ignores the user's MCP servers; web tools only with --allow-reads and no --no-web. With an empty
+// settingSources the adapter loads no settings file (user, project or local), so no hook configured in
+// them runs in the seat, the checkout's own `.claude/settings.json` included. Others ignore _meta.
 const claudeOptions = {
   tools:
     allowReads && !noWeb
@@ -782,6 +784,7 @@ const claudeOptions = {
       : ["Read", "Grep", "Glob"],
   ...(allowReads && !noWeb ? {} : { disallowedTools: ["WebFetch", "WebSearch"] }),
   strictMcpConfig: true,
+  settingSources: [],
 };
 // A mode in which the agent can approve an edit without asking.
 const APPROVES_EDITS = [

@@ -4,6 +4,8 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- The ACP review client starts Claude's adapter with an empty `settingSources` in the `_meta.claudeCode.options` it already sends, so the adapter loads no user, project or local settings file and runs none of the hooks configured in them. Before, a hook in the reviewed checkout's own `.claude/settings.json` ran in the seat (as did the user's own hooks) with the seat's environment; a canary hook of that kind ran three times in a Claude seat before the change and not at all after it. `skills/hr-code-review/references/acp-client.md` describes the setting. Hooks of the other adapters (Codex, Devin, Antigravity) and their MCP servers are not changed by this entry.
+
 - The npm publish workflow's last step now waits up to 30 minutes (it was about five) for the published version to show on the registry: npm accepted 0.22.0 at 04:00:21Z and showed it at 04:14Z, and the old wait failed a good publish. The loop is bounded by a `date +%s` deadline (it runs under bash and dash) instead of a count, and the job timeout is 50 minutes. `docs/npm-release.md` says that a failure in that step after `npm publish` printed `+ name@version` needs a registry check before any rerun, and the portable `rules/references/github-actions.md` snippet and `rules/references/release-batching.md` use the same 30-minute wait.
 
 ## 0.22.0 - 2026-11-09
