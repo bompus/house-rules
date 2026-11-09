@@ -199,7 +199,7 @@ off, and the prompt is an attached file. It writes OpenCode's JSON events to
 stdout and passes its exit status through; a stop sent to it goes on to OpenCode,
 with a forced kill after 5 seconds.
 
-A config file that exists but this runtime cannot read or parse (comments under Node; they need Bun) refuses the run with exit 2, and so does a permission value of a shape the seat does not understand; both files are always checked, and a missing file is optional. Every key that matches `read` counts (`read`, `*`, `r*`; also under `agent.*.permission`, a disabled `tools.read` and a native `permissions` list). Patterns match as OpenCode matches them: `\\` is `/`, and a trailing ` *` may match nothing.
+A config file that exists but this runtime cannot read or parse (comments under Node; they need Bun) refuses the run with exit 2, and so does a permission value of a shape the seat does not understand; both files are always checked, and a missing file is optional. Every key that matches `read` counts (`read`, `*`, `r*`; also in `agent.*` and legacy `mode.*` definitions, a disabled `tools.read` and a native `permissions` list), the managed `/etc/opencode` config is read on Linux, and a `{env:}` or `{file:}` substitution in a permission key or pattern refuses the run. Patterns match as OpenCode matches them: `\\` is `/`, and a trailing ` *` may match nothing.
 
 On Linux it also runs OpenCode under bubblewrap (`bwrap` must be installed; the
 seat exits 127 without it), because OpenCode treats a whole git project as inside

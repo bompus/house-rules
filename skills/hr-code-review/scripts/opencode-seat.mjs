@@ -178,7 +178,10 @@ const MAX_BYTES = 512 * 1024 * 1024;
 export function deniedBy(dir, denied, home) {
   const expand = (/** @type {string} */ p) =>
     p.replace(/^(~|\$HOME|\$\{HOME\})(?=\/|$)/, () => home);
-  const patterns = denied.filter((p) => p !== "*").map((p) => globRegex(expand(p)));
+  // The pattern as written is tried too: a checkout can hold a path that literally starts with `$HOME`.
+  const patterns = denied
+    .filter((p) => p !== "*")
+    .flatMap((p) => (expand(p) === p ? [globRegex(p)] : [globRegex(expand(p)), globRegex(p)]));
   return (path) =>
     isEnvFile(basename(path)) ||
     (basename(path) === "config" && basename(dirname(path)) === ".git") ||
@@ -528,14 +531,18 @@ export function sandboxArgs(home, shown, mounts = []) {
  * are never dropped silently.
  * @param {string} configDir
  */
-export function userReadDenials(configDir) {
+export function userReadDenials(
+  configDir,
+  managedDirs = process.platform === "linux" ? ["/etc/opencode"] : [],
+) {
   /** @type {string[]} */
   const denied = [];
-  let everything = false;
+  let everything = /** @type {boolean} */ (false);
   const actions = new Set(["allow", "ask", "deny"]);
   const isAction = (/** @type {unknown} */ v) => typeof v === "string" && actions.has(v);
-  const isRecord = (/** @type {unknown} */ v) =>
-    typeof v === "object" && v !== null && !Array.isArray(v);
+  const isRecord = /** @type {(v: unknown) => v is Record<string, any>} */ (
+    (v) => typeof v === "object" && v !== null && !Array.isArray(v)
+  );
   /** @param {unknown} v @returns {[string, unknown][]} */
   const entriesOf = (v) => Object.entries(/** @type {Record<string, unknown>} */ (v));
   // OpenCode matches a tool name against a permission key as a glob, so every key that matches "read"
@@ -543,8 +550,10 @@ export function userReadDenials(configDir) {
   const forRead = (/** @type {string} */ key) => globRegex(key).test("read");
   // OpenCode loads both files when both exist, so the denials of each count; both are always read, so a
   // second file that cannot be used refuses the run even when the first already denies everything.
-  for (const name of ["opencode.json", "opencode.jsonc"]) {
-    const path = join(configDir, name);
+  const files = [configDir, ...managedDirs].flatMap((d) =>
+    ["opencode.json", "opencode.jsonc"].map((n) => join(d, n)),
+  );
+  for (const path of files) {
     /** @type {any} */
     let config;
     try {
@@ -564,6 +573,7 @@ export function userReadDenials(configDir) {
       }
       continue;
     }
+    const substituted = (/** @type {string} */ text) => /\{(env|file):/.test(text);
     const unsupported = (/** @type {string} */ where) =>
       new Error(`${path}: ${where} has a value this seat does not understand; fix it or remove it`);
     // One `permission` value: an action for every tool, or a map of tool names to an action or to a map of
@@ -581,6 +591,9 @@ export function userReadDenials(configDir) {
         throw unsupported(where);
       }
       for (const [key, value] of entriesOf(permission)) {
+        if (substituted(key)) {
+          throw unsupported(`${where}.${key} (a {env:} or {file:} substitution)`);
+        }
         if (!forRead(key)) {
           continue;
         }
@@ -588,6 +601,9 @@ export function userReadDenials(configDir) {
           everything ||= value !== "allow";
         } else if (isRecord(value)) {
           for (const [pattern, action] of entriesOf(value)) {
+            if (substituted(pattern)) {
+              throw unsupported(`${where}.${key}["${pattern}"] (a {env:} or {file:} substitution)`);
+            }
             if (!isAction(action)) {
               throw unsupported(`${where}.${key}["${pattern}"]`);
             }
@@ -600,39 +616,19 @@ export function userReadDenials(configDir) {
         }
       }
     };
-    collect(config?.permission, "permission");
-    // The same keys elsewhere that restrict reads: agent definitions (any agent may be the seat's), the
-    // older `tools` switches (a disabled read tool is a deny-all), and the native `permissions` list.
-    if (config?.agent !== undefined) {
-      if (!isRecord(config.agent)) {
-        throw unsupported("agent");
+    const native = (/** @type {unknown} */ list, /** @type {string} */ where) => {
+      if (list === undefined) {
+        return;
       }
-      for (const [agent, definition] of Object.entries(config.agent)) {
-        if (isRecord(definition)) {
-          collect(definition.permission, `agent.${agent}.permission`);
-          if (isRecord(definition.tools)) {
-            everything ||= Object.entries(definition.tools).some(
-              ([key, value]) => forRead(key) && value === false,
-            );
-          }
-        }
+      if (!Array.isArray(list)) {
+        throw unsupported(where);
       }
-    }
-    if (config?.tools !== undefined) {
-      if (!isRecord(config.tools)) {
-        throw unsupported("tools");
-      }
-      everything ||= Object.entries(config.tools).some(
-        ([key, value]) => forRead(key) && value === false,
-      );
-    }
-    if (config?.permissions !== undefined) {
-      if (!Array.isArray(config.permissions)) {
-        throw unsupported("permissions");
-      }
-      for (const entry of config.permissions) {
+      for (const entry of list) {
         if (!isRecord(entry) || typeof entry.action !== "string") {
-          throw unsupported("permissions[]");
+          throw unsupported(`${where}[]`);
+        }
+        if (typeof entry.resource === "string" && substituted(entry.resource)) {
+          throw unsupported(`${where}[] (a {env:} or {file:} substitution)`);
         }
         if (forRead(entry.action) && entry.effect !== "allow") {
           if (typeof entry.resource === "string") {
@@ -640,6 +636,39 @@ export function userReadDenials(configDir) {
           } else {
             everything = true;
           }
+        }
+      }
+    };
+    const tools = (/** @type {unknown} */ section, /** @type {string} */ where) => {
+      if (section === undefined) {
+        return;
+      }
+      if (!isRecord(section)) {
+        throw unsupported(where);
+      }
+      everything ||= entriesOf(section).some(([key, value]) => forRead(key) && value === false);
+    };
+    // One definition (the top level, an agent, a legacy mode): permission map, tools switches, native list.
+    const section = (/** @type {unknown} */ def, /** @type {string} */ where) => {
+      if (!isRecord(def)) {
+        throw unsupported(where);
+      }
+      collect(def.permission, `${where}.permission`);
+      tools(def.tools, `${where}.tools`);
+      native(def.permissions, `${where}.permissions`);
+    };
+    section(config ?? {}, "config");
+    for (const group of ["agent", "mode"]) {
+      const defs = config?.[group];
+      if (defs === undefined) {
+        continue;
+      }
+      if (!isRecord(defs)) {
+        throw unsupported(group);
+      }
+      for (const [name, def] of entriesOf(defs)) {
+        if (def !== null && def !== undefined) {
+          section(def, `${group}.${name}`);
         }
       }
     }

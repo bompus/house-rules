@@ -1862,3 +1862,62 @@ test(
     }
   },
 );
+
+test(
+  "native agent permissions, legacy modes, substitutions, managed config and literal \\$HOME patterns",
+  { skip: process.platform === "win32" },
+  async () => {
+    const dir = scratch("opencode-more");
+    const managed = scratch("opencode-managed");
+    try {
+      const denials = (/** @type {unknown} */ config, /** @type {string[]} */ managedDirs = []) => {
+        writeFileSync(join(dir, "opencode.json"), JSON.stringify(config));
+        return userReadDenials(dir, managedDirs);
+      };
+      assert.deepEqual(
+        denials({
+          agent: {
+            build: { permissions: [{ action: "read", resource: "secret.txt", effect: "deny" }] },
+          },
+        }),
+        ["secret.txt"],
+        "a native list on an agent",
+      );
+      assert.deepEqual(
+        denials({ mode: { plan: { permission: { read: { "*.key": "ask" } } } } }),
+        ["*.key"],
+        "a legacy mode",
+      );
+      assert.deepEqual(denials({ mode: { plan: { tools: { read: false } } } }), ["*"]);
+      assert.deepEqual(denials({ mode: { plan: null } }), []);
+      for (const bad of [
+        { permission: { read: { "{env:PRIVATE_FILE}": "deny" } } },
+        { permission: { "{env:TOOL}": "deny" } },
+        { permissions: [{ action: "read", resource: "{file:secret-name}", effect: "deny" }] },
+        { mode: 4 },
+      ]) {
+        assert.throws(() => denials(bad), /does not understand/, JSON.stringify(bad));
+      }
+      // A substitution elsewhere (a provider key) is none of our business.
+      assert.deepEqual(denials({ provider: { x: { options: { apiKey: "{env:KEY}" } } } }), []);
+      // A managed config is read too, and a deny there counts.
+      writeFileSync(
+        join(managed, "opencode.json"),
+        JSON.stringify({ permission: { read: "deny" } }),
+      );
+      assert.deepEqual(denials({}, [managed]), ["*"]);
+      assert.deepEqual(denials({}, [join(managed, "missing")]), []);
+      // A pattern that literally starts with $HOME matches a checkout path with that literal name.
+      mkdirSync(join(dir, "$HOME", "secrets"), { recursive: true });
+      writeFileSync(join(dir, "$HOME", "secrets", "key.txt"), "x");
+      writeFileSync(join(dir, "plain.txt"), "x");
+      assert.deepEqual(await copied(dir, ["$HOME/secrets/*"], "/nonexistent-home"), [
+        "opencode.json",
+        "plain.txt",
+      ]);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+      rmSync(managed, { recursive: true, force: true });
+    }
+  },
+);
