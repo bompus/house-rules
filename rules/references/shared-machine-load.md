@@ -28,18 +28,23 @@ Work risks exhausting memory when its expected or last measured memory leaves
 little headroom in the memory available to it, or when its peak is unknown and
 its input is large. Constrain such work using the host's supported controls; on
 Linux with systemd, `systemd-run --user --scope -p MemoryMax=<size> -- <cmd>`, sized
-from the job's own memory plus about 20%, but never above the memory available to
+from the job's measured memory (below) plus about 20%, but never above the memory available to
 it less what the rest of the host needs, counting every job running at the same time (their
 caps together stay within it); when that leaves less than the job's memory, shrink the job instead.
 Check that the heavy processes run inside the capped scope:
 work done by a daemon, such as a container build, needs the daemon's own limits.
 
-Take the job's own memory from the anonymous memory in the scope's `memory.stat` (or an
-equivalent), not from the peak the scope reports (systemd's journal line `Consumed …`):
-that peak counts file cache, so a cache-heavy job (an indexer reading a large file set) can peak at its whole
-cap while needing a fraction of it, and a cap sized from that peak kills it. A soft limit
-below the cap (`MemoryHigh`) lets the kernel reclaim cache early instead of
-killing the job.
+Measure while the job runs: the scope's `memory.stat` reports current usage by kind, not peaks, and
+the scope may be gone when the job ends. The journal line `Consumed …` and `memory.peak` keep only a
+total peak, which counts file cache and is not what the job needs. Start from `anon` plus `shmem`
+(anonymous and shared or tmpfs memory), check `memory.swap.current` separately, leave room for kernel
+memory and the file-backed pages the job keeps using, and do not add counters that overlap (`shmem`
+and `file_mapped` are part of `file`).
+
+Clean file cache is normally reclaimed before `MemoryMax` kills anything; what cannot be reclaimed
+(tmpfs or other shared memory without swap, pinned or dirty pages) counts against the cap. A soft limit
+(`MemoryHigh`) below the cap starts reclaim and throttling earlier; it does not guarantee that the job
+is not killed.
 
 Per-job caps cannot stop jobs that start at the same moment from each sizing against the
 same free memory. Where several agents share one host, use one shared budget that is an
