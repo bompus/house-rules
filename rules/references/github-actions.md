@@ -74,20 +74,21 @@ method. For npm, end the publish job with:
   run: |
     name=$(jq -r .name package.json)
     version=$(jq -r .version package.json)
-    while [ "$SECONDS" -lt 1800 ]; do
+    deadline=$(( $(date +%s) + 1800 ))
+    while [ "$(date +%s)" -lt "$deadline" ]; do
       if npm view "$name@$version" version --fetch-retries=0 --fetch-timeout=5000 >/dev/null 2>&1; then
         echo "verified $name@$version"
         exit 0
       fi
-      echo "waiting for $name@$version to appear (${SECONDS}s of 1800s)"
+      echo "waiting for $name@$version to appear ($(( deadline - $(date +%s) ))s left)"
       sleep 15
     done
     echo "::error::$name@$version never appeared on the registry"
     exit 1
 ```
 
-The loop gives up 30 minutes after the step starts (`SECONDS` counts from its
-start), ending within one 20-second attempt of that even when the registry keeps
+The loop gives up 30 minutes after the step starts (a deadline computed with
+`date +%s`, which GNU, BSD and busybox `date` accept, so it also runs under `sh` and `dash`, where `$SECONDS` is unset), ending within one 20-second attempt of that even when the registry keeps
 failing, because each call has no retries and a 5-second timeout (npm's default
 retries can take over a minute per call). A registry can take 15 minutes or more
 to show a version it accepted. Raise the job's timeout when the steps before it

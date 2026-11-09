@@ -4,7 +4,7 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
-- The npm publish workflow's last step now waits up to 30 minutes (it was about five) for the published version to show on the registry: npm accepted 0.22.0 at 04:00:21Z and showed it at 04:14Z, and the old wait failed a good publish. The loop is bounded by the step's own clock instead of a count, and the job timeout is 50 minutes. `docs/npm-release.md` says that a failure in that step after `npm publish` printed `+ name@version` needs a registry check before any rerun, and the portable `rules/references/github-actions.md` snippet and `rules/references/release-batching.md` use the same 30-minute wait.
+- The npm publish workflow's last step now waits up to 30 minutes (it was about five) for the published version to show on the registry: npm accepted 0.22.0 at 04:00:21Z and showed it at 04:14Z, and the old wait failed a good publish. The loop is bounded by a `date +%s` deadline (it runs under bash and dash) instead of a count, and the job timeout is 50 minutes. `docs/npm-release.md` says that a failure in that step after `npm publish` printed `+ name@version` needs a registry check before any rerun, and the portable `rules/references/github-actions.md` snippet and `rules/references/release-batching.md` use the same 30-minute wait.
 
 ## 0.22.0 - 2026-11-09
 
