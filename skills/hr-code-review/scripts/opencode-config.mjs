@@ -1,6 +1,7 @@
 // The read rules of the user's own OpenCode configuration, for opencode-seat.mjs: which read patterns
 // the config denies or asks about, and how OpenCode matches a pattern. Matching the user's rules is best
 // effort; anything not understood is refused.
+import { randomBytes } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -61,9 +62,12 @@ export function userReadDenials(configDir, managedDirs = [], env = {}) {
       const source = text ?? readFileSync(path, "utf8");
       const jsonc = /** @type {any} */ (globalThis).Bun?.JSONC;
       if (jsonc) {
-        // Bun's parser stops after the first value; wrapped in an array, a second one shows.
-        const documents = jsonc.parse(`[${source}\n]`);
-        if (!Array.isArray(documents) || documents.length !== 1) {
+        // Bun's parser stops after the first value. The source goes into an array followed by a marker
+        // nothing in the file can know: one document gives exactly [document, marker], and anything else
+        // (a second value, an early `]`, trailing text) gives another shape or an error.
+        const marker = `end-${randomBytes(12).toString("hex")}`;
+        const documents = jsonc.parse(`[${source}\n,${JSON.stringify(marker)}]`);
+        if (!Array.isArray(documents) || documents.length !== 2 || documents[1] !== marker) {
           throw new Error("not one JSON document");
         }
         config = documents[0];

@@ -1794,6 +1794,17 @@ test("a file holding a second document is refused, not read as its first", () =>
       '{ "permission": {} } { "permission": { "read": "deny" } }',
     );
     assert.throws(() => userReadDenials(dir), /cannot be read or parsed here/);
+    for (const text of [
+      '{}] {"permission":{"read":{"*.pem":"deny"}}}',
+      '{}, {"permission":{"read":"deny"}}',
+      "{} ]",
+      '{"permission":{"read":"deny"}} // x\n{}',
+      '{"permission":{"read":"deny"}} trailing',
+      "",
+    ]) {
+      writeFileSync(join(dir, "opencode.jsonc"), text);
+      assert.throws(() => userReadDenials(dir), /cannot be read or parsed here/, text);
+    }
     writeFileSync(join(dir, "opencode.jsonc"), '// note\n{ "permission": { "read": "deny" }, }');
     assert.deepEqual(userReadDenials(dir), ["*"]);
   } finally {
