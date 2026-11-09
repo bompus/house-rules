@@ -1022,6 +1022,26 @@ test(
   },
 );
 test(
+  "a tracked link whose target is .git/config is not copied, and nothing of .git/config reaches the copy",
+  POSIX_ONLY,
+  async () => {
+    const dir = scratch("opencode-link-to-gitconfig");
+    try {
+      mkdirSync(join(dir, ".git"));
+      writeFileSync(join(dir, ".git", "config"), "[remote] url=https://token@host");
+      symlinkSync(join(dir, ".git", "config"), join(dir, "notes.txt"));
+      symlinkSync(join(".git", "config"), join(dir, "relative-notes.txt"));
+      writeFileSync(join(dir, "plain.txt"), "x");
+      // A link is never copied, with or without a rule that names .git, and `.git` itself is not copied.
+      for (const denied of [[], [".git/config"], [".git/*"]]) {
+        assert.deepEqual(await copied(dir, denied), ["plain.txt"], JSON.stringify(denied));
+      }
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  },
+);
+test(
   "a folder reached by two paths is checked under each, not skipped the second time",
   POSIX_ONLY,
   async () => {
