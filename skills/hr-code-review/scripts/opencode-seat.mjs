@@ -513,8 +513,9 @@ export function sandboxArgs(home, shown, mounts = []) {
 }
 
 /**
- * The read patterns the user's global OpenCode config denies or asks about. A config this runtime
- * cannot parse (comments need Bun) is ignored.
+ * The read patterns the user's global OpenCode config denies or asks about. A missing file is
+ * optional; one that exists and cannot be read or parsed here (comments need Bun) throws, so its denials
+ * are never dropped silently.
  * @param {string} configDir
  */
 export function userReadDenials(configDir) {
@@ -542,8 +543,18 @@ export function userReadDenials(configDir) {
           }
         }
       }
-    } catch {
-      // This file is absent or cannot be read here.
+    } catch (e) {
+      // An absent file is optional. One that exists and cannot be read or parsed (JSONC comments under a
+      // runtime without a JSONC parser) is refused: its denials would otherwise be dropped silently.
+      if (
+        /** @type {{ code?: string }} */ (e).code !== "ENOENT" &&
+        /** @type {{ code?: string }} */ (e).code !== "ENOTDIR"
+      ) {
+        throw new Error(
+          `${join(configDir, name)} cannot be read or parsed here (comments in it need Bun): ${e instanceof Error ? e.message : String(e)}`,
+          { cause: e },
+        );
+      }
     }
   }
   return denied;
@@ -667,7 +678,14 @@ if (
   }
   const home = homedir();
   const config = process.env.XDG_CONFIG_HOME || join(home, ".config");
-  const denials = userReadDenials(join(config, "opencode"));
+  /** @type {string[]} */
+  let denials;
+  try {
+    denials = userReadDenials(join(config, "opencode"));
+  } catch (e) {
+    console.error(`[opencode-seat] ${e instanceof Error ? e.message : String(e)}`);
+    process.exit(2);
+  }
   const env = openCodeEnv(process.env, dir, denials);
   // Host-side programs (bubblewrap, OpenCode before the sandbox) run with a PATH of canonical absolute
   // folders outside the checkout, so a `#!/usr/bin/env` line in them does not pick the checkout's tool.

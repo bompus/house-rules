@@ -119,7 +119,7 @@ test("the user's config yields its read denials, or a final deny-all for a whole
       assert.deepEqual(userReadDenials(dir), ["*"]);
     }
     writeFileSync(join(dir, "opencode.json"), "{not json");
-    assert.deepEqual(userReadDenials(dir), []);
+    assert.throws(() => userReadDenials(dir), /cannot be read or parsed here/);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -474,7 +474,17 @@ test("the denials of opencode.json and opencode.jsonc both count", () => {
       join(dir, "opencode.jsonc"),
       '{ // comment\n "permission": { "read": { "*.pem": "ask" } } }',
     );
-    assert.deepEqual(userReadDenials(dir).sort(), ["*.key", "*.pem"]);
+    if (/** @type {any} */ (globalThis).Bun?.JSONC) {
+      assert.deepEqual(userReadDenials(dir).sort(), ["*.key", "*.pem"]);
+    } else {
+      // No JSONC parser here: refused, never ignored.
+      assert.throws(() => userReadDenials(dir), /opencode\.jsonc cannot be read or parsed here/);
+      writeFileSync(
+        join(dir, "opencode.jsonc"),
+        JSON.stringify({ permission: { read: { "*.pem": "ask" } } }),
+      );
+      assert.deepEqual(userReadDenials(dir).sort(), ["*.key", "*.pem"]);
+    }
     writeFileSync(join(dir, "opencode.json"), JSON.stringify({ permission: { bash: "allow" } }));
     assert.deepEqual(userReadDenials(dir), ["*.pem"]);
     writeFileSync(join(dir, "opencode.jsonc"), '{ "permission": "deny" }');
@@ -1680,3 +1690,32 @@ test("OpenCode and bubblewrap run with a PATH of folders outside the checkout", 
     }
   });
 });
+
+test("a config that exists but cannot be parsed refuses the run; a missing one does not", () => {
+  const dir = scratch("opencode-badconfig");
+  try {
+    assert.deepEqual(userReadDenials(dir), [], "no config files: no denials");
+    writeFileSync(join(dir, "opencode.json"), "{ not json");
+    assert.throws(() => userReadDenials(dir), /opencode\.json cannot be read or parsed here/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+test(
+  "on Linux the script exits 2 when the user's OpenCode config cannot be parsed",
+  LINUX_ONLY,
+  () => {
+    withShims((dir, env, state) => {
+      mkdirSync(join(state, "config", "opencode"), { recursive: true });
+      writeFileSync(join(state, "config", "opencode", "opencode.json"), "{ not json");
+      const r = spawnSync(
+        process.execPath,
+        [script, "opencode-go/m", "max", "prompt.md", "--bwrap", join(dir, "bwrap")],
+        { cwd: dir, encoding: "utf8", env },
+      );
+      assert.equal(r.status, 2, r.stderr);
+      assert.match(r.stderr, /cannot be read or parsed here/);
+      assert.equal(existsSync(join(dir, "seen.bwrap")), false, "no sandbox started");
+    });
+  },
+);
