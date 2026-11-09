@@ -80,7 +80,7 @@ reported on it. It does not replace the caller's judgment. The same
 reference describes the landing helper scripts (`merge-pr.sh`, `verify-landed.sh`,
 `check-landing.py`).
 
-A reviewer that could not run (quota, outage) has not approved. An owner exception for that case goes through the host's merge helper option when it has one, never a raw merge.
+Apart from the no-quota skip in that reference, a reviewer that could not run (outage, error) has not approved. An owner exception for that case goes through the host's merge helper option when it has one, never a raw merge.
 
 Immediately before landing, re-read the head, base, checks, review bodies and
 unresolved threads, and whether the branch is behind its base. Notifications
