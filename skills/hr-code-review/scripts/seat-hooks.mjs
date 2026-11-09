@@ -6,7 +6,7 @@
 // rest covered with `--policy-option hooks-masked`.
 import { chmodSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { isAbsolute, join, resolve, sep } from "node:path";
+import { delimiter, isAbsolute, join, resolve, sep } from "node:path";
 import {
   bunHardened,
   codexWrapper,
@@ -20,6 +20,14 @@ import {
   seatEnv,
 } from "./seat-launch.mjs";
 
+// Variables that say where a package runner installs or caches what it runs.
+const CACHE_VARIABLES = [
+  "BUN_INSTALL",
+  "BUN_INSTALL_CACHE_DIR",
+  "BUN_INSTALL_BIN",
+  "BUN_INSTALL_GLOBAL_DIR",
+  "XDG_CACHE_HOME",
+];
 /**
  * Whether `path` (or what it resolves to, links followed) is `base` or below it.
  * @param {string} base a canonical path
@@ -45,10 +53,13 @@ function inside(base, path) {
  */
 export function absoluteFirst(cmd, cwd, refuse) {
   const first = cmd[0] ?? "";
-  if (!/[\\/]/.test(first) || isAbsolute(first)) {
+  // A backslash is a separator only on Windows; a bare name has none and is looked up on PATH.
+  const hasSeparator = process.platform === "win32" ? /[\\/]/.test(first) : first.includes("/");
+  if (!hasSeparator || isAbsolute(first)) {
     return cmd;
   }
-  const from = resolve(first);
+  // `resolve` drops a trailing separator, which would turn `./x/` (a directory) into `x`.
+  const from = resolve(first) + (/[\\/]$/.test(first) ? sep : "");
   if (inside(reviewBase(cwd), from)) {
     refuse(
       `the server command ${first} resolves inside the review checkout (${from}); give an absolute path to run a program from there`,
@@ -102,10 +113,9 @@ const unmasked = (what) =>
  */
 function hooksOff(serverCmd, cmd, env, masked, cwd, refuse) {
   const windows = process.platform === "win32";
-  if (seatAgent(serverCmd) === "devin" || mayStart(serverCmd, "devin")) {
-    if (masked) {
-      return { cmd, env };
-    }
+  // A launch can be detected as Devin and as agy at once (a `devin` that is a link to agy): the Devin
+  // switch is applied first and the agy rules still follow.
+  if ((seatAgent(serverCmd) === "devin" || mayStart(serverCmd, "devin")) && !masked) {
     if (windows) {
       refuse(unmasked("Devin's user MCP servers cannot be kept out of a seat on Windows"));
     }
@@ -113,7 +123,7 @@ function hooksOff(serverCmd, cmd, env, masked, cwd, refuse) {
     // given; an empty folder holds none, and its login lives elsewhere.
     const folder = join(privateDir(), "devin-xdg");
     mkdirSync(folder, { mode: 0o700 });
-    return { cmd, env: { ...env, XDG_CONFIG_HOME: folder } };
+    env = { ...env, XDG_CONFIG_HOME: folder };
   }
   if (!mayStartAgy(serverCmd, process.env.PATH, cwd) || masked) {
     return { cmd, env };
@@ -176,9 +186,27 @@ export function seatLaunch(serverCmd, { noWeb, cwd, codex, masked, refuse }) {
     hardened,
     (process.env.ACP_PANEL_PASS_ENV ?? "").split(",").map((p) => p.trim()),
   );
+  // Where a package runner keeps what it installed or cached must not be inside the checkout: `bunx
+  // --no-install` would run an adapter seeded there, from the checkout.
+  for (const name of CACHE_VARIABLES) {
+    const value = base[name];
+    if (value && inside(reviewBase(cwd), resolve(cwd, value))) {
+      refuse(`${name}=${value} is inside the review checkout; point it outside`);
+    }
+  }
   const out = hooksOff(serverCmd, hardened, base, masked, cwd, refuse);
   const empty = isolated ? join(privateDir(), "server-cwd") : cwd;
   if (isolated) {
+    // The checks above looked each relative PATH entry up from the review root. The server starts
+    // elsewhere, so every entry (an empty one meant the starting folder) is made absolute from the
+    // review root: the program that runs is the one that was checked.
+    const key = Object.keys(out.env).find((k) => k.toUpperCase() === "PATH");
+    if (key && out.env[key] !== undefined) {
+      out.env[key] = (out.env[key] ?? "")
+        .split(delimiter)
+        .map((entry) => resolve(cwd, entry))
+        .join(delimiter);
+    }
     mkdirSync(empty, { mode: 0o700 });
     // Below the checkout the folder would not be empty of its files: a runner looks in parent folders for
     // a `package.json` and `node_modules/.bin`. The caller owns TMPDIR, which must lie outside it.

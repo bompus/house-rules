@@ -25,7 +25,7 @@ const launch={pid:process.pid,argv:process.argv.slice(2),env:Object.keys(process
 const argAt=process.argv.indexOf('--config');
 if(argAt>=0){const file=process.argv[argAt+1];launch.devin={file,config:JSON.parse(fs.readFileSync(file,'utf8')),fileMode:fs.statSync(file).mode&0o777,dirMode:fs.statSync(file.slice(0,Math.max(file.lastIndexOf('/'),file.lastIndexOf('\\\\')))).mode&0o777};}
 if(launch.codexPath&&fs.existsSync(launch.codexPath)&&launch.codexPath.endsWith('codex-no-web'))launch.wrapper=fs.readFileSync(launch.codexPath,'utf8');
-launch.cwd=process.cwd();launch.cwdEntries=fs.readdirSync('.');launch.cwdMode=fs.statSync('.').mode&0o777;launch.xdg=process.env.XDG_CONFIG_HOME??null;if(launch.xdg&&fs.existsSync(launch.xdg))launch.xdgSeat={mode:fs.statSync(launch.xdg).mode&0o777,entries:fs.readdirSync(launch.xdg)};\nconst gAt=process.argv.indexOf('--gemini-dir');\nif(gAt>=0){const g=process.argv[gAt+1],t=g+'/antigravity-cli/antigravity-oauth-token';launch.gemini={dir:g,dirMode:fs.statSync(g).mode&0o777,subMode:fs.statSync(g+'/antigravity-cli').mode&0o777,tokenMode:fs.statSync(t).mode&0o777,token:fs.readFileSync(t,'utf8'),entries:fs.readdirSync(g),subEntries:fs.readdirSync(g+'/antigravity-cli'),at:gAt};}\nfs.writeFileSync(process.env.FAKE_LOG+'.launch',JSON.stringify(launch));
+launch.path=process.env.PATH??null;launch.cwd=process.cwd();launch.cwdEntries=fs.readdirSync('.');launch.cwdMode=fs.statSync('.').mode&0o777;launch.xdg=process.env.XDG_CONFIG_HOME??null;if(launch.xdg&&fs.existsSync(launch.xdg))launch.xdgSeat={mode:fs.statSync(launch.xdg).mode&0o777,entries:fs.readdirSync(launch.xdg)};\nconst gAt=process.argv.indexOf('--gemini-dir');\nif(gAt>=0){const g=process.argv[gAt+1],t=g+'/antigravity-cli/antigravity-oauth-token';launch.gemini={dir:g,dirMode:fs.statSync(g).mode&0o777,subMode:fs.statSync(g+'/antigravity-cli').mode&0o777,tokenMode:fs.statSync(t).mode&0o777,token:fs.readFileSync(t,'utf8'),entries:fs.readdirSync(g),subEntries:fs.readdirSync(g+'/antigravity-cli'),at:gAt};}\nfs.writeFileSync(process.env.FAKE_LOG+'.launch',JSON.stringify(launch));
 if(cfg.stderrLine)process.stderr.write(cfg.stderrLine+'\\n');
 if(cfg.ignoreTerm)process.on('SIGTERM',()=>{});
 if(cfg.linger)setInterval(()=>{},1000);
@@ -2456,3 +2456,58 @@ test("a temporary folder inside the review checkout refuses an isolated launch",
   assert.match(r.error, /inside the review checkout; set TMPDIR outside it/);
   assert.equal(r.launch, null);
 });
+
+test(
+  "an install or cache location inside the review checkout refuses the launch, one outside does not",
+  POSIX_ONLY,
+  () => {
+    for (const name of ["BUN_INSTALL_CACHE_DIR", "BUN_INSTALL", "XDG_CACHE_HOME"]) {
+      const inside = run(
+        { devinShim: true, serverArgs: ["acp"], env: { [name]: "%DIR%/repo/cache" } },
+        [],
+        (root) => mkdirSync(join(root, "cache")),
+      );
+      assert.equal(inside.code, 2, name);
+      assert.match(inside.error, new RegExp(`${name}=.* is inside the review checkout`));
+      assert.equal(inside.launch, null);
+    }
+    const outside = run({
+      devinShim: true,
+      serverArgs: ["acp"],
+      env: { BUN_INSTALL_CACHE_DIR: "%DIR%/cache-elsewhere" },
+    });
+    assert.equal(outside.code, 0, outside.error);
+  },
+);
+test(
+  "the PATH of an isolated server has every entry absolute, from the review root, as it was checked",
+  POSIX_ONLY,
+  () => {
+    const r = run({
+      devinShim: true,
+      serverArgs: ["acp"],
+      env: { PATH: `rel/bin::${process.env.PATH}` },
+    });
+    assert.equal(r.code, 0, r.error);
+    const entries = String(r.launch?.path ?? "").split(":");
+    assert.ok(entries.length > 2);
+    assert.ok(
+      entries.every((e) => e.startsWith("/")),
+      entries.join(":"),
+    );
+    assert.ok(entries[0]?.endsWith("/repo/rel/bin"), "a relative entry means the review root");
+    assert.ok(entries[1]?.endsWith("/repo"), "an empty entry means the review root");
+  },
+);
+test(
+  "a launch detected as Devin and as agy gets the Devin folder and the agy rules",
+  POSIX_ONLY,
+  () => {
+    const config = { launcher: "devin", serverArgs: ["acp"], relativeFirst: "agy" };
+    const refused = run(config, AGY_FLAGS, agyHome("t"));
+    assert.equal(refused.code, 2, "the agy rules apply: a form the client cannot make safe");
+    assert.match(refused.error, /hooks-masked/);
+    const masked = run(config, [...AGY_FLAGS, "--policy-option", "hooks-masked"], agyHome("t"));
+    assert.equal(masked.code, 0, masked.error);
+  },
+);

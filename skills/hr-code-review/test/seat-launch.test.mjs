@@ -29,6 +29,7 @@ import {
   seatAgent,
   seatEnv,
 } from "../scripts/seat-launch.mjs";
+import { absoluteFirst } from "../scripts/seat-hooks.mjs";
 
 const ENV = {
   PATH: "/bin",
@@ -1094,3 +1095,29 @@ test(
     assert.equal(r.left, false);
   },
 );
+
+test("absoluteFirst makes only a relative path absolute, keeps a trailing slash, and leaves bare names", () => {
+  const refuse = /** @type {(m: string) => never} */ (
+    (m) => {
+      throw new Error(m);
+    }
+  );
+  const root = mkdtempSync(join(process.env.HOUSE_RULES_TEST_TMP || tmpdir(), "abs-first-"));
+  try {
+    assert.deepEqual(absoluteFirst(["claude-agent-acp", "x"], root, refuse), [
+      "claude-agent-acp",
+      "x",
+    ]);
+    assert.deepEqual(absoluteFirst(["/usr/bin/env", "x"], root, refuse), ["/usr/bin/env", "x"]);
+    assert.deepEqual(absoluteFirst([], root, refuse), []);
+    const abs = absoluteFirst(["../tool", "a"], root, refuse);
+    assert.ok(abs[0]?.startsWith("/") && abs[0].endsWith("/tool") && abs[1] === "a");
+    const dir = absoluteFirst(["./tools/"], root, refuse);
+    assert.ok(dir[0]?.endsWith("/tools/"), "the trailing slash stays");
+    if (process.platform !== "win32") {
+      assert.deepEqual(absoluteFirst(["claude\\adapter"], root, refuse), ["claude\\adapter"]);
+    }
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
