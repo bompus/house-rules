@@ -1018,7 +1018,7 @@ test(
 
 /**
  * Runs a script that makes the private folder, puts a file in it, and then keeps its event loop busy
- * for 0.6 s (a long copy), while this test sends `signal` after the folder exists.
+ * (a long copy) until this test has sent `signal`, after the folder exists, and released it.
  * @param {"plain" | "own" | "throw"} mode
  * @param {NodeJS.Signals | undefined} signal
  */
@@ -1030,22 +1030,30 @@ async function privateFolderRun(mode, signal) {
     writeFileSync(
       script,
       `import { privateDir } from ${JSON.stringify(module)};
-import { writeFileSync } from "node:fs";
+import { existsSync, writeFileSync } from "node:fs";
 const folder = privateDir();
 writeFileSync(folder + "/login-copy", "secret");
 console.log(folder);
 if (${JSON.stringify(mode)} === "own") process.on("SIGTERM", () => process.exit(7));
 if (${JSON.stringify(mode)} === "throw") throw new Error("boom");
-const end = Date.now() + 600;
-while (Date.now() < end) {}
+const go = ${JSON.stringify(join(dir, "go"))};
+const deadline = Date.now() + 20000;
+while (!existsSync(go) && Date.now() < deadline) {}
 `,
     );
     const child = spawn(process.execPath, [script], { stdio: ["ignore", "pipe", "pipe"] });
     let out = "";
+    let released = false;
     child.stdout.on("data", (/** @type {Buffer} */ d) => {
       out += d;
-      if (signal && out.includes("\n")) {
-        child.kill(signal);
+      if (out.includes("\n") && !released) {
+        released = true;
+        // The signal is sent while the child spins; the file that ends the spin follows it, so the
+        // child meets the signal at its next turn of the event loop however long the parent took.
+        if (signal) {
+          child.kill(signal);
+        }
+        writeFileSync(join(dir, "go"), "");
       }
     });
     const code = await new Promise((resolve) => child.on("close", (c, sig) => resolve(c ?? sig)));

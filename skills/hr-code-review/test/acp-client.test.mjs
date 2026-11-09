@@ -2191,7 +2191,7 @@ test(
   },
 );
 test(
-  "an agy launch that names its own Gemini folder, or cannot be given one, is refused",
+  "an agy launch with arguments beyond the allowed few, or in another form, is refused",
   POSIX_ONLY,
   () => {
     for (const serverArgs of [
@@ -2203,6 +2203,20 @@ test(
       ["acp", "--app-data-dir", "%DIR%/mine"],
       ["acp", "--app_data_dir=%DIR%/mine"],
       ["acp", "--cli_dir_name", "mine"],
+      ["acp", "--ide-mcp-port=41999"],
+      ["acp", "--ide_mcp_port", "41999"],
+      ["acp", "-ide-mcp-port", "41999"],
+      ["acp", "--add-dir", "%DIR%/mine"],
+      ["acp", "--cloud_code_endpoint=http://127.0.0.1:1"],
+      ["acp", "--dangerously-skip-permissions"],
+      ["acp", "--worker"],
+      ["acp", "--process-per-session"],
+      ["acp", "--include-default-customizations=false"],
+      ["acp", "--sandbox=maybe"],
+      ["acp", "--agent"],
+      ["acp", "--agent", "--sandbox"],
+      ["acp", "extra"],
+      ["acp", "--"],
       ["serve"],
       ["acp-server", "acp"],
     ]) {
@@ -2218,6 +2232,27 @@ test(
     );
     assert.equal(unrecognized.code, 2);
     assert.match(unrecognized.error, /hooks-masked/);
+  },
+);
+test(
+  "the few allowed agy arguments pass and the private Gemini folder is added",
+  POSIX_ONLY,
+  () => {
+    const serverArgs = [
+      "acp",
+      "--sandbox",
+      "-disable_telemetry=true",
+      "--agent",
+      "reviewer",
+      "--log-file=agy.log",
+      "-cli_log_file",
+      "cli.log",
+    ];
+    const r = run({ ...AGY, serverArgs }, AGY_FLAGS, agyHome("t"));
+    assert.equal(r.code, 0, r.error);
+    const argv = r.launch?.argv ?? [];
+    assert.deepEqual(argv.slice(0, 3), ["acp", "--gemini-dir", r.launch?.gemini.dir]);
+    assert.deepEqual(argv.slice(3), serverArgs.slice(1));
   },
 );
 test(

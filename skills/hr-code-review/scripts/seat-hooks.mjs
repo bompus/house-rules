@@ -19,6 +19,37 @@ import {
   seatEnv,
 } from "./seat-launch.mjs";
 
+// The only flags a seat passes to `agy acp` (one or two dashes; a value as `=V` or the next argument).
+// Any other can move agy's configuration folders, add directories whose agent folders it runs, open an
+// IDE MCP connection, change where the login goes or approve tool calls.
+/** @type {Map<string, boolean>} flag name -> takes a value */
+const AGY_FLAGS = new Map([
+  ["sandbox", false],
+  ["disable-telemetry", false],
+  ["disable_telemetry", false],
+  ["agent", true],
+  ["log-file", true],
+  ["cli_log_file", true],
+]);
+/** @param {string[]} args the arguments after `agy acp` */
+function agyArgsAllowed(args) {
+  for (let i = 0; i < args.length; i++) {
+    const m = /^--?([A-Za-z0-9_-]+)(=.*)?$/.exec(args[i] ?? "");
+    const takes = m ? AGY_FLAGS.get(m[1] ?? "") : undefined;
+    if (!m || takes === undefined) {
+      return false; // a positional argument, a lone `--` or another flag
+    }
+    if (takes && m[2] === undefined) {
+      const value = args[++i]; // the next argument, never another flag
+      if (!value || value.startsWith("-")) {
+        return false;
+      }
+    } else if (!takes && m[2] !== undefined && !/^=(true|false)$/.test(m[2])) {
+      return false;
+    }
+  }
+  return true;
+}
 /** @param {string} what */
 const unmasked = (what) =>
   `${what}; mask them and pass --policy-option hooks-masked, or launch it so the client can`;
@@ -52,15 +83,12 @@ function hooksOff(serverCmd, cmd, env, masked, cwd, refuse) {
   if (!mayStartAgy(serverCmd, process.env.PATH, cwd) || masked) {
     return { cmd, env };
   }
-  // Flags that move where agy keeps its configuration (one or two dashes, `=` or a separate value).
-  const own = cmd.some((a) =>
-    /^--?(gemini[-_]dir|app[-_]data[-_]dir|cli[-_]dir[-_]name)(=|$)/.test(a),
-  );
-  if (windows || own || exeName(cmd[0] ?? "") !== "agy" || cmd[1] !== "acp") {
+  const plain = exeName(cmd[0] ?? "") === "agy" && cmd[1] === "acp";
+  if (windows || !plain || !agyArgsAllowed(cmd.slice(2))) {
     return refuse(
       unmasked(
-        own
-          ? "the agy launch moves its own configuration folders (--gemini-dir, --app-data-dir, --cli_dir_name), whose hooks and MCP servers the client cannot see"
+        plain && !windows
+          ? "the agy launch passes arguments the client cannot keep safe (it allows only --sandbox, --disable-telemetry, --agent, --log-file and --cli_log_file): others can move its configuration folders, add directories whose agent folders it runs, or open an IDE MCP connection"
           : "the launch may start agy in a form the client cannot give a private Gemini folder (only `agy acp` on Linux and macOS)",
       ),
     );
