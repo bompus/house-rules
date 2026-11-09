@@ -36,13 +36,14 @@ work done by a daemon, such as a container build, needs the daemon's own limits.
 
 Measure while the job runs: the scope's `memory.stat` reports current usage by kind, not peaks, and
 the scope may be gone when the job ends. The journal line `Consumed …` and `memory.peak` keep only a
-total peak, which counts file cache and is not what the job needs. Start from `anon` plus `shmem`
+total peak, which counts file cache and does not by itself show the memory the job needs. Start from `anon` plus `shmem`
 (anonymous and shared or tmpfs memory), check `memory.swap.current` separately, leave room for kernel
 memory and the file-backed pages the job keeps using, and do not add counters that overlap (`shmem`
 and `file_mapped` are part of `file`).
 
-Clean file cache is normally reclaimed before `MemoryMax` kills anything; what cannot be reclaimed
-(tmpfs or other shared memory without swap, pinned or dirty pages) counts against the cap. A soft limit
+Clean file cache is normally reclaimed before `MemoryMax` triggers an OOM kill. Resident memory
+counts against the cap, including clean cache; pinned pages and shared or tmpfs pages that cannot be
+swapped out resist reclaim, while dirty file pages need writeback before reclaim. A soft limit
 (`MemoryHigh`) below the cap starts reclaim and throttling earlier; it does not guarantee that the job
 is not killed.
 

@@ -4,7 +4,7 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
-- The shared-host-load rule no longer sizes a memory cap from the scope's reported peak plus 20%: that total peak counts file cache and is not what a cache-heavy job needs. It now says to measure while the job runs (`memory.stat` shows current usage by kind, not peaks; start from `anon` plus `shmem`, check swap, leave room for kernel memory and the file-backed working set), notes that clean file cache is normally reclaimed before the cap kills anything while tmpfs, shared, pinned or dirty memory is not, and that a soft limit (`MemoryHigh`) below the cap starts reclaim earlier without guaranteeing the job survives. The wording changes in `rules/modifiers/shared-host-load.md` and `rules/references/shared-machine-load.md`.
+- The shared-host-load rule no longer sizes a memory cap from the scope's reported peak plus 20%: that total peak counts file cache and does not by itself show the memory a cache-heavy job needs. It now says to measure while the job runs (`memory.stat` shows current usage by kind, not peaks; start from `anon` plus `shmem`, check swap, leave room for kernel memory and the file-backed working set), notes that clean file cache is normally reclaimed before an OOM kill, while pinned pages and shared or tmpfs pages that cannot be swapped out resist reclaim and dirty file pages need writeback first, and that a soft limit (`MemoryHigh`) below the cap starts reclaim earlier without guaranteeing the job survives. The wording changes in `rules/modifiers/shared-host-load.md` and `rules/references/shared-machine-load.md`.
 
 ## 0.22.2 - 2026-11-09
 
