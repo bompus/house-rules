@@ -21,17 +21,14 @@ import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "nod
 import { pathToFileURL } from "node:url";
 import {
   AGY_UNMASKED,
-  bunHardened,
   gitEnvironment,
-  codexWrapper,
-  devinConfig,
   gitProgram,
   mayStart,
   mayStartAgy,
   reviewBase,
   seatAgent,
-  seatEnv,
 } from "./seat-launch.mjs";
+import { seatLaunch } from "./seat-hooks.mjs";
 const rawArgs = process.argv.slice(2);
 // A client log line. Control characters in seat-supplied text are written as \xNN, so a seat cannot
 // start a line of its own, such as a forged `[client] FATAL:` record.
@@ -341,19 +338,21 @@ try {
   );
   process.exit(1);
 }
-const launchCmd = bunHardened(devinConfig(serverCmd, noWeb, cwd, refuseLaunch), cwd, refuseLaunch);
 // Codex is recognized by seatAgent, or when a launch it cannot read could still start codex-acp (its
 // package named after a runner option, its script beside a preload); the wrapper then applies. Its
 // login variables still follow seatAgent.
 const codexCmd = seatAgent(serverCmd) === "codex" || mayStart(serverCmd, "codex");
-const baseEnv = seatEnv(
-  process.env,
-  launchCmd,
-  (process.env.ACP_PANEL_PASS_ENV ?? "").split(",").map((p) => p.trim()),
-);
+const launch = seatLaunch(serverCmd, {
+  noWeb,
+  cwd,
+  codex: codexCmd,
+  masked: policyOptions["hooks-masked"] === "true",
+  refuse: refuseLaunch,
+});
+const launchCmd = launch.cmd;
 const child = spawn(launchCmd[0] ?? "", launchCmd.slice(1), {
   cwd,
-  env: codexCmd ? codexWrapper(baseEnv, noWeb, cwd, refuseLaunch) : baseEnv,
+  env: launch.env,
   stdio: ["pipe", "pipe", "pipe"],
 });
 // The seat's stderr passes through with each line marked, so it cannot pass for the client's own.

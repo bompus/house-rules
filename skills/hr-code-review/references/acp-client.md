@@ -15,9 +15,9 @@ cd <trusted-folder> && bun --no-env-file --config=<empty-bunfig.toml> \
 
 Launch it from a folder you trust, never from inside the checkout, and pass the review root as the fourth positional argument. Bun reads `.env` and `bunfig.toml` (a `preload` runs code) from the launch folder before the script starts, so a client launched in the checkout lets the checkout set environment variables and run code ahead of every guard below. As a second layer, `--no-env-file` stops the `.env` loading and `--config=PATH` (the `=` form, an existing empty TOML file; `/dev/null` is rejected) replaces the launch folder's `bunfig.toml`; both were checked on Bun 1.4.4. `opencode-seat.mjs` takes the checkout as `--root CHECKOUT` and is launched the same way.
 
-Node 22+ and Bun can run the same file. It imports `seat-launch.mjs` from the same
-directory (the seat's environment, agent detection and the Codex and Devin
-setup), so a copy needs both files. Arguments after the output path are
+Node 22+ and Bun can run the same file. It imports `seat-launch.mjs` and `seat-hooks.mjs` from the same
+directory (the seat's environment, agent detection and the Codex, Devin and
+Antigravity setup), so a copy needs all three files. Arguments after the output path are
 optional. The default is one turn, no required verdict, five minutes of idle
 silence counted from launch and a sixty-minute hard deadline. The hard deadline has a one-minute
 minimum.
@@ -86,7 +86,7 @@ agent cannot obtain it through its own approved route.
   and under `--no-web` also fetches, web search and subagents. It is built from
   the config Devin would have read (the launch's `--config PATH` or
   `--config=PATH`, resolved against the review root, else the user config with
-  its hooks and rules; comments in it are read under Bun only), written to a
+  its rules, but not its hooks, which are left out; comments in it are read under Bun only), written to a
   private directory and removed at exit, also when the client is stopped by
   SIGTERM, SIGINT or SIGHUP (it then exits 128 plus the signal number). In every
   mode its imports of other tools' settings (`read_config_from`: Claude, Cursor,
@@ -102,7 +102,7 @@ agent cannot obtain it through its own approved route.
   beside the user config or the given config, or `mcpServers` in the config),
   because Devin starts those at launch and nothing switches them off per
   session, and an `mcp_config.json` the client cannot parse (comments in it need
-  Bun) because its servers are then unknown. When a package runner starts Devin, `--config` goes right after the name it starts, and after an interpreter's Devin script. Devin's cloud mode (`--cloud`, `devin cloud`) is refused, because the session then runs on a remote agent that the local deny rules and the offline check do not reach. A launch that may start Devin but that the client cannot read is refused: an argument named `devin` after a runner option that takes a value (`npx --cache DIR devin`), or a Devin script beside another interpreter script (`node --import shared/preload.mjs devin/index.js`). Only the executable, a runner's package and an interpreter's scripts count, not other arguments such as a title. With several Devin scripts, `--config` goes after the last plain one.
+  Bun) because its servers are then unknown. The Devin process also runs with `XDG_CONFIG_HOME` set to an empty private folder (its login lives elsewhere), so the MCP servers in the user's `mcp_config.json` do not start; on Windows that cannot be done and the launch is refused unless `--policy-option hooks-masked` is passed. When a package runner starts Devin, `--config` goes right after the name it starts, and after an interpreter's Devin script. Devin's cloud mode (`--cloud`, `devin cloud`) is refused, because the session then runs on a remote agent that the local deny rules and the offline check do not reach. A launch that may start Devin but that the client cannot read is refused: an argument named `devin` after a runner option that takes a value (`npx --cache DIR devin`), or a Devin script beside another interpreter script (`node --import shared/preload.mjs devin/index.js`). Only the executable, a runner's package and an interpreter's scripts count, not other arguments such as a title. With several Devin scripts, `--config` goes after the last plain one.
 - **Antigravity (`agy`)** is refused (exit 2, a `[client] FATAL:` line, before any server
   starts) unless the caller passes `--policy-option agy-masked` (bare or `=true`; any other
   value does not count). `agy acp` starts the MCP servers, plugins and hooks it finds in the
@@ -112,7 +112,7 @@ agent cannot obtain it through its own approved route.
   agy counts (`agy`, `agy-acp`, `agy_acp_server.par`, also behind `env`, `sh -c`, a runner or an
   interpreter's script), and so does any word that is a link to agy, by its path from the working directory or on `PATH`, behind a
   wrapper too. An option's attached value counts (`env --split-string="agy acp"`, `env -Sagy`). A relative word is also tried from the directories a wrapper literally changes to (`env --chdir=DIR`, `cd DIR &&`), and a bare word as a file in them, so an interpreter's operand (`python3 antigravity.par`) counts. A bare word is looked up as the shell would: the first executable of that name on `PATH`, searched after a literal `PATH=...` in the command, with an empty entry meaning the working directory. The check runs before a `--policy` module is imported, and a policy cannot set the marker. A name written to hide it (shell quoting inside the name, a renamed copy) is not detected:
-  the check catches a mistake, it does not stop a caller that hides the launch. The detector is a heuristic second layer: the caller's mask over those folders is the protection, and a launch form the detector misses is not made safe by it.
+  the check catches a mistake, it does not stop a caller that hides the launch. The detector is a heuristic second layer: the caller's mask over those folders is the protection, and a launch form the detector misses is not made safe by it. Besides the marker, an `agy acp` launch gets a private `--gemini-dir` (mode 0700, removed at exit) that holds only a copy of the user's login file (`~/.gemini/antigravity-cli/antigravity-oauth-token`, mode 0600), so the user's own hooks and MCP servers do not load; the client refuses a launch with no login to copy, one that names its own `--gemini-dir` or `--gemini_dir`, one in another form (`agy-acp`, a wrapper or a script) and any launch on Windows, unless `--policy-option hooks-masked` declares them covered.
 - **Codex** (recognized from the launch command: its executable, package,
   script, or a launch it cannot read that could still start `codex-acp` by the same rule as Devin's (the executable, a runner's package, an interpreter's scripts); an agent that only names itself Codex after
   `initialize` still gets read-only mode, but no wrapper) always runs through a wrapper that turns off every MCP server
@@ -124,7 +124,13 @@ agent cannot obtain it through its own approved route.
   cannot be turned off safely, and on Windows, where it cannot start a Codex seat
   at all. `CODEX_CONFIG` (JSON the caller sets for codex-acp) passes through
   without its `mcp_servers` table, which codex-acp would add to the session
-  without `codex mcp list` showing it; invalid JSON in it refuses the launch. The wrapper reaches Codex through `CODEX_PATH`, which codex-acp honors; an adapter that starts Codex another way is not covered.
+  without `codex mcp list` showing it; invalid JSON in it refuses the launch. The session's `features.hooks` is set to `false` in `CODEX_CONFIG`, so no hook of the user or of the checkout runs in the seat (a `-c features.hooks=false` on the wrapper's command line does not reach them). The wrapper reaches Codex through `CODEX_PATH`, which codex-acp honors; an adapter that starts Codex another way is not covered.
+
+## Hooks and user MCP servers
+
+A seat's agent can run hooks and start MCP servers from the user's configuration, and from the checkout's own, with the seat's environment. The client turns them off per adapter, as listed in the bullets above: Claude's adapter loads no settings source, Codex runs with its `hooks` feature off and its MCP servers disabled, Devin gets a config without hooks and an empty configuration folder, and `agy acp` gets a private Gemini folder. Each switch was checked with a canary hook or MCP server that writes a file, which stayed unwritten.
+
+What stays outside this: managed policy settings and an adapter's own hooks (Claude), the `.agents` folders of the checkout (Antigravity, covered by `agy-masked`), hooks and MCP servers of an agent the client does not recognize, and anything a launch form hides. `--policy-option hooks-masked` (bare or `=true`) declares that the caller has covered the user's hooks and MCP servers for Devin and Antigravity itself; the client then adds no empty folder and no Gemini folder. None of this keeps a process other than the agent from reading the checkout: a Bun process started in it reads its `.env` and `bunfig.toml`, which the Bun checks above address separately.
 
 ## Environment
 

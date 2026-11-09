@@ -25,7 +25,7 @@ const launch={pid:process.pid,argv:process.argv.slice(2),env:Object.keys(process
 const argAt=process.argv.indexOf('--config');
 if(argAt>=0){const file=process.argv[argAt+1];launch.devin={file,config:JSON.parse(fs.readFileSync(file,'utf8')),fileMode:fs.statSync(file).mode&0o777,dirMode:fs.statSync(file.slice(0,Math.max(file.lastIndexOf('/'),file.lastIndexOf('\\\\')))).mode&0o777};}
 if(launch.codexPath&&fs.existsSync(launch.codexPath)&&launch.codexPath.endsWith('codex-no-web'))launch.wrapper=fs.readFileSync(launch.codexPath,'utf8');
-fs.writeFileSync(process.env.FAKE_LOG+'.launch',JSON.stringify(launch));
+launch.xdg=process.env.XDG_CONFIG_HOME??null;if(launch.xdg&&fs.existsSync(launch.xdg))launch.xdgSeat={mode:fs.statSync(launch.xdg).mode&0o777,entries:fs.readdirSync(launch.xdg)};\nconst gAt=process.argv.indexOf('--gemini-dir');\nif(gAt>=0){const g=process.argv[gAt+1],t=g+'/antigravity-cli/antigravity-oauth-token';launch.gemini={dir:g,dirMode:fs.statSync(g).mode&0o777,subMode:fs.statSync(g+'/antigravity-cli').mode&0o777,tokenMode:fs.statSync(t).mode&0o777,token:fs.readFileSync(t,'utf8'),entries:fs.readdirSync(g),subEntries:fs.readdirSync(g+'/antigravity-cli'),at:gAt};}\nfs.writeFileSync(process.env.FAKE_LOG+'.launch',JSON.stringify(launch));
 if(cfg.stderrLine)process.stderr.write(cfg.stderrLine+'\\n');
 if(cfg.ignoreTerm)process.on('SIGTERM',()=>{});
 if(cfg.linger)setInterval(()=>{},1000);
@@ -135,7 +135,7 @@ function run(
     env.XDG_CONFIG_HOME = join(dir, "xdg-empty");
   }
   const serverArgs = (config.serverArgs || []).map((/** @type {string} */ a) =>
-    a.replaceAll("%FAKE%", fakePath),
+    a.replaceAll("%FAKE%", fakePath).replaceAll("%DIR%", dir),
   );
   const launcher = config.launcher || (config.devinShim ? "devin" : "");
   const server = config.serverNotFound
@@ -583,10 +583,9 @@ test("a copy of the client and the file beside it runs without its source checko
   try {
     const copy = join(dir, "client.mjs");
     writeFileSync(copy, readFileSync(client));
-    writeFileSync(
-      join(dir, "seat-launch.mjs"),
-      readFileSync(join(dirname(client), "seat-launch.mjs")),
-    );
+    for (const file of ["seat-launch.mjs", "seat-hooks.mjs"]) {
+      writeFileSync(join(dir, file), readFileSync(join(dirname(client), file)));
+    }
     const r = run({ codex: true }, ["--model", "chosen"], () => {}, process.execPath, copy);
     assert.equal(r.code, 0);
     assert.match(r.text, /VERDICT:/);
@@ -1115,6 +1114,7 @@ test(
       assert.equal(r.code, 0, r.error);
       const launch = r.launch;
       assert.ok(launch?.codexPath?.endsWith("codex-no-web"));
+      assert.equal(JSON.parse(launch.codexConfig).features.hooks, false);
       assert.match(launch.wrapper, /mcp_servers\.alpha\.enabled=false/);
       assert.match(launch.wrapper, /mcp_servers\.beta-2\.enabled=false/);
       assert.equal(/web_search="disabled"/.test(launch.wrapper), flags.length > 0);
@@ -1170,26 +1170,30 @@ test(
     }
   },
 );
-test("Devin's own config is the base: its hooks and deny rules survive", POSIX_ONLY, () => {
-  const prepare = (/** @type {string} */ _root, /** @type {string} */ dir) => {
-    mkdirSync(join(dir, "xdg", "devin"), { recursive: true });
-    writeFileSync(
-      join(dir, "xdg", "devin", "config.json"),
-      JSON.stringify({
-        version: 1,
-        hooks: { pre: "audit" },
-        permissions: { deny: ["Read(~/.ssh/*)"], allow: ["Read(*)"] },
-      }),
-    );
-  };
-  const r = run({ devinShim: true, env: { XDG_CONFIG_HOME: "%DIR%/xdg" } }, [], prepare);
-  assert.equal(r.code, 0, r.error);
-  const config = r.launch?.devin.config;
-  assert.deepEqual(config.hooks, { pre: "audit" });
-  assert.deepEqual(config.permissions.allow, ["Read(*)"]);
-  assert.ok(config.permissions.deny.includes("Read(~/.ssh/*)"));
-  assert.ok(config.permissions.deny.includes("exec"));
-});
+test(
+  "Devin's own config is the base: its deny rules survive and its hooks do not",
+  POSIX_ONLY,
+  () => {
+    const prepare = (/** @type {string} */ _root, /** @type {string} */ dir) => {
+      mkdirSync(join(dir, "xdg", "devin"), { recursive: true });
+      writeFileSync(
+        join(dir, "xdg", "devin", "config.json"),
+        JSON.stringify({
+          version: 1,
+          hooks: { pre: "audit" },
+          permissions: { deny: ["Read(~/.ssh/*)"], allow: ["Read(*)"] },
+        }),
+      );
+    };
+    const r = run({ devinShim: true, env: { XDG_CONFIG_HOME: "%DIR%/xdg" } }, [], prepare);
+    assert.equal(r.code, 0, r.error);
+    const config = r.launch?.devin.config;
+    assert.deepEqual(config.hooks, {}, "the user's hooks never run in the seat");
+    assert.deepEqual(config.permissions.allow, ["Read(*)"]);
+    assert.ok(config.permissions.deny.includes("Read(~/.ssh/*)"));
+    assert.ok(config.permissions.deny.includes("exec"));
+  },
+);
 test(
   "a launch that names its own Devin config uses it once, in either form, relative to the seat's directory",
   POSIX_ONLY,
@@ -1210,7 +1214,7 @@ test(
         1,
       );
       assert.deepEqual(argv.slice(2), ["acp"]);
-      assert.deepEqual(r.launch?.devin.config.hooks, { own: true });
+      assert.deepEqual(r.launch?.devin.config.hooks, {});
       assert.ok(r.launch?.devin.config.permissions.deny.includes("exec"));
     }
   },
@@ -1505,12 +1509,24 @@ test("CODEX_CONFIG keeps the caller's settings but loses its MCP server table", 
   const configured = JSON.stringify({ model: "m", mcp_servers: { injected: { command: "x" } } });
   const r = run({ ...CODEX_LAUNCH, env: { CODEX_CONFIG: configured } });
   assert.equal(r.code, 0, r.error);
-  assert.deepEqual(JSON.parse(r.launch?.codexConfig ?? "null"), { model: "m" });
+  assert.deepEqual(JSON.parse(r.launch?.codexConfig ?? "null"), {
+    model: "m",
+    features: { hooks: false },
+  });
   const broken = run({ ...CODEX_LAUNCH, env: { CODEX_CONFIG: "{not json" } });
   assert.equal(broken.code, 2);
   assert.match(broken.error, /CODEX_CONFIG is not valid JSON/);
   assert.equal(broken.launch, null);
-  assert.equal(run({ ...CODEX_LAUNCH }).launch?.codexConfig, null);
+  assert.deepEqual(JSON.parse(run({ ...CODEX_LAUNCH }).launch?.codexConfig ?? "null"), {
+    features: { hooks: false },
+  });
+  const keeps = run({ ...CODEX_LAUNCH, env: { CODEX_CONFIG: '{"features":{"apps":true}}' } });
+  assert.deepEqual(JSON.parse(keeps.launch?.codexConfig ?? "null"), {
+    features: { apps: true, hooks: false },
+  });
+  const bad = run({ ...CODEX_LAUNCH, env: { CODEX_CONFIG: '{"features":[]}' } });
+  assert.equal(bad.code, 2);
+  assert.match(bad.error, /CODEX_CONFIG features is not an object/);
 });
 test("output after the answer is written is not read and does not change the outcome", () => {
   const r = run({ afterReply: true, linger: false });
@@ -1997,8 +2013,8 @@ test("an agy launch is refused before any server starts unless the caller declar
 });
 test("the agy-masked marker, bare or true, lets an agy launch through; other launches never need it", () => {
   for (const flags of [
-    ["--policy-option", "agy-masked"],
-    ["--policy-option", "agy-masked=true"],
+    ["--policy-option", "agy-masked", "--policy-option", "hooks-masked"],
+    ["--policy-option", "agy-masked=true", "--policy-option", "hooks-masked=true"],
   ]) {
     // The fake server ignores its arguments, so naming agy there stands for an agy launch on any OS.
     const r = run({ serverArgs: ["agy-acp"] }, flags);
@@ -2121,5 +2137,157 @@ test(
     );
     assert.equal(r.code, 0, r.error);
     assert.equal(r.read["git-ran"], null, "the checkout's git did not run");
+  },
+);
+/**
+ * An agy shim plus the user's login file under a fake home; the shim is the `agy` the client launches.
+ * @param {string} token
+ */
+const agyHome = (token) => (/** @type {string} */ _root, /** @type {string} */ dir) => {
+  const login = join(dir, "home", ".gemini", "antigravity-cli");
+  mkdirSync(login, { recursive: true });
+  writeFileSync(join(login, "antigravity-oauth-token"), token);
+  // Other user files an agy seat must not be shown.
+  writeFileSync(join(dir, "home", ".gemini", "settings.json"), '{"mcpServers":{}}');
+};
+const AGY = { launcher: "agy", serverArgs: ["acp"], env: { HOME: "%DIR%/home" } };
+const AGY_FLAGS = ["--policy-option", "agy-masked"];
+test(
+  "an agy seat starts with a private Gemini folder that holds only the copied login",
+  POSIX_ONLY,
+  () => {
+    const r = run(AGY, AGY_FLAGS, agyHome("login-bytes"));
+    assert.equal(r.code, 0, r.error);
+    const gemini = r.launch?.gemini;
+    assert.deepEqual(r.launch?.argv.slice(0, 3), ["acp", "--gemini-dir", gemini.dir]);
+    assert.equal(gemini.token, "login-bytes");
+    assert.equal(gemini.tokenMode, 0o600);
+    assert.equal(gemini.dirMode, 0o700);
+    assert.equal(gemini.subMode, 0o700);
+    assert.deepEqual(gemini.entries, ["antigravity-cli"]);
+    assert.deepEqual(gemini.subEntries, ["antigravity-oauth-token"]);
+    assert.equal(existsSync(gemini.dir), false, "the folder and the copied login are gone at exit");
+  },
+);
+test(
+  "the copied agy login is removed when the run fails, is stopped, or the server dies",
+  POSIX_ONLY,
+  () => {
+    const failed = run({ ...AGY, dieOnNew: true }, AGY_FLAGS, agyHome("t"));
+    assert.notEqual(failed.code, 0);
+    assert.ok(failed.launch?.gemini, "the seat started");
+    assert.equal(existsSync(failed.launch.gemini.dir), false, "failed run");
+    const stopped = run({ ...AGY, silent: true, killAfter: 4000 }, AGY_FLAGS, agyHome("t"));
+    assert.equal(stopped.code, 143);
+    assert.equal(existsSync(stopped.launch?.gemini.dir), false, "stopped by SIGTERM");
+    const refusedLater = run(
+      { ...AGY, serverArgs: ["acp", "--bad"] },
+      [...AGY_FLAGS, "--bogus"],
+      agyHome("t"),
+    );
+    assert.equal(refusedLater.code, 2, "an argument error ends before any folder is made");
+    assert.equal(refusedLater.launch, null);
+  },
+);
+test(
+  "an agy launch that names its own Gemini folder, or cannot be given one, is refused",
+  POSIX_ONLY,
+  () => {
+    for (const serverArgs of [
+      ["acp", "--gemini-dir", "%DIR%/mine"],
+      ["acp", "--gemini-dir=%DIR%/mine"],
+      ["acp", "--gemini_dir", "%DIR%/mine"],
+      ["serve"],
+      ["acp-server", "acp"],
+    ]) {
+      const r = run({ ...AGY, serverArgs }, AGY_FLAGS, agyHome("t"));
+      assert.equal(r.code, 2, serverArgs.join(" "));
+      assert.match(r.error, /--policy-option hooks-masked/);
+      assert.equal(r.launch, null);
+    }
+    const unrecognized = run(
+      { serverArgs: ["agy-acp"], env: { HOME: "%DIR%/home" } },
+      AGY_FLAGS,
+      agyHome("t"),
+    );
+    assert.equal(unrecognized.code, 2);
+    assert.match(unrecognized.error, /hooks-masked/);
+  },
+);
+test(
+  "hooks-masked declares the user's hooks and MCP servers covered and adds no Gemini folder",
+  POSIX_ONLY,
+  () => {
+    const own = run(
+      { ...AGY, serverArgs: ["acp", "--gemini-dir", "%DIR%/mine"] },
+      [...AGY_FLAGS, "--policy-option", "hooks-masked"],
+      (root, dir) => {
+        mkdirSync(join(dir, "mine", "antigravity-cli"), { recursive: true });
+        writeFileSync(join(dir, "mine", "antigravity-cli", "antigravity-oauth-token"), "x");
+        agyHome("t")(root, dir);
+      },
+    );
+    assert.equal(own.code, 0, own.error);
+    assert.equal(
+      own.launch?.argv.filter((/** @type {string} */ a) => a === "--gemini-dir").length,
+      1,
+    );
+    const bare = run({ serverArgs: ["agy-acp"], env: { HOME: "%DIR%/home" } }, [
+      ...AGY_FLAGS,
+      "--policy-option",
+      "hooks-masked=true",
+    ]);
+    assert.equal(bare.code, 0, bare.error);
+    assert.equal(bare.launch?.gemini, undefined);
+    assert.equal(
+      run(
+        { ...AGY, env: { HOME: "%DIR%/home" }, serverArgs: ["acp"] },
+        [...AGY_FLAGS, "--policy-option", "hooks-masked=no"],
+        agyHome("t"),
+      ).launch?.gemini === undefined,
+      false,
+      "only the string true counts",
+    );
+  },
+);
+test(
+  "an agy seat with no login to copy is refused without printing a path's contents",
+  POSIX_ONLY,
+  () => {
+    const r = run(AGY, AGY_FLAGS);
+    assert.equal(r.code, 2);
+    assert.match(r.error, /agy has no login to copy/);
+    assert.match(r.error, /sign in with agy first/);
+    assert.equal(r.launch, null);
+  },
+);
+test(
+  "a Devin seat runs with an empty private configuration folder, unless hooks-masked is declared",
+  POSIX_ONLY,
+  () => {
+    const prepare = (/** @type {string} */ _root, /** @type {string} */ dir) => {
+      mkdirSync(join(dir, "xdg", "devin"), { recursive: true });
+      writeFileSync(
+        join(dir, "xdg", "devin", "mcp_config.json"),
+        '{"mcpServers":{"mine":{"command":"x"}}}',
+      );
+    };
+    const r = run(
+      { devinShim: true, serverArgs: ["acp"], env: { XDG_CONFIG_HOME: "%DIR%/xdg" } },
+      [],
+      prepare,
+    );
+    assert.equal(r.code, 0, r.error);
+    assert.notEqual(r.launch?.xdg, null);
+    assert.ok(!String(r.launch?.xdg).endsWith("/xdg"), "not the user's folder");
+    assert.deepEqual(r.launch?.xdgSeat, { mode: 0o700, entries: [] });
+    assert.equal(existsSync(r.launch?.xdg), false, "removed at exit");
+    const masked = run(
+      { devinShim: true, serverArgs: ["acp"], env: { XDG_CONFIG_HOME: "%DIR%/xdg" } },
+      ["--policy-option", "hooks-masked"],
+      prepare,
+    );
+    assert.equal(masked.code, 0, masked.error);
+    assert.match(String(masked.launch?.xdg), /\/xdg$/, "the user's folder stays");
   },
 );

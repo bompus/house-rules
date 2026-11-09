@@ -512,7 +512,7 @@ export function seatEnv(env, cmd, extraPrefixes) {
 // The files the client writes for a seat live in one private directory, removed when it exits.
 /** @type {string | undefined} */
 let privateDirPath;
-function privateDir() {
+export function privateDir() {
   if (!privateDirPath) {
     privateDirPath = mkdtempSync(join(tmpdir(), "acp-panel-"));
     chmodSync(privateDirPath, 0o700);
@@ -598,15 +598,22 @@ export function codexWrapper(env, offline, cwd, refuse) {
     off.push(`mcp_servers.${name}.enabled=false`);
   }
   // codex-acp adds the servers of a CODEX_CONFIG table to the session, which `codex mcp list` does not
-  // show: that table is dropped, and the rest of the caller's configuration stays.
+  // show: that table is dropped, and the rest of the caller's configuration stays. The session's `hooks`
+  // feature is off, so no hook of the user or of the checkout runs in the seat (a `-c` override on the
+  // wrapper's command line does not reach the hooks; this session setting does).
   let configJson = env.CODEX_CONFIG;
-  if (configJson) {
-    try {
-      const { mcp_servers: _dropped, ...rest } = JSON.parse(configJson);
-      configJson = JSON.stringify(rest);
-    } catch {
-      cannot("CODEX_CONFIG is not valid JSON");
+  try {
+    const { mcp_servers: _dropped, ...rest } = configJson ? JSON.parse(configJson) : {};
+    const features = rest.features;
+    if (
+      features !== undefined &&
+      (typeof features !== "object" || features === null || Array.isArray(features))
+    ) {
+      cannot("CODEX_CONFIG features is not an object");
     }
+    configJson = JSON.stringify({ ...rest, features: { ...features, hooks: false } });
+  } catch {
+    cannot("CODEX_CONFIG is not valid JSON");
   }
   const wrapper = join(privateDir(), "codex-no-web");
   writeFileSync(
@@ -618,7 +625,7 @@ export function codexWrapper(env, offline, cwd, refuse) {
     ...env,
     CODEX_NO_WEB_REAL: real,
     CODEX_PATH: wrapper,
-    ...(configJson ? { CODEX_CONFIG: configJson } : {}),
+    CODEX_CONFIG: configJson,
   };
 }
 // Devin runs its shell, MCP tools and web search without asking, so it starts with a config denying its
@@ -900,7 +907,8 @@ export function devinConfig(cmd, offline, dir, refuse) {
   const config = join(privateDir(), "devin-config.json");
   writeFileSync(
     config,
-    JSON.stringify({ ...base, permissions: { ...base.permissions, deny } }, null, 2),
+    // The user's hooks are left out: Devin would run them in the seat.
+    JSON.stringify({ ...base, hooks: {}, permissions: { ...base.permissions, deny } }, null, 2),
     {
       mode: 0o600,
     },
