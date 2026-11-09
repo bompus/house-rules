@@ -29,9 +29,11 @@ integrity with the verified one and skips publishing when they match. Different
 bytes at the same version fail the workflow, so fix the problem and release a
 new version instead of republishing.
 
-The last step waits about five minutes for `npm view` to show the version, since
-the registry can lag behind a publish that succeeded, and fails naming the
-package and version if it never appears.
+The last step waits up to 30 minutes for `npm view` to show the version, since
+the registry can lag behind a publish that succeeded by 15 minutes or more, and
+fails naming the package and version if it never appears. A run that fails there
+after `npm publish` printed `+ name@version` is not a failed publish: check the
+registry before any rerun.
 
 Never rerun the failed npm publish run for v0.12.0 (run 38615008492): it would
 publish 0.12.0 from the old workflow after later versions. npm has no 0.12.0;
