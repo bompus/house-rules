@@ -195,7 +195,7 @@ Read patterns the user's own global OpenCode config (`opencode.json` and `openco
 asks about stay denied, placed after every rule of the seat's own because the last
 matching rule decides, and a default or whole-tool deny or ask there (`permission: "deny"`, `{"*": "deny"}`, or for read alone)
 becomes a final deny-all (a config file that exists but this runtime cannot read or parse, such as comments in it
-under Node, refuses the run with exit 2; a missing file is optional; comments need Bun). Project configuration and Claude Code compatibility are
+under Node, refuses the run with exit 2, and so does a permission value of a shape the seat does not understand; both files are always checked; a missing file is optional; comments need Bun). Project configuration and Claude Code compatibility are
 off, and the prompt is an attached file. It writes OpenCode's JSON events to
 stdout and passes its exit status through; a stop sent to it goes on to OpenCode,
 with a forced kill after 5 seconds.

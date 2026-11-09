@@ -1719,3 +1719,75 @@ test(
     });
   },
 );
+
+test("a permission shape this seat does not understand refuses the run instead of reading as no denial", () => {
+  const dir = scratch("opencode-shapes");
+  try {
+    for (const permission of [
+      { read: { "*.key": { "*": "ask" } } },
+      { read: ["ask"] },
+      { read: null },
+      { read: "maybe" },
+      { read: { "*.key": true } },
+      { "*": 1 },
+      "sometimes",
+      7,
+      null,
+    ]) {
+      writeFileSync(join(dir, "opencode.json"), JSON.stringify({ permission }));
+      assert.throws(
+        () => userReadDenials(dir),
+        /does not understand|cannot be read/,
+        JSON.stringify(permission),
+      );
+    }
+    // The shapes it does understand.
+    for (const [permission, want] of /** @type {[unknown, string[]][]} */ ([
+      [undefined, []],
+      ["allow", []],
+      [{ bash: "deny" }, []],
+      [{ read: "allow" }, []],
+      [{ read: { "*.key": "allow", "*.pem": "deny" } }, ["*.pem"]],
+      [{ "*": "allow", read: { "a/*": "ask" } }, ["a/*"]],
+    ])) {
+      writeFileSync(join(dir, "opencode.json"), JSON.stringify({ permission }));
+      assert.deepEqual(userReadDenials(dir), want, JSON.stringify(permission));
+    }
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+test("both config files are always checked: a deny-all in one does not hide a broken other", () => {
+  const dir = scratch("opencode-both-checked");
+  try {
+    writeFileSync(join(dir, "opencode.json"), JSON.stringify({ permission: { read: "deny" } }));
+    writeFileSync(join(dir, "opencode.jsonc"), "{ not json");
+    assert.throws(() => userReadDenials(dir), /opencode\.jsonc cannot be read or parsed here/);
+    writeFileSync(
+      join(dir, "opencode.jsonc"),
+      JSON.stringify({ permission: { read: { "*.x": "deny" } } }),
+    );
+    assert.deepEqual(userReadDenials(dir), ["*"]);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+test(
+  "a home folder whose name holds a replacement token ($&) still expands in a pattern",
+  { skip: process.platform === "win32" },
+  async () => {
+    const home = scratch("opencode-home-dollar");
+    try {
+      const dir = join(home, "dollar$&", "review");
+      mkdirSync(dir, { recursive: true });
+      writeFileSync(join(dir, "secret.key"), "x");
+      writeFileSync(join(dir, "plain.txt"), "x");
+      const realHome = join(realpathSync(home), "dollar$&");
+      for (const pattern of ["~/review/*.key", "$HOME/review/*.key", "${HOME}/review/*.key"]) {
+        assert.deepEqual(await copied(dir, [pattern], realHome), ["plain.txt"], pattern);
+      }
+    } finally {
+      rmSync(home, { recursive: true, force: true });
+    }
+  },
+);

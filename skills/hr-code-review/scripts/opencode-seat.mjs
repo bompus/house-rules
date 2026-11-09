@@ -174,7 +174,8 @@ const MAX_BYTES = 512 * 1024 * 1024;
  * @returns {(path: string) => boolean}
  */
 export function deniedBy(dir, denied, home) {
-  const expand = (/** @type {string} */ p) => p.replace(/^(~|\$HOME|\$\{HOME\})(?=\/|$)/, home);
+  const expand = (/** @type {string} */ p) =>
+    p.replace(/^(~|\$HOME|\$\{HOME\})(?=\/|$)/, () => home);
   const patterns = denied.filter((p) => p !== "*").map((p) => globRegex(expand(p)));
   return (path) =>
     isEnvFile(basename(path)) ||
@@ -521,28 +522,17 @@ export function sandboxArgs(home, shown, mounts = []) {
 export function userReadDenials(configDir) {
   /** @type {string[]} */
   const denied = [];
-  // OpenCode loads both files when both exist, so the denials of each count.
+  let everything = false;
+  const actions = new Set(["allow", "ask", "deny"]);
+  // OpenCode loads both files when both exist, so the denials of each count; both are always read, so a
+  // second file that cannot be used refuses the run even when the first already denies everything.
   for (const name of ["opencode.json", "opencode.jsonc"]) {
+    const path = join(configDir, name);
+    /** @type {any} */
+    let config;
     try {
       const parse = /** @type {any} */ (globalThis).Bun?.JSONC?.parse ?? JSON.parse;
-      const config = parse(readFileSync(join(configDir, name), "utf8"));
-      // A default that denies or asks for everything (`permission: "deny"`, `{"*": "deny"}`), and a
-      // whole-tool "deny" or "ask" for read, become a final deny-all: the seat then reads nothing.
-      const permission = config?.permission;
-      const closed = (/** @type {unknown} */ v) => v === "deny" || v === "ask";
-      const read = permission?.read;
-      if (closed(permission) || closed(permission?.["*"]) || closed(read)) {
-        return ["*"];
-      }
-      if (read && typeof read === "object") {
-        for (const [pattern, value] of Object.entries(
-          /** @type {Record<string, string>} */ (read),
-        )) {
-          if (closed(value)) {
-            denied.push(pattern);
-          }
-        }
-      }
+      config = parse(readFileSync(path, "utf8"));
     } catch (e) {
       // An absent file is optional. One that exists and cannot be read or parsed (JSONC comments under a
       // runtime without a JSONC parser) is refused: its denials would otherwise be dropped silently.
@@ -551,13 +541,55 @@ export function userReadDenials(configDir) {
         /** @type {{ code?: string }} */ (e).code !== "ENOTDIR"
       ) {
         throw new Error(
-          `${join(configDir, name)} cannot be read or parsed here (comments in it need Bun): ${e instanceof Error ? e.message : String(e)}`,
+          `${path} cannot be read or parsed here (comments in it need Bun): ${e instanceof Error ? e.message : String(e)}`,
           { cause: e },
         );
       }
+      continue;
+    }
+    const unsupported = (/** @type {string} */ where) =>
+      new Error(`${path}: ${where} has a value this seat does not understand; fix it or remove it`);
+    const isAction = (/** @type {unknown} */ v) => typeof v === "string" && actions.has(v);
+    const isRecord = (/** @type {unknown} */ v) =>
+      typeof v === "object" && v !== null && !Array.isArray(v);
+    const permission = config?.permission;
+    if (permission === undefined) {
+      continue;
+    }
+    // A default that denies or asks for everything (`permission: "deny"`, `{"*": "deny"}`), and a
+    // whole-tool "deny" or "ask" for read, become a final deny-all: the seat then reads nothing. A value
+    // of another shape is refused, never read as "no denial".
+    if (isAction(permission)) {
+      everything ||= permission !== "allow";
+      continue;
+    }
+    if (!isRecord(permission)) {
+      throw unsupported("permission");
+    }
+    for (const key of ["*", "read"]) {
+      const value = permission[key];
+      if (value !== undefined && !isAction(value) && !(key === "read" && isRecord(value))) {
+        throw unsupported(`permission.${key}`);
+      }
+    }
+    if (permission["*"] === "deny" || permission["*"] === "ask") {
+      everything = true;
+    }
+    const read = permission.read;
+    if (read === "deny" || read === "ask") {
+      everything = true;
+    } else if (isRecord(read)) {
+      for (const [pattern, value] of Object.entries(read)) {
+        if (!isAction(value)) {
+          throw unsupported(`permission.read["${pattern}"]`);
+        }
+        if (value !== "allow") {
+          denied.push(pattern);
+        }
+      }
     }
   }
-  return denied;
+  return everything ? ["*"] : denied;
 }
 
 // Where bubblewrap is looked for: system folders only, never the inherited PATH, because a checkout's
