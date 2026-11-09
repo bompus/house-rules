@@ -21,15 +21,13 @@ import {
 
 // The only flags a seat passes to `agy acp` (one or two dashes; a value as `=V` or the next argument).
 // Any other can move agy's configuration folders, add directories whose agent folders it runs, open an
-// IDE MCP connection, change where the login goes or approve tool calls.
+// IDE MCP connection, change where the login goes, write a log through a link or approve tool calls.
 /** @type {Map<string, boolean>} flag name -> takes a value */
 const AGY_FLAGS = new Map([
   ["sandbox", false],
   ["disable-telemetry", false],
   ["disable_telemetry", false],
   ["agent", true],
-  ["log-file", true],
-  ["cli_log_file", true],
 ]);
 /** @param {string[]} args the arguments after `agy acp` */
 function agyArgsAllowed(args) {
@@ -88,7 +86,7 @@ function hooksOff(serverCmd, cmd, env, masked, cwd, refuse) {
     return refuse(
       unmasked(
         plain && !windows
-          ? "the agy launch passes arguments the client cannot keep safe (it allows only --sandbox, --disable-telemetry, --agent, --log-file and --cli_log_file): others can move its configuration folders, add directories whose agent folders it runs, or open an IDE MCP connection"
+          ? "the agy launch passes arguments the client cannot keep safe (it allows only --sandbox, --disable-telemetry and --agent): others can move its configuration folders, add directories whose agent folders it runs, open an IDE MCP connection, or write a log to a path the caller picks, which agy opens through a link"
           : "the launch may start agy in a form the client cannot give a private Gemini folder (only `agy acp` on Linux and macOS)",
       ),
     );

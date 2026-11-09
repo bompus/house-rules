@@ -2215,6 +2215,9 @@ test(
       ["acp", "--sandbox=maybe"],
       ["acp", "--agent"],
       ["acp", "--agent", "--sandbox"],
+      ["acp", "--log-file=agy.log"],
+      ["acp", "-cli_log_file", "cli.log"],
+      ["acp", "--sandbox", "true"],
       ["acp", "extra"],
       ["acp", "--"],
       ["serve"],
@@ -2244,9 +2247,7 @@ test(
       "-disable_telemetry=true",
       "--agent",
       "reviewer",
-      "--log-file=agy.log",
-      "-cli_log_file",
-      "cli.log",
+      "-agent=other",
     ];
     const r = run({ ...AGY, serverArgs }, AGY_FLAGS, agyHome("t"));
     assert.equal(r.code, 0, r.error);
