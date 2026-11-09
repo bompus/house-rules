@@ -2011,7 +2011,7 @@ test("an agy launch is refused before any server starts unless the caller declar
     }
   }
 });
-test("the agy-masked marker, bare or true, lets an agy launch through; other launches never need it", () => {
+test("agy-masked with hooks-masked, bare or true, lets an agy launch through; other launches need neither", () => {
   for (const flags of [
     ["--policy-option", "agy-masked", "--policy-option", "hooks-masked"],
     ["--policy-option", "agy-masked=true", "--policy-option", "hooks-masked=true"],
@@ -2179,7 +2179,8 @@ test(
     assert.equal(existsSync(failed.launch.gemini.dir), false, "failed run");
     const stopped = run({ ...AGY, silent: true, killAfter: 4000 }, AGY_FLAGS, agyHome("t"));
     assert.equal(stopped.code, 143);
-    assert.equal(existsSync(stopped.launch?.gemini.dir), false, "stopped by SIGTERM");
+    assert.ok(stopped.launch?.gemini?.token, "the seat had started with the copied login");
+    assert.equal(existsSync(stopped.launch.gemini.dir), false, "stopped by SIGTERM");
     const refusedLater = run(
       { ...AGY, serverArgs: ["acp", "--bad"] },
       [...AGY_FLAGS, "--bogus"],
@@ -2197,6 +2198,11 @@ test(
       ["acp", "--gemini-dir", "%DIR%/mine"],
       ["acp", "--gemini-dir=%DIR%/mine"],
       ["acp", "--gemini_dir", "%DIR%/mine"],
+      ["acp", "-gemini-dir=%DIR%/mine"],
+      ["acp", "-gemini_dir", "%DIR%/mine"],
+      ["acp", "--app-data-dir", "%DIR%/mine"],
+      ["acp", "--app_data_dir=%DIR%/mine"],
+      ["acp", "--cli_dir_name", "mine"],
       ["serve"],
       ["acp-server", "acp"],
     ]) {

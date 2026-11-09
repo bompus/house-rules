@@ -11,9 +11,10 @@ import {
   symlinkSync,
   writeFileSync,
 } from "node:fs";
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { delimiter, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import {
   bunHardened,
   cleanPath,
@@ -1012,5 +1013,76 @@ test(
       process.env.PATH = saved;
       rmSync(dir, { recursive: true, force: true });
     }
+  },
+);
+
+/**
+ * Runs a script that makes the private folder, puts a file in it, and then keeps its event loop busy
+ * for 0.6 s (a long copy), while this test sends `signal` after the folder exists.
+ * @param {"plain" | "own" | "throw"} mode
+ * @param {NodeJS.Signals | undefined} signal
+ */
+async function privateFolderRun(mode, signal) {
+  const dir = mkdtempSync(join(process.env.HOUSE_RULES_TEST_TMP || tmpdir(), "private-run-"));
+  try {
+    const module = fileURLToPath(new URL("../scripts/seat-launch.mjs", import.meta.url));
+    const script = join(dir, "run.mjs");
+    writeFileSync(
+      script,
+      `import { privateDir } from ${JSON.stringify(module)};
+import { writeFileSync } from "node:fs";
+const folder = privateDir();
+writeFileSync(folder + "/login-copy", "secret");
+console.log(folder);
+if (${JSON.stringify(mode)} === "own") process.on("SIGTERM", () => process.exit(7));
+if (${JSON.stringify(mode)} === "throw") throw new Error("boom");
+const end = Date.now() + 600;
+while (Date.now() < end) {}
+`,
+    );
+    const child = spawn(process.execPath, [script], { stdio: ["ignore", "pipe", "pipe"] });
+    let out = "";
+    child.stdout.on("data", (/** @type {Buffer} */ d) => {
+      out += d;
+      if (signal && out.includes("\n")) {
+        child.kill(signal);
+      }
+    });
+    const code = await new Promise((resolve) => child.on("close", (c, sig) => resolve(c ?? sig)));
+    const folder = out.trim().split("\n")[0] ?? "";
+    return { code, folder, left: folder !== "" && existsSync(folder) };
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+test(
+  "a stop that arrives while the private folder is being filled still removes it",
+  { skip: process.platform === "win32", timeout: 30000 },
+  async () => {
+    for (const [signal, code] of /** @type {const} */ ([
+      ["SIGTERM", 143],
+      ["SIGINT", 130],
+      ["SIGHUP", 129],
+    ])) {
+      const r = await privateFolderRun("plain", signal);
+      assert.equal(r.code, code, signal);
+      assert.notEqual(r.folder, "");
+      assert.equal(r.left, false, `${signal}: the folder is gone`);
+    }
+    const finished = await privateFolderRun("plain", undefined);
+    assert.equal(finished.code, 0);
+    assert.equal(finished.left, false, "normal exit");
+    const thrown = await privateFolderRun("throw", undefined);
+    assert.notEqual(thrown.code, 0);
+    assert.equal(thrown.left, false, "uncaught exception");
+  },
+);
+test(
+  "the startup stop handler stands aside once the client installs its own",
+  { skip: process.platform === "win32", timeout: 30000 },
+  async () => {
+    const r = await privateFolderRun("own", "SIGTERM");
+    assert.equal(r.code, 7, "the later handler decided the exit");
+    assert.equal(r.left, false);
   },
 );

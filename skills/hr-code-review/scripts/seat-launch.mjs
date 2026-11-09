@@ -18,7 +18,7 @@ import {
   statSync,
   writeFileSync,
 } from "node:fs";
-import { tmpdir } from "node:os";
+import { constants as osConstants, tmpdir } from "node:os";
 import { basename, delimiter, dirname, isAbsolute, join, resolve, sep } from "node:path";
 
 // A seat's environment: named locale, path, proxy and certificate variables plus its own agent's login
@@ -518,6 +518,16 @@ export function privateDir() {
     chmodSync(privateDirPath, 0o700);
     const dir = privateDirPath;
     process.on("exit", () => rmSync(dir, { recursive: true, force: true }));
+    // A stop that arrives while the folder is being filled (a login copied into it, say) ends the client
+    // through the exit hook above; with no handler the process would die without it. Once the client
+    // installs its own handlers for these signals this one stands aside.
+    for (const sig of /** @type {const} */ (["SIGTERM", "SIGINT", "SIGHUP"])) {
+      process.on(sig, () => {
+        if (process.listenerCount(sig) === 1) {
+          process.exit(128 + osConstants.signals[sig]);
+        }
+      });
+    }
   }
   return privateDirPath;
 }

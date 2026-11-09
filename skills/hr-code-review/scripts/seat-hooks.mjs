@@ -52,12 +52,15 @@ function hooksOff(serverCmd, cmd, env, masked, cwd, refuse) {
   if (!mayStartAgy(serverCmd, process.env.PATH, cwd) || masked) {
     return { cmd, env };
   }
-  const own = cmd.some((a) => /^--gemini[-_]dir(=|$)/.test(a));
+  // Flags that move where agy keeps its configuration (one or two dashes, `=` or a separate value).
+  const own = cmd.some((a) =>
+    /^--?(gemini[-_]dir|app[-_]data[-_]dir|cli[-_]dir[-_]name)(=|$)/.test(a),
+  );
   if (windows || own || exeName(cmd[0] ?? "") !== "agy" || cmd[1] !== "acp") {
     return refuse(
       unmasked(
         own
-          ? "the agy launch names its own --gemini-dir, whose hooks and MCP servers the client cannot see"
+          ? "the agy launch moves its own configuration folders (--gemini-dir, --app-data-dir, --cli_dir_name), whose hooks and MCP servers the client cannot see"
           : "the launch may start agy in a form the client cannot give a private Gemini folder (only `agy acp` on Linux and macOS)",
       ),
     );
