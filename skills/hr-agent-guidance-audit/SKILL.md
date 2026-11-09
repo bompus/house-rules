@@ -35,6 +35,10 @@ actions, a "never" rule whose exception sits on another line.
 Establish what behavior or decision the text supports before removing
 it. Preserve explicit user choices, domain safeguards and useful rationale;
 absence of a recent caller or a short file is not proof of redundancy.
+Keep a considered-and-rejected list beside the audit's backlog: each candidate
+you checked and found by design, settled by a recorded decision or wrongly
+attributed, with the reason. Read it first on the next audit and skip what it
+lists unless the reason no longer holds.
 
 When a prompt-audit tool is installed (on Claude Code, the `claude-api`
 skill's `prompt-audit`, where present), also run it report-only over the

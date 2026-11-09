@@ -18,6 +18,19 @@ many decisions from the conversation that a brief would be long or lose them;
 a fork costs more context and time than a brief. Never fork a reviewer or panel
 seat: it inherits the author's reasoning, so it is not independent.
 
+A brief or plan you hand to another agent to carry out in a Git repository also
+states the commit it was written against (short SHA and date). The executor first
+runs, from the repository root, `git diff --stat <sha> -- <in-scope paths>` (it
+compares the working tree with that commit, so uncommitted edits to tracked files
+show) and `git status --short -- <in-scope paths>` (untracked files). If either
+shows a change, or the SHA does not resolve, it reports the changed paths before
+acting on them, instead of working from a stale plan. The brief names its "if X,
+stop and report" cases as a list, for example: a file in scope no longer matches
+the excerpt, a premise in the brief is false, a step's check fails twice, a needed
+change falls outside the listed scope. That list is the fuller form of the stop
+condition in a task prompt (see "Ask for a bounded result" below). Quote code in
+a brief or plan only from files you opened yourself.
+
 Split standards by where they are enforced. Give implementers the task, file
 boundaries, public APIs and load-bearing architectural constraints, even ones
 no tool can check. Keep style and judgment calls for the review pass, where the
@@ -27,6 +40,13 @@ linter, type check or automated gate can enforce belongs in tooling for both,
 never in prose for either. When no second reviewer runs, the user's direction
 is the only judgment backstop; say so instead of assuming review happened.
 Asking an advisor model is not a second review.
+
+The rule to search the whole repository yourself before building on a worker's
+claim extends to each location a finding rests on: before a helper's finding reaches
+the user or a plan, open the cited file and line yourself and confirm them. A
+helper's line numbers and attributions are leads, not facts. Expect three
+failures: a by-design behavior reported as a bug, a real finding at the wrong
+file or line, and one finding from two helpers. Downgrade, correct or drop each.
 
 After a model review, treat each finding as a claim. Fix it when a reproduced
 failure (a test that fails before the fix, where one fits) or a cited
@@ -156,7 +176,7 @@ for progress.
   in its task prompt and naming the one folder it may write, not by choosing a
   mode that blocks it.
 - Ask for a bounded result: name what the report must contain and the stop
-  condition in the prompt. Give no word limit; a model that follows limits
+  cases as a list in the prompt. Give no word limit; a model that follows limits
   closely meets one by dropping findings.
 - Check once about two minutes after launching: `t3_thread_read` must show
   `pendingRequestCount` 0 and an `updatedAt` after the start. A count above zero
