@@ -413,10 +413,11 @@ export function cleanPath(pathVar, root) {
     }
     try {
       // The canonical folder is kept, not the alias that was checked: a link retargeted later changes nothing.
-      const real = realpathSync(dir);
-      // A canonical folder whose name holds the delimiter would split into other entries.
-      if (real !== base && !real.startsWith(base + sep) && !real.includes(delimiter)) {
-        kept.push(real);
+      const real = realpathSync.native(dir);
+      if (real !== base && !real.startsWith(base + sep)) {
+        // A canonical folder whose name holds the delimiter would split into other entries: the entry
+        // as given (it holds none) stands for it.
+        kept.push(real.includes(delimiter) ? dir : real);
       }
     } catch {
       // Not a folder here.
@@ -455,13 +456,15 @@ export function pathExecutable(name, pathVar, root, canonical = true) {
     if (!isAbsolute(dir)) {
       continue;
     }
-    for (const candidate of names.map((n) => join(dir, n))) {
+    // The entry is joined by concatenation and resolved by the system: `join` would drop a `..` that
+    // follows a link before the system applied it.
+    for (const candidate of names.map((n) => `${dir}${dir.endsWith(sep) ? "" : sep}${n}`)) {
       try {
         accessSync(candidate, constants.X_OK);
-        const target = realpathSync(candidate);
-        if (statSync(target).isFile() && !inside(target) && !inside(realpathSync(dir))) {
+        const target = realpathSync.native(candidate);
+        if (statSync(target).isFile() && !inside(target) && !inside(realpathSync.native(dir))) {
           // The canonical path, not the entry's alias: a link swapped after this check changes nothing.
-          return canonical ? target : join(realpathSync(dir), basename(candidate));
+          return canonical ? target : join(realpathSync.native(dir), basename(candidate));
         }
       } catch {
         // Not here.

@@ -1096,33 +1096,37 @@ test(
   },
 );
 
-test("absoluteFirst makes only a relative path absolute, keeps a trailing slash, and leaves bare names", () => {
-  const refuse = /** @type {(m: string) => never} */ (
-    (m) => {
-      throw new Error(m);
+test(
+  "absoluteFirst makes only a relative path absolute, keeps a trailing slash, and leaves bare names",
+  { skip: process.platform === "win32" },
+  () => {
+    const refuse = /** @type {(m: string) => never} */ (
+      (m) => {
+        throw new Error(m);
+      }
+    );
+    const root = mkdtempSync(join(process.env.HOUSE_RULES_TEST_TMP || tmpdir(), "abs-first-"));
+    try {
+      assert.deepEqual(absoluteFirst(["claude-agent-acp", "x"], root, refuse), [
+        "claude-agent-acp",
+        "x",
+      ]);
+      assert.deepEqual(absoluteFirst(["/usr/bin/env", "x"], root, refuse), ["/usr/bin/env", "x"]);
+      assert.deepEqual(absoluteFirst([], root, refuse), []);
+      const abs = absoluteFirst(["../tool", "a"], root, refuse);
+      assert.ok(abs[0]?.startsWith("/") && abs[0].endsWith("/tool") && abs[1] === "a");
+      const dir = absoluteFirst(["./tools/"], root, refuse);
+      assert.ok(dir[0]?.endsWith("/tools/"), "the trailing slash stays");
+      if (process.platform !== "win32") {
+        assert.deepEqual(absoluteFirst(["claude\\adapter"], root, refuse), ["claude\\adapter"]);
+        // A trailing backslash is part of the name on POSIX, not a separator.
+        assert.ok(!absoluteFirst(["./adapter\\"], root, refuse)[0]?.endsWith("/"));
+      }
+    } finally {
+      rmSync(root, { recursive: true, force: true });
     }
-  );
-  const root = mkdtempSync(join(process.env.HOUSE_RULES_TEST_TMP || tmpdir(), "abs-first-"));
-  try {
-    assert.deepEqual(absoluteFirst(["claude-agent-acp", "x"], root, refuse), [
-      "claude-agent-acp",
-      "x",
-    ]);
-    assert.deepEqual(absoluteFirst(["/usr/bin/env", "x"], root, refuse), ["/usr/bin/env", "x"]);
-    assert.deepEqual(absoluteFirst([], root, refuse), []);
-    const abs = absoluteFirst(["../tool", "a"], root, refuse);
-    assert.ok(abs[0]?.startsWith("/") && abs[0].endsWith("/tool") && abs[1] === "a");
-    const dir = absoluteFirst(["./tools/"], root, refuse);
-    assert.ok(dir[0]?.endsWith("/tools/"), "the trailing slash stays");
-    if (process.platform !== "win32") {
-      assert.deepEqual(absoluteFirst(["claude\\adapter"], root, refuse), ["claude\\adapter"]);
-      // A trailing backslash is part of the name on POSIX, not a separator.
-      assert.ok(!absoluteFirst(["./adapter\\"], root, refuse)[0]?.endsWith("/"));
-    }
-  } finally {
-    rmSync(root, { recursive: true, force: true });
-  }
-});
+  },
+);
 
 test(
   "absoluteFirst follows a link before a `..` the way the system does",
@@ -1153,7 +1157,7 @@ test(
 );
 
 test(
-  "cleanPath drops a folder whose canonical path holds the PATH delimiter",
+  "cleanPath keeps the entry as given for a folder whose canonical path holds the PATH delimiter",
   { skip: process.platform === "win32" },
   () => {
     const dir = mkdtempSync(join(process.env.HOUSE_RULES_TEST_TMP || tmpdir(), "clean-delim-"));
@@ -1164,7 +1168,7 @@ test(
       mkdirSync(join(dir, "plain"));
       symlinkSync(join(dir, "a:b"), join(dir, "alias"));
       const kept = cleanPath(`${join(dir, "alias")}:${join(dir, "plain")}`, root);
-      assert.equal(kept, realpathSync(join(dir, "plain")));
+      assert.equal(kept, `${join(dir, "alias")}:${realpathSync(join(dir, "plain"))}`);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

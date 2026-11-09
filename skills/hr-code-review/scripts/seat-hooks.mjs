@@ -6,7 +6,7 @@
 // rest covered with `--policy-option hooks-masked`.
 import { chmodSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { basename, delimiter, dirname, isAbsolute, join, resolve, sep } from "node:path";
+import { basename, delimiter, dirname, isAbsolute, join, sep } from "node:path";
 import {
   bunHardened,
   cleanPath,
@@ -36,10 +36,14 @@ const PATH_VALUED = new Set(
  * @param {string} value
  */
 function relativePath(name, value) {
-  const known = PATH_VALUED.has(name.toUpperCase());
-  return value
-    .split(delimiter)
-    .some((part) => (known ? part !== "" && !isAbsolute(part) : /^\.\.?([\\/]|$)/.test(part)));
+  const upper = name.toUpperCase();
+  if (PATH_VALUED.has(upper)) {
+    // One path, except for the one variable that is a list; a `:` in a single path is part of its name.
+    return (upper === "SSL_CERT_DIR" ? value.split(delimiter) : [value]).some(
+      (part) => part !== "" && !isAbsolute(part),
+    );
+  }
+  return value.split(delimiter).some((part) => /^\.\.?([\\/]|$)/.test(part));
 }
 // Variables that say where a package runner installs or caches what it runs.
 const CACHE_VARIABLES = [
@@ -97,14 +101,16 @@ export function absoluteFirst(cmd, cwd, refuse) {
   // `..` applies (`link/..` is not lexically removed), and a trailing separator stays (`./x/` is a folder).
   const trailing = process.platform === "win32" ? /[\\/]$/ : /\/$/;
   const body = trailing.test(first) ? first.slice(0, -1) : first;
-  let from = resolve(body);
+  // Where the path cannot be followed (a part of it does not exist), it stays as written, joined to the
+  // client's folder without normalizing, so the launch fails the way it would on its own.
+  let from = `${process.cwd()}${sep}${body}`;
   try {
     from =
       basename(body) === "." || basename(body) === ".."
         ? realpathSync.native(body)
         : join(realpathSync.native(dirname(body)), basename(body));
   } catch {
-    // Not there (yet): the lexical path stands, and the launch fails by itself.
+    // Not there: the path stays as written.
   }
   if (trailing.test(first)) {
     from += sep;

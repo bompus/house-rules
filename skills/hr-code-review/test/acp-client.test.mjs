@@ -176,7 +176,18 @@ function run(
     writeFileSync(join(root, "payload"), body, { mode: 0o755 });
     symlinkSync(join(root, "payload"), join(dir, "global", launcher));
     server[0] = launcher;
-    env.PATH = `../safe:${join(dir, "global")}:${process.env.PATH}`;
+    env.PATH = `../safe:${join(dir, "global")}:/usr/bin:/bin`;
+  }
+  if (config.bareLink) {
+    // A PATH folder written with a `..` after a link: the system applies the link first.
+    mkdirSync(join(dir, "physical", "deep"), { recursive: true });
+    mkdirSync(join(dir, "physical", "bin"));
+    mkdirSync(join(dir, "lex"));
+    symlinkSync(join(dir, "physical", "deep"), join(dir, "lex", "link"));
+    const body = `#!/bin/sh\nexec "${process.execPath}" "${fakePath}" "$@"\n`;
+    writeFileSync(join(dir, "physical", "bin", launcher), body, { mode: 0o755 });
+    server[0] = launcher;
+    env.PATH = `${join(dir, "lex", "link")}/../bin:/usr/bin:/bin`;
   }
   const outside = join(dir, "outside.txt");
   if (config.symlinkAnswer || config.hardlinkAnswer) {
@@ -2599,5 +2610,28 @@ test(
     assert.equal(r.code, 2, r.error);
     assert.match(r.error, /is not on PATH outside the review checkout/);
     assert.equal(r.launch, null);
+  },
+);
+
+test(
+  "a valid absolute path with a colon in a single-path variable launches, and a list variable may hold several",
+  POSIX_ONLY,
+  () => {
+    const ok = run({
+      launcher: "claude-agent-acp",
+      serverArgs: [],
+      env: { HOME: "%DIR%/home:dummy", SSL_CERT_DIR: "%DIR%/certs:%DIR%/more" },
+    });
+    assert.equal(ok.code, 0, ok.error);
+  },
+);
+
+test(
+  "a bare program in a PATH folder written with `..` after a link is found where the system looks",
+  POSIX_ONLY,
+  () => {
+    const r = run({ launcher: "claude-agent-acp", serverArgs: [], bareLink: true });
+    assert.equal(r.code, 0, r.error);
+    assert.deepEqual(r.launch?.cwdEntries, []);
   },
 );
