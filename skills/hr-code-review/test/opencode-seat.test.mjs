@@ -1791,3 +1791,74 @@ test(
     }
   },
 );
+
+test("every config key that can restrict reads is honored: wildcard tool names, pattern maps for *, agents, tools, native permissions", () => {
+  const dir = scratch("opencode-readkeys");
+  try {
+    const denials = (/** @type {unknown} */ config) => {
+      writeFileSync(join(dir, "opencode.json"), JSON.stringify(config));
+      return userReadDenials(dir);
+    };
+    assert.deepEqual(denials({ permission: { "r*": "deny" } }), ["*"], "a wildcard tool name");
+    assert.deepEqual(denials({ permission: { "?ead": "ask" } }), ["*"]);
+    assert.deepEqual(
+      denials({ permission: { "*": { "*.key": "deny" } } }),
+      ["*.key"],
+      "a pattern map for *",
+    );
+    assert.deepEqual(denials({ permission: { "r*": { "a/*": "ask", "b/*": "allow" } } }), ["a/*"]);
+    assert.deepEqual(
+      denials({ permission: { bash: "deny", edit: "ask" } }),
+      [],
+      "other tools do not count",
+    );
+    assert.deepEqual(
+      denials({ agent: { "panel-seat": { permission: { read: { "*.key": "deny" } } } } }),
+      ["*.key"],
+      "an agent definition",
+    );
+    assert.deepEqual(denials({ agent: { build: { permission: { bash: "deny" } } } }), []);
+    assert.deepEqual(denials({ tools: { read: false } }), ["*"], "the older tools switch");
+    assert.deepEqual(denials({ tools: { "r*": false } }), ["*"]);
+    assert.deepEqual(denials({ tools: { read: true, bash: false } }), []);
+    assert.deepEqual(denials({ agent: { build: { tools: { read: false } } } }), ["*"]);
+    assert.deepEqual(
+      denials({ permissions: [{ action: "read", resource: "*.key", effect: "deny" }] }),
+      ["*.key"],
+      "the native permissions list",
+    );
+    assert.deepEqual(denials({ permissions: [{ action: "read", effect: "deny" }] }), ["*"]);
+    assert.deepEqual(
+      denials({ permissions: [{ action: "read", resource: "x", effect: "allow" }] }),
+      [],
+    );
+    for (const bad of [{ agent: 3 }, { tools: [] }, { permissions: {} }, { permissions: [1] }]) {
+      assert.throws(() => denials(bad), /does not understand/, JSON.stringify(bad));
+    }
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+test(
+  "patterns match the way OpenCode matches: backslashes are slashes, a trailing ' *' may match nothing",
+  { skip: process.platform === "win32" },
+  async () => {
+    const dir = scratch("opencode-normalize");
+    try {
+      mkdirSync(join(dir, "secrets"));
+      writeFileSync(join(dir, "secrets", "secret.key"), "x");
+      writeFileSync(join(dir, "secret"), "x");
+      writeFileSync(join(dir, "secret extra"), "x");
+      writeFileSync(join(dir, "plain.txt"), "x");
+      assert.deepEqual(await copied(dir, ["secrets\\*"]), ["plain.txt", "secret", "secret extra"]);
+      assert.deepEqual(await copied(dir, ["secret *"]), ["plain.txt", "secrets/secret.key"]);
+      assert.deepEqual(await copied(dir, ["secrets/*.key"]), [
+        "plain.txt",
+        "secret",
+        "secret extra",
+      ]);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  },
+);

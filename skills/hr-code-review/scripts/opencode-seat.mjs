@@ -152,14 +152,16 @@ const ETC =
 const isEnvFile = (/** @type {string} */ name) =>
   name.endsWith(".env") || (name.includes(".env.") && !name.endsWith(".env.example"));
 // A superset of how OpenCode matches a pattern: `*` and `**` match any run of characters, `?` one.
-const globRegex = (/** @type {string} */ pattern) =>
-  new RegExp(
-    `^${pattern
-      .replace(/[.+^${}()|[\]\\]/g, "\\$&")
-      .replace(/\*+/g, ".*")
-      .replace(/\?/g, ".")}$`,
-    "s",
-  );
+const globRegex = (/** @type {string} */ pattern) => {
+  // OpenCode matches with `/` for both separators, and lets a trailing " *" match an absent suffix.
+  const text = pattern.replaceAll("\\", "/");
+  const optional = text.endsWith(" *");
+  const body = (optional ? text.slice(0, -2) : text)
+    .replace(/[.+^${}()|[\]\\]/g, "\\$&")
+    .replace(/\*+/g, ".*")
+    .replace(/\?/g, ".");
+  return new RegExp(`^${body}${optional ? "( .*)?" : ""}$`, "s");
+};
 const MAX_ENTRIES = 200_000;
 const MAX_FILES = 100_000;
 const MAX_BYTES = 512 * 1024 * 1024;
@@ -180,7 +182,14 @@ export function deniedBy(dir, denied, home) {
   return (path) =>
     isEnvFile(basename(path)) ||
     (basename(path) === "config" && basename(dirname(path)) === ".git") ||
-    patterns.some((re) => re.test(basename(path)) || re.test(relative(dir, path)) || re.test(path));
+    patterns.some((re) => {
+      const slashed = (/** @type {string} */ p) => p.replaceAll("\\", "/");
+      return (
+        re.test(slashed(basename(path))) ||
+        re.test(slashed(relative(dir, path))) ||
+        re.test(slashed(path))
+      );
+    });
 }
 /**
  * Copies the regular files of the review root `dir` into a new private folder under `parent` (mode
@@ -524,6 +533,14 @@ export function userReadDenials(configDir) {
   const denied = [];
   let everything = false;
   const actions = new Set(["allow", "ask", "deny"]);
+  const isAction = (/** @type {unknown} */ v) => typeof v === "string" && actions.has(v);
+  const isRecord = (/** @type {unknown} */ v) =>
+    typeof v === "object" && v !== null && !Array.isArray(v);
+  /** @param {unknown} v @returns {[string, unknown][]} */
+  const entriesOf = (v) => Object.entries(/** @type {Record<string, unknown>} */ (v));
+  // OpenCode matches a tool name against a permission key as a glob, so every key that matches "read"
+  // (`read`, `*`, `r*`, `?ead`) restricts reads.
+  const forRead = (/** @type {string} */ key) => globRegex(key).test("read");
   // OpenCode loads both files when both exist, so the denials of each count; both are always read, so a
   // second file that cannot be used refuses the run even when the first already denies everything.
   for (const name of ["opencode.json", "opencode.jsonc"]) {
@@ -549,42 +566,80 @@ export function userReadDenials(configDir) {
     }
     const unsupported = (/** @type {string} */ where) =>
       new Error(`${path}: ${where} has a value this seat does not understand; fix it or remove it`);
-    const isAction = (/** @type {unknown} */ v) => typeof v === "string" && actions.has(v);
-    const isRecord = (/** @type {unknown} */ v) =>
-      typeof v === "object" && v !== null && !Array.isArray(v);
-    const permission = config?.permission;
-    if (permission === undefined) {
-      continue;
-    }
-    // A default that denies or asks for everything (`permission: "deny"`, `{"*": "deny"}`), and a
-    // whole-tool "deny" or "ask" for read, become a final deny-all: the seat then reads nothing. A value
-    // of another shape is refused, never read as "no denial".
-    if (isAction(permission)) {
-      everything ||= permission !== "allow";
-      continue;
-    }
-    if (!isRecord(permission)) {
-      throw unsupported("permission");
-    }
-    for (const key of ["*", "read"]) {
-      const value = permission[key];
-      if (value !== undefined && !isAction(value) && !(key === "read" && isRecord(value))) {
-        throw unsupported(`permission.${key}`);
+    // One `permission` value: an action for every tool, or a map of tool names to an action or to a map of
+    // patterns to actions. A deny or ask for read, or for everything, is a final deny-all; patterns that
+    // deny or ask are collected. A value of another shape is refused, never read as "no denial".
+    const collect = (/** @type {unknown} */ permission, /** @type {string} */ where) => {
+      if (permission === undefined) {
+        return;
+      }
+      if (isAction(permission)) {
+        everything ||= permission !== "allow";
+        return;
+      }
+      if (!isRecord(permission)) {
+        throw unsupported(where);
+      }
+      for (const [key, value] of entriesOf(permission)) {
+        if (!forRead(key)) {
+          continue;
+        }
+        if (isAction(value)) {
+          everything ||= value !== "allow";
+        } else if (isRecord(value)) {
+          for (const [pattern, action] of entriesOf(value)) {
+            if (!isAction(action)) {
+              throw unsupported(`${where}.${key}["${pattern}"]`);
+            }
+            if (action !== "allow") {
+              denied.push(pattern);
+            }
+          }
+        } else {
+          throw unsupported(`${where}.${key}`);
+        }
+      }
+    };
+    collect(config?.permission, "permission");
+    // The same keys elsewhere that restrict reads: agent definitions (any agent may be the seat's), the
+    // older `tools` switches (a disabled read tool is a deny-all), and the native `permissions` list.
+    if (config?.agent !== undefined) {
+      if (!isRecord(config.agent)) {
+        throw unsupported("agent");
+      }
+      for (const [agent, definition] of Object.entries(config.agent)) {
+        if (isRecord(definition)) {
+          collect(definition.permission, `agent.${agent}.permission`);
+          if (isRecord(definition.tools)) {
+            everything ||= Object.entries(definition.tools).some(
+              ([key, value]) => forRead(key) && value === false,
+            );
+          }
+        }
       }
     }
-    if (permission["*"] === "deny" || permission["*"] === "ask") {
-      everything = true;
+    if (config?.tools !== undefined) {
+      if (!isRecord(config.tools)) {
+        throw unsupported("tools");
+      }
+      everything ||= Object.entries(config.tools).some(
+        ([key, value]) => forRead(key) && value === false,
+      );
     }
-    const read = permission.read;
-    if (read === "deny" || read === "ask") {
-      everything = true;
-    } else if (isRecord(read)) {
-      for (const [pattern, value] of Object.entries(read)) {
-        if (!isAction(value)) {
-          throw unsupported(`permission.read["${pattern}"]`);
+    if (config?.permissions !== undefined) {
+      if (!Array.isArray(config.permissions)) {
+        throw unsupported("permissions");
+      }
+      for (const entry of config.permissions) {
+        if (!isRecord(entry) || typeof entry.action !== "string") {
+          throw unsupported("permissions[]");
         }
-        if (value !== "allow") {
-          denied.push(pattern);
+        if (forRead(entry.action) && entry.effect !== "allow") {
+          if (typeof entry.resource === "string") {
+            denied.push(entry.resource);
+          } else {
+            everything = true;
+          }
         }
       }
     }

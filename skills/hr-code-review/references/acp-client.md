@@ -194,11 +194,12 @@ after global ones.
 Read patterns the user's own global OpenCode config (`opencode.json` and `opencode.jsonc`, both read) denies or
 asks about stay denied, placed after every rule of the seat's own because the last
 matching rule decides, and a default or whole-tool deny or ask there (`permission: "deny"`, `{"*": "deny"}`, or for read alone)
-becomes a final deny-all (a config file that exists but this runtime cannot read or parse, such as comments in it
-under Node, refuses the run with exit 2, and so does a permission value of a shape the seat does not understand; both files are always checked; a missing file is optional; comments need Bun). Project configuration and Claude Code compatibility are
+becomes a final deny-all. Project configuration and Claude Code compatibility are
 off, and the prompt is an attached file. It writes OpenCode's JSON events to
 stdout and passes its exit status through; a stop sent to it goes on to OpenCode,
 with a forced kill after 5 seconds.
+
+A config file that exists but this runtime cannot read or parse (comments under Node; they need Bun) refuses the run with exit 2, and so does a permission value of a shape the seat does not understand; both files are always checked, and a missing file is optional. Every key that matches `read` counts (`read`, `*`, `r*`; also under `agent.*.permission`, a disabled `tools.read` and a native `permissions` list). Patterns match as OpenCode matches them: `\\` is `/`, and a trailing ` *` may match nothing.
 
 On Linux it also runs OpenCode under bubblewrap (`bwrap` must be installed; the
 seat exits 127 without it), because OpenCode treats a whole git project as inside
