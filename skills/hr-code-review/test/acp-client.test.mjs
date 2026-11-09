@@ -2477,26 +2477,54 @@ test(
       env: { BUN_INSTALL_CACHE_DIR: "%DIR%/cache-elsewhere" },
     });
     assert.equal(outside.code, 0, outside.error);
+    // A relative value means another folder to a server that starts elsewhere than the checks did.
+    const relative = run({
+      devinShim: true,
+      serverArgs: ["acp"],
+      env: { BUN_INSTALL_CACHE_DIR: "../../../repo/cache" },
+    });
+    assert.equal(relative.code, 2);
+    assert.match(relative.error, /is not an absolute path/);
+    // A seat HOME inside the checkout makes every default cache location one inside it.
+    const home = run({ env: { HOME: "%DIR%/repo/home" } }, [], (root) =>
+      mkdirSync(join(root, "home")),
+    );
+    assert.equal(home.code, 2);
+    assert.match(home.error, /HOME=.* is inside the review checkout/);
+    // A path that does not exist yet below a link into the checkout is inside it.
+    const missing = run(
+      { devinShim: true, serverArgs: ["acp"], env: { BUN_INSTALL_CACHE_DIR: "%DIR%/alias/new" } },
+      [],
+      (root, dir) => {
+        mkdirSync(join(root, "cache"));
+        symlinkSync(join(root, "cache"), join(dir, "alias"));
+      },
+    );
+    assert.equal(missing.code, 2);
+    assert.match(missing.error, /BUN_INSTALL_CACHE_DIR=.* is inside the review checkout/);
   },
 );
 test(
-  "the PATH of an isolated server has every entry absolute, from the review root, as it was checked",
+  "an isolated server's PATH keeps only absolute folders outside the review checkout",
   POSIX_ONLY,
   () => {
-    const r = run({
-      devinShim: true,
-      serverArgs: ["acp"],
-      env: { PATH: `rel/bin::${process.env.PATH}` },
-    });
+    const prepare = (/** @type {string} */ root) => mkdirSync(join(root, "bin"));
+    const r = run(
+      {
+        devinShim: true,
+        serverArgs: ["acp"],
+        env: { PATH: `rel/bin::%DIR%/repo/bin:${process.env.PATH}` },
+      },
+      [],
+      prepare,
+    );
     assert.equal(r.code, 0, r.error);
     const entries = String(r.launch?.path ?? "").split(":");
-    assert.ok(entries.length > 2);
+    assert.ok(entries.length > 0);
     assert.ok(
-      entries.every((e) => e.startsWith("/")),
+      entries.every((e) => e.startsWith("/") && !e.includes("/repo")),
       entries.join(":"),
     );
-    assert.ok(entries[0]?.endsWith("/repo/rel/bin"), "a relative entry means the review root");
-    assert.ok(entries[1]?.endsWith("/repo"), "an empty entry means the review root");
   },
 );
 test(

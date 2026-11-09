@@ -414,7 +414,8 @@ export function cleanPath(pathVar, root) {
     try {
       // The canonical folder is kept, not the alias that was checked: a link retargeted later changes nothing.
       const real = realpathSync(dir);
-      if (real !== base && !real.startsWith(base + sep)) {
+      // A canonical folder whose name holds the delimiter would split into other entries.
+      if (real !== base && !real.startsWith(base + sep) && !real.includes(delimiter)) {
         kept.push(real);
       }
     } catch {

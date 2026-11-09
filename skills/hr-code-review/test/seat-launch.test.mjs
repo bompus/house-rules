@@ -1116,6 +1116,8 @@ test("absoluteFirst makes only a relative path absolute, keeps a trailing slash,
     assert.ok(dir[0]?.endsWith("/tools/"), "the trailing slash stays");
     if (process.platform !== "win32") {
       assert.deepEqual(absoluteFirst(["claude\\adapter"], root, refuse), ["claude\\adapter"]);
+      // A trailing backslash is part of the name on POSIX, not a separator.
+      assert.ok(!absoluteFirst(["./adapter\\"], root, refuse)[0]?.endsWith("/"));
     }
   } finally {
     rmSync(root, { recursive: true, force: true });

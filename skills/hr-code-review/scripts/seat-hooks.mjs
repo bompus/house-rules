@@ -6,9 +6,10 @@
 // rest covered with `--policy-option hooks-masked`.
 import { chmodSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { delimiter, isAbsolute, join, resolve, sep } from "node:path";
+import { basename, dirname, isAbsolute, join, resolve, sep } from "node:path";
 import {
   bunHardened,
+  cleanPath,
   codexWrapper,
   devinConfig,
   exeName,
@@ -22,6 +23,7 @@ import {
 
 // Variables that say where a package runner installs or caches what it runs.
 const CACHE_VARIABLES = [
+  "HOME",
   "BUN_INSTALL",
   "BUN_INSTALL_CACHE_DIR",
   "BUN_INSTALL_BIN",
@@ -34,12 +36,24 @@ const CACHE_VARIABLES = [
  * @param {string} path
  */
 function inside(base, path) {
-  let real = path;
-  try {
-    real = realpathSync(path);
-  } catch {
-    // Not there (yet): the lexical path stands.
+  // The deepest part that exists is resolved, links followed, and the rest is appended: a path that does
+  // not exist yet below a link into the checkout is inside it.
+  let head = resolve(path);
+  const rest = [];
+  for (;;) {
+    try {
+      head = realpathSync(head);
+      break;
+    } catch {
+      const parent = dirname(head);
+      if (parent === head) {
+        break;
+      }
+      rest.unshift(basename(head));
+      head = parent;
+    }
   }
+  const real = join(head, ...rest);
   return real === base || real.startsWith(base + sep);
 }
 /**
@@ -59,7 +73,8 @@ export function absoluteFirst(cmd, cwd, refuse) {
     return cmd;
   }
   // `resolve` drops a trailing separator, which would turn `./x/` (a directory) into `x`.
-  const from = resolve(first) + (/[\\/]$/.test(first) ? sep : "");
+  const trailing = process.platform === "win32" ? /[\\/]$/ : /\/$/;
+  const from = resolve(first) + (trailing.test(first) ? sep : "");
   if (inside(reviewBase(cwd), from)) {
     refuse(
       `the server command ${first} resolves inside the review checkout (${from}); give an absolute path to run a program from there`,
@@ -190,22 +205,25 @@ export function seatLaunch(serverCmd, { noWeb, cwd, codex, masked, refuse }) {
   // --no-install` would run an adapter seeded there, from the checkout.
   for (const name of CACHE_VARIABLES) {
     const value = base[name];
-    if (value && inside(reviewBase(cwd), resolve(cwd, value))) {
+    if (value && !isAbsolute(value)) {
+      // A relative value means a different folder to a server that starts elsewhere than the checks did.
+      refuse(
+        `${name}=${value} is not an absolute path; give an absolute path outside the review checkout`,
+      );
+    }
+    if (value && inside(reviewBase(cwd), value)) {
       refuse(`${name}=${value} is inside the review checkout; point it outside`);
     }
   }
   const out = hooksOff(serverCmd, hardened, base, masked, cwd, refuse);
   const empty = isolated ? join(privateDir(), "server-cwd") : cwd;
   if (isolated) {
-    // The checks above looked each relative PATH entry up from the review root. The server starts
-    // elsewhere, so every entry (an empty one meant the starting folder) is made absolute from the
-    // review root: the program that runs is the one that was checked.
+    // A relative or empty PATH entry means the starting folder, which is no longer the folder the checks
+    // looked it up from, and an entry inside the checkout is not wanted either: the server's PATH keeps
+    // only the canonical absolute folders outside the checkout.
     const key = Object.keys(out.env).find((k) => k.toUpperCase() === "PATH");
     if (key && out.env[key] !== undefined) {
-      out.env[key] = (out.env[key] ?? "")
-        .split(delimiter)
-        .map((entry) => resolve(cwd, entry))
-        .join(delimiter);
+      out.env[key] = cleanPath(out.env[key], reviewBase(cwd));
     }
     mkdirSync(empty, { mode: 0o700 });
     // Below the checkout the folder would not be empty of its files: a runner looks in parent folders for
