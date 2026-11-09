@@ -28,7 +28,7 @@ import {
   reviewBase,
   seatAgent,
 } from "./seat-launch.mjs";
-import { seatLaunch } from "./seat-hooks.mjs";
+import { absoluteFirst, seatLaunch } from "./seat-hooks.mjs";
 const rawArgs = process.argv.slice(2);
 // A client log line. Control characters in seat-supplied text are written as \xNN, so a seat cannot
 // start a line of its own, such as a forged `[client] FATAL:` record.
@@ -124,8 +124,10 @@ function refuse(message) {
   log(`[client] FATAL: ${message}`);
   process.exit(2);
 }
-const serverCmd = /** @type {string[]} */ (JSON.parse(serverCmdJson));
+const refuseLaunch = /** @type {(message: string) => never} */ (refuse);
 const cwd = realpathSync(cwdArg || process.cwd());
+// A relative path as the launch's first word is made absolute here, before any launch is classified.
+const serverCmd = absoluteFirst(JSON.parse(serverCmdJson), cwd, refuseLaunch);
 // The answer goes to the physical path the output argument names now (a caller's symlink is followed
 // once, here); the write refuses a final symlink and a directory that is no longer this one.
 /** @type {string} */
@@ -199,7 +201,6 @@ if (policyPath) {
   }
 }
 
-const refuseLaunch = /** @type {(message: string) => never} */ (refuse);
 // Git runs in the review root after the seat worked there, and runs programs the repository's
 // configuration names, so it gets a seat's narrowed environment (plus the variables that locate a
 // repository, and a PATH outside the checkout) and the filesystem monitor is switched off.

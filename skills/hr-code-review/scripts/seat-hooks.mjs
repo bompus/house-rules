@@ -4,7 +4,7 @@
 // an empty configuration folder (its generated config has no hooks, see devinConfig) and Antigravity's
 // `agy acp` with a private Gemini folder that holds only the copied login. The caller declares the
 // rest covered with `--policy-option hooks-masked`.
-import { chmodSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { isAbsolute, join, resolve, sep } from "node:path";
 import {
@@ -20,6 +20,42 @@ import {
   seatEnv,
 } from "./seat-launch.mjs";
 
+/**
+ * Whether `path` (or what it resolves to, links followed) is `base` or below it.
+ * @param {string} base a canonical path
+ * @param {string} path
+ */
+function inside(base, path) {
+  let real = path;
+  try {
+    real = realpathSync(path);
+  } catch {
+    // Not there (yet): the lexical path stands.
+  }
+  return real === base || real.startsWith(base + sep);
+}
+/**
+ * The launch with a relative first word made absolute from the folder the client was started in (not
+ * the checkout, and not the empty folder a server may start in), so classification sees the program it
+ * will run; refused when it, links followed, lies inside the review checkout: give an absolute path to
+ * run a program from there. A bare name, found on PATH, and an absolute path stay as they are.
+ * @param {string[]} cmd
+ * @param {string} cwd the review root
+ * @param {(message: string) => never} refuse
+ */
+export function absoluteFirst(cmd, cwd, refuse) {
+  const first = cmd[0] ?? "";
+  if (!/[\\/]/.test(first) || isAbsolute(first)) {
+    return cmd;
+  }
+  const from = resolve(first);
+  if (inside(reviewBase(cwd), from)) {
+    refuse(
+      `the server command ${first} resolves inside the review checkout (${from}); give an absolute path to run a program from there`,
+    );
+  }
+  return [from, ...cmd.slice(1)];
+}
 // The only flags a seat passes to `agy acp` (one or two dashes; a value as `=V` or the next argument).
 // Any other can move agy's configuration folders, add directories whose agent folders it runs, open an
 // IDE MCP connection, change where the login goes, write a log through a link or approve tool calls.
@@ -132,22 +168,9 @@ export function seatLaunch(serverCmd, { noWeb, cwd, codex, masked, refuse }) {
   const isolated =
     (agent === "codex" || agent === "claude" || agent === "devin") &&
     !mayStartAgy(serverCmd, process.env.PATH, cwd);
-  const first = serverCmd[0] ?? "";
-  if (isolated && /[\\/]/.test(first) && !isAbsolute(first)) {
-    // A relative path in the launch means the folder the client was started from, not the empty folder
-    // and not the checkout.
-    const from = resolve(first);
-    const base = reviewBase(cwd);
-    if (from === base || from.startsWith(base + sep)) {
-      refuse(`the server command ${first} resolves to ${from}, inside the review checkout`);
-    }
-    serverCmd = [from, ...serverCmd.slice(1)];
-  }
-  // Where the closed class applies, nothing in the starting folder can be read, so the Bun checks that
-  // guess whether a launch is Bun are not needed.
-  const hardened = isolated
-    ? devinConfig(serverCmd, noWeb, cwd, refuse)
-    : bunHardened(devinConfig(serverCmd, noWeb, cwd, refuse), cwd, refuse);
+  // The launch checks (a program found outside the checkout, Bun's flags) apply to every launch: the
+  // empty folder is one more layer, and does not stop a program that changes directory itself.
+  const hardened = bunHardened(devinConfig(serverCmd, noWeb, cwd, refuse), cwd, refuse);
   const base = seatEnv(
     process.env,
     hardened,
@@ -157,6 +180,11 @@ export function seatLaunch(serverCmd, { noWeb, cwd, codex, masked, refuse }) {
   const empty = isolated ? join(privateDir(), "server-cwd") : cwd;
   if (isolated) {
     mkdirSync(empty, { mode: 0o700 });
+    // Below the checkout the folder would not be empty of its files: a runner looks in parent folders for
+    // a `package.json` and `node_modules/.bin`. The caller owns TMPDIR, which must lie outside it.
+    if (inside(reviewBase(cwd), empty)) {
+      refuse(`the temporary folder ${empty} is inside the review checkout; set TMPDIR outside it`);
+    }
   }
   return {
     cmd: out.cmd,

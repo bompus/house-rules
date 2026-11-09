@@ -150,6 +150,18 @@ function run(
     if (config.relativeFirst === "inside") {
       writeFileSync(join(root, launcher), body, { mode: 0o755 });
       server[0] = `repo/${launcher}`;
+    } else if (config.relativeFirst === "link") {
+      // A link in the run folder to a program inside the review root.
+      writeFileSync(join(root, "real"), body, { mode: 0o755 });
+      rmSync(join(dir, launcher), { force: true });
+      symlinkSync(join(root, "real"), join(dir, launcher));
+      server[0] = `./${launcher}`;
+    } else if (config.relativeFirst === "agy") {
+      // A link in the run folder, named like Claude's adapter, to a program that is agy.
+      const agy = shim("agy", `exec "${process.execPath}" "${fakePath}" "$@"`);
+      rmSync(join(dir, launcher), { force: true });
+      symlinkSync(agy, join(dir, launcher));
+      server[0] = `./${launcher}`;
     } else {
       server[0] = `./${launcher}`;
     }
@@ -2384,16 +2396,16 @@ test(
   },
 );
 test(
-  "a launch the client closes by its folder is not also held to the Bun checks, and others still are",
+  "the Bun launch checks still apply to a launch that starts in the empty folder",
   POSIX_ONLY,
   () => {
-    // `bunx --bun` is refused for a launch that starts in the checkout; a recognized adapter starts elsewhere.
     const args = ["--bun", "--package=@agentclientprotocol/claude-agent-acp", "claude-agent-acp"];
-    const recognized = run({ launcher: "bunx", serverArgs: args });
-    assert.equal(recognized.code, 0, recognized.error);
-    const other = run({ launcher: "bunx", serverArgs: ["--bun", "some-other-server"] });
-    assert.equal(other.code, 2);
-    assert.match(other.error, /bunx --bun/);
+    for (const serverArgs of [args, ["--bun", "some-other-server"]]) {
+      const r = run({ launcher: "bunx", serverArgs });
+      assert.equal(r.code, 2, serverArgs.join(" "));
+      assert.match(r.error, /bunx --bun/);
+      assert.equal(r.launch, null);
+    }
   },
 );
 test(
@@ -2407,5 +2419,40 @@ test(
     assert.equal(inside.code, 2);
     assert.match(inside.error, /inside the review checkout/);
     assert.equal(inside.launch, null);
+    const link = run({ devinShim: true, serverArgs: ["acp"], relativeFirst: "link" });
+    assert.equal(link.code, 2, "a link to a program in the checkout counts as inside");
+    assert.match(link.error, /inside the review checkout/);
+    // The same for a launch the client does not recognize.
+    const plain = run({ launcher: "some-server", serverArgs: [], relativeFirst: "inside" });
+    assert.equal(plain.code, 2);
+    assert.match(plain.error, /inside the review checkout/);
   },
 );
+test(
+  "a relative first word is classified by the program it names: a link to agy needs agy-masked",
+  POSIX_ONLY,
+  () => {
+    const config = { launcher: "claude-agent-acp", serverArgs: [], relativeFirst: "agy" };
+    const refused = run(config, ["--policy-option", "hooks-masked"], agyHome("t"));
+    assert.equal(refused.code, 2);
+    assert.match(refused.error, /may start agy/);
+    assert.equal(refused.launch, null);
+    const masked = run(
+      config,
+      ["--policy-option", "hooks-masked", "--policy-option", "agy-masked"],
+      agyHome("t"),
+    );
+    assert.equal(masked.code, 0, masked.error);
+    assert.equal(masked.launch?.cwd, sessionCwd(masked), "agy keeps the review root");
+  },
+);
+test("a temporary folder inside the review checkout refuses an isolated launch", POSIX_ONLY, () => {
+  const r = run(
+    { devinShim: true, serverArgs: ["acp"], env: { TMPDIR: "%DIR%/repo/tmp" } },
+    [],
+    (root) => mkdirSync(join(root, "tmp")),
+  );
+  assert.equal(r.code, 2);
+  assert.match(r.error, /inside the review checkout; set TMPDIR outside it/);
+  assert.equal(r.launch, null);
+});
