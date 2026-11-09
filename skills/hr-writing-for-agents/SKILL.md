@@ -96,7 +96,7 @@ Choose the instruction's form from the failure it fixes:
 | Leaves out a required element                | A required slot in the template it fills in       | A prose reminder near the template                       |
 | Behavior depends on a condition              | A conditional on something the agent can observe  | An unconditional rule with exemption clauses             |
 
-Exemption and nuance clauses leak: "don't X unless it matters" reopens the decision, and "this limit doesn't apply to code blocks" still suppresses code blocks. Express a real exception as its own conditional, or restructure so the rule cannot reach the exempt part.
+Exemption and nuance clauses leak: "don't X unless it matters" reopens the decision, and "this limit doesn't apply to code blocks" still suppresses code blocks. Express a real exception as its own conditional, or restructure so the rule cannot reach the exempt part. A step that needs approval is the case to restructure: write "get a go-ahead before X" and name the exact actions X covers. A "never X" rule with its approval path on a separate line is read as never, and a broad class ("risky actions", "messages to people outside") holds back routine work it was not meant to cover. Give an absolute rule its scope and reason in the same sentence.
 
 ## Pruning
 

@@ -155,7 +155,9 @@ for progress.
   or ask. Keep a child read-only by saying so
   in its task prompt and naming the one folder it may write, not by choosing a
   mode that blocks it.
-- Ask for a bounded result: a word limit and a stop condition in the prompt.
+- Ask for a bounded result: name what the report must contain and the stop
+  condition in the prompt. Give no word limit; a model that follows limits
+  closely meets one by dropping findings.
 - Check once about two minutes after launching: `t3_thread_read` must show
   `pendingRequestCount` 0 and an `updatedAt` after the start. A count above zero
   is not by itself a blockage: read the pending requests first (see

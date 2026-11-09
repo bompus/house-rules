@@ -28,15 +28,18 @@ audit or justifies moving text into another file.
 For each candidate, identify the concrete problem: unused guidance, repeated
 policy, contradiction, stale reference, unsupported assumption, unnecessary
 procedure, or wording tuned for an older model: caps emphasis without a reason,
-prose steering thinking depth, update suppressors, blanket formatting bans.
+prose steering thinking depth, update suppressors, blanket formatting bans, a
+request to write reasoning into the reply, a hard style cap (words per
+sentence), an approval rule that names a class of actions instead of the
+actions, a "never" rule whose exception sits on another line.
 Establish what behavior or decision the text supports before removing
 it. Preserve explicit user choices, domain safeguards and useful rationale;
 absence of a recent caller or a short file is not proof of redundancy.
 
 When a prompt-audit tool is installed (on Claude Code, the `claude-api`
-skill's `prompt-audit`, where present), also dispatch a subagent to run it
-report-only over the source files in scope, never installed copies, and return
-its findings. Treat them as candidates: map each to its
+skill's `prompt-audit`, where present), also run it report-only over the
+source files in scope, never installed copies; use a subagent for it only when
+the files would crowd your own context. Treat its findings as candidates: map each to its
 source owner, verify it like your own, settle duplication by the one-owner
 rule, and merge survivors into one list noting the source. When none is
 installed, record the skipped model-fit pass under coverage.

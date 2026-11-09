@@ -116,7 +116,7 @@ structure or maintainability.
 
 - The diff command and commit list.
 - The path or fetched contents of the spec.
-- The brief: "Report missing or partial requirements, behavior outside the requested scope, and incorrectly implemented requirements. Cite the requirement and code location for each finding. Keep findings concise, with enough evidence to assess their consequence. Where the spec is silent, what a reasonable user of this software would expect is still a requirement; grade it by its effect on that user. Before your verdict, list under `Declined to judge` every behavior you considered and set aside as out of scope, one line each with the reason, or write `none`."
+- The brief: "Report missing or partial requirements, behavior outside the requested scope, and incorrectly implemented requirements. Cite the requirement and code location for each finding. Keep findings concise, with enough evidence to assess their consequence. Where the spec is silent, what a reasonable user of this software would expect is still a requirement; grade it by its effect on that user. Before your verdict, list under `Declined to judge` every behavior in the change that you leave unjudged as out of scope, one line each with the reason, or write `none`."
 
 Ground findings in inspected code and cite their locations and applicable
 standards or requirements. Report concrete consequences; smells alone do not

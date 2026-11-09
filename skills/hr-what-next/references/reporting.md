@@ -3,8 +3,9 @@
 Lead with the answer or the concrete result. Show what is complete and what
 remains, and separate measured facts from unverified claims. Use numbered steps
 for actions the user must perform. Unless an offer, closeout, backlog,
-comparison table or numbered steps are due, answer in one paragraph that opens
-on the answer. Limits apply to the report, never to the investigation.
+comparison table or numbered steps are due, open on the answer: one paragraph
+when routine, longer when a report must stand alone. Limits apply to the
+report, never to the investigation.
 
 In user-facing replies, refer to other conversations by their current displayed
 titles, with links when available. Keep routing aliases and opaque identifiers
@@ -22,8 +23,8 @@ establishes it.
 For routine replies, aim for at most five items per list or group. Rank the
 items by relevance to the current task and retain undisplayed candidates in
 the ledger. When the user requests a full inventory, or needs more items to
-make a decision, show every relevant item. This presentation target does not
-limit investigation, required disclosures or the options required by § Offers.
+make a decision, show every relevant item. This target does not limit
+required disclosures or § Offers options.
 
 Use a visual when a chart, table, diagram, image collage or mockup would say more than prose, or when it makes a change or decision clearer. Build it self-contained, check how it renders and show it with the host's own preview or render tool before your final reply; without one, use a Markdown table or outline. The reply adds only what the visual does not say and still carries the answer and any offer. For interface changes prefer real before/after captures with comparable content, viewport and state; label mockups as illustrations. Give an interactive visual a text or static equivalent.
 

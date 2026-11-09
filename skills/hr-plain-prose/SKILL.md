@@ -175,7 +175,8 @@ self-reference ("As an AI..."). Start with the content.
   "has12unfinished" or "64MiBprocesspeak". Preserve literal identifiers and
   filenames byte-for-byte in code spans. Run the checker on outgoing drafts;
   correct its missing-space cues before sending. It cannot detect every joined word.
-- One idea per sentence. Split a sentence that joins two claims with "and".
+- One idea per sentence. Split a sentence that joins two unrelated claims with
+  "and"; keep a claim together with its reason or condition.
 - Use active voice with a named actor: "The scheduler drops the job", not "The
   job is dropped".
 - Write replies as complete sentences about the actual work. Translate plan
@@ -185,9 +186,10 @@ self-reference ("As an AI..."). Start with the content.
 - Before each decision question, explain what would change and why it matters
   to the user. Make clear what each answer authorizes, including the limits of
   the work. Already-clear facts need no repeated explanation.
-- Cap sentence length. Keep a step the reader carries out near 20 words and a
-  descriptive sentence near 25. A longer one usually holds two ideas. Vary the
-  length below the cap.
+- Watch sentence length. A step the reader carries out usually fits in about
+  20 words and a descriptive sentence in about 25; a longer one often holds two
+  ideas. These are cues to reread, not limits: vary the length, and leave whole
+  a sentence whose parts depend on each other.
 - Write each step as a command with one action, and put its condition first:
   "If the build fails, rerun it with `--verbose`." Two actions share a step
   only when they happen at the same time.

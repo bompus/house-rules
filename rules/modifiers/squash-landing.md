@@ -17,7 +17,6 @@ reports no quota or capacity is skipped; record which and why.
 During integration, never switch, reset, force-move or remove the session's
 checkout. After the merge, fetch first; move off a landed branch
 only when its content is in the base and the tree is clean. When the base is
-checked out elsewhere, detach at the fetched base. Never merge, reset or stash
-to move the checkout. Leave app-managed checkouts for the app to retire.
+checked out elsewhere, detach at the fetched base. Leave app-managed checkouts for the app to retire.
 If the tree is dirty, leave the checkout where it is and record the merged commit, its path and the blocker; the landing stands.
 Update the task record and follow § Cleanup after each landing.
