@@ -28,8 +28,9 @@ import {
   findBwrap,
   readPrompt,
   sandboxArgs,
-  userReadDenials,
+  deniedBy,
 } from "../scripts/opencode-seat.mjs";
+import { userReadDenials } from "../scripts/opencode-config.mjs";
 const script = fileURLToPath(new URL("../scripts/opencode-seat.mjs", import.meta.url));
 const POSIX_ONLY = { skip: process.platform === "win32" ? "needs POSIX executables" : false };
 const LINUX_ONLY = { skip: process.platform === "linux" ? false : "the sandbox is Linux only" };
@@ -1767,11 +1768,126 @@ test("both config files are always checked: a deny-all in one does not hide a br
       join(dir, "opencode.jsonc"),
       JSON.stringify({ permission: { read: { "*.x": "deny" } } }),
     );
+    assert.deepEqual(userReadDenials(dir), ["*", "*.x"]);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+test("a parse error's text, which can quote the file, stays out of the refusal", () => {
+  const dir = scratch("opencode-quiet-error");
+  try {
+    writeFileSync(join(dir, "opencode.json"), '{ "apiKey": "sk-SECRET-VALUE" nope }');
+    assert.throws(
+      () => userReadDenials(dir),
+      (/** @type {Error} */ e) =>
+        e.message.includes("cannot be read or parsed here") && !e.message.includes("SECRET"),
+    );
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+test("a file holding a second document is refused, not read as its first", () => {
+  const dir = scratch("opencode-two-documents");
+  try {
+    writeFileSync(
+      join(dir, "opencode.jsonc"),
+      '{ "permission": {} } { "permission": { "read": "deny" } }',
+    );
+    assert.throws(() => userReadDenials(dir), /cannot be read or parsed here/);
+    writeFileSync(join(dir, "opencode.jsonc"), '// note\n{ "permission": { "read": "deny" }, }');
     assert.deepEqual(userReadDenials(dir), ["*"]);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
 });
+test("policies are refused, and agents and modes under their plural names are read", () => {
+  const dir = scratch("opencode-policies");
+  const write = (/** @type {unknown} */ config) =>
+    writeFileSync(join(dir, "opencode.json"), JSON.stringify(config));
+  try {
+    write({ policies: [] });
+    assert.throws(() => userReadDenials(dir), /policies/);
+    write({ experimental: { policies: [] } });
+    assert.throws(() => userReadDenials(dir), /experimental\.policies/);
+    write({ agents: { review: { permission: { read: { "*.key": "deny" } } } } });
+    assert.deepEqual(userReadDenials(dir), ["*.key"]);
+    write({ modes: { review: { tools: { read: false } } } });
+    assert.deepEqual(userReadDenials(dir), ["*"]);
+    write({ agents: "x" });
+    assert.throws(() => userReadDenials(dir), /agents/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+test("a substitution in a tools key or a native permission field is refused", () => {
+  const dir = scratch("opencode-substitution-fields");
+  const write = (/** @type {unknown} */ config) =>
+    writeFileSync(join(dir, "opencode.json"), JSON.stringify(config));
+  try {
+    write({ tools: { "{env:T}": false } });
+    assert.throws(() => userReadDenials(dir), /substitution/);
+    write({ permissions: [{ action: "{env:A}", effect: "deny" }] });
+    assert.throws(() => userReadDenials(dir), /substitution/);
+    write({ permissions: [{ action: "read", effect: "{file:e}" }] });
+    assert.throws(() => userReadDenials(dir), /substitution/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+test("the config files an environment variable selects are read like the global one", () => {
+  const dir = scratch("opencode-env-config");
+  const extra = scratch("opencode-env-config-dir");
+  try {
+    const file = join(extra, "chosen.json");
+    writeFileSync(file, JSON.stringify({ permission: { read: { "*.a": "deny" } } }));
+    writeFileSync(
+      join(extra, "opencode.json"),
+      JSON.stringify({ permission: { read: { "*.b": "deny" } } }),
+    );
+    const content = JSON.stringify({ permission: { read: { "*.c": "ask" } } });
+    assert.deepEqual(
+      userReadDenials(dir, [], {
+        OPENCODE_CONFIG: file,
+        OPENCODE_CONFIG_DIR: extra,
+        OPENCODE_CONFIG_CONTENT: content,
+      }).sort(),
+      ["*.a", "*.b", "*.c"],
+    );
+    assert.throws(
+      () => userReadDenials(dir, [], { OPENCODE_CONFIG_CONTENT: "{ nope" }),
+      /OPENCODE_CONFIG_CONTENT cannot be read or parsed here/,
+    );
+    assert.deepEqual(userReadDenials(dir, [], { OPENCODE_CONFIG: join(extra, "absent.json") }), []);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+    rmSync(extra, { recursive: true, force: true });
+  }
+});
+test("a leading ~ or $HOME written with backslashes expands to the home folder", () => {
+  const home = "/home/u";
+  const denies = deniedBy("/work/review", ["~\\keys\\*", "$HOME\\.ssh\\*"], home);
+  assert.equal(denies("/home/u/keys/a"), true);
+  assert.equal(denies("/home/u/.ssh/id"), true);
+  assert.equal(denies("/home/u/other/a"), false);
+});
+test(
+  "a link back to a folder above is refused for a wildcard that can match a folder name",
+  POSIX_ONLY,
+  async () => {
+    const dir = scratch("opencode-cycle-wildcard");
+    try {
+      mkdirSync(join(dir, "backing"));
+      writeFileSync(join(dir, "backing", "token.txt"), "x");
+      symlinkSync(join(dir, "backing"), join(dir, "backing", "again"));
+      await assert.rejects(copied(dir, ["*again*token*"]), /links back to a folder above it/);
+      await assert.rejects(copied(dir, ["a**"]), /links back to a folder above it/);
+      assert.deepEqual(await copied(dir, ["*.pem"]), ["backing/token.txt"]);
+      assert.deepEqual(await copied(dir, ["token.txt"]), []);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  },
+);
 test(
   "a home folder whose name holds a replacement token ($&) still expands in a pattern",
   { skip: process.platform === "win32" },

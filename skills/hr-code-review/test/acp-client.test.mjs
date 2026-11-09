@@ -1883,6 +1883,34 @@ test("a completed search titled as a web search counts under --no-web, a Grep do
   assert.equal(run(search('Grep "Web search" in src'), ["--no-web"]).code, 0);
   assert.equal(run(search("Grep src"), ["--no-web"]).code, 0);
 });
+test("a web-search title sent on an earlier update, or on a call of another kind, still counts when the call completes", () => {
+  const later = {
+    toolUpdates: [
+      {
+        sessionUpdate: "tool_call",
+        toolCallId: "s2",
+        kind: "search",
+        status: "in_progress",
+        title: "Web search",
+      },
+      { sessionUpdate: "tool_call_update", toolCallId: "s2", status: "completed" },
+    ],
+  };
+  assert.equal(run(later, ["--no-web"]).code, 5);
+  const otherKind = {
+    toolUpdates: [
+      {
+        sessionUpdate: "tool_call",
+        toolCallId: "s3",
+        kind: "read",
+        status: "completed",
+        title: "Web search",
+      },
+    ],
+  };
+  assert.equal(run(otherKind, ["--no-web"]).code, 5);
+  assert.equal(run(later, []).code, 0, "without --no-web nothing counts");
+});
 test("a tool id the seat sends as an object with a broken toString is handled, not a crash", () => {
   const r = run(
     {

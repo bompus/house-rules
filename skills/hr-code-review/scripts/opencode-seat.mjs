@@ -42,6 +42,7 @@ import { constants, homedir, tmpdir } from "node:os";
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { randomBytes } from "node:crypto";
 import { fileURLToPath } from "node:url";
+import { globRegex, userReadDenials } from "./opencode-config.mjs";
 import { cleanPath, envPath, pathExecutable, reviewBase } from "./seat-launch.mjs";
 
 const PASSED = [
@@ -151,17 +152,6 @@ const ETC =
 // A file the seat's own read rules deny by name: `*.env` and `*.env.*`, except `*.env.example`.
 const isEnvFile = (/** @type {string} */ name) =>
   name.endsWith(".env") || (name.includes(".env.") && !name.endsWith(".env.example"));
-// A superset of how OpenCode matches a pattern: `*` and `**` match any run of characters, `?` one.
-const globRegex = (/** @type {string} */ pattern) => {
-  // OpenCode matches with `/` for both separators, and lets a trailing " *" match an absent suffix.
-  const text = pattern.replaceAll("\\", "/");
-  const optional = text.endsWith(" *");
-  const body = (optional ? text.slice(0, -2) : text)
-    .replace(/[.+^${}()|[\]\\]/g, "\\$&")
-    .replace(/\*+/g, ".*")
-    .replace(/\?/g, ".");
-  return new RegExp(`^${body}${optional ? "( .*)?" : ""}$`, "s");
-};
 const MAX_ENTRIES = 200_000;
 const MAX_FILES = 100_000;
 const MAX_BYTES = 512 * 1024 * 1024;
@@ -177,7 +167,7 @@ const MAX_BYTES = 512 * 1024 * 1024;
  */
 export function deniedBy(dir, denied, home) {
   const expand = (/** @type {string} */ p) =>
-    p.replace(/^(~|\$HOME|\$\{HOME\})(?=\/|$)/, () => home);
+    p.replaceAll("\\", "/").replace(/^(~|\$HOME|\$\{HOME\})(?=\/|$)/, () => home);
   // The pattern as written is tried too: a checkout can hold a path that literally starts with `$HOME`.
   const patterns = denied
     .filter((p) => p !== "*")
@@ -229,7 +219,13 @@ export async function copyReviewRoot(
   const limits = options.limits ?? { entries: MAX_ENTRIES, files: MAX_FILES, bytes: MAX_BYTES };
   dir = realpathSync(dir);
   const everything = denied.includes("*");
-  const byPath = denied.some((p) => p !== "*" && p.includes("/"));
+  // A pattern whose match can depend on the folders above a file (a separator, or a wildcard anywhere but
+  // one leading `*` before a plain suffix) could match endless virtual paths of a folder that links to itself.
+  const pathDependent = (/** @type {string} */ pattern) => {
+    const text = pattern.replaceAll("\\", "/");
+    return text.includes("/") || /[*?]/.test(text.startsWith("*") ? text.slice(1) : text);
+  };
+  const byPath = denied.some((p) => p !== "*" && pathDependent(p));
   const isDenied = deniedBy(dir, denied, home);
   let seen = 0;
   const count = () => {
@@ -525,157 +521,6 @@ export function sandboxArgs(home, shown, mounts = []) {
   ];
 }
 
-/**
- * The read patterns the user's global OpenCode config denies or asks about. A missing file is
- * optional; one that exists and cannot be read or parsed here (comments need Bun) throws, so its denials
- * are never dropped silently.
- * @param {string} configDir
- */
-export function userReadDenials(
-  configDir,
-  managedDirs = process.platform === "linux" ? ["/etc/opencode"] : [],
-) {
-  /** @type {string[]} */
-  const denied = [];
-  let everything = /** @type {boolean} */ (false);
-  const actions = new Set(["allow", "ask", "deny"]);
-  const isAction = (/** @type {unknown} */ v) => typeof v === "string" && actions.has(v);
-  const isRecord = /** @type {(v: unknown) => v is Record<string, any>} */ (
-    (v) => typeof v === "object" && v !== null && !Array.isArray(v)
-  );
-  /** @param {unknown} v @returns {[string, unknown][]} */
-  const entriesOf = (v) => Object.entries(/** @type {Record<string, unknown>} */ (v));
-  // OpenCode matches a tool name against a permission key as a glob, so every key that matches "read"
-  // (`read`, `*`, `r*`, `?ead`) restricts reads.
-  const forRead = (/** @type {string} */ key) => globRegex(key).test("read");
-  // OpenCode loads both files when both exist, so the denials of each count; both are always read, so a
-  // second file that cannot be used refuses the run even when the first already denies everything.
-  const files = [configDir, ...managedDirs].flatMap((d) =>
-    ["opencode.json", "opencode.jsonc"].map((n) => join(d, n)),
-  );
-  for (const path of files) {
-    /** @type {any} */
-    let config;
-    try {
-      const parse = /** @type {any} */ (globalThis).Bun?.JSONC?.parse ?? JSON.parse;
-      config = parse(readFileSync(path, "utf8"));
-    } catch (e) {
-      // An absent file is optional. One that exists and cannot be read or parsed (JSONC comments under a
-      // runtime without a JSONC parser) is refused: its denials would otherwise be dropped silently.
-      if (
-        /** @type {{ code?: string }} */ (e).code !== "ENOENT" &&
-        /** @type {{ code?: string }} */ (e).code !== "ENOTDIR"
-      ) {
-        throw new Error(
-          `${path} cannot be read or parsed here (comments in it need Bun): ${e instanceof Error ? e.message : String(e)}`,
-          { cause: e },
-        );
-      }
-      continue;
-    }
-    const substituted = (/** @type {string} */ text) => /\{(env|file):/.test(text);
-    const unsupported = (/** @type {string} */ where) =>
-      new Error(`${path}: ${where} has a value this seat does not understand; fix it or remove it`);
-    // One `permission` value: an action for every tool, or a map of tool names to an action or to a map of
-    // patterns to actions. A deny or ask for read, or for everything, is a final deny-all; patterns that
-    // deny or ask are collected. A value of another shape is refused, never read as "no denial".
-    const collect = (/** @type {unknown} */ permission, /** @type {string} */ where) => {
-      if (permission === undefined) {
-        return;
-      }
-      if (isAction(permission)) {
-        everything ||= permission !== "allow";
-        return;
-      }
-      if (!isRecord(permission)) {
-        throw unsupported(where);
-      }
-      for (const [key, value] of entriesOf(permission)) {
-        if (substituted(key)) {
-          throw unsupported(`${where}.${key} (a {env:} or {file:} substitution)`);
-        }
-        if (!forRead(key)) {
-          continue;
-        }
-        if (isAction(value)) {
-          everything ||= value !== "allow";
-        } else if (isRecord(value)) {
-          for (const [pattern, action] of entriesOf(value)) {
-            if (substituted(pattern)) {
-              throw unsupported(`${where}.${key}["${pattern}"] (a {env:} or {file:} substitution)`);
-            }
-            if (!isAction(action)) {
-              throw unsupported(`${where}.${key}["${pattern}"]`);
-            }
-            if (action !== "allow") {
-              denied.push(pattern);
-            }
-          }
-        } else {
-          throw unsupported(`${where}.${key}`);
-        }
-      }
-    };
-    const native = (/** @type {unknown} */ list, /** @type {string} */ where) => {
-      if (list === undefined) {
-        return;
-      }
-      if (!Array.isArray(list)) {
-        throw unsupported(where);
-      }
-      for (const entry of list) {
-        if (!isRecord(entry) || typeof entry.action !== "string") {
-          throw unsupported(`${where}[]`);
-        }
-        if (typeof entry.resource === "string" && substituted(entry.resource)) {
-          throw unsupported(`${where}[] (a {env:} or {file:} substitution)`);
-        }
-        if (forRead(entry.action) && entry.effect !== "allow") {
-          if (typeof entry.resource === "string") {
-            denied.push(entry.resource);
-          } else {
-            everything = true;
-          }
-        }
-      }
-    };
-    const tools = (/** @type {unknown} */ section, /** @type {string} */ where) => {
-      if (section === undefined) {
-        return;
-      }
-      if (!isRecord(section)) {
-        throw unsupported(where);
-      }
-      everything ||= entriesOf(section).some(([key, value]) => forRead(key) && value === false);
-    };
-    // One definition (the top level, an agent, a legacy mode): permission map, tools switches, native list.
-    const section = (/** @type {unknown} */ def, /** @type {string} */ where) => {
-      if (!isRecord(def)) {
-        throw unsupported(where);
-      }
-      collect(def.permission, `${where}.permission`);
-      tools(def.tools, `${where}.tools`);
-      native(def.permissions, `${where}.permissions`);
-    };
-    section(config ?? {}, "config");
-    for (const group of ["agent", "mode"]) {
-      const defs = config?.[group];
-      if (defs === undefined) {
-        continue;
-      }
-      if (!isRecord(defs)) {
-        throw unsupported(group);
-      }
-      for (const [name, def] of entriesOf(defs)) {
-        if (def !== null && def !== undefined) {
-          section(def, `${group}.${name}`);
-        }
-      }
-    }
-  }
-  return everything ? ["*"] : denied;
-}
-
 // Where bubblewrap is looked for: system folders only, never the inherited PATH, because a checkout's
 // own tooling (`node_modules/.bin`) is often first on it and the sandbox helper runs before any boundary.
 const TRUSTED_BIN = ["/usr/bin", "/bin", "/usr/local/bin", "/run/current-system/sw/bin"];
@@ -797,7 +642,11 @@ if (
   /** @type {string[]} */
   let denials;
   try {
-    denials = userReadDenials(join(config, "opencode"));
+    denials = userReadDenials(
+      join(config, "opencode"),
+      process.platform === "linux" ? ["/etc/opencode"] : [],
+      process.env,
+    );
   } catch (e) {
     console.error(`[opencode-seat] ${e instanceof Error ? e.message : String(e)}`);
     process.exit(2);

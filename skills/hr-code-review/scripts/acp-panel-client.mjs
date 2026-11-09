@@ -685,11 +685,13 @@ function onServerLine(line) {
       }
       // A search typed or titled as a web search is network use; a local search (Claude's Grep and Glob,
       // both kind search) is not, and the client cannot tell the rest apart.
-      const webTitled =
-        kind === "search" && /^\s*(web[\s_-]?search|search the web)\b/i.test(textOf(u.title));
+      // The title is remembered by tool id until the call completes, whatever kind or update carried it.
+      if (/^\s*(web[\s_-]?search|search the web)\b/i.test(textOf(u.title))) {
+        webSearches.add(key);
+      }
       if (
         u.status === "completed" &&
-        onNetwork(kind, id, typedWeb || webTitled) &&
+        onNetwork(kind, id, typedWeb) &&
         !refused.has(key) &&
         !counted.has(key)
       ) {
