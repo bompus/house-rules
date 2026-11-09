@@ -847,7 +847,7 @@ test("a policy refusal, a default export, an async check and a broken module", (
   assert.equal(missing.code, 2);
   assert.equal(missing.launch, null);
 });
-test("Claude's adapter gets Read, Grep and Glob only, ignores the user's MCP servers and loads no settings file", () => {
+test("Claude's adapter gets Read, Grep and Glob only, ignores the user's MCP servers and excludes settings sources", () => {
   /** @param {string[]} flags */
   const meta = (flags) =>
     run({}, flags).log.find((m) => m.method === "session/new").params._meta.claudeCode.options;

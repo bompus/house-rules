@@ -775,8 +775,9 @@ const sameModel = (expected, actual) => {
 };
 // The Claude adapter takes `tools` as its built-in tool list (no shell) and, with strictMcpConfig,
 // ignores the user's MCP servers; web tools only with --allow-reads and no --no-web. With an empty
-// settingSources the adapter loads no settings file (user, project or local), so no hook configured in
-// them runs in the seat, the checkout's own `.claude/settings.json` included. Others ignore _meta.
+// settingSources the SDK query excludes the user, project and local settings, so no hook configured in
+// them runs in the seat, the checkout's own `.claude/settings.json` included; managed policy settings
+// and the adapter's own hooks still apply. Others ignore _meta.
 const claudeOptions = {
   tools:
     allowReads && !noWeb
