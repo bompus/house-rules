@@ -6,7 +6,7 @@
 // rest covered with `--policy-option hooks-masked`.
 import { chmodSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { isAbsolute, join, resolve, sep } from "node:path";
 import {
   bunHardened,
   codexWrapper,
@@ -15,6 +15,7 @@ import {
   mayStart,
   mayStartAgy,
   privateDir,
+  reviewBase,
   seatAgent,
   seatEnv,
 } from "./seat-launch.mjs";
@@ -115,19 +116,51 @@ function hooksOff(serverCmd, cmd, env, masked, cwd, refuse) {
   return { cmd: [...cmd.slice(0, 2), "--gemini-dir", gemini, ...cmd.slice(2)], env };
 }
 /**
- * The command and environment a seat's server starts with: the launch hardened (Devin's config, Bun),
- * the seat's narrowed environment, the user's hooks and MCP servers kept out (see the top of this file)
- * and Codex's wrapper.
+ * The command, environment and working directory a seat's server starts with: the launch hardened
+ * (Devin's config, Bun), the seat's narrowed environment, the user's hooks and MCP servers kept out (see
+ * the top of this file) and Codex's wrapper. A server the client recognizes as Codex, Claude or Devin
+ * starts in an empty private folder, never in the checkout: nothing there can be read from its starting
+ * folder (a Bun process's `.env` and `bunfig.toml`, a runner's `package.json`, a relative `PATH`
+ * entry), and the review root reaches the agent only as the session's working directory. Those adapters
+ * take their tool and project-file directory from the session. Any other launch, Antigravity included
+ * (its tools run in the process's directory), keeps starting in the review root.
  * @param {string[]} serverCmd
  * @param {{ noWeb: boolean, cwd: string, codex: boolean, masked: boolean, refuse: (message: string) => never }} options
  */
 export function seatLaunch(serverCmd, { noWeb, cwd, codex, masked, refuse }) {
-  const hardened = bunHardened(devinConfig(serverCmd, noWeb, cwd, refuse), cwd, refuse);
+  const agent = seatAgent(serverCmd);
+  const isolated =
+    (agent === "codex" || agent === "claude" || agent === "devin") &&
+    !mayStartAgy(serverCmd, process.env.PATH, cwd);
+  const first = serverCmd[0] ?? "";
+  if (isolated && /[\\/]/.test(first) && !isAbsolute(first)) {
+    // A relative path in the launch means the folder the client was started from, not the empty folder
+    // and not the checkout.
+    const from = resolve(first);
+    const base = reviewBase(cwd);
+    if (from === base || from.startsWith(base + sep)) {
+      refuse(`the server command ${first} resolves to ${from}, inside the review checkout`);
+    }
+    serverCmd = [from, ...serverCmd.slice(1)];
+  }
+  // Where the closed class applies, nothing in the starting folder can be read, so the Bun checks that
+  // guess whether a launch is Bun are not needed.
+  const hardened = isolated
+    ? devinConfig(serverCmd, noWeb, cwd, refuse)
+    : bunHardened(devinConfig(serverCmd, noWeb, cwd, refuse), cwd, refuse);
   const base = seatEnv(
     process.env,
     hardened,
     (process.env.ACP_PANEL_PASS_ENV ?? "").split(",").map((p) => p.trim()),
   );
   const out = hooksOff(serverCmd, hardened, base, masked, cwd, refuse);
-  return { cmd: out.cmd, env: codex ? codexWrapper(out.env, noWeb, cwd, refuse) : out.env };
+  const empty = isolated ? join(privateDir(), "server-cwd") : cwd;
+  if (isolated) {
+    mkdirSync(empty, { mode: 0o700 });
+  }
+  return {
+    cmd: out.cmd,
+    env: codex ? codexWrapper(out.env, noWeb, cwd, refuse) : out.env,
+    cwd: empty,
+  };
 }

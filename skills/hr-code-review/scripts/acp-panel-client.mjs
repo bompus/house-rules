@@ -351,7 +351,7 @@ const launch = seatLaunch(serverCmd, {
 });
 const launchCmd = launch.cmd;
 const child = spawn(launchCmd[0] ?? "", launchCmd.slice(1), {
-  cwd,
+  cwd: launch.cwd,
   env: launch.env,
   stdio: ["pipe", "pipe", "pipe"],
 });

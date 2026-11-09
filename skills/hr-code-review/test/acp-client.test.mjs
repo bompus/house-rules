@@ -25,7 +25,7 @@ const launch={pid:process.pid,argv:process.argv.slice(2),env:Object.keys(process
 const argAt=process.argv.indexOf('--config');
 if(argAt>=0){const file=process.argv[argAt+1];launch.devin={file,config:JSON.parse(fs.readFileSync(file,'utf8')),fileMode:fs.statSync(file).mode&0o777,dirMode:fs.statSync(file.slice(0,Math.max(file.lastIndexOf('/'),file.lastIndexOf('\\\\')))).mode&0o777};}
 if(launch.codexPath&&fs.existsSync(launch.codexPath)&&launch.codexPath.endsWith('codex-no-web'))launch.wrapper=fs.readFileSync(launch.codexPath,'utf8');
-launch.xdg=process.env.XDG_CONFIG_HOME??null;if(launch.xdg&&fs.existsSync(launch.xdg))launch.xdgSeat={mode:fs.statSync(launch.xdg).mode&0o777,entries:fs.readdirSync(launch.xdg)};\nconst gAt=process.argv.indexOf('--gemini-dir');\nif(gAt>=0){const g=process.argv[gAt+1],t=g+'/antigravity-cli/antigravity-oauth-token';launch.gemini={dir:g,dirMode:fs.statSync(g).mode&0o777,subMode:fs.statSync(g+'/antigravity-cli').mode&0o777,tokenMode:fs.statSync(t).mode&0o777,token:fs.readFileSync(t,'utf8'),entries:fs.readdirSync(g),subEntries:fs.readdirSync(g+'/antigravity-cli'),at:gAt};}\nfs.writeFileSync(process.env.FAKE_LOG+'.launch',JSON.stringify(launch));
+launch.cwd=process.cwd();launch.cwdEntries=fs.readdirSync('.');launch.cwdMode=fs.statSync('.').mode&0o777;launch.xdg=process.env.XDG_CONFIG_HOME??null;if(launch.xdg&&fs.existsSync(launch.xdg))launch.xdgSeat={mode:fs.statSync(launch.xdg).mode&0o777,entries:fs.readdirSync(launch.xdg)};\nconst gAt=process.argv.indexOf('--gemini-dir');\nif(gAt>=0){const g=process.argv[gAt+1],t=g+'/antigravity-cli/antigravity-oauth-token';launch.gemini={dir:g,dirMode:fs.statSync(g).mode&0o777,subMode:fs.statSync(g+'/antigravity-cli').mode&0o777,tokenMode:fs.statSync(t).mode&0o777,token:fs.readFileSync(t,'utf8'),entries:fs.readdirSync(g),subEntries:fs.readdirSync(g+'/antigravity-cli'),at:gAt};}\nfs.writeFileSync(process.env.FAKE_LOG+'.launch',JSON.stringify(launch));
 if(cfg.stderrLine)process.stderr.write(cfg.stderrLine+'\\n');
 if(cfg.ignoreTerm)process.on('SIGTERM',()=>{});
 if(cfg.linger)setInterval(()=>{},1000);
@@ -143,6 +143,17 @@ function run(
     : launcher
       ? [shim(launcher, `exec "${process.execPath}" "${fakePath}" "$@"`), ...serverArgs]
       : [process.execPath, fakePath, ...serverArgs];
+  if (config.relativeFirst) {
+    // The launch's first word is a relative path, from the folder the client is started in (the run
+    // folder) or from there into the review root.
+    const body = `#!/bin/sh\nexec "${process.execPath}" "${fakePath}" "$@"\n`;
+    if (config.relativeFirst === "inside") {
+      writeFileSync(join(root, launcher), body, { mode: 0o755 });
+      server[0] = `repo/${launcher}`;
+    } else {
+      server[0] = `./${launcher}`;
+    }
+  }
   const outside = join(dir, "outside.txt");
   if (config.symlinkAnswer || config.hardlinkAnswer) {
     writeFileSync(outside, "keep");
@@ -186,6 +197,7 @@ function run(
           FAKE_LOG: log,
         },
         encoding: "utf8",
+        cwd: config.relativeFirst ? dir : undefined,
         timeout: config.killAfter ?? (config.hard ? 75000 : 12000),
         killSignal: "SIGTERM",
       },
@@ -2333,5 +2345,67 @@ test(
     );
     assert.equal(masked.code, 0, masked.error);
     assert.match(String(masked.launch?.xdg), /\/xdg$/, "the user's folder stays");
+  },
+);
+/** @param {{ log: any[] }} r */
+const sessionCwd = (r) => r.log.find((m) => m.method === "session/new")?.params.cwd;
+test(
+  "a Codex, Claude or Devin server starts in an empty private folder and gets the review root only as the session's cwd",
+  POSIX_ONLY,
+  () => {
+    const cases = [
+      { devinShim: true, serverArgs: ["acp"] },
+      { launcher: "codex-acp", serverArgs: [], env: {} },
+      { launcher: "claude-agent-acp", serverArgs: [] },
+    ];
+    for (const config of cases) {
+      const r = run({ ...config, ...(config.launcher === "codex-acp" ? { codexShim: [] } : {}) });
+      assert.equal(r.code, 0, `${config.launcher ?? "devin"}: ${r.error}`);
+      const cwd = r.launch?.cwd;
+      assert.ok(cwd, "the fake recorded its working directory");
+      assert.deepEqual(r.launch?.cwdEntries, [], "empty");
+      assert.equal(r.launch?.cwdMode, 0o700);
+      assert.notEqual(cwd, sessionCwd(r), "not the review root");
+      assert.ok(!cwd.startsWith(sessionCwd(r)), "not inside it either");
+      assert.equal(existsSync(cwd), false, "removed at exit");
+    }
+  },
+);
+test(
+  "a server the client does not recognize, and agy, keep starting in the review root",
+  POSIX_ONLY,
+  () => {
+    const plain = run({});
+    assert.equal(plain.code, 0, plain.error);
+    assert.equal(plain.launch?.cwd, sessionCwd(plain));
+    const agy = run(AGY, AGY_FLAGS, agyHome("t"));
+    assert.equal(agy.code, 0, agy.error);
+    assert.equal(agy.launch?.cwd, sessionCwd(agy));
+  },
+);
+test(
+  "a launch the client closes by its folder is not also held to the Bun checks, and others still are",
+  POSIX_ONLY,
+  () => {
+    // `bunx --bun` is refused for a launch that starts in the checkout; a recognized adapter starts elsewhere.
+    const args = ["--bun", "--package=@agentclientprotocol/claude-agent-acp", "claude-agent-acp"];
+    const recognized = run({ launcher: "bunx", serverArgs: args });
+    assert.equal(recognized.code, 0, recognized.error);
+    const other = run({ launcher: "bunx", serverArgs: ["--bun", "some-other-server"] });
+    assert.equal(other.code, 2);
+    assert.match(other.error, /bunx --bun/);
+  },
+);
+test(
+  "a relative server path means the folder the client was started in, and one that reaches into the review root is refused",
+  POSIX_ONLY,
+  () => {
+    const ok = run({ devinShim: true, serverArgs: ["acp"], relativeFirst: "outside" });
+    assert.equal(ok.code, 0, ok.error);
+    assert.deepEqual(ok.launch?.cwdEntries, []);
+    const inside = run({ devinShim: true, serverArgs: ["acp"], relativeFirst: "inside" });
+    assert.equal(inside.code, 2);
+    assert.match(inside.error, /inside the review checkout/);
+    assert.equal(inside.launch, null);
   },
 );
