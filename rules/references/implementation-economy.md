@@ -48,11 +48,13 @@
   under their own ordering and retry-safety rules. Slow down only when the
   server signals a limit: a 429, a `Retry-After` header on a failed request,
   a rate-limit header whose value says the quota is used up
-  (`x-ratelimit-remaining: 0`), or an error whose body says the rate limit
-  was exceeded (some APIs send that with a 403). A header that only reports
-  quota left, or a reset time on its own, is not a signal; use the reset time
-  to size the wait only once one of those signals has fired. Then honour the
-  stated wait, lower the concurrency and retry the failed requests a bounded
+  (`x-ratelimit-remaining: 0`) or tells you to wait, or an error whose body
+  says the rate limit was exceeded (some APIs send that with a 403). A header
+  that only reports quota left, or a reset time on its own, is not a signal.
+  The wait comes from the limit that rejected the request: its
+  `Retry-After` or explicit wait first, and a reset time only when it belongs
+  to the quota that ran out. Then honour that wait, lower the concurrency and
+  retry the failed requests a bounded
   number of times, backing off exponentially with jitter when the server gives
   no wait. Treat a 503 as the service being briefly unavailable: retry it the
   same bounded way, after its `Retry-After` when it gives one. A slow run with no such
