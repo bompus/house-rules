@@ -28,15 +28,22 @@ measurement's isolation rules. The wait comes from the measurement, not from the
 load.
 
 Memory limits stay in force whatever the load, as protection against a crash.
-Work risks exhausting memory when its expected or last measured peak leaves
+Work risks exhausting memory when its expected or last measured memory leaves
 little headroom in the memory available to it, or when its peak is unknown and
 its input is large. Constrain such work using the host's supported controls; on
 Linux with systemd, `systemd-run --user --scope -p MemoryMax=<size> -- <cmd>`, sized
-from the job's measured peak plus about 20%, but never above the memory available to
+from the job's own memory plus about 20%, but never above the memory available to
 it less what the rest of the host needs, counting every job running at the same time (their
-caps together stay within it); when that leaves less than the peak, shrink the job instead (where systemd reports it, the scope's journal line `Consumed …`
-includes the peak memory). Check that the heavy processes run inside the capped scope:
+caps together stay within it); when that leaves less than the job's memory, shrink the job instead.
+Check that the heavy processes run inside the capped scope:
 work done by a daemon, such as a container build, needs the daemon's own limits.
+
+Take the job's own memory from the anonymous memory in the scope's `memory.stat` (or an
+equivalent), not from the peak the scope reports (systemd's journal line `Consumed …`):
+that peak counts file cache, so a cache-heavy job (an indexer reading a large file set) can peak at its whole
+cap while needing a fraction of it, and a cap sized from that peak kills it. A soft limit
+below the cap (`MemoryHigh`) lets the kernel reclaim cache early instead of
+killing the job.
 
 Per-job caps cannot stop jobs that start at the same moment from each sizing against the
 same free memory. Where several agents share one host, use one shared budget that is an
@@ -52,7 +59,7 @@ Check that the
 capped cgroup is an ancestor of each job's scope; a check made after the job has finished
 is too late to protect the host.
 
-With no measured peak, lower parallelism and drop debug info before
+With no measured memory, lower parallelism and drop debug info before
 raising the cap. A capped job that exits 137 or 143 without its own error was likely
 killed for memory: check the system journal for an OOM kill before retrying.
 Retry with a larger budget only when host evidence shows memory pressure caused
