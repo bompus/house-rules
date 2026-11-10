@@ -111,8 +111,19 @@ export function seatSpec({ agent, exe, args, root, dirs, extraPrefixes, pathValu
     : (dirs.map((d) => join(d, wanted)).find(existsSync) ?? program);
   const names = [...new Set([...chainNames(found), exeName(program)])];
   const full = [...profile.args, ...args];
-  const runtime = names.some((n) => RUNTIMES.has(n));
-  const script = runtime ? full.find((a) => !a.startsWith("-")) : undefined;
+  const interpreter = [...RUNTIMES].find((n) => names.includes(n));
+  // Where the script stands in the arguments: first for `bun` and `node`, after `run` and the
+  // permission flags for `deno`. Only those flags may stand between `run` and the script: any other
+  // (`--preload`, `--import-map`, `--config`, `--require`) can load code, and a flag's value could be
+  // mistaken for the script.
+  let at = 0;
+  if (interpreter === "deno") {
+    at = full[0] === "run" ? 1 : -1;
+    while (at > 0 && DENO_PERMISSION_FLAG.test(full[at] ?? "")) {
+      at++;
+    }
+  }
+  const script = interpreter && at >= 0 ? full[at] : undefined;
   // The names the script goes by along its own links, as the program's are (an absolute script only: a
   // relative one would be read from the private folder).
   const bare = (/** @type {string} */ n) => n.replace(SCRIPT_EXT, "");
@@ -141,24 +152,13 @@ export function seatSpec({ agent, exe, args, root, dirs, extraPrefixes, pathValu
       );
     }
   }
-  const interpreter = ["bun", "node", "deno"].find((n) => names.includes(n));
   if (interpreter) {
-    // `bun SCRIPT`, `node SCRIPT`, `deno run [flags] SCRIPT` only: no subcommand and no option of the
-    // caller's before the script (a later `--config` could undo what BUN_OPTIONS below sets, a
+    // `bun SCRIPT`, `node SCRIPT`, `deno run [permission flags] SCRIPT` only: no subcommand and no option of
+    // the caller's before the script (a later `--config` could undo what BUN_OPTIONS below sets, a
     // `--require` runs a file first), and the script an absolute file outside the checkout, so the
     // server is never code the checkout supplies.
-    let at = 0;
-    if (interpreter === "deno") {
-      // Only permission flags may stand between `run` and the script: any other flag (`--preload`,
-      // `--import-map`, `--config`, `--require`) can load code, and a flag's value could be mistaken
-      // for the script.
-      at = full[0] === "run" ? 1 : -1;
-      while (at > 0 && DENO_PERMISSION_FLAG.test(full[at] ?? "")) {
-        at++;
-      }
-    }
     let ok = false;
-    const given = at >= 0 ? full[at] : undefined;
+    const given = script;
     if (given && isAbsolute(given)) {
       try {
         const real = realpathSync.native(given);

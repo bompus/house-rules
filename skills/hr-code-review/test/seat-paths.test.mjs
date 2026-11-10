@@ -425,8 +425,16 @@ test(
         );
       }
       checkEnvPaths({ CUSTOM_CONFIG_URL: `file://localhost${outside}/x` }, repo, refuse);
-      // A malformed escape is read as it is written: an outside file, not an exception.
-      checkEnvPaths({ CUSTOM_CONFIG_URL: "file:///%ZZ" }, repo, refuse);
+      try {
+        checkEnvPaths({ CUSTOM_CONFIG_URL: "file:///%ZZ" }, repo, refuse);
+      } catch (e) {
+        // Node refuses the escape, Bun reads it literally: either way a refusal, never an exception of its own.
+        assert.ok(
+          e instanceof Error &&
+            !(e instanceof URIError) &&
+            e.message.includes("not a file URL it can read"),
+        );
+      }
     });
   },
 );

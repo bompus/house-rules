@@ -691,6 +691,7 @@ test(
                 ["run", inRepo],
                 ["run", "--config", "./d.json", script],
                 ["run", "--preload", script, inRepo],
+                ["run", "--allow-env", "--config", script, inRepo],
                 ["run", "--preload=/x/y.ts", script],
                 ["run", "--import-map", "m.json", script],
               ]
@@ -706,3 +707,29 @@ test(
     });
   },
 );
+
+test("a deno server's script is held to the runner and agent-name guards too", POSIX, () => {
+  withTree((t) => {
+    const deno = join(t.bin, "deno");
+    writeFileSync(deno, "#!/bin/sh\nexit 0\n", { mode: 0o755 });
+    const out = join(t.dir, "scripts");
+    mkdirSync(out);
+    writeFileSync(join(out, "npx-cli.js"), "export {};\n");
+    writeFileSync(join(out, "codex-acp.mjs"), "export {};\n");
+    assert.throws(
+      () =>
+        build({ ...base(t), agent: "other", exe: deno, args: ["run", join(out, "npx-cli.js")] }),
+      /package runner/,
+    );
+    assert.throws(
+      () =>
+        build({
+          ...base(t),
+          agent: "other",
+          exe: deno,
+          args: ["run", "--allow-read", join(out, "codex-acp.mjs")],
+        }),
+      /agent's own program/,
+    );
+  });
+});
