@@ -36,9 +36,12 @@ export const LOGIN_PREFIXES = {
 // prefix, helper commands, runner binaries), so only the ones the installed claude-agent-acp 0.102.0 and its
 // SDK read to log in and route are passed, not the whole prefix: CLAUDE_CONFIG_DIR (adapter dist/paths.js:5,
 // SDK core-hz6x1gbv.mjs:16), CLAUDE_CODE_OAUTH_TOKEN (dist/acp-agent.js:11560), CLAUDE_CODE_USE_BEDROCK and
-// CLAUDE_CODE_USE_VERTEX (dist/acp-agent.js:2016, 2023; SDK sdk.mjs:42), and the two program overrides
-// CLAUDE_CODE_EXECUTABLE (dist/claude-cli.js:20) and CLAUDE_CODE_SHELL, which the client forwards only as
-// a checked absolute path (forwardPrograms in seat-paths.mjs). See ../references/acp-client.md.
+// CLAUDE_CODE_USE_VERTEX (dist/acp-agent.js:2016, 2023; SDK sdk.mjs:42), CLAUDE_SECURESTORAGE_CONFIG_DIR (SDK
+// sdk.mjs:161: where the CLI finds its stored login), the client certificate of a gateway that asks for one
+// (CLAUDE_CODE_CLIENT_CERT, _KEY and _KEY_PASSPHRASE: the CLI, found by the independent read of this change),
+// and the two program overrides CLAUDE_CODE_EXECUTABLE (dist/claude-cli.js:20) and CLAUDE_CODE_SHELL, which the
+// client forwards only as a checked absolute path (forwardPrograms in seat-paths.mjs). See
+// ../references/acp-client.md.
 /** @type {Record<string, string[]>} */
 export const LOGIN_NAMES = {
   claude: [
@@ -48,11 +51,16 @@ export const LOGIN_NAMES = {
     "CLAUDE_CODE_USE_VERTEX",
     "CLAUDE_CODE_EXECUTABLE",
     "CLAUDE_CODE_SHELL",
+    "CLAUDE_SECURESTORAGE_CONFIG_DIR",
+    "CLAUDE_CODE_CLIENT_CERT",
+    "CLAUDE_CODE_CLIENT_KEY",
+    "CLAUDE_CODE_CLIENT_KEY_PASSPHRASE",
   ],
 };
 // A name that ends so holds a command line (a program and arguments), which no path rule can check: it is never
-// passed, whatever prefix would let it through (`CLAUDE_CODE_SHELL_PREFIX`, `GROK_AUTH_PROVIDER_COMMAND`).
-const COMMAND_NAME = /_(COMMAND|SHELL_PREFIX)$/i;
+// passed, whatever prefix would let it through (`CLAUDE_CODE_SHELL_PREFIX`, `GROK_AUTH_PROVIDER_COMMAND`,
+// Cursor's `CURSOR_LOCAL_AGENT_API_KEY_HELPER` and `CURSOR_BEDROCK_AWS_AUTH_REFRESH`).
+const COMMAND_NAME = /_(COMMAND|SHELL_PREFIX|HELPER|AUTH_REFRESH)$/i;
 // Windows variables a program needs to start; names there match without regard to case.
 const WINDOWS = process.platform === "win32";
 const WINDOWS_ENV =
