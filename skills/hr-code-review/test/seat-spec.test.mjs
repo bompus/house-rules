@@ -232,6 +232,21 @@ test(
         /agent's own program/,
         "a script named for another agent",
       );
+      // A script or folder named like an inherited property of Object is just a name.
+      mkdirSync(join(out, "constructor"));
+      writeFileSync(join(out, "constructor", "toString.js"), "export {};\n");
+      for (const agent of ["claude", "other"]) {
+        assert.doesNotThrow(
+          () =>
+            build({
+              ...base(t),
+              agent,
+              exe: node,
+              args: [join(out, "constructor", "toString.js")],
+            }),
+          agent,
+        );
+      }
       // The program a seat is declared as stays accepted, as does a program with no agent's name.
       assert.doesNotThrow(() =>
         build({ ...base(t), agent: "codex", exe: join(t.bin, "codex-acp") }),

@@ -411,6 +411,7 @@ test(
         ["CLAUDE_CODE_TOOLS", `${outside}${delimiter}${join(repo, "bin")}`],
         ["CURSOR_BINARY", join(outside, "into", "agent")],
         ["CLAUDE_TOOLS_PATH", `${outside}${delimiter}${join(repo, "bin")}`],
+        ["GIO_EXTRA_MODULES", `file:${outside}${delimiter}${join(repo, "plugins")}`],
       ])) {
         assert.throws(
           () => checkEnvPaths({ [name]: value }, repo, refuse),
@@ -429,6 +430,23 @@ test(
         refuse,
       );
     });
+  },
+);
+
+test(
+  "checkEnvPaths does not read a network URL's host as a path: http://usr:8080 is not /usr",
+  POSIX,
+  () => {
+    // The review root is /usr, so `//usr` (what splitting `http://usr:8080` on `:` leaves) is the checkout.
+    checkEnvPaths(
+      { HTTP_PROXY: "http://usr:8080", OPENAI_BASE_URL: "https://usr/v1" },
+      "/usr",
+      refuse,
+    );
+    assert.throws(
+      () => checkEnvPaths({ SOME_LIST: "/usr" }, "/usr", refuse),
+      /inside the review checkout/,
+    );
   },
 );
 

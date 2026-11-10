@@ -203,9 +203,12 @@ export function seatSpec({ agent, exe, args, root, dirs, extraPrefixes, pathValu
     ...scriptNames,
     ...(script ? [basename(script), basename(dirname(script))] : []),
   ];
-  const owner = named
-    .map((n) => AGENT_PROGRAM[bare(n).toLowerCase()])
-    .find((a) => a && a !== agent);
+  // Own properties only: a script called `constructor.js` is not the inherited `Object` constructor.
+  const agentOf = (/** @type {string} */ n) => {
+    const key = bare(n).toLowerCase();
+    return Object.hasOwn(AGENT_PROGRAM, key) ? AGENT_PROGRAM[key] : undefined;
+  };
+  const owner = named.map(agentOf).find((a) => a && a !== agent);
   if (owner) {
     return refuse(
       `${program} or its script is an agent's own program (${owner}), not ${agent}'s; name it with --seat-agent ${owner}`,
