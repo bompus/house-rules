@@ -198,17 +198,19 @@ export function seatSpec({ agent, exe, args, root, dirs, extraPrefixes, pathValu
       `${wrapper} starts another program; give that program as --server-exe, since the client sets the environment and starts it itself`,
     );
   }
-  const named = [
-    ...names,
-    ...scriptNames,
-    ...(script ? [basename(script), basename(dirname(script))] : []),
-  ];
-  // Own properties only: a script called `constructor.js` is not the inherited `Object` constructor.
+  // The names the program and the script go by say which agent it is; the folder the script is in is
+  // read only when they name none (`/opt/grok/claude-agent-acp.js` is Claude's adapter).
+  const direct = [...names, ...scriptNames, ...(script ? [basename(script)] : [])];
   const agentOf = (/** @type {string} */ n) => {
     const key = bare(n).toLowerCase();
+    // Own properties only: a script called `constructor.js` is not the inherited `Object` constructor.
     return Object.hasOwn(AGENT_PROGRAM, key) ? AGENT_PROGRAM[key] : undefined;
   };
-  const owner = named.map(agentOf).find((a) => a && a !== agent);
+  const owners = direct.map(agentOf).filter(Boolean);
+  if (owners.length === 0 && script) {
+    owners.push(agentOf(basename(dirname(script))));
+  }
+  const owner = owners.find((a) => a && a !== agent);
   if (owner) {
     return refuse(
       `${program} or its script is an agent's own program (${owner}), not ${agent}'s; name it with --seat-agent ${owner}`,

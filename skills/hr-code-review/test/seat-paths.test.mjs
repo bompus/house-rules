@@ -412,6 +412,9 @@ test(
         ["CURSOR_BINARY", join(outside, "into", "agent")],
         ["CLAUDE_TOOLS_PATH", `${outside}${delimiter}${join(repo, "bin")}`],
         ["GIO_EXTRA_MODULES", `file:${outside}${delimiter}${join(repo, "plugins")}`],
+        ["GIO_EXTRA_MODULES", `http://ignored:${join(repo, "plugins")}`],
+        // `C://` is a Windows drive path, not a URL scheme.
+        ["SOME_URL", `C:/${join(repo, "bin")}`],
       ])) {
         assert.throws(
           () => checkEnvPaths({ [name]: value }, repo, refuse),
@@ -449,6 +452,19 @@ test(
     );
   },
 );
+
+test("checkEnvPaths does not split a variable known to hold one path", POSIX, () => {
+  withTree(({ repo, outside }) => {
+    // A home folder named `repo:home` is not the checkout `repo`.
+    mkdirSync(`${repo}:home`);
+    checkEnvPaths({ HOME: `${repo}:home`, CODEX_HOME: `${repo}:home` }, repo, refuse);
+    // A `*_PATH` name may be a list, so its elements are read.
+    assert.throws(
+      () => checkEnvPaths({ CLAUDE_TOOLS_PATH: `${outside}${delimiter}${repo}` }, repo, refuse),
+      /inside the review checkout/,
+    );
+  });
+});
 
 test(
   "checkEnvPaths reads a file: URL the way a program does, and refuses one it cannot read",

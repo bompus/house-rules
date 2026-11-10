@@ -277,6 +277,11 @@ const PATH_LISTS = new Set(["SSL_CERT_DIR"]);
 // Names that hold a path by their ending, as the agents' own settings do (`CODEX_HOME`,
 // `CLAUDE_CONFIG_DIR`, `GOOGLE_APPLICATION_CREDENTIALS`, `AWS_SHARED_CREDENTIALS_FILE`, `*_PATH`).
 const PATH_SUFFIX = /(_HOME|_DIR|_DIRS|_PATH|_FILE|_ROOT|_CREDENTIALS|_BUNDLE|_CERTS?)$/i;
+// Names that hold one path, not a list, so a `:` in the value is part of it.
+const SINGLE_PATH = /(_HOME|_DIR|_FILE|_ROOT|_CREDENTIALS|_BUNDLE|_CERTS?)$/i;
+// A network URL (`file:` is not one) held by a variable that is named for a URL.
+const URL_NAME = /(^|_)(proxy|url|uri|endpoint)$/i;
+const NETWORK_URL = /^(?!file:)[a-z][a-z0-9+.-]+:\/\//i;
 
 /**
  * Refuses an environment value that names a relative path, or a path inside the checkout, where a
@@ -327,11 +332,16 @@ export function checkEnvPaths(env, root, refuse) {
         refuse(`${name} holds a relative path; give absolute paths outside the review checkout`);
       }
     }
-    // Whatever the name or form (a `*_PATH` list, a `file:` value that is really a list), an element that
-    // is an absolute path inside the checkout is refused; a `:` in a single path is part of its name. A
-    // network URL is not read as a list: `http://app:8080` holds the host `app`, not the path `//app`.
+    // Whatever the form (a `*_PATH` list, a `file:` value that is really a list), an element that is an
+    // absolute path inside the checkout is refused. Two kinds of value are not read as a list: a name known
+    // to hold one path (`HOME`, `*_DIR`: a `:` in it is part of its name), and a network URL held by a
+    // URL-named variable (`HTTP_PROXY=http://app:8080` holds the host `app`, not the path `//app`; the
+    // scheme has two letters or more, since `C://x` is a Windows path).
+    const singlePath = PATH_VALUED.has(upper) || SINGLE_PATH.test(name);
+    const networkUrl = URL_NAME.test(name) && NETWORK_URL.test(value);
     if (
-      !/^(?!file:)[a-z][a-z0-9+.-]*:\/\//i.test(value) &&
+      !singlePath &&
+      !networkUrl &&
       [value, ...value.split(delimiter)].some((part) => isAbsolute(part) && inside(base, part))
     ) {
       refuse(`${name} is inside the review checkout; point it outside`);

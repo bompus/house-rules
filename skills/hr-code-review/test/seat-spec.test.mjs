@@ -247,6 +247,36 @@ test(
           agent,
         );
       }
+      // The folder a script is in is read only when the names say no agent: Claude's adapter in a folder
+      // called grok is Claude's, and an unnamed script in a folder called grok is Grok's.
+      mkdirSync(join(out, "grok"));
+      writeFileSync(join(out, "grok", "claude-agent-acp.js"), "export {};\n");
+      writeFileSync(join(out, "grok", "index.js"), "export {};\n");
+      assert.doesNotThrow(() =>
+        build({
+          ...base(t),
+          agent: "claude",
+          exe: node,
+          args: [join(out, "grok", "claude-agent-acp.js")],
+        }),
+      );
+      for (const agent of ["claude", "other"]) {
+        assert.throws(
+          () => build({ ...base(t), agent, exe: node, args: [join(out, "grok", "index.js")] }),
+          /agent's own program \(grok\)/,
+          agent,
+        );
+      }
+      assert.throws(
+        () =>
+          build({
+            ...base(t),
+            agent: "codex",
+            exe: node,
+            args: [join(out, "grok", "claude-agent-acp.js")],
+          }),
+        /agent's own program \(claude\)/,
+      );
       // The program a seat is declared as stays accepted, as does a program with no agent's name.
       assert.doesNotThrow(() =>
         build({ ...base(t), agent: "codex", exe: join(t.bin, "codex-acp") }),
