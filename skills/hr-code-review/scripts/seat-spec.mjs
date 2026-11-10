@@ -14,7 +14,13 @@ import {
 } from "node:fs";
 import { basename, delimiter, dirname, isAbsolute, join, sep } from "node:path";
 import { emptyBunfig, exeName, privateDir, seatEnv } from "./seat-launch.mjs";
-import { checkEnvPaths, inside, resolveProgram, reviewBase } from "./seat-paths.mjs";
+import {
+  checkEnvPaths,
+  forwardPrograms,
+  inside,
+  resolveProgram,
+  reviewBase,
+} from "./seat-paths.mjs";
 
 /**
  * What each agent starts as. `exe` and `args` are what a launch with no `--server-exe` runs (a bare name
@@ -261,6 +267,12 @@ export function seatSpec({ agent, exe, args, root, dirs, extraPrefixes, pathValu
     }
   }
   env.PATH = pathValue ?? dirs.join(delimiter);
+  const dropped = forwardPrograms(env, root, refuse);
+  if (dropped.length > 0) {
+    console.error(
+      `[client] not passed to the seat: ${dropped.join(", ")} (a program override must be an absolute path to an executable outside the checkout)`,
+    );
+  }
   checkEnvPaths(env, root, refuse);
   // Any Bun in the server's process tree (the server itself, a `#!` line naming bun, a helper it starts)
   // reads no `.env` and an empty configuration, wherever it starts: the flags come from here, not argv.

@@ -26,12 +26,33 @@ const BASE_ENV = new Set(
 /** @type {Record<string, string[]>} */
 export const LOGIN_PREFIXES = {
   codex: ["CODEX_", "OPENAI_"],
-  claude: ["ANTHROPIC_", "CLAUDE_"],
+  claude: ["ANTHROPIC_"],
   devin: ["DEVIN_"],
   grok: ["GROK_", "XAI_"],
   agy: ["GEMINI_", "GOOGLE_"],
   cursor: ["CURSOR_"],
 };
+// Names a seat keeps beyond its prefixes. The Claude CLI reads over a thousand CLAUDE_ names (a shell, a shell
+// prefix, helper commands, runner binaries), so only the ones the installed claude-agent-acp 0.102.0 and its
+// SDK read to log in and route are passed, not the whole prefix: CLAUDE_CONFIG_DIR (adapter dist/paths.js:5,
+// SDK core-hz6x1gbv.mjs:16), CLAUDE_CODE_OAUTH_TOKEN (dist/acp-agent.js:11560), CLAUDE_CODE_USE_BEDROCK and
+// CLAUDE_CODE_USE_VERTEX (dist/acp-agent.js:2016, 2023; SDK sdk.mjs:42), and the two program overrides
+// CLAUDE_CODE_EXECUTABLE (dist/claude-cli.js:20) and CLAUDE_CODE_SHELL, which the client forwards only as
+// a checked absolute path (forwardPrograms in seat-paths.mjs). See ../references/acp-client.md.
+/** @type {Record<string, string[]>} */
+export const LOGIN_NAMES = {
+  claude: [
+    "CLAUDE_CONFIG_DIR",
+    "CLAUDE_CODE_OAUTH_TOKEN",
+    "CLAUDE_CODE_USE_BEDROCK",
+    "CLAUDE_CODE_USE_VERTEX",
+    "CLAUDE_CODE_EXECUTABLE",
+    "CLAUDE_CODE_SHELL",
+  ],
+};
+// A name that ends so holds a command line (a program and arguments), which no path rule can check: it is never
+// passed, whatever prefix would let it through (`CLAUDE_CODE_SHELL_PREFIX`, `GROK_AUTH_PROVIDER_COMMAND`).
+const COMMAND_NAME = /_(COMMAND|SHELL_PREFIX)$/i;
 // Windows variables a program needs to start; names there match without regard to case.
 const WINDOWS = process.platform === "win32";
 const WINDOWS_ENV =
@@ -90,7 +111,7 @@ export const AGY_UNMASKED =
 const switchedOn = (v) => /^(1|true|yes|on)$/i.test(v ?? "");
 /**
  * The names a seat keeps from the caller's environment: the base list and its own agent's login
- * prefixes (`agent` is a key of LOGIN_PREFIXES, or empty for none), plus `extraPrefixes`. PATH and the
+ * names and prefixes (`agent` is a key of LOGIN_PREFIXES, or empty for none), plus `extraPrefixes`. PATH and the
  * path-valued names are set and checked by the caller (seat-paths.mjs, seat-spec.mjs).
  * @param {NodeJS.ProcessEnv} env
  * @param {string} agent
@@ -115,12 +136,18 @@ export function seatEnv(env, agent, extraPrefixes) {
             : []),
         ];
   const prefixes = [...own, ...cloud, ...extraPrefixes.filter((p) => p.length > 0)].map(fold);
-  const named = new Set([...BASE_ENV, ...(WINDOWS ? WINDOWS_ENV : [])].map(fold));
+  const named = new Set(
+    [...BASE_ENV, ...(WINDOWS ? WINDOWS_ENV : []), ...(LOGIN_NAMES[agent] ?? [])].map(fold),
+  );
   /** @type {NodeJS.ProcessEnv} */
   const out = {};
   for (const [name, value] of Object.entries(env)) {
     const key = fold(name);
-    if (value !== undefined && (named.has(key) || prefixes.some((p) => key.startsWith(p)))) {
+    if (
+      value !== undefined &&
+      !COMMAND_NAME.test(name) &&
+      (named.has(key) || prefixes.some((p) => key.startsWith(p)))
+    ) {
       out[name] = value;
     }
   }

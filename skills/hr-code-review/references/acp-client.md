@@ -138,11 +138,30 @@ What stays outside this: managed policy settings and an adapter's own hooks (Cla
 The seat starts with a narrowed environment, not the caller's: named locale,
 path, XDG, proxy and certificate variables (on Windows, also the variables a
 program needs to start), plus only the variables its own agent reads to log in
-(`CODEX_` and `OPENAI_` for Codex, `ANTHROPIC_` and `CLAUDE_` for Claude, `DEVIN_`,
+(`CODEX_` and `OPENAI_` for Codex, `ANTHROPIC_` and six `CLAUDE_` names for Claude, `DEVIN_`,
 `GROK_` and `XAI_`, `GEMINI_` and `GOOGLE_` for Antigravity, `CURSOR_`).
 
 A Claude
-seat on Bedrock keeps `AWS_` and one on Vertex keeps its Google credential path
+seat keeps `ANTHROPIC_*` and only these `CLAUDE_` names, each read by the installed claude-agent-acp 0.102.0 or its SDK:
+`CLAUDE_CONFIG_DIR` (adapter `dist/paths.js:5`; SDK `core-hz6x1gbv.mjs:16`), `CLAUDE_CODE_OAUTH_TOKEN`
+(`dist/acp-agent.js:11560`), `CLAUDE_CODE_USE_BEDROCK` and `CLAUDE_CODE_USE_VERTEX` (`dist/acp-agent.js:2016`, `2023`;
+SDK `sdk.mjs:42`), and the program overrides `CLAUDE_CODE_EXECUTABLE` (`dist/claude-cli.js:20`) and `CLAUDE_CODE_SHELL`.
+The CLI reads over a thousand `CLAUDE_` names, among them a shell prefix, helper commands and runner binaries, so the
+others are not passed. Known gaps, read by the adapter or SDK but not needed to log in by subscription, API key,
+Bedrock or Vertex: `CLAUDE_MODEL_CONFIG`, `CLAUDE_CODE_THINKING_DISPLAY`, `CLAUDE_CODE_IDLE_COMPACT_MIN_TOKENS`,
+`CLAUDE_AGENT_ACP_IDLE_COMPACT_DELAY_MS`, `CLAUDE_AGENT_LOGS`, `CLAUDE_AGENT_ACP_PROTOCOL`, the other cloud
+routes (`CLAUDE_CODE_USE_ANTHROPIC_AWS`, `_GOOGLE_CLOUD`, `_FOUNDRY`, `_MANTLE`) and the OAuth endpoint overrides
+(`CLAUDE_CODE_CUSTOM_OAUTH_URL`, `CLAUDE_CODE_OAUTH_CLIENT_ID`, `CLAUDE_LOCAL_OAUTH_*`); a caller that needs one names
+it in `ACP_PANEL_PASS_ENV`. A name ending `_COMMAND` or `_SHELL_PREFIX` holds a command line and is never passed. A
+program override (`*_EXECUTABLE`, `*_EXE`, `*_BINARY`, `*_BIN`, `*_PROGRAM`, `*_SHELL`) is forwarded only as the
+canonical path of an executable outside the checkout; a bare name (`claude`, `claude.js`, `claude.exe`, which a
+runtime or Windows looks up in the server's working folder first) is dropped with a note on stderr. Checked for the
+other agents (strings of the installed binaries and adapter sources, 2026-11-10): Codex has `CODEX_PATH`, which the
+client already resolves and replaces with its wrapper, and no other program-bearing `CODEX_` name; Devin, Antigravity
+(`GEMINI_`) and Muse (not a `--seat-agent`) have none (Muse has `MUSE_AUTH_PATH`, a path); Grok has `GROK_SHELL`
+(handled like the Claude overrides) and `GROK_AUTH_PROVIDER_COMMAND` and `GROK_WORKSPACE_COMMAND` (never passed); the
+OpenCode seat builds its own environment and passes no prefix. A Claude seat
+on Bedrock keeps `AWS_` and one on Vertex keeps its Google credential path
 and region, when `CLAUDE_CODE_USE_BEDROCK` or `CLAUDE_CODE_USE_VERTEX` is on.
 
 The

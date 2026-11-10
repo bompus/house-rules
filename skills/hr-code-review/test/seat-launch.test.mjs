@@ -44,6 +44,58 @@ test("a seat keeps paths and locale and drops keys, tokens and the SSH agent", P
   const env = seatEnv(ENV, "", []);
   assert.deepEqual(Object.keys(env).sort(), ["HOME", "LC_ALL", "PATH", "XDG_CACHE_HOME"]);
 });
+test(
+  "a Claude seat keeps the names its adapter and SDK read to log in, and no other CLAUDE_ name",
+  POSIX,
+  () => {
+    const env = seatEnv(
+      {
+        ANTHROPIC_API_KEY: "k",
+        CLAUDE_CONFIG_DIR: "/c",
+        CLAUDE_CODE_OAUTH_TOKEN: "t",
+        CLAUDE_CODE_USE_BEDROCK: "1",
+        CLAUDE_CODE_USE_VERTEX: "1",
+        CLAUDE_CODE_EXECUTABLE: "/x/claude",
+        CLAUDE_CODE_SHELL: "/x/bash",
+        CLAUDE_CODE_SHELL_PREFIX: "wrap",
+        CLAUDE_CODE_SHELL_LAUNCHER_SCRIPT: "/r/s.sh",
+        CLAUDE_CODE_TEAMMATE_COMMAND: "x",
+        CLAUDE_RUNNER_CLAUDE_BIN: "/r/claude",
+        CLAUDE_SSH_LOCAL_BINARY: "/r/ssh",
+        CLAUDE_CODE_EFFORT_LEVEL: "max",
+      },
+      "claude",
+      [],
+    );
+    assert.deepEqual(Object.keys(env).sort(), [
+      "ANTHROPIC_API_KEY",
+      "CLAUDE_CODE_EXECUTABLE",
+      "CLAUDE_CODE_OAUTH_TOKEN",
+      "CLAUDE_CODE_SHELL",
+      "CLAUDE_CODE_USE_BEDROCK",
+      "CLAUDE_CODE_USE_VERTEX",
+      "CLAUDE_CONFIG_DIR",
+    ]);
+  },
+);
+test(
+  "a name that holds a command line is never passed, whatever prefix lets it through",
+  POSIX,
+  () => {
+    const env = seatEnv(
+      {
+        FAKE_COMMAND: "x y",
+        FAKE_SHELL_PREFIX: "wrap",
+        FAKE_KEEP: "1",
+        GROK_AUTH_PROVIDER_COMMAND: "c",
+        GROK_HOME: "/g",
+      },
+      "grok",
+      ["FAKE_"],
+    );
+    assert.deepEqual(Object.keys(env).sort(), ["FAKE_KEEP", "GROK_HOME"]);
+  },
+);
 test("each agent keeps only its own login variables", POSIX, () => {
   const claude = seatEnv(ENV, "claude", []);
   assert.equal(claude.ANTHROPIC_AUTH_TOKEN, "a");

@@ -141,6 +141,75 @@ test(
   },
 );
 
+test(
+  "a program override is forwarded as a checked absolute path, and a bare name is never forwarded",
+  POSIX,
+  () => {
+    withTree((t) => {
+      const real = join(t.dir, "real-claude");
+      writeFileSync(real, "#!/bin/sh\nexit 0\n", { mode: 0o755 });
+      symlinkSync(real, join(t.dir, "claude-link"));
+      const spec = (/** @type {Record<string, string | undefined>} */ vars, agent = "claude") => {
+        /** @type {ReturnType<typeof seatSpec> | undefined} */
+        let out;
+        withEnv(vars, () => {
+          out = build({ ...base(t), agent, exe: join(t.bin, "tool") });
+        });
+        return /** @type {ReturnType<typeof seatSpec>} */ (/** @type {unknown} */ (out));
+      };
+      // An absolute executable outside the checkout is forwarded as its canonical path.
+      const ok = spec({
+        CLAUDE_CODE_EXECUTABLE: join(t.dir, "claude-link"),
+        CLAUDE_CODE_SHELL: real,
+      });
+      assert.equal(ok.env.CLAUDE_CODE_EXECUTABLE, real);
+      assert.equal(ok.env.CLAUDE_CODE_SHELL, real);
+      // A bare name is dropped, as are the forms a runtime reads from the review root before PATH
+      // (`claude.js` run as `node claude.js`; on Windows `claude.exe` is looked for in the working folder first).
+      for (const bare of ["claude", "claude.js", "claude.exe", "claude.cmd"]) {
+        const s = spec({ CLAUDE_CODE_EXECUTABLE: bare, CLAUDE_CODE_SHELL: bare });
+        assert.equal(s.env.CLAUDE_CODE_EXECUTABLE, undefined, bare);
+        assert.equal(s.env.CLAUDE_CODE_SHELL, undefined, bare);
+      }
+      // A relative path with a separator, or a path in the checkout, refuses the launch.
+      for (const value of ["bin/claude", "bin/bash", join(t.repo, "bin", "claude")]) {
+        for (const name of ["CLAUDE_CODE_EXECUTABLE", "CLAUDE_CODE_SHELL"]) {
+          assert.throws(
+            () => spec({ [name]: value }),
+            /relative path|inside the review checkout/,
+            `${name}=${value}`,
+          );
+        }
+      }
+      // An absolute path that is no executable file is dropped.
+      assert.equal(
+        spec({ CLAUDE_CODE_EXECUTABLE: join(t.dir, "nothing-here") }).env.CLAUDE_CODE_EXECUTABLE,
+        undefined,
+      );
+      // The names a Claude seat needs stay, and the others the CLI reads (a shell prefix, a helper command) do not.
+      const kept = spec({
+        CLAUDE_CONFIG_DIR: t.home,
+        CLAUDE_CODE_SHELL_PREFIX: "wrap",
+        CLAUDE_CODE_TEAMMATE_COMMAND: "x",
+        CLAUDE_RUNNER_CLAUDE_BIN: "claude",
+      });
+      assert.equal(kept.env.CLAUDE_CONFIG_DIR, t.home);
+      for (const name of [
+        "CLAUDE_CODE_SHELL_PREFIX",
+        "CLAUDE_CODE_TEAMMATE_COMMAND",
+        "CLAUDE_RUNNER_CLAUDE_BIN",
+      ]) {
+        assert.equal(kept.env[name], undefined, name);
+      }
+      // Grok's shell override gets the same treatment.
+      writeFileSync(join(t.bin, "grok"), "#!/bin/sh\nexit 0\n", { mode: 0o755 });
+      const g = spec({ GROK_SHELL: "bash", GROK_AUTH_PROVIDER_COMMAND: "x" }, "grok");
+      assert.equal(g.env.GROK_SHELL, undefined);
+      assert.equal(g.env.GROK_AUTH_PROVIDER_COMMAND, undefined);
+    });
+  },
+);
+
 test("a grok seat starts Grok's ACP server, `grok agent stdio`, not its terminal UI", POSIX, () => {
   withTree((t) => {
     writeFileSync(join(t.bin, "grok"), "#!/bin/sh\nexit 0\n", { mode: 0o755 });

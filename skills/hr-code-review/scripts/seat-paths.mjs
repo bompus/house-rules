@@ -283,8 +283,46 @@ const SINGLE_PATH = /(_HOME|_DIR|_FILE|_ROOT|_CREDENTIALS|_BUNDLE|_CERTS?)$/i;
 const URL_NAME = /(^|_)(proxy|url|uri|endpoint)$/i;
 // A name that holds a program: absolute, or a bare name the server looks up on its own PATH (the trusted
 // folders). A relative path with a separator is read from the server's working directory, the review root.
-const PROGRAM_NAME = /_(EXECUTABLE|EXE|BINARY|BIN|PROGRAM)$/i;
+const PROGRAM_NAME = /_(EXECUTABLE|EXE|BINARY|BIN|PROGRAM|SHELL)$/i;
 const NETWORK_URL = /^(?!file:)[a-z][a-z0-9+.-]+:\/\//i;
+
+/**
+ * The program-named variables (`CLAUDE_CODE_EXECUTABLE`, `CLAUDE_CODE_SHELL`, `GROK_SHELL`) in `env`, as the
+ * seat gets them: an absolute path to an executable outside the checkout becomes its canonical path (a link
+ * changed afterwards changes nothing), a path in the checkout is a refusal, and anything else is dropped. A
+ * bare name is never forwarded: a runtime reads `claude.js` as `node claude.js` in the server's working
+ * folder, and Windows looks a bare `claude.exe` up there before PATH. A relative path with a separator is
+ * left for checkEnvPaths to refuse.
+ * @param {Record<string, string | undefined>} env changed in place
+ * @param {string} root the review root
+ * @param {(message: string) => never} refuse
+ * @returns {string[]} the names dropped
+ */
+export function forwardPrograms(env, root, refuse) {
+  /** @type {string[]} */
+  const dropped = [];
+  for (const [name, value] of Object.entries(env)) {
+    if (!PROGRAM_NAME.test(name) || value === undefined || value === "") {
+      continue;
+    }
+    if (!(WINDOWS ? /[\\/]/ : /\//).test(value)) {
+      delete env[name];
+      dropped.push(name);
+    } else if (isAbsolute(value)) {
+      if (inside(reviewBase(root), value)) {
+        refuse(`${name} is inside the review checkout; point it outside`);
+      }
+      const real = resolveProgram(value, [], root, refuse);
+      if (real === undefined) {
+        delete env[name];
+        dropped.push(name);
+      } else {
+        env[name] = real;
+      }
+    }
+  }
+  return dropped;
+}
 
 /**
  * Refuses an environment value that names a relative path, or a path inside the checkout, where a
