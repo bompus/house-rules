@@ -55,8 +55,9 @@ For an agent running without a terminal, use the preview/apply workflow below.
    default** (your model and host ask their usual way; house-rules gives no
    instruction), **Text only** (plain text options; no question tools are
    called), or **Clickable choices when available** (complete text options plus a
-   question card). Recommend House default unless they say otherwise. Before they
-   choose, give each choice's cost from the "What each question choice costs"
+   question card). Recommend House default unless they say otherwise.
+
+   Before they choose, give each choice's cost from the "What each question choice costs"
    section of `docs/configuration.md` in one sentence: Text only hides questions
    from hosts that show pending ones; cards can be cancelled by a steering message
    and may hide text written before them; Model default varies by host. Map the
