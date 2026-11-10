@@ -2412,7 +2412,8 @@ test(
 );
 test(
   "an agy launch with arguments beyond the allowed few, or in another form, is refused",
-  POSIX_ONLY,
+  // Twenty-seven client launches in one test: about 5 s on a CI runner, which is Bun's default limit.
+  { ...POSIX_ONLY, timeout: 60000 },
   () => {
     for (const serverArgs of [
       ["acp", "--gemini-dir", "%DIR%/mine"],
