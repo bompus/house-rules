@@ -85,7 +85,7 @@ relative to the receipt; the checker reads only explicitly named snapshots.
 - Thread-bound state (scheduled or recurring tasks, PR watches, any mail or
   messaging registration and subscriptions) is an `items` entry like any other. `next`
   names the receiver's exact call to bind it and how to read it back, or why it
-  stays with the outgoing thread until the user closes it.
+  stays with the outgoing thread until that thread is archived or the user closes it.
 - `git` records `scope`, `checkedAt` and `evidence`, plus explicit `ownedPrs`,
   `dependencyPrs` and `commitsWithoutPr` arrays. Empty arrays are checked
   results, not omitted fields. For no repository work, say so in `scope` and

@@ -5,7 +5,7 @@ the current one. It decides when replacing a session is warranted, when it is
 safe and what the handoff and the successor record. It does not authorize
 starting a thread. The house rules' § Repository work still requires the
 user's direction, a standing spin-off preference or a rule that requires the
-handoff. The host's own guidance owns the tool calls that create, rename and
+handoff. The host's own guidance owns the tool calls that create, rename, place and
 rebind a thread.
 
 ## When stale guidance warrants a new session
@@ -47,6 +47,26 @@ counts as `v1` and is renamed at the handoff.
 A title is a label for people. Never look a thread up by its title. Use the
 thread record, the project and the thread id.
 
+## Where the successor goes
+
+The successor takes the outgoing thread's place, so the user finds it where
+they left the old one. Read each value from the outgoing thread's own record
+(the launcher is often another thread, whose own project a launch inherits),
+set it on the successor and read it back:
+
+- The same project or workspace, and the same environment when the host links
+  several. A thread with no project gets a successor with no project.
+- The same pin state, and the same snooze or grouping where the host has them.
+  A host whose launch call cannot set one sets it with a second call right
+  after the launch.
+- The title series above.
+
+A user may pin or unpin the outgoing thread during the handoff, so read its pin
+state again just before retiring it and copy a change.
+
+A fresh session in the same thread (an in-place reset) keeps the thread id,
+placement, bindings and links, so none of this applies to it.
+
 ## What the handoff records
 
 - The outgoing thread's id and the successor's id, so each points to the other.
@@ -70,9 +90,56 @@ thread record, the project and the thread id.
 
 ## Successor record
 
-- Mark the outgoing thread settled and record a pointer to the successor where
-  the host keeps such notes. Do this last, after the successor confirms it has
-  read the handoff.
-- The successor starts by reading the handoff in full. It re-points each item
-  it can bind, with a read-back, and records every result in the receipt,
-  including the items that stay behind. Only then does it take new work.
+The successor starts by reading the handoff in full. It re-points each item it
+can bind, with a read-back, and records every result in the receipt, including
+the items that stay behind. Only then does it take new work.
+
+## Retiring the outgoing thread
+
+Records first, then retire. The successor, or the thread that launched it, does
+these steps; the outgoing thread does no new work. Bound items move to the
+successor before the archive, because archiving can end the outgoing thread's
+watches. A message to a thread that is not archived starts a run in it, and a
+run after the settle undoes the settle, so every run the outgoing thread still
+has to make (a last pointer to the successor, retiring its own copy of a task
+that only it can unbind) comes first and ends before the settle.
+
+1. Once the successor has read the handoff, read back its bound items and
+   finished any such last run, mark the outgoing thread settled and record a
+   pointer to the successor where the host keeps such notes.
+2. Archive it without being asked, unless the user said to keep it, when all
+   hold: the successor is live, not archived and placed as above; no scheduled
+   task is bound to the outgoing thread and no watch it holds is still needed;
+   each pull request linked to it is merged, closed or tracked by the
+   successor; no worktree or branch of the outgoing thread holds uncommitted or
+   unpushed work that the successor does not own; nothing is running, queued or
+   waiting on a question or an approval in it, and no delegated task or
+   background command it started is still running.
+3. When a check fails, leave the thread settled and not archived, and name the
+   failed check in the receipt; archive it once the check holds.
+4. The receipt records the successor's placement and the outgoing thread's
+   state (settled, archived or the failed check), each with the read-back that
+   verified it.
+
+## On T3 Code
+
+The host adapter for the steps above; the tool calls are T3's, and each takes
+`environmentId` for a thread on a linked environment.
+
+- `t3_thread_launch` has no pin or snooze field. It takes `projectId` (omitted:
+  the launcher's own project), `scratch: true` (a new scratch folder, not the
+  outgoing thread's) and `environmentId` (omitted: the launcher's own
+  environment). Pass the outgoing thread's `projectId` from `t3_thread_read`,
+  `scratch` only when its record has none, and its `environmentId` (the second
+  part of its thread link). Then call `t3_thread_organize` on the successor's
+  `threadId`: `action: pin` when the outgoing thread is pinned, and `snooze`
+  with its `snoozedUntil` when it is snoozed. Pin and snooze are separate; set
+  each that applies, with `unpin` or `unsnooze` for a change made meanwhile.
+- `t3_thread_read` and `t3_thread_list` show `projectId`, `title`, `settled`,
+  `snoozed`, `snoozedUntil` and `archived`, but not the pin. Read the pin as
+  `pinnedAt` in the local state database of the environment the thread lives
+  on: the `payload_json` of its row in `orchestration_v2_projection_threads`,
+  through a read-only connection.
+- `t3_thread_organize` with `action: settle`, then `archive`. A thread's own
+  settle applies at the end of its turn and a failed turn or queued message
+  leaves it active, so verify with `t3_thread_read` after the run ends.

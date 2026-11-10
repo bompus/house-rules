@@ -65,13 +65,14 @@ the host binds to the outgoing thread:
    receiver's read-back confirms its replacement, so the work neither runs twice nor is lost.
 3. Follow any thread-switch checklist the owning repository or the user's
    guidance names, and list it in the handoff.
-4. Keep the outgoing registration until the user closes the old thread, then
-   retire it.
+4. Keep the outgoing registration until the outgoing thread is archived or the
+   user closes it, then retire it.
 5. Give each bound item a row in the receipt, with owner, state and next action.
 
 When the new thread replaces this one as its successor, also follow
 [successor-thread.md](references/successor-thread.md) for when a replacement is
-warranted, its safe boundary, the title and the successor record.
+warranted, its safe boundary, the title, where the successor goes (project,
+environment, pin) and retiring the outgoing thread (settle, then archive).
 
 At a low-quota stop, save essential state first and record partial coverage
 when feasible. An unfinished receipt or failing check never delays that stop.
