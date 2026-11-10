@@ -858,7 +858,8 @@ test(
         "not the run directory holding the checkout",
       );
     }
-    const agy = run({ launcher: "agy" }, AGY_FLAGS, agyHome("t"));
+    // The login the client copies is the one under the test's own home folder, not the runner's.
+    const agy = run({ launcher: "agy", env: { HOME: "%DIR%/home" } }, AGY_FLAGS, agyHome("t"));
     assert.equal(agy.code, 0, agy.error);
     assert.match(String(agy.launch?.startCwd), /\/repo$/, "agy starts in the review root");
   },

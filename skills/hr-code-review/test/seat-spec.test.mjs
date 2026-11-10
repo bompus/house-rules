@@ -657,3 +657,44 @@ try { console.log("ok " + privateDir()); } catch (e) { console.log("refused " + 
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test(
+  "a node or deno server is held to the same form as bun: the script first, absolute, outside the checkout",
+  POSIX,
+  () => {
+    withTree((t) => {
+      const script = join(t.dir, "server.mjs");
+      writeFileSync(script, "export {};\n");
+      const alias = join(t.dir, "alias.mjs");
+      symlinkSync(script, alias);
+      const inRepo = join(t.repo, "server.mjs");
+      writeFileSync(inRepo, "export {};\n");
+      for (const name of ["node", "deno"]) {
+        const exe = join(t.bin, name);
+        writeFileSync(exe, "#!/bin/sh\nexit 0\n", { mode: 0o755 });
+        const lead = name === "deno" ? ["run", "--allow-read"] : [];
+        const launch = build({ ...base(t), agent: "other", exe, args: [...lead, alias, "--flag"] });
+        assert.deepEqual(
+          launch.cmd,
+          [exe, ...lead, script, "--flag"],
+          `${name}: the canonical script`,
+        );
+        for (const args of [
+          [],
+          [inRepo],
+          ["server.mjs"],
+          ["--require", script, script],
+          ...(name === "deno"
+            ? [[script], ["x", script], ["run", inRepo], ["run", "--config", "./d.json", script]]
+            : []),
+        ]) {
+          assert.throws(
+            () => build({ ...base(t), agent: "other", exe, args }),
+            new RegExp(`${name} server must be started as`),
+            `${name} ${args.join(" ")}`,
+          );
+        }
+      }
+    });
+  },
+);

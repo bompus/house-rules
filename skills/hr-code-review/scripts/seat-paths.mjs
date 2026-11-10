@@ -97,10 +97,16 @@ export function inside(base, path) {
 
 /**
  * The folders a program may come from when the caller names none of its own: the system's.
- * On Windows, only the system folder.
+ * On Windows, the system folder and Git for Windows' folders under Program Files (an installation an
+ * administrator makes), so the client still finds `git` to compare the checkout before and after.
  */
 export const SYSTEM_DIRS = WINDOWS
-  ? [process.env.SystemRoot ? join(process.env.SystemRoot, "System32") : ""].filter(Boolean)
+  ? [
+      process.env.SystemRoot ? join(process.env.SystemRoot, "System32") : "",
+      ...[process.env.ProgramFiles, process.env.ProgramW6432].flatMap((programs) =>
+        programs ? [join(programs, "Git", "cmd"), join(programs, "Git", "bin")] : [],
+      ),
+    ].filter(Boolean)
   : [
       "/usr/local/sbin",
       "/usr/local/bin",
@@ -176,7 +182,13 @@ export function resolveProgram(name, dirs, root, refuse) {
   if (hasSeparator && !isAbsolute(name)) {
     return refuse(`${name} is a relative path; give an absolute path or a bare name`);
   }
-  const candidates = isAbsolute(name) ? [name] : dirs.map((dir) => join(dir, name));
+  // On Windows a bare name is a program with its suffix (`git` is `git.exe`); only `.exe` and `.com` run
+  // directly, a script (`.cmd`, `.bat`) needs a shell and is not looked for.
+  const suffixed = (/** @type {string} */ file) =>
+    WINDOWS && !/\.[^\\/.]+$/.test(file) ? [file, `${file}.exe`, `${file}.com`] : [file];
+  const candidates = (isAbsolute(name) ? [name] : dirs.map((dir) => join(dir, name))).flatMap(
+    suffixed,
+  );
   for (const candidate of candidates) {
     /** @type {string | undefined} */
     let real;

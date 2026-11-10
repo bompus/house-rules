@@ -138,24 +138,31 @@ export function seatSpec({ agent, exe, args, root, dirs, extraPrefixes, pathValu
       );
     }
   }
-  if (names.includes("bun")) {
-    // `bun SCRIPT` only: no subcommand and no option of the caller's before the script (a later
-    // `--config` could undo what BUN_OPTIONS below sets), and the script an absolute file outside the
-    // checkout.
+  const interpreter = ["bun", "node", "deno"].find((n) => names.includes(n));
+  if (interpreter) {
+    // `bun SCRIPT`, `node SCRIPT`, `deno run [flags] SCRIPT` only: no subcommand and no option of the
+    // caller's before the script (a later `--config` could undo what BUN_OPTIONS below sets, a
+    // `--require` runs a file first), and the script an absolute file outside the checkout, so the
+    // server is never code the checkout supplies.
+    let at = 0;
+    if (interpreter === "deno") {
+      at = full[0] === "run" ? full.findIndex((a, i) => i > 0 && !a.startsWith("-")) : -1;
+    }
     let ok = false;
-    if (full[0] && isAbsolute(full[0])) {
+    const given = at >= 0 ? full[at] : undefined;
+    if (given && isAbsolute(given)) {
       try {
-        const real = realpathSync.native(full[0]);
+        const real = realpathSync.native(given);
         ok = statSync(real).isFile() && !inside(reviewBase(root), real);
         // The script that runs is the file that was checked, so a link changed afterwards changes nothing.
-        full[0] = real;
+        full[at] = real;
       } catch {
         ok = false;
       }
     }
     if (!ok) {
       return refuse(
-        "a bun server must be started as `bun SCRIPT [args]`, with the script, as the first argument, an absolute path to a file outside the review checkout",
+        `a ${interpreter} server must be started as \`${interpreter}${interpreter === "deno" ? " run [flags]" : ""} SCRIPT [args]\`, with the script, as the first argument, an absolute path to a file outside the review checkout`,
       );
     }
   }
