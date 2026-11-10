@@ -147,7 +147,7 @@ A Claude seat keeps `ANTHROPIC_*` and only these `CLAUDE_` names, each read by t
 - `CLAUDE_CODE_OAUTH_TOKEN` (`dist/acp-agent.js:11560`)
 - `CLAUDE_CODE_USE_BEDROCK` and `CLAUDE_CODE_USE_VERTEX` (`dist/acp-agent.js:2016`, `2023`; SDK `sdk.mjs:42`)
 - `CLAUDE_SECURESTORAGE_CONFIG_DIR` (SDK `sdk.mjs:161`, where the CLI finds its stored login)
-- a gateway's client certificate: `CLAUDE_CODE_CLIENT_CERT`, `CLAUDE_CODE_CLIENT_KEY` (a path) and `CLAUDE_CODE_CLIENT_KEY_PASSPHRASE` (the native CLI, which has no source line to cite)
+- a gateway's client certificate (the native CLI, which has no source line to cite): `CLAUDE_CODE_CLIENT_CERT`, `CLAUDE_CODE_CLIENT_KEY` (a path) and `CLAUDE_CODE_CLIENT_KEY_PASSPHRASE`
 - the two switches a gateway uses so the CLI does not resolve AWS or Google credentials locally: `CLAUDE_CODE_SKIP_BEDROCK_AUTH` and `CLAUDE_CODE_SKIP_VERTEX_AUTH` (plain switches; the native CLI, no source line to cite)
 - the program overrides `CLAUDE_CODE_EXECUTABLE` (`dist/claude-cli.js:20`) and `CLAUDE_CODE_SHELL`
 
@@ -155,7 +155,7 @@ The CLI reads over a thousand `CLAUDE_` names, among them a shell prefix, helper
 
 A name ending `_COMMAND`, `_SHELL_PREFIX`, `_HELPER` or `_AUTH_REFRESH` holds a command line and is never passed. A program override (`*_EXECUTABLE`, `*_EXE`, `*_BINARY`, `*_BIN`, `*_PROGRAM`, `*_SHELL`) is forwarded only as the canonical path of an executable outside the checkout; a bare name (`claude`, `claude.js`, `claude.exe`, which a runtime or Windows looks up in the server's working folder first) is dropped with a note on stderr.
 
-The other agents' program-bearing names: Codex has `CODEX_PATH`, which the client resolves and replaces with its wrapper, and no other program-bearing `CODEX_` name; Devin, Antigravity (`GEMINI_`) and Muse (not a `--seat-agent`) have none (Muse has `MUSE_AUTH_PATH`, a path); Grok has `GROK_SHELL` (handled like the Claude overrides) and `GROK_AUTH_PROVIDER_COMMAND` and `GROK_WORKSPACE_COMMAND` (never passed); the OpenCode seat builds its own environment and passes no prefix.
+The other agents' program-bearing names: Codex has `CODEX_PATH`, which the client resolves and replaces with its wrapper, and no other program-bearing `CODEX_` name; Devin, Antigravity (`GEMINI_`) and Muse (not a `--seat-agent`) have none (Muse has `MUSE_AUTH_PATH`, a path); Grok has `GROK_SHELL` (handled like the Claude overrides) and `GROK_AUTH_PROVIDER_COMMAND` and `GROK_WORKSPACE_COMMAND` (never passed); Cursor has `CURSOR_LOCAL_AGENT_API_KEY_HELPER` and `CURSOR_BEDROCK_AWS_AUTH_REFRESH` (command lines, never passed; a helper-only login needs its credentials another way); the OpenCode seat builds its own environment and passes no prefix.
 
 A Claude seat on Bedrock keeps `AWS_` and one on Vertex keeps its Google credential path and region, when `CLAUDE_CODE_USE_BEDROCK` or `CLAUDE_CODE_USE_VERTEX` is on.
 
