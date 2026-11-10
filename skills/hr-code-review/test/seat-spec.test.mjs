@@ -685,7 +685,15 @@ test(
           ["server.mjs"],
           ["--require", script, script],
           ...(name === "deno"
-            ? [[script], ["x", script], ["run", inRepo], ["run", "--config", "./d.json", script]]
+            ? [
+                [script],
+                ["x", script],
+                ["run", inRepo],
+                ["run", "--config", "./d.json", script],
+                ["run", "--preload", script, inRepo],
+                ["run", "--preload=/x/y.ts", script],
+                ["run", "--import-map", "m.json", script],
+              ]
             : []),
         ]) {
           assert.throws(

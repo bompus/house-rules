@@ -45,6 +45,9 @@ const WRAPPERS = new Set(
 // loads code before the server's own. The client sets BUN_OPTIONS itself, below.
 const INJECTORS =
   /^(NODE_OPTIONS|NODE_PATH|NODE_EXTRA_.*_HOOK.*|BASH_ENV|ENV|BUN_OPTIONS|LD_.*|DYLD_.*|GCONV_PATH|LOCPATH|NLSPATH|PYTHON.*|RUBY.*|GEM_(HOME|PATH|ROOT)|PERL.*|JAVA_TOOL_OPTIONS|_JAVA_OPTIONS|JDK_JAVA_OPTIONS|CLASSPATH|DOTNET_STARTUP_HOOKS)$/i;
+// The flags of `deno run` that only grant or deny a permission or quiet it, with an attached value at most.
+const DENO_PERMISSION_FLAG =
+  /^(-A|-q|--quiet|--no-prompt|--no-check|--no-lock|--cached-only|--(allow|deny)-[a-z-]+(=.*)?)$/;
 const SCRIPT_EXT = /\.[cm]?[jt]s$/i;
 
 /**
@@ -146,7 +149,13 @@ export function seatSpec({ agent, exe, args, root, dirs, extraPrefixes, pathValu
     // server is never code the checkout supplies.
     let at = 0;
     if (interpreter === "deno") {
-      at = full[0] === "run" ? full.findIndex((a, i) => i > 0 && !a.startsWith("-")) : -1;
+      // Only permission flags may stand between `run` and the script: any other flag (`--preload`,
+      // `--import-map`, `--config`, `--require`) can load code, and a flag's value could be mistaken
+      // for the script.
+      at = full[0] === "run" ? 1 : -1;
+      while (at > 0 && DENO_PERMISSION_FLAG.test(full[at] ?? "")) {
+        at++;
+      }
     }
     let ok = false;
     const given = at >= 0 ? full[at] : undefined;
@@ -162,7 +171,7 @@ export function seatSpec({ agent, exe, args, root, dirs, extraPrefixes, pathValu
     }
     if (!ok) {
       return refuse(
-        `a ${interpreter} server must be started as \`${interpreter}${interpreter === "deno" ? " run [flags]" : ""} SCRIPT [args]\`, with the script, as the first argument, an absolute path to a file outside the review checkout`,
+        `a ${interpreter} server must be started as \`${interpreter}${interpreter === "deno" ? " run [permission flags]" : ""} SCRIPT [args]\`, with the script, as the first argument, an absolute path to a file outside the review checkout`,
       );
     }
   }
