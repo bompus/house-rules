@@ -183,6 +183,9 @@ const MOVED = {
     "So is a change that only records dated findings",
     "For fixes intended for pull requests, try the simplest",
     "Do not run a formatter where the repository configures none",
+    "The exempt changes are records and single values",
+    "Run the check before the push and read its result",
+    "The check is the repository's and the list is the user's",
   ],
   "Coordination and isolation": [
     "A detached long run must outlive the call",
