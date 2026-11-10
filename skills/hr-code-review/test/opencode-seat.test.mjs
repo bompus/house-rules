@@ -16,8 +16,8 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { delimiter, join, resolve } from "node:path";
-import { spawn, spawnSync } from "node:child_process";
+import { delimiter, isAbsolute, join, resolve } from "node:path";
+import { spawn, spawnSync as spawnSyncPlain } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import {
   SEAT_AGENT,
@@ -31,6 +31,24 @@ import {
   deniedBy,
 } from "../scripts/opencode-seat.mjs";
 import { userReadDenials } from "../scripts/opencode-config.mjs";
+/**
+ * Runs a command; when it is the script under test and the environment has a PATH, each absolute folder on
+ * it is also given as `--bin-dir`: the script starts programs from the trusted program folders, not from
+ * PATH, so the stand-ins the tests put on PATH are named to it the way a real caller names its own.
+ * @param {string} command
+ * @param {string[]} [args]
+ * @param {import("node:child_process").SpawnSyncOptions} [options]
+ */
+function spawnSync(command, args, options) {
+  const path = options?.env?.PATH;
+  if (args?.[0] === script && path) {
+    const dirs = path.split(delimiter).filter((d) => isAbsolute(d) && existsSync(d));
+    args = [...args.slice(0, 4), ...dirs.flatMap((d) => ["--bin-dir", d]), ...args.slice(4)];
+  }
+  return /** @type {import("node:child_process").SpawnSyncReturns<string>} */ (
+    spawnSyncPlain(command, args, /** @type {any} */ (options))
+  );
+}
 const script = fileURLToPath(new URL("../scripts/opencode-seat.mjs", import.meta.url));
 const POSIX_ONLY = { skip: process.platform === "win32" ? "needs POSIX executables" : false };
 const LINUX_ONLY = { skip: process.platform === "linux" ? false : "the sandbox is Linux only" };
@@ -293,7 +311,7 @@ test("the script reports an opencode that cannot start", POSIX_ONLY, () => {
     env: { PATH: "/nonexistent" },
   });
   assert.equal(r.status, 127);
-  assert.match(r.stderr, /opencode is not on PATH|cannot start opencode/);
+  assert.match(r.stderr, /opencode is not in the trusted program folders|cannot start opencode/);
 });
 
 /** OpenCode's rule: the last matching pattern decides; `*` matches any run of characters. */
@@ -384,7 +402,7 @@ test("on Linux the script refuses a review root that contains the home folder", 
         {
           cwd: state,
           encoding: "utf8",
-          env: { ...env, PATH: `${tools}${delimiter}${env.PATH}` },
+          env: { ...env, PATH: [tools, "/usr/bin", "/bin"].join(delimiter) },
         },
       );
       assert.equal(r.status, 2, r.stderr);
@@ -958,7 +976,16 @@ test("a stop sent while opencode runs ends it and removes the copy", LINUX_ONLY,
     const tmp = scratch("opencode-stop-tmp");
     const child = spawn(
       process.execPath,
-      [script, "opencode-go/m", "max", "prompt.md", "--bwrap", join(state, "bin", "bwrap")],
+      [
+        script,
+        "opencode-go/m",
+        "max",
+        "prompt.md",
+        "--bwrap",
+        join(state, "bin", "bwrap"),
+        "--bin-dir",
+        join(state, "bin"),
+      ],
       {
         cwd: dir,
         stdio: "ignore",
@@ -1593,7 +1620,7 @@ test(
         mode: 0o755,
       });
       mkdirSync(join(state, "bin2", "opencode"), { recursive: true });
-      const r = spawnSync(
+      const r = spawnSyncPlain(
         process.execPath,
         [script, "opencode-go/m", "max", "prompt.md", "--bwrap", join(dir, "bwrap")],
         {
@@ -1611,8 +1638,25 @@ test(
         },
       );
       assert.equal(r.status, 127, r.stderr);
-      assert.match(r.stderr, /opencode is not on PATH outside the review root/);
+      assert.match(r.stderr, /opencode is not in the trusted program folders/);
       assert.equal(existsSync(join(dir, "seen.bwrap")), false, "no sandbox, no bound binary");
+      // Naming that folder as a program folder is refused outright, not skipped.
+      const named = spawnSyncPlain(
+        process.execPath,
+        [
+          script,
+          "opencode-go/m",
+          "max",
+          "prompt.md",
+          "--bin-dir",
+          join(dir, "node_modules", ".bin"),
+          "--bwrap",
+          join(dir, "bwrap"),
+        ],
+        { cwd: dir, encoding: "utf8", env },
+      );
+      assert.equal(named.status, 2, named.stderr);
+      assert.match(named.stderr, /inside the review checkout/);
     });
   },
 );
@@ -1698,7 +1742,7 @@ test("OpenCode and bubblewrap run with a PATH of folders outside the checkout", 
         encoding: "utf8",
         env: {
           ...env,
-          PATH: [join(dir, "node_modules", ".bin"), "node_modules/.bin", env.PATH].join(delimiter),
+          PATH: ["node_modules/.bin", env.PATH].join(delimiter),
         },
       },
     );

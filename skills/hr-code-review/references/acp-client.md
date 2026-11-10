@@ -8,16 +8,20 @@ allowance. Launch it only within the user's authorization.
 ```sh
 cd <trusted-folder> && bun --no-env-file --config=<empty-bunfig.toml> \
   <skill-directory>/scripts/acp-panel-client.mjs \
-  '["<agent-command>","<stdio-argument>"]' brief.md answer.txt <review-root> \
+  --seat-agent <codex|claude|devin|agy|cursor|grok|other> \
+  [--server-exe <absolute-path>] [--server-arg <argument>]... [--bin-dir <absolute-folder>]... \
+  brief.md answer.txt <review-root> \
   --model <advertised-model-id> --effort <advertised-effort-value> \
   --verdict 'VERDICT:' --max-turns 2 --idle-min 5 --timeout-min 60 --no-web
 ```
 
-Launch it from a folder you trust, never from inside the checkout, and pass the review root as the fourth positional argument. Bun reads `.env` and `bunfig.toml` (a `preload` runs code) from the launch folder before the script starts, so a client launched in the checkout lets the checkout set environment variables and run code ahead of every guard below. As a second layer, `--no-env-file` stops the `.env` loading and `--config=PATH` (the `=` form, an existing empty TOML file; `/dev/null` is rejected) replaces the launch folder's `bunfig.toml`; both were checked on Bun 1.4.4. `opencode-seat.mjs` takes the checkout as `--root CHECKOUT` and is launched the same way.
+`--seat-agent NAME` is required: the client takes the agent from it and never works it out from a command. `--server-exe` is the absolute path of the server program (required for `codex`, `claude` and `other`; `devin`, `agy`, `cursor` and `grok` default to their own program name, looked up in the trusted program folders). `--server-arg` (repeatable; `--server-arg=VALUE` takes any value, `--server-arg VALUE` one that is not itself a flag) adds the server's arguments after the agent's own (`acp` for `devin` and `agy`). `--bin-dir` names an absolute folder outside the checkout that programs may be found in, besides the system's (`/usr/local/bin`, `/usr/bin`, `/bin` and the like). See Launch below.
 
-Node 22+ and Bun can run the same file. It imports `seat-launch.mjs` and `seat-hooks.mjs` from the same
-directory (the seat's environment, agent detection and the Codex, Devin and
-Antigravity setup), so a copy needs all three files. Arguments after the output path are
+Launch it from a folder you trust, never from inside the checkout, and pass the review root as the third positional argument. Bun reads `.env` and `bunfig.toml` (a `preload` runs code) from the launch folder before the script starts, so a client launched in the checkout lets the checkout set environment variables and run code ahead of every guard below. As a second layer, `--no-env-file` stops the `.env` loading and `--config=PATH` (the `=` form, an existing empty TOML file; `/dev/null` is rejected) replaces the launch folder's `bunfig.toml`; both were checked on Bun 1.4.4. `opencode-seat.mjs` takes the checkout as `--root CHECKOUT` and is launched the same way.
+
+Node 22+ and Bun can run the same file. It imports `seat-launch.mjs`, `seat-paths.mjs`, `seat-spec.mjs`, `seat-hooks.mjs` and `client-args.mjs` from the same
+directory (the seat's environment, the program folders, the launch, the Codex, Devin and
+Antigravity setup and the flag reader), so a copy needs all five files. Arguments after the output path are
 optional. The default is one turn, no required verdict, five minutes of idle
 silence counted from launch and a sixty-minute hard deadline. The hard deadline has a one-minute
 minimum.
@@ -47,9 +51,11 @@ module, not in this client. The module exports `check`, or a default function of
 the same shape:
 
 ```js
-export function check({ model, effort, command, options }) {
+export function check({ model, effort, agent, command, options }) {
   // model, effort: the --model and --effort values ("" when not given)
-  // command: the parsed server command array
+  // agent: the --seat-agent name
+  // command: the server command as written: the executable (--server-exe, or the agent's own
+  //   name), the agent's own arguments and the --server-arg values
   // options: { key: "value" } from the --policy-option flags
   // throw an Error to refuse the launch; the return value is ignored
 }
@@ -102,25 +108,20 @@ agent cannot obtain it through its own approved route.
   beside the user config or the given config, or `mcpServers` in the config),
   because Devin starts those at launch and nothing switches them off per
   session, and an `mcp_config.json` the client cannot parse (comments in it need
-  Bun) because its servers are then unknown. The Devin process also runs with `XDG_CONFIG_HOME` set to an empty private folder (its login lives elsewhere), so the MCP servers in the user's `mcp_config.json` do not start; on Windows that cannot be done and the launch is refused unless `--policy-option hooks-masked` is passed. When a package runner starts Devin, `--config` goes right after the name it starts, and after an interpreter's Devin script. Devin's cloud mode (`--cloud`, `devin cloud`) is refused, because the session then runs on a remote agent that the local deny rules and the offline check do not reach. A launch that may start Devin but that the client cannot read is refused: an argument named `devin` after a runner option that takes a value (`npx --cache DIR devin`), or a Devin script beside another interpreter script (`node --import shared/preload.mjs devin/index.js`). Only the executable, a runner's package and an interpreter's scripts count, not other arguments such as a title. With several Devin scripts, `--config` goes after the last plain one.
+  Bun) because its servers are then unknown. The Devin process also runs with `XDG_CONFIG_HOME` set to an empty private folder (its login lives elsewhere), so the MCP servers in the user's `mcp_config.json` do not start; on Windows that cannot be done and the launch is refused unless `--policy-option hooks-masked` is passed. `--config` goes right after Devin's executable. Devin's cloud mode (`--cloud`, `devin cloud`) is refused, because the session then runs on a remote agent that the local deny rules and the offline check do not reach.
 - **Antigravity (`agy`)** is refused (exit 2, a `[client] FATAL:` line, before any server
   starts) unless the caller passes `--policy-option agy-masked` (bare or `=true`; any other
   value does not count). `agy acp` starts the MCP servers, plugins and hooks it finds in the
   `.agents`, `.agent`, `_agents` and `_agent` folders of the working directory and of each directory up
   to the git root, from the files alone, at the first prompt; the marker declares that the caller has
-  covered those folders (for example by mounting empty directories over them). Any argument that names
-  agy counts (`agy`, `agy-acp`, `agy_acp_server.par`, also behind `env`, `sh -c`, a runner or an
-  interpreter's script), and so does any word that is a link to agy, by its path from the working directory or on `PATH`, behind a
-  wrapper too. An option's attached value counts (`env --split-string="agy acp"`, `env -Sagy`). A relative word is also tried from the directories a wrapper literally changes to (`env --chdir=DIR`, `cd DIR &&`), and a bare word as a file in them, so an interpreter's operand (`python3 antigravity.par`) counts. A bare word is looked up as the shell would: the first executable of that name on `PATH`, searched after a literal `PATH=...` in the command, with an empty entry meaning the working directory. The check runs before a `--policy` module is imported, and a policy cannot set the marker. A name written to hide it (shell quoting inside the name, a renamed copy) is not detected:
-  the check catches a mistake, it does not stop a caller that hides the launch. The detector is a heuristic second layer: the caller's mask over those folders is the protection, and a launch form the detector misses is not made safe by it. Besides the marker, an `agy acp` launch gets a private `--gemini-dir` (mode 0700, removed when the client exits or is stopped by SIGTERM, SIGINT or SIGHUP; a SIGKILL cannot be handled and leaves it) that holds only a copy of the user's login file (`~/.gemini/antigravity-cli/antigravity-oauth-token`, mode 0600), so the user's own hooks and MCP servers do not load; the client refuses a launch with no login to copy, one in another form (`agy-acp`, a wrapper or a script), any launch on Windows, and one that passes anything but `--sandbox`, `--disable-telemetry` (also `--disable_telemetry`) and `--agent` (one dash or two; a switch bare or as `=true` or `=false`; `--agent`'s value as `=V` or the next argument), because other flags can move agy's configuration folders (`--gemini-dir`, `--app-data-dir`, `--cli_dir_name`), add directories whose agent folders it runs (`--add-dir`), open an IDE MCP connection (`--ide-mcp-port`), change where the login goes or write a log to a path the caller picks (`--log-file`, `--cli_log_file`: agy opens it through a link and truncates the target), unless `--policy-option hooks-masked` declares them covered.
-- **Codex** (recognized from the launch command: its executable, package,
-  script, or a launch it cannot read that could still start `codex-acp` by the same rule as Devin's (the executable, a runner's package, an interpreter's scripts); an agent that only names itself Codex after
+  covered those folders (for example by mounting empty directories over them). The agent is the `--seat-agent` name, so the check runs before a `--policy` module is imported, and a policy cannot set the marker. An `agy` server starts in the review root, not an empty folder, because its tools run in the process's directory: the caller's mask over those folders is the protection. Besides the marker, an `agy acp` launch gets a private `--gemini-dir` (mode 0700, removed when the client exits or is stopped by SIGTERM, SIGINT or SIGHUP; a SIGKILL cannot be handled and leaves it) that holds only a copy of the user's login file (`~/.gemini/antigravity-cli/antigravity-oauth-token`, mode 0600), so the user's own hooks and MCP servers do not load; the client refuses a launch with no login to copy, one that is not `agy acp` followed by the allowed arguments, any launch on Windows, and one that passes anything but `--sandbox`, `--disable-telemetry` (also `--disable_telemetry`) and `--agent` (one dash or two; a switch bare or as `=true` or `=false`; `--agent`'s value as `=V` or the next argument), because other flags can move agy's configuration folders (`--gemini-dir`, `--app-data-dir`, `--cli_dir_name`), add directories whose agent folders it runs (`--add-dir`), open an IDE MCP connection (`--ide-mcp-port`), change where the login goes or write a log to a path the caller picks (`--log-file`, `--cli_log_file`: agy opens it through a link and truncates the target), unless `--policy-option hooks-masked` declares them covered.
+- **Codex** (`--seat-agent codex`; an agent that only names itself Codex after
   `initialize` still gets read-only mode, but no wrapper) always runs through a wrapper that turns off every MCP server
   `codex mcp list --json` names (listed from the review root, so the checkout's own
   project servers are included) (a seat never needs one, and a server runs with the
   user's own configuration); under `--no-web` the wrapper also turns off web
   search and the apps connector. The client refuses (exit 2) when that list cannot
-  be read (`CODEX_PATH`, an absolute path to a regular executable outside the review root, or else `codex` on `PATH` outside it, must run it), when a server name
+  be read (`CODEX_PATH`, an absolute path to a regular executable outside the review root, or else `codex` in the trusted program folders, must run it), when a server name
   cannot be turned off safely, and on Windows, where it cannot start a Codex seat
   at all. `CODEX_CONFIG` (JSON the caller sets for codex-acp) passes through
   without its `mcp_servers` table, which codex-acp would add to the session
@@ -130,7 +131,7 @@ agent cannot obtain it through its own approved route.
 
 A seat's agent can run hooks and start MCP servers from the user's configuration, and from the checkout's own, with the seat's environment. The client turns them off per adapter, as listed in the bullets above: Claude's adapter loads no settings source, Codex runs with its `hooks` feature off and its MCP servers disabled, Devin gets a config without hooks and an empty configuration folder, and `agy acp` gets a private Gemini folder. Each switch was checked with a canary hook or MCP server that writes a file, which stayed unwritten.
 
-What stays outside this: managed policy settings and an adapter's own hooks (Claude), the `.agents` folders of the checkout (Antigravity, covered by `agy-masked`), hooks and MCP servers of an agent the client does not recognize, and anything a launch form hides. `--policy-option hooks-masked` (bare or `=true`) declares that the caller has covered the user's hooks and MCP servers for Devin and Antigravity itself; the client then adds no empty folder and no Gemini folder. None of this keeps a process other than the agent from reading the checkout: a Bun process started in it reads its `.env` and `bunfig.toml`, which the Bun checks above address separately.
+What stays outside this: managed policy settings and an adapter's own hooks (Claude), the `.agents` folders of the checkout (Antigravity, covered by `agy-masked`), hooks and MCP servers of a server run as `other`, whose agent the client does not know. `--policy-option hooks-masked` (bare or `=true`) declares that the caller has covered the user's hooks and MCP servers for Devin and Antigravity itself; the client then adds no empty folder and no Gemini folder. None of this keeps a process other than the agent from reading the checkout: a Bun process started in it reads its `.env` and `bunfig.toml`, which the launch below addresses separately.
 
 ## Environment
 
@@ -145,21 +146,13 @@ seat on Bedrock keeps `AWS_` and one on Vertex keeps its Google credential path
 and region, when `CLAUDE_CODE_USE_BEDROCK` or `CLAUDE_CODE_USE_VERTEX` is on.
 
 The
-agent is read from the launch executable, the package a `bunx` or `npx` runner
-starts (or its `--package=` argument), or the script an interpreter runs (a
-script files (or a path ending in an adapter's own name without an extension, such as `tools/bin/codex-acp`) named on the command line, matched on the nearest of their last four
-path segments (the file's own name counts without its extension: `devin.mjs`), never a home directory, and only when they all name the same agent:
-
-a flag's value, attached (`--import=PATH`) or separate, that looks like a script makes the launch ambiguous, and so
-does a package runner option that takes a separate value, as in `npx --cache DIR
-PACKAGE`, a runner given more than one `--package=`, or a runner whose `--package=` names another agent than the command it runs (`npx --package=<claude> codex-acp`); an ambiguous launch gets the named variables only), never from other
-arguments. Other vendors' keys, `GH_TOKEN` and `SSH_AUTH_SOCK` stay
-out, and an agent the client does not recognize gets the named variables only.
+agent is the `--seat-agent` name, never anything read from a command. Other vendors' keys, `GH_TOKEN` and `SSH_AUTH_SOCK` stay
+out, and an `other` server gets the named variables only. `PATH` is not passed on: see Launch.
 
 `ACP_PANEL_PASS_ENV`, set by the caller as comma-separated prefixes, adds more
 (for a custom agent's login variables, or a test's fake agent). The caller also
 owns temporary-storage policy: set `TMPDIR` for the client and the seat inherits
-it, for example when `bunx` unpacks an adapter on a RAM-backed `/tmp`.
+it, for example when a seat writes large files on a RAM-backed `/tmp`.
 
 `HOME` and `XDG_RUNTIME_DIR` stay in the environment, because agents read their
 login files and runtime sockets from them. That has two consequences. Credential
@@ -170,9 +163,16 @@ reachable by anything the seat can run, even though `SSH_AUTH_SOCK` is withheld.
 Files inside the review root are readable by the seat, `.git/config` included:
 keep no credential there (a remote URL with a token, for example).
 
-The server starts in the review root, and a Bun process reads `.env` and `bunfig.toml` (a `preload` runs code) from where it starts. Hardened: a launch whose executable is `bun` gets `--no-env-file` and `--config=EMPTY` (an empty file in the client's private folder), each added when Bun's options before the script lack it. A bare `bun` or `bunx` is the one on `PATH` outside the checkout. Refused (exit 2): `bunx --bun`, `bun x --bun`, and any script whose first line is a `#!` line naming bun, because that launch cannot be rewritten safely (`env -S` options and quoting, the kernel's cut at 255 bytes); launch it as `bun --no-env-file --config=EMPTY SCRIPT`. Not hardenable: `bunx` and `bun x`, whose packages read both files if their `#!` line names bun. Every adapter in use runs under Node or is native. A bun command inside `env` or `sh -c` is not rewritten.
+## Launch
 
-The Bun checks are a heuristic second layer, like the agy detector; a server that does not start in the checkout is the real protection. Known gaps: a `#!` line whose `bun` straddles the kernel's 255-byte cut or is spelled with quotes inside the name (`env -S b"u"n`); a Bun binary reached through a link with another name (`runtime`, `Bun`, `bun-1.4.4`); an executable-only script (mode 0111), which cannot be read and so is not inspected; and `bun -c FILE` or `bun --config FILE`, which count as protection although only the attached `--config=FILE` works in Bun 1.4.4.
+The launch is built from the agent name, the program and its arguments, not filtered out of a command and an environment the caller shaped.
+
+- **Programs.** The server runs by absolute path: an absolute `--server-exe`, or a program name of the agent's profile found in the trusted program folders (the system's, plus each `--bin-dir`). The client never reads `PATH` for it, and refuses (exit 2) a program that is, or links into, the checkout (the outermost parent of the review root holding `.git` or `.jj`, else the review root), a relative `--server-exe`, and a `--bin-dir` that is relative, missing or inside the checkout. The server's `PATH` is one private folder of links, one per program the trusted folders hold, each pointing at the canonical file (the first folder wins), and a program whose file is inside the checkout is left out: so a `#!/usr/bin/env` line, `git` or a helper it starts cannot reach the checkout through a folder entry. A `--bin-dir` whose name holds the `PATH` separator is refused. The program that runs is the canonical file that was checked, so a link changed afterwards changes nothing. Containment is by the system's own path resolution (`link/..` follows the link) and by device and inode, so a bind mount of the checkout under another name counts as the checkout.
+- **Environment.** The allowlist above with `PATH` replaced. A path-valued variable (`HOME`, `TMPDIR`, `XDG_*`, `SSL_CERT_*`, and any name ending in `_HOME`, `_DIR`, `_DIRS`, `_PATH`, `_FILE`, `_ROOT`, `_CREDENTIALS`, `_BUNDLE` or `_CERT`, which covers `CODEX_HOME`, `CLAUDE_CONFIG_DIR` and `GOOGLE_APPLICATION_CREDENTIALS`) must be an absolute path outside the checkout, and a `file:` value must not point into it, and any other value must not hold a path element that starts with `./` or `../`, or the launch is refused. `NODE_OPTIONS`, `NODE_PATH`, `BASH_ENV`, `ENV`, `LD_*`, `DYLD_*` and the other interpreters' start-up variables (`PYTHONPATH`, `RUBYOPT`, `PERL5OPT`, `JAVA_TOOL_OPTIONS`, `CLASSPATH`, `DOTNET_STARTUP_HOOKS` and the like) are never passed, whatever `ACP_PANEL_PASS_ENV` names, and the client sets `BUN_OPTIONS` itself (see Bun).
+- **Start folder.** A `codex`, `claude`, `devin`, `cursor`, `grok` or `other` server starts in an empty private folder of the client's (mode 0700, outside the checkout), not in the review root; the review root reaches it only as the ACP session's working directory. A Bun process there finds no `.env` and no `bunfig.toml`. An `agy` server starts in the review root, because its tools run in the process's directory (`--add-dir` adds a workspace but does not move them); it still gets the program folder and environment above. `cursor` and `grok` start in the private folder but have not been checked on a live adapter to take their directory from the session.
+- **Bun.** Every seat gets `BUN_OPTIONS=--no-env-file --config=FILE` (an empty file in the client's private folder), so any Bun in its process tree (the server itself, a `#!` line naming bun, a helper it starts) reads no `.env` and an empty configuration, wherever it starts, the review root included. A server run by `bun` must be `bun SCRIPT [arguments]`: the script an absolute path to a file outside the checkout, no subcommand (`test`, `run`, `x`) and no option of the caller's before it. A package runner is refused (`bunx`, `npx`, `pnpx`, `bun x`): it fetches and runs code at review time. Install the adapter beforehand and give its absolute path.
+- **Wrappers.** A program that starts another program from its arguments (`env`, `sh`, `bash`, `xargs`, `nohup`, `timeout`, `sudo` and the like, by its name or by any name along its links) is refused as a server: the client sets the environment and starts the program itself, so give that program as `--server-exe`.
+- **`other`** is the caller's statement that the server is none of the named agents, and it gets only this treatment. A program named like an agent's own (`devin`, `agy`, `codex-acp`, `claude-agent-acp`, `cursor-agent`, `grok`, by a name along its links or by the script a `bun`, `node` or `deno` server runs) is refused under `other`: name it with `--seat-agent`. That guard catches a mistake; it does not stop a caller that hides what the program is.
 
 This narrows what a seat can pick up from its environment, shell and MCP tools.
 It does not sandbox the agent. Outside a sandbox (a process namespace and a
@@ -181,8 +181,8 @@ refused permission requests are the only guards: a seat whose agent runs a shell
 without asking is covered only by its environment. Run a review that matters
 inside a sandbox.
 
-The client runs `git status` in the review root, using the first `git` on an absolute `PATH` entry outside the checkout (the outermost parent of the review root holding `.git` or `.jj`, else the review root; none there: no comparison), with the same narrowed
-environment, a `PATH` cut to absolute entries outside the checkout, (plus the variables that point git at a repository) and with
+The client runs `git status` in the review root, using the first `git` in the trusted program folders (none there: no comparison), with the same narrowed
+environment, a `PATH` of those folders, (plus the variables that point git at a repository) and with
 `core.fsmonitor` switched off on the command line, because the repository's own
 configuration can name programs git runs. A seat that writes git configuration
 there (a clean filter, for example) can still get a command run, with that
@@ -192,7 +192,7 @@ narrowed environment; the status comparison does not see the file because
 ## OpenCode
 
 OpenCode is not an ACP agent. `../scripts/opencode-seat.mjs <model-id> <effort>
-<prompt-file> [title] [--root CHECKOUT] [--bwrap PATH]` runs `opencode run --standalone` in the current
+<prompt-file> [title] [--root CHECKOUT] [--bwrap PATH] [--bin-dir FOLDER]...` runs `opencode run --standalone` in the current
 directory with an empty environment (`PATH`, `HOME`, `TMPDIR`, `LANG` and the
 XDG directories). Permissions deny every tool except read, glob and list (no
 grep: its rules match search patterns, not files), keep `.env` files unreadable
@@ -218,7 +218,7 @@ On Linux it also runs OpenCode under bubblewrap (`bwrap` must be installed; the
 seat exits 127 without it), because OpenCode treats a whole git project as inside
 and follows symlinks. The seat sees only the system folders (read-only), the
 name-resolution, public TLS (`/etc/ssl/certs` and the like, never `/etc/ssl/private`) and loader files under `/etc`, an empty home, a private
-`/tmp`, a sanitized copy of the checkout, the prompt file and the OpenCode binary itself, which is the first regular executable `opencode` on an absolute `PATH` entry outside the review root (a relative entry, `node_modules/.bin`, a folder or a link into the checkout never counts; the seat exits 127 when there is none). The original checkout is never mounted.
+`/tmp`, a sanitized copy of the checkout, the prompt file and the OpenCode binary itself, which is the first regular executable `opencode` in the trusted program folders (the system's, plus each `--bin-dir`; a folder or a link into the checkout is refused; the seat exits 127 when there is none). The original checkout is never mounted.
 
 Before the sandbox starts, the seat copies the checkout into a private folder (mode 0700, under
 `TMPDIR`) and shows it read-only at the checkout's own path, where the seat starts. The copy
@@ -299,3 +299,5 @@ The output contains collected agent text. Exit codes are:
 A permission-cancelled turn may continue within `--max-turns`. A matching marker
 is a completion signal, not proof that the review is accurate. Fatal errors
 print `[client] FATAL: <message>` on stderr.
+
+Known residuals of the launch: the `codex mcp list --json` check runs in the review root (it must see the checkout's project servers), as Codex has no option to name the folder; an allowlisted proxy variable carries any credentials in its URL to the seat; and `agy` starts in the review root.

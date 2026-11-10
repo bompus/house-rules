@@ -1,0 +1,527 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  realpathSync,
+  rmSync,
+  statSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
+import { delimiter, dirname, join } from "node:path";
+import {
+  PROFILES,
+  SEAT_AGENTS,
+  launchPreview,
+  seatSpec,
+  takeServerArgs,
+} from "../scripts/seat-spec.mjs";
+import { exeName } from "../scripts/seat-launch.mjs";
+
+const POSIX = { skip: process.platform === "win32" ? "POSIX paths" : false };
+const refuse = /** @type {(message: string) => never} */ (
+  (message) => {
+    throw new Error(message);
+  }
+);
+/**
+ * Runs `body` with these variables set in the client's own environment (undefined removes one).
+ * @param {Record<string, string | undefined>} vars
+ * @param {() => void} body
+ */
+function withEnv(vars, body) {
+  const saved = Object.fromEntries(Object.keys(vars).map((k) => [k, process.env[k]]));
+  for (const [k, v] of Object.entries(vars)) {
+    if (v === undefined) {
+      delete process.env[k];
+    } else {
+      process.env[k] = v;
+    }
+  }
+  try {
+    body();
+  } finally {
+    for (const [k, v] of Object.entries(saved)) {
+      if (v === undefined) {
+        delete process.env[k];
+      } else {
+        process.env[k] = v;
+      }
+    }
+  }
+}
+/**
+ * A checkout (`repo`, with a hostile `bunfig.toml`, `.env` and `bin`), a trusted folder `bin` holding
+ * stand-in programs, and `home` outside the checkout.
+ * @param {(t: { dir: string, repo: string, bin: string, home: string }) => void} body
+ */
+function withTree(body) {
+  const dir = realpathSync(mkdtempSync(join(tmpdir(), "seat-spec-")));
+  try {
+    const repo = join(dir, "repo");
+    const bin = join(dir, "bin");
+    const home = join(dir, "home");
+    mkdirSync(join(repo, ".git"), { recursive: true });
+    mkdirSync(join(repo, "bin"));
+    mkdirSync(bin);
+    mkdirSync(home);
+    for (const name of [
+      "devin",
+      "agy",
+      "cursor-agent",
+      "codex-acp",
+      "runtime",
+      "tool",
+      "bunx",
+      "npx",
+    ]) {
+      writeFileSync(join(bin, name), "#!/bin/sh\nexit 0\n", { mode: 0o755 });
+    }
+    writeFileSync(join(repo, "bin", "devin"), "#!/bin/sh\nexit 0\n", { mode: 0o755 });
+    body({ dir, repo, bin, home });
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+const HOSTILE = {
+  GH_TOKEN: "t",
+  OPENROUTER_API_KEY: "k",
+  SSH_AUTH_SOCK: "/run/agent",
+  BUN_OPTIONS: "--preload=./x.ts",
+  NODE_OPTIONS: "--require ./x.js",
+  LD_PRELOAD: "/x.so",
+  BASH_ENV: "./x.sh",
+  ANTHROPIC_API_KEY: "a",
+  OPENAI_API_KEY: "o",
+};
+/**
+ * @param {Parameters<typeof seatSpec>[0]} spec
+ */
+const build = (spec) => seatSpec(spec, refuse);
+const base = (/** @type {{ repo: string, bin: string }} */ t) => ({
+  root: t.repo,
+  dirs: [t.bin],
+  extraPrefixes: [],
+  args: /** @type {string[]} */ ([]),
+});
+
+test("the agent names are the profile keys, and an unknown one is refused", POSIX, () => {
+  assert.deepEqual(SEAT_AGENTS, ["codex", "claude", "devin", "agy", "cursor", "grok", "other"]);
+  withTree((t) => {
+    assert.throws(() => build({ ...base(t), agent: "bash" }), /not one of/);
+    assert.throws(() => build({ ...base(t), agent: "" }), /not one of/);
+  });
+});
+
+test(
+  "codex, claude and other need an absolute --server-exe; devin, agy and cursor name their own program",
+  POSIX,
+  () => {
+    withTree((t) => {
+      for (const agent of ["codex", "claude", "other"]) {
+        assert.throws(() => build({ ...base(t), agent }), /needs --server-exe/, agent);
+      }
+      assert.equal(build({ ...base(t), agent: "devin" }).cmd[0], join(t.bin, "devin"));
+      assert.deepEqual(build({ ...base(t), agent: "devin" }).cmd.slice(1), ["acp"]);
+      assert.deepEqual(build({ ...base(t), agent: "agy", args: ["--sandbox"] }).cmd.slice(1), [
+        "acp",
+        "--sandbox",
+      ]);
+      assert.equal(build({ ...base(t), agent: "cursor" }).cmd[0], join(t.bin, "cursor-agent"));
+      assert.throws(
+        () => build({ ...base(t), agent: "grok" }),
+        /not in the trusted program folders/,
+      );
+    });
+  },
+);
+
+test(
+  "a program in the checkout never runs: the checkout's bin is not looked in, and a path or link into it is refused",
+  POSIX,
+  () => {
+    withTree((t) => {
+      // `devin` exists in the checkout's bin and in the trusted folder: the trusted one is used.
+      assert.equal(build({ ...base(t), agent: "devin" }).cmd[0], join(t.bin, "devin"));
+      assert.throws(
+        () => build({ ...base(t), agent: "other", exe: join(t.repo, "bin", "devin") }),
+        /inside the review checkout/,
+      );
+      symlinkSync(join(t.repo, "bin", "devin"), join(t.dir, "link"));
+      assert.throws(
+        () => build({ ...base(t), agent: "other", exe: join(t.dir, "link") }),
+        /inside the review checkout/,
+      );
+      assert.throws(() => build({ ...base(t), agent: "other", exe: "bin/tool" }), /absolute path/);
+      assert.throws(() => build({ ...base(t), agent: "other", exe: "./tool" }), /absolute path/);
+      assert.throws(() => build({ ...base(t), agent: "other", exe: "tool" }), /absolute path/);
+    });
+  },
+);
+
+test("package runners are refused by name and by what a link resolves to", POSIX, () => {
+  withTree((t) => {
+    symlinkSync(join(t.bin, "npx"), join(t.bin, "innocent"));
+    for (const exe of [join(t.bin, "bunx"), join(t.bin, "npx"), join(t.bin, "innocent")]) {
+      assert.throws(() => build({ ...base(t), agent: "other", exe }), /package runner/, exe);
+    }
+  });
+});
+
+test(
+  "`other` is not for an agent's own program, by name or by what a link resolves to",
+  POSIX,
+  () => {
+    withTree((t) => {
+      symlinkSync(join(t.bin, "devin"), join(t.bin, "renamed"));
+      for (const name of ["devin", "agy", "codex-acp", "cursor-agent", "renamed"]) {
+        assert.throws(
+          () => build({ ...base(t), agent: "other", exe: join(t.bin, name) }),
+          /agent's own program/,
+          name,
+        );
+      }
+      assert.doesNotThrow(() => build({ ...base(t), agent: "other", exe: join(t.bin, "tool") }));
+      // Named for the agent it is, the same program is accepted under its own rules.
+      assert.doesNotThrow(() =>
+        build({ ...base(t), agent: "codex", exe: join(t.bin, "codex-acp") }),
+      );
+    });
+  },
+);
+
+test(
+  "a bun server runs as `bun SCRIPT`, its flags come from BUN_OPTIONS; other forms are refused",
+  POSIX,
+  () => {
+    withTree((t) => {
+      const bun = join(t.bin, "bun");
+      writeFileSync(bun, "#!/bin/sh\nexit 0\n", { mode: 0o755 });
+      const script = join(t.dir, "server.ts");
+      writeFileSync(script, "export {};\n");
+      const launch = build({ ...base(t), agent: "other", exe: bun, args: [script, "--flag"] });
+      assert.deepEqual(launch.cmd, [bun, script, "--flag"], "argv is the caller's");
+      assert.match(String(launch.env.BUN_OPTIONS), /^--no-env-file --config=.+empty-bunfig\.toml$/);
+      for (const args of [
+        [],
+        ["x", "pkg"],
+        ["run", "s"],
+        ["--config=./b.toml", "s.ts"],
+        ["-c", "b", "s.ts"],
+        ["test", script],
+        ["server.ts"],
+        [join(t.repo, "bin", "server.ts")],
+      ]) {
+        assert.throws(
+          () => build({ ...base(t), agent: "other", exe: bun, args }),
+          /bun SCRIPT/,
+          args.join(" "),
+        );
+      }
+      // A Bun reached through a link of another name is held to the same form.
+      symlinkSync(bun, join(t.bin, "runtime-1.4"));
+      assert.throws(
+        () => build({ ...base(t), agent: "other", exe: join(t.bin, "runtime-1.4"), args: ["x"] }),
+        /bun SCRIPT/,
+      );
+    });
+  },
+);
+
+test(
+  "the environment is the allowlist: PATH is the trusted folders, keys and injectors are absent",
+  POSIX,
+  () => {
+    withTree((t) => {
+      withEnv(
+        { ...HOSTILE, PATH: `.${delimiter}${t.repo}/bin:/usr/bin`, HOME: t.home, LANG: "C" },
+        () => {
+          const env = build({ ...base(t), agent: "other", exe: join(t.bin, "tool") }).env;
+          assert.equal(env.PATH, t.bin);
+          assert.equal(env.HOME, t.home);
+          assert.equal(env.LANG, "C");
+          for (const name of Object.keys(HOSTILE)) {
+            if (name !== "BUN_OPTIONS") {
+              assert.equal(env[name], undefined, name);
+            }
+          }
+          assert.match(String(env.BUN_OPTIONS), /^--no-env-file --config=.+empty-bunfig\.toml$/);
+          assert.doesNotMatch(String(env.BUN_OPTIONS), /preload/, "the caller's value is replaced");
+          const own = build({ ...base(t), agent: "codex", exe: join(t.bin, "codex-acp") }).env;
+          assert.equal(own.OPENAI_API_KEY, "o");
+          assert.equal(own.ANTHROPIC_API_KEY, undefined);
+          assert.match(String(own.BUN_OPTIONS), /^--no-env-file /);
+        },
+      );
+    });
+  },
+);
+
+test("a relative or checkout-inside value for a path variable stops the launch", POSIX, () => {
+  withTree((t) => {
+    for (const [name, value, re] of /** @type {[string, string, RegExp][]} */ ([
+      ["TMPDIR", "tmp", /relative path/],
+      ["XDG_CACHE_HOME", "./c", /relative path/],
+      ["SSL_CERT_FILE", "ca.pem", /relative path/],
+      ["HOME", join(t.repo, "home"), /inside the review checkout/],
+      ["TMPDIR", join(t.repo, "tmp"), /inside the review checkout/],
+    ])) {
+      withEnv(
+        {
+          HOME: t.home,
+          TMPDIR: undefined,
+          XDG_CACHE_HOME: undefined,
+          SSL_CERT_FILE: undefined,
+          [name]: value,
+        },
+        () => {
+          assert.throws(
+            () => build({ ...base(t), agent: "other", exe: join(t.bin, "tool") }),
+            re,
+            `${name}=${value}`,
+          );
+        },
+      );
+    }
+  });
+});
+
+test(
+  "a private-start agent gets an empty private folder outside the checkout; only agy starts in the review root",
+  POSIX,
+  () => {
+    withTree((t) => {
+      withEnv({ HOME: t.home }, () => {
+        for (const agent of ["devin", "other", "cursor"]) {
+          const launch = build({
+            ...base(t),
+            agent,
+            ...(agent === "other" ? { exe: join(t.bin, "tool") } : {}),
+          });
+          assert.equal(launch.start, "private", agent);
+          assert.notEqual(launch.cwd, t.repo);
+          assert.deepEqual(readdirSync(launch.cwd), [], "empty");
+          assert.equal(statSync(launch.cwd).mode & 0o777, 0o700);
+          assert.equal(launch.cwd.startsWith(t.repo), false);
+        }
+        assert.deepEqual(
+          [build({ ...base(t), agent: "agy" }).start, build({ ...base(t), agent: "agy" }).cwd],
+          ["root", t.repo],
+        );
+        assert.equal(PROFILES.grok?.start, "private");
+        assert.equal(PROFILES.cursor?.start, "private");
+      });
+    });
+  },
+);
+
+test(
+  "the temporary folder inside the checkout stops the launch (checked in a fresh process)",
+  POSIX,
+  () => {
+    withTree((t) => {
+      const script = join(t.dir, "inside.mjs");
+      writeFileSync(
+        script,
+        `import { seatSpec } from ${JSON.stringify(new URL("../scripts/seat-spec.mjs", import.meta.url).href)};
+try {
+  seatSpec({ agent: "devin", root: ${JSON.stringify(t.repo)}, dirs: [${JSON.stringify(t.bin)}], args: [], extraPrefixes: [] }, (m) => { throw new Error(m); });
+  console.log("launched");
+} catch (e) { console.log(String(e.message)); }
+`,
+      );
+      mkdirSync(join(t.repo, "tmp"));
+      const out = spawnSync(process.execPath, [script], {
+        env: { PATH: process.env.PATH ?? "", HOME: t.home, TMPDIR: join(t.repo, "tmp") },
+        encoding: "utf8",
+      });
+      assert.match(out.stdout, /inside the review checkout/, out.stdout + out.stderr);
+    });
+  },
+);
+
+test(
+  "a seat started from the spec reads nothing from the checkout: no .env, no bunfig preload, empty or root folder alike",
+  {
+    skip:
+      process.platform === "win32" || exeName(process.execPath) !== "bun"
+        ? "needs Bun on POSIX"
+        : false,
+  },
+  () => {
+    withTree((t) => {
+      const sentinel = join(t.dir, "preload-ran");
+      writeFileSync(
+        join(t.repo, "pre.ts"),
+        `import { writeFileSync } from "node:fs";\nwriteFileSync(${JSON.stringify(sentinel)}, "x");\n`,
+      );
+      writeFileSync(join(t.repo, "bunfig.toml"), `preload = ["./pre.ts"]\n`);
+      writeFileSync(join(t.repo, ".env"), `FROM_DOTENV=1\nHOME=/stolen\n`);
+      const server = join(t.dir, "server.mjs");
+      writeFileSync(
+        server,
+        `console.log(JSON.stringify({ cwd: process.cwd(), env: process.env, argv: process.argv }));\n`,
+      );
+      withEnv(
+        { HOME: t.home, BUN_OPTIONS: `--preload=${join(t.repo, "pre.ts")}`, GH_TOKEN: "t" },
+        () => {
+          for (const agent of ["other", "cursor"]) {
+            const launch = build({
+              ...base(t),
+              agent,
+              exe: process.execPath,
+              args: [server],
+            });
+            const run = spawnSync(launch.cmd[0] ?? "", launch.cmd.slice(1), {
+              cwd: launch.cwd,
+              env: launch.env,
+              encoding: "utf8",
+            });
+            assert.equal(run.status, 0, run.stderr);
+            const seen = JSON.parse(run.stdout);
+            assert.equal(
+              existsSync(sentinel),
+              false,
+              `${agent}: the checkout's preload did not run`,
+            );
+            assert.equal(seen.env.FROM_DOTENV, undefined, agent);
+            assert.equal(seen.env.HOME, t.home, `${agent}: HOME is the caller's, not the .env's`);
+            assert.equal(seen.env.GH_TOKEN, undefined);
+            assert.match(String(seen.env.BUN_OPTIONS), /^--no-env-file --config=/);
+            assert.equal(seen.env.PATH, t.bin);
+            assert.equal(realpathSync(seen.cwd), realpathSync(launch.cwd));
+          }
+        },
+      );
+    });
+  },
+);
+
+test("launchPreview is the command as the caller wrote it, and takeServerArgs reads both forms in order", () => {
+  assert.deepEqual(launchPreview("devin", "", ["--x"]), ["devin", "acp", "--x"]);
+  assert.deepEqual(launchPreview("codex", "/a/codex-acp", []), ["/a/codex-acp"]);
+  const argv = [
+    "--server-arg",
+    "one",
+    "--server-arg=--two",
+    "prompt",
+    "--server-arg",
+    "--no-web",
+    "out",
+  ];
+  assert.deepEqual(takeServerArgs(argv), ["one", "--two"]);
+  assert.deepEqual(
+    argv,
+    ["prompt", "--server-arg", "--no-web", "out"],
+    "a flag-like value is left for the usage check",
+  );
+});
+
+test(
+  "a wrapper program is refused as a server, by its name and by what a link resolves to",
+  POSIX,
+  () => {
+    withTree((t) => {
+      for (const name of ["env", "sh", "bash", "xargs", "nohup", "timeout"]) {
+        writeFileSync(join(t.bin, name), "#!/bin/sh\nexit 0\n", { mode: 0o755 });
+      }
+      symlinkSync(join(t.bin, "env"), join(t.bin, "plain-name"));
+      for (const name of ["env", "sh", "bash", "xargs", "nohup", "timeout", "plain-name"]) {
+        for (const agent of ["other", "codex", "devin"]) {
+          assert.throws(
+            () => build({ ...base(t), agent, exe: join(t.bin, name), args: ["-c", "agy acp"] }),
+            /starts another program/,
+            `${agent} ${name}`,
+          );
+        }
+      }
+    });
+  },
+);
+
+test(
+  "whatever prefixes are passed, no injector reaches the seat and BUN_OPTIONS is the client's",
+  POSIX,
+  () => {
+    withTree((t) => {
+      withEnv(
+        {
+          HOME: t.home,
+          BUN_OPTIONS: "--preload=/outside/p.ts",
+          NODE_OPTIONS: "--require /outside/r.js",
+          NODE_PATH: "/outside",
+          BASH_ENV: "/outside/b.sh",
+          ENV: "/outside/e.sh",
+          LD_PRELOAD: "/outside/x.so",
+          LD_LIBRARY_PATH: "/outside",
+          DYLD_INSERT_LIBRARIES: "/outside/x.dylib",
+        },
+        () => {
+          const env = build({
+            ...base(t),
+            extraPrefixes: ["BUN_", "NODE_", "BASH_", "ENV", "LD_", "DYLD_"],
+            agent: "other",
+            exe: join(t.bin, "tool"),
+          }).env;
+          for (const name of [
+            "NODE_OPTIONS",
+            "NODE_PATH",
+            "BASH_ENV",
+            "ENV",
+            "LD_PRELOAD",
+            "LD_LIBRARY_PATH",
+            "DYLD_INSERT_LIBRARIES",
+          ]) {
+            assert.equal(env[name], undefined, name);
+          }
+          assert.match(String(env.BUN_OPTIONS), /^--no-env-file --config=.+empty-bunfig\.toml$/);
+        },
+      );
+    });
+  },
+);
+
+test(
+  "a Bun reached through a #! line starts reading nothing from the review root, in a root-start seat too",
+  {
+    skip:
+      process.platform === "win32" || exeName(process.execPath) !== "bun"
+        ? "needs Bun on POSIX"
+        : false,
+  },
+  () => {
+    withTree((t) => {
+      const sentinel = join(t.dir, "preload-ran");
+      writeFileSync(join(t.repo, "pre.ts"), `await Bun.write(${JSON.stringify(sentinel)}, "x");\n`);
+      writeFileSync(join(t.repo, "bunfig.toml"), `preload = ["./pre.ts"]\n`);
+      writeFileSync(join(t.repo, ".env"), `FROM_DOTENV=1\n`);
+      // A program of the trusted folder whose #! line names bun, started for an agent that starts in the root.
+      writeFileSync(
+        join(t.bin, "agy"),
+        `#!/usr/bin/env bun\nconsole.log(JSON.stringify({ d: process.env.FROM_DOTENV ?? null }));\n`,
+        { mode: 0o755 },
+      );
+      withEnv({ HOME: t.home }, () => {
+        const launch = build({
+          ...base(t),
+          dirs: [t.bin, dirname(process.execPath)],
+          agent: "agy",
+        });
+        assert.equal(launch.start, "root");
+        const run = spawnSync(launch.cmd[0] ?? "", launch.cmd.slice(1), {
+          cwd: launch.cwd,
+          env: launch.env,
+          encoding: "utf8",
+        });
+        assert.equal(run.status, 0, run.stderr);
+        assert.deepEqual(JSON.parse(run.stdout), { d: null });
+        assert.equal(existsSync(sentinel), false, "the checkout's preload did not run");
+      });
+    });
+  },
+);

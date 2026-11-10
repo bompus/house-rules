@@ -19,15 +19,10 @@ import { constants as osConstants } from "node:os";
 import { createHash } from "node:crypto";
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
-import {
-  AGY_UNMASKED,
-  gitEnvironment,
-  gitProgram,
-  mayStart,
-  mayStartAgy,
-  reviewBase,
-  seatAgent,
-} from "./seat-launch.mjs";
+import { AGY_UNMASKED, gitEnvironment, gitProgram, privateDir } from "./seat-launch.mjs";
+import { programFolder, reviewBase, trustedDirs } from "./seat-paths.mjs";
+import { argParser, isFlagLike } from "./client-args.mjs";
+import { SEAT_AGENTS, launchPreview, takeServerArgs } from "./seat-spec.mjs";
 import { seatLaunch } from "./seat-hooks.mjs";
 const rawArgs = process.argv.slice(2);
 // A client log line. Control characters in seat-supplied text are written as \xNN, so a seat cannot
@@ -53,47 +48,16 @@ const log = (line) => {
   const text = clean(line);
   console.error(text.length > 8192 ? `${text.slice(0, 8192)}... (cut)` : text);
 };
-const isFlagLike = (/** @type {string} */ arg) => arg.startsWith("--");
+const { takeFlag, takeSwitch, takeAll } = argParser(rawArgs);
 // JSON-RPC messages are whatever the ACP server sends; fields are checked where they are read.
 /** @typedef {any} RpcMessage */
-/**
- * @param {string} name
- * @param {string} def
- */
-function takeFlag(name, def) {
-  const i = rawArgs.indexOf(name);
-  // A value that is itself a flag is not a value: the flag stays and is refused below, so a missing
-  // value cannot swallow the next restriction (`--policy-option --no-web`).
-  if (i >= 0 && i + 1 < rawArgs.length && !isFlagLike(rawArgs[i + 1] ?? "")) {
-    const v = rawArgs[i + 1] ?? def;
-    rawArgs.splice(i, 2);
-    return v;
-  }
-  return def;
-}
-/** @param {string} name */
-function takeSwitch(name) {
-  const i = rawArgs.indexOf(name);
-  if (i < 0) {
-    return false;
-  }
-  rawArgs.splice(i, 1);
-  return true;
-}
-/** Every value of a repeatable flag. @param {string} name */
-function takeAll(name) {
-  /** @type {string[]} */
-  const values = [];
-  for (
-    let i = rawArgs.indexOf(name);
-    i >= 0 && i + 1 < rawArgs.length && !isFlagLike(rawArgs[i + 1] ?? "");
-    i = rawArgs.indexOf(name)
-  ) {
-    values.push(rawArgs[i + 1] ?? "");
-    rawArgs.splice(i, 2);
-  }
-  return values;
-}
+// The server's own arguments are taken first: a `--server-arg` left without its value must not take the
+// next positional once `--server-exe` and the other flags are gone.
+const serverArgs = takeServerArgs(rawArgs);
+const seatAgentName = takeFlag("--seat-agent", "");
+const exeGiven = rawArgs.includes("--server-exe");
+const serverExe = takeFlag("--server-exe", "");
+const binDirs = takeAll("--bin-dir");
 const maxTurns = Math.max(1, parseInt(takeFlag("--max-turns", "1"), 10));
 const verdictMarker = takeFlag("--verdict", "");
 const modelArg = takeFlag("--model", "");
@@ -111,11 +75,11 @@ const timeoutMin = Math.max(1, Number(takeFlag("--timeout-min", "60")) || 60);
 const idleArg = Number(takeFlag("--idle-min", "5"));
 const IDLE_MS = (idleArg > 0 ? idleArg : 5) * 60 * 1000;
 const USAGE =
-  "usage: bun acp-panel-client.mjs <server-cmd-json> <prompt-file> <out-text> [cwd] [--max-turns N] [--verdict MARK] [--model ID] [--effort LEVEL] [--idle-min N] [--timeout-min N] [--no-web] [--allow-reads] [--policy MODULE] [--policy-option KEY[=VALUE]]...";
+  "usage: bun acp-panel-client.mjs --seat-agent NAME [--server-exe ABS] [--server-arg ARG]... [--bin-dir ABS]... <prompt-file> <out-text> [cwd] [--max-turns N] [--verdict MARK] [--model ID] [--effort LEVEL] [--idle-min N] [--timeout-min N] [--no-web] [--allow-reads] [--policy MODULE] [--policy-option KEY[=VALUE]]...";
 // A flag the client does not know, or one missing its value, must not be taken for a positional
 // argument or ignored: a caller that passes a restriction this version lacks would run unrestricted.
-const [serverCmdJson, promptFile, outText, cwdArg] = rawArgs;
-if (!serverCmdJson || !promptFile || !outText || rawArgs.length > 4 || rawArgs.some(isFlagLike)) {
+const [promptFile, outText, cwdArg] = rawArgs;
+if (!seatAgentName || !promptFile || !outText || rawArgs.length > 3 || rawArgs.some(isFlagLike)) {
   console.error(USAGE);
   process.exit(2);
 }
@@ -124,8 +88,15 @@ function refuse(message) {
   log(`[client] FATAL: ${message}`);
   process.exit(2);
 }
-const serverCmd = /** @type {string[]} */ (JSON.parse(serverCmdJson));
+if (exeGiven && !serverExe) {
+  refuse("--server-exe needs the absolute path of the server");
+}
+if (!SEAT_AGENTS.includes(seatAgentName)) {
+  refuse(`--seat-agent ${seatAgentName} is not one of ${SEAT_AGENTS.join(", ")}`);
+}
 const cwd = realpathSync(cwdArg || process.cwd());
+// The folders a program may come from: the system's and the caller's own, none of them in the checkout.
+const dirs = trustedDirs(binDirs, cwd, /** @type {(message: string) => never} */ (refuse));
 // The answer goes to the physical path the output argument names now (a caller's symlink is followed
 // once, here); the write refuses a final symlink and a directory that is no longer this one.
 /** @type {string} */
@@ -178,7 +149,7 @@ const HARD_TIMEOUT_MS = timeoutMin * 60 * 1000;
 // function) throws to refuse; a refusal exits 2 before any server starts.
 // `agy acp` runs what it finds in the agent folders of the working directory and its parents; the caller
 // declares them covered with `--policy-option agy-masked`, checked before any policy module is imported.
-if (mayStartAgy(serverCmd, process.env.PATH, cwd) && policyOptions["agy-masked"] !== "true") {
+if (seatAgentName === "agy" && policyOptions["agy-masked"] !== "true") {
   refuse(AGY_UNMASKED);
 }
 if (policyPath) {
@@ -191,7 +162,8 @@ if (policyPath) {
     await check({
       model: modelArg,
       effort: effortArg,
-      command: [...serverCmd],
+      agent: seatAgentName,
+      command: launchPreview(seatAgentName, serverExe, serverArgs),
       options: policyOptions,
     });
   } catch (e) {
@@ -203,14 +175,16 @@ const refuseLaunch = /** @type {(message: string) => never} */ (refuse);
 // Git runs in the review root after the seat worked there, and runs programs the repository's
 // configuration names, so it gets a seat's narrowed environment (plus the variables that locate a
 // repository, and a PATH outside the checkout) and the filesystem monitor is switched off.
-const gitEnv = gitEnvironment(reviewBase(cwd));
+// The server and git look programs up in a folder of links to the trusted programs, none of them in the checkout.
+const pathValue = programFolder(dirs, cwd, join(privateDir(), "bin"));
+const gitEnv = gitEnvironment(pathValue);
 /**
  * @param {string[]} args
  * @param {"utf8" | "latin1"} encoding
  */
 const git = (args, encoding, stdio = /** @type {"pipe"} */ ("pipe")) => {
   return execFileSync(
-    gitProgram(gitEnv, reviewBase(cwd)),
+    gitProgram(dirs, reviewBase(cwd)),
     ["-c", "core.fsmonitor=false", "-C", cwd, ...args],
     {
       encoding,
@@ -338,21 +312,22 @@ try {
   );
   process.exit(1);
 }
-// Codex is recognized by seatAgent, or when a launch it cannot read could still start codex-acp (its
-// package named after a runner option, its script beside a preload); the wrapper then applies. Its
-// login variables still follow seatAgent.
-const codexCmd = seatAgent(serverCmd) === "codex" || mayStart(serverCmd, "codex");
-const launch = seatLaunch(serverCmd, {
+const launch = seatLaunch({
+  agent: seatAgentName,
+  exe: serverExe || undefined,
+  args: serverArgs,
+  root: cwd,
+  dirs,
+  pathValue,
   noWeb,
-  cwd,
-  codex: codexCmd,
   masked: policyOptions["hooks-masked"] === "true",
   refuse: refuseLaunch,
 });
 const launchCmd = launch.cmd;
 const child = spawn(launchCmd[0] ?? "", launchCmd.slice(1), {
-  cwd,
+  cwd: launch.cwd,
   env: launch.env,
+  argv0: launch.argv0,
   stdio: ["pipe", "pipe", "pipe"],
 });
 // The seat's stderr passes through with each line marked, so it cannot pass for the client's own.
@@ -811,7 +786,7 @@ try {
   ).slice(0, 64);
   // Codex by the launch, or by the agent's reported name or title.
   isCodex =
-    codexCmd ||
+    seatAgentName === "codex" ||
     /codex/i.test(textOf(init.agentInfo?.name)) ||
     /codex/i.test(textOf(init.agentInfo?.title));
   log(`[client] initialized, protocol=${init.protocolVersion}, agent=${agentName}`);

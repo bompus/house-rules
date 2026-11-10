@@ -43,7 +43,8 @@ import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "nod
 import { randomBytes } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { globRegex, userReadDenials } from "./opencode-config.mjs";
-import { cleanPath, envPath, pathExecutable, reviewBase } from "./seat-launch.mjs";
+import { privateDir } from "./seat-launch.mjs";
+import { programFolder, resolveProgram, reviewBase, trustedDirs } from "./seat-paths.mjs";
 
 const PASSED = [
   "PATH",
@@ -606,10 +607,19 @@ if (
   let bwrapOverride;
   /** @type {string | undefined} */
   let rootArg;
+  /** @type {string[]} */
+  const binDirs = [];
   let bad = !model || !effort || !promptFile;
   for (let i = 0; i < rest.length; i++) {
     const arg = rest[i] ?? "";
-    if (arg === "--bwrap" || arg === "--root") {
+    if (arg === "--bin-dir") {
+      const value = rest[++i];
+      if (value === undefined || value === "") {
+        bad = true;
+      } else {
+        binDirs.push(value);
+      }
+    } else if (arg === "--bwrap" || arg === "--root") {
       const value = rest[++i];
       if (value === undefined || value === "" || (arg === "--bwrap" ? bwrapOverride : rootArg)) {
         bad = true;
@@ -626,7 +636,7 @@ if (
   }
   if (bad || !model || !effort || !promptFile) {
     console.error(
-      "usage: bun opencode-seat.mjs <model-id> <effort> <prompt-file> [title] [--root CHECKOUT] [--bwrap ABSOLUTE-PATH]",
+      "usage: bun opencode-seat.mjs <model-id> <effort> <prompt-file> [title] [--root CHECKOUT] [--bwrap ABSOLUTE-PATH] [--bin-dir ABSOLUTE-PATH]...",
     );
     process.exit(2);
   }
@@ -652,13 +662,22 @@ if (
     process.exit(2);
   }
   const env = openCodeEnv(process.env, dir, denials);
-  // Host-side programs (bubblewrap, OpenCode before the sandbox) run with a PATH of canonical absolute
-  // folders outside the checkout, so a `#!/usr/bin/env` line in them does not pick the checkout's tool.
-  env.PATH = cleanPath(env.PATH, reviewBase(dir));
-  // OpenCode is found outside the review checkout on every system, and that file is what runs.
-  const opencode = pathExecutable("opencode", envPath(process.env), reviewBase(dir));
+  // Host-side programs (bubblewrap, OpenCode before the sandbox) run with the trusted program folders as
+  // their PATH (the system's and `--bin-dir`), so a `#!/usr/bin/env` line in them does not pick the
+  // checkout's tool, and OpenCode is the file found in them.
+  const refuse = /** @type {(message: string) => never} */ (
+    (/** @type {string} */ message) => {
+      console.error(`[opencode-seat] ${message}`);
+      return process.exit(2);
+    }
+  );
+  const dirs = trustedDirs(binDirs, dir, refuse);
+  env.PATH = programFolder(dirs, dir, join(privateDir(), "bin"));
+  const opencode = resolveProgram("opencode", dirs, dir, refuse);
   if (!opencode) {
-    console.error("[opencode-seat] opencode is not on PATH outside the review root");
+    console.error(
+      "[opencode-seat] opencode is not in the trusted program folders (the system's and --bin-dir)",
+    );
     process.exit(127);
   }
   let cmd = [opencode, ...runArgs(model, effort, promptFile, title)];

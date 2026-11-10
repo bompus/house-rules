@@ -7,17 +7,8 @@
 import { chmodSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import {
-  bunHardened,
-  codexWrapper,
-  devinConfig,
-  exeName,
-  mayStart,
-  mayStartAgy,
-  privateDir,
-  seatAgent,
-  seatEnv,
-} from "./seat-launch.mjs";
+import { codexWrapper, devinConfig, privateDir } from "./seat-launch.mjs";
+import { seatSpec } from "./seat-spec.mjs";
 
 // The only flags a seat passes to `agy acp` (one or two dashes; a value as `=V` or the next argument).
 // Any other can move agy's configuration folders, add directories whose agent folders it runs, open an
@@ -53,19 +44,18 @@ const unmasked = (what) =>
   `${what}; mask them and pass --policy-option hooks-masked, or launch it so the client can`;
 /**
  * The launch command and environment with the user's hooks and MCP servers kept out of a Devin or
- * Antigravity seat. Refuses (through `refuse`) a launch that may start one of them and cannot be set up
- * that way, unless the caller declared `masked`.
- * @param {string[]} serverCmd the command as given
+ * Antigravity seat. Refuses (through `refuse`) a launch that cannot be set up that way, unless the
+ * caller declared `masked`.
+ * @param {string} agent the seat's agent
  * @param {string[]} cmd the command after the other launch rewrites
  * @param {Record<string, string | undefined>} env the seat's environment
  * @param {boolean} masked whether the caller passed --policy-option hooks-masked
- * @param {string} cwd the review root
  * @param {(message: string) => never} refuse
  * @returns {{ cmd: string[], env: Record<string, string | undefined> }}
  */
-function hooksOff(serverCmd, cmd, env, masked, cwd, refuse) {
+function hooksOff(agent, cmd, env, masked, refuse) {
   const windows = process.platform === "win32";
-  if (seatAgent(serverCmd) === "devin" || mayStart(serverCmd, "devin")) {
+  if (agent === "devin") {
     if (masked) {
       return { cmd, env };
     }
@@ -78,16 +68,16 @@ function hooksOff(serverCmd, cmd, env, masked, cwd, refuse) {
     mkdirSync(folder, { mode: 0o700 });
     return { cmd, env: { ...env, XDG_CONFIG_HOME: folder } };
   }
-  if (!mayStartAgy(serverCmd, process.env.PATH, cwd) || masked) {
+  if (agent !== "agy" || masked) {
     return { cmd, env };
   }
-  const plain = exeName(cmd[0] ?? "") === "agy" && cmd[1] === "acp";
+  const plain = cmd[1] === "acp";
   if (windows || !plain || !agyArgsAllowed(cmd.slice(2))) {
     return refuse(
       unmasked(
         plain && !windows
-          ? "the agy launch passes arguments the client cannot keep safe (it allows only --sandbox, --disable-telemetry and --agent): others can move its configuration folders, add directories whose agent folders it runs, open an IDE MCP connection, or write a log to a path the caller picks, which agy opens through a link"
-          : "the launch may start agy in a form the client cannot give a private Gemini folder (only `agy acp` on Linux and macOS)",
+          ? "the agy launch passes arguments the client cannot keep safe (it allows only --sandbox, --disable-telemetry and --agent): others can move its configuration folders, add directories whose agent folders it runs, open an IDE MCP connection, change where the login goes, write a log through a link or approve tool calls"
+          : "the launch starts agy in a form the client cannot give a private Gemini folder (only `agy acp` on Linux and macOS)",
       ),
     );
   }
@@ -115,19 +105,22 @@ function hooksOff(serverCmd, cmd, env, masked, cwd, refuse) {
   return { cmd: [...cmd.slice(0, 2), "--gemini-dir", gemini, ...cmd.slice(2)], env };
 }
 /**
- * The command and environment a seat's server starts with: the launch hardened (Devin's config, Bun),
- * the seat's narrowed environment, the user's hooks and MCP servers kept out (see the top of this file)
- * and Codex's wrapper.
- * @param {string[]} serverCmd
- * @param {{ noWeb: boolean, cwd: string, codex: boolean, masked: boolean, refuse: (message: string) => never }} options
+ * The command, environment and starting folder a seat's server gets: the typed launch (seatSpec), Devin's
+ * config, the user's hooks and MCP servers kept out (see the top of this file) and Codex's wrapper.
+ * @param {{ agent: string, exe?: string, args: string[], root: string, dirs: string[], pathValue?: string, noWeb: boolean, masked: boolean, refuse: (message: string) => never }} options
  */
-export function seatLaunch(serverCmd, { noWeb, cwd, codex, masked, refuse }) {
-  const hardened = bunHardened(devinConfig(serverCmd, noWeb, cwd, refuse), cwd, refuse);
-  const base = seatEnv(
-    process.env,
-    hardened,
-    (process.env.ACP_PANEL_PASS_ENV ?? "").split(",").map((p) => p.trim()),
+export function seatLaunch({ agent, exe, args, root, dirs, pathValue, noWeb, masked, refuse }) {
+  const passEnv = (process.env.ACP_PANEL_PASS_ENV ?? "").split(",").map((p) => p.trim());
+  const spec = seatSpec(
+    { agent, exe, args, root, dirs, extraPrefixes: passEnv, pathValue },
+    refuse,
   );
-  const out = hooksOff(serverCmd, hardened, base, masked, cwd, refuse);
-  return { cmd: out.cmd, env: codex ? codexWrapper(out.env, noWeb, cwd, refuse) : out.env };
+  const cmd = agent === "devin" ? devinConfig(spec.cmd, noWeb, root, refuse) : spec.cmd;
+  const out = hooksOff(agent, cmd, spec.env, masked, refuse);
+  return {
+    cmd: out.cmd,
+    env: agent === "codex" ? codexWrapper(out.env, noWeb, root, dirs, refuse) : out.env,
+    cwd: spec.cwd,
+    argv0: spec.argv0,
+  };
 }

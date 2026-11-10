@@ -21,7 +21,7 @@ import readline from 'node:readline';
 import fs from 'node:fs';
 import {execFileSync,spawn} from 'node:child_process';
 const cfg=JSON.parse(process.env.FAKE_CONFIG);let options=[{id:'model',currentValue:'default',options:[{value:'chosen'}]},{id:cfg.effortId||'effort',currentValue:'medium',options:[{value:'high'}]},{id:'mode',currentValue:cfg.modeStart||'write',options:cfg.grouped?[{group:'sandbox-modes',name:'Sandbox Modes',options:(cfg.modes||['read-only']).map(value=>({value}))},{group:'permission-profiles',name:'Permission Profiles',options:(cfg.profiles||['profile-a']).map(value=>({value}))}]:(cfg.modes||['read-only']).map(value=>({value}))}];
-const launch={pid:process.pid,argv:process.argv.slice(2),env:Object.keys(process.env),codexPath:process.env.CODEX_PATH??null,realCodex:process.env.CODEX_NO_WEB_REAL??null,codexConfig:process.env.CODEX_CONFIG??null};
+const launch={pid:process.pid,startCwd:process.cwd(),pathValue:process.env.PATH??null,pathEntries:(process.env.PATH&&fs.existsSync(process.env.PATH)&&fs.statSync(process.env.PATH).isDirectory())?fs.readdirSync(process.env.PATH):null,argv:process.argv.slice(2),env:Object.keys(process.env),codexPath:process.env.CODEX_PATH??null,realCodex:process.env.CODEX_NO_WEB_REAL??null,codexConfig:process.env.CODEX_CONFIG??null};
 const argAt=process.argv.indexOf('--config');
 if(argAt>=0){const file=process.argv[argAt+1];launch.devin={file,config:JSON.parse(fs.readFileSync(file,'utf8')),fileMode:fs.statSync(file).mode&0o777,dirMode:fs.statSync(file.slice(0,Math.max(file.lastIndexOf('/'),file.lastIndexOf('\\\\')))).mode&0o777};}
 if(launch.codexPath&&fs.existsSync(launch.codexPath)&&launch.codexPath.endsWith('codex-no-web'))launch.wrapper=fs.readFileSync(launch.codexPath,'utf8');
@@ -45,7 +45,7 @@ readline.createInterface({input:process.stdin}).on('line',async line=>{
  if(m.method==='session/cancel'&&cfg.honorCancel&&cfg.promptId)return send({id:cfg.promptId,result:{stopReason:'cancelled'}});
  if(!m.method){waiting.get(m.id)?.(m);return;}
  if(m.method==='initialize')return send({id:m.id,result:{protocolVersion:cfg.protocol||1,agentInfo:{name:cfg.agentName||(cfg.codex?'codex-acp':'fake-agent'),title:cfg.agentTitle}}});
- if(m.method==='session/new'){if(cfg.helperExit){spawn('sleep',['4'],{stdio:['ignore','inherit','inherit'],detached:true}).unref();process.exit(3);}
+ if(m.method==='session/new'){if(m.params&&m.params.cwd)process.chdir(m.params.cwd);if(cfg.helperExit){spawn('sleep',['4'],{stdio:['ignore','inherit','inherit'],detached:true}).unref();process.exit(3);}
   if(cfg.dieOnNew)process.exit(3);return send({id:m.id,result:{sessionId:'s',configOptions:options}});}
  if(m.method==='session/set_config_option'){
   options=options.map(o=>o.id===m.params.configId?{...o,currentValue:m.params.value}:o);
@@ -99,20 +99,27 @@ function run(
   const dir = mkdtempSync(join(process.env.HOUSE_RULES_TEST_TMP || tmpdir(), "acp-review-"));
   const root = join(dir, "repo");
   mkdirSync(root);
-  writeFileSync(join(dir, "fake.mjs"), fake);
+  // Stand-in programs live in their own folder, outside the run directory (a test may make that one a
+  // checkout, and the client refuses a program folder inside the checkout).
+  const shims = mkdtempSync(join(process.env.HOUSE_RULES_TEST_TMP || tmpdir(), "acp-shims-"));
+  writeFileSync(join(shims, "fake.mjs"), fake);
+  // Links in the trusted program folder, as a tool folder can hold one into a checkout.
+  for (const [name, target] of Object.entries(config.shimLinks ?? {})) {
+    symlinkSync(String(target).replaceAll("%DIR%", dir), join(shims, name));
+  }
   // A launch the client identifies by a whole path segment of the script an interpreter runs.
   const fakePath = config.fakeSegment
-    ? join(dir, config.fakeSegment, "fake.mjs")
-    : join(dir, "fake.mjs");
+    ? join(shims, config.fakeSegment, "fake.mjs")
+    : join(shims, "fake.mjs");
   if (config.fakeSegment) {
-    mkdirSync(join(dir, config.fakeSegment));
+    mkdirSync(join(shims, config.fakeSegment));
     writeFileSync(fakePath, fake);
   }
   // Executables named like the agents they stand for; they start the fake (POSIX only).
   /** @param {string} name @param {string} body */
   const shim = (name, body) => {
-    writeFileSync(join(dir, name), `#!/bin/sh\n${body}\n`, { mode: 0o755 });
-    return join(dir, name);
+    writeFileSync(join(shims, name), `#!/bin/sh\n${body}\n`, { mode: 0o755 });
+    return join(shims, name);
   };
   const env = { ...config.env };
   for (const [key, value] of Object.entries(env)) {
@@ -139,7 +146,7 @@ function run(
   );
   const launcher = config.launcher || (config.devinShim ? "devin" : "");
   const server = config.serverNotFound
-    ? ["definitely-missing-acp-agent"]
+    ? ["/definitely-missing-acp-agent"]
     : launcher
       ? [shim(launcher, `exec "${process.execPath}" "${fakePath}" "$@"`), ...serverArgs]
       : [process.execPath, fakePath, ...serverArgs];
@@ -163,11 +170,25 @@ function run(
       writeFileSync(out, "old", { mode: config.outMode });
       chmodSync(out, config.outMode);
     }
+    const [serverExe, ...serverAll] = server;
+    const agent =
+      config.seatAgent ?? (launcher === "devin" ? "devin" : launcher === "agy" ? "agy" : "other");
+    // The profiles of devin and agy already start `acp`.
+    const serverRest =
+      (agent === "devin" || agent === "agy") && serverAll[0] === "acp"
+        ? serverAll.slice(1)
+        : serverAll;
     const result = spawnSync(
       runtime,
       [
         clientPath,
-        JSON.stringify(server),
+        "--seat-agent",
+        agent,
+        "--server-exe",
+        serverExe ?? "",
+        ...serverRest.map((a) => `--server-arg=${a}`),
+        "--bin-dir",
+        shims,
         join(dir, "prompt.md"),
         out,
         launchRoot,
@@ -220,6 +241,7 @@ function run(
     };
   } finally {
     rmSync(dir, { recursive: true, force: true });
+    rmSync(shims, { recursive: true, force: true });
   }
 }
 test("rejects hostile terminals, writes and every permission kind while allowing confined reads", () => {
@@ -504,24 +526,9 @@ test("an enclosing checkout found after the launch checkout is gone does not mak
     assert.equal(spawnSync("git", ["init", "-q", root]).status, 0);
   };
   const r = run({ removeGit: true, writeFiles: ["stray.txt"] }, [], prepare);
-  assert.equal(r.code, 4);
+  assert.equal(r.code, 4, r.error);
   assert.match(r.error, /the git repository changed/);
 });
-test(
-  "without a git program there is nothing to compare, as before",
-  { skip: process.platform !== "linux" },
-  () => {
-    const empty = mkdtempSync(join(process.env.HOUSE_RULES_TEST_TMP || tmpdir(), "acp-nogit-"));
-    try {
-      const r = run({ env: { PATH: empty }, writeFiles: ["stray.txt"] }, [], gitRepoWithTracked);
-      assert.equal(r.code, 0);
-      assert.doesNotMatch(r.error, /FATAL/);
-    } finally {
-      rmSync(empty, { recursive: true, force: true });
-    }
-  },
-);
-// A newline in a file name is not allowed on Windows.
 test(
   "a control character in a file name cannot forge a log line",
   { skip: process.platform !== "linux" },
@@ -583,7 +590,13 @@ test("a copy of the client and the file beside it runs without its source checko
   try {
     const copy = join(dir, "client.mjs");
     writeFileSync(copy, readFileSync(client));
-    for (const file of ["seat-launch.mjs", "seat-hooks.mjs"]) {
+    for (const file of [
+      "seat-launch.mjs",
+      "seat-hooks.mjs",
+      "seat-paths.mjs",
+      "seat-spec.mjs",
+      "client-args.mjs",
+    ]) {
       writeFileSync(join(dir, file), readFileSync(join(dirname(client), file)));
     }
     const r = run({ codex: true }, ["--model", "chosen"], () => {}, process.execPath, copy);
@@ -642,16 +655,15 @@ const SECRETS = {
 };
 /** @param {{ launch: { env: string[] } | null }} r */
 const seatEnvNames = (r) => new Set(r.launch?.env ?? []);
-const CODEX_PACKAGE = "--package=@agentclientprotocol/codex-acp@2.5.0";
-const CLAUDE_PACKAGE = "--package=@agentclientprotocol/claude-agent-acp@0.101.0";
-// A package runner starting each agent: the runner is a shim named bunx that starts the fake. A Codex
-// seat also needs `codex mcp list --json` to work, so it gets a shim that lists no servers.
+// Each agent's server: a stand-in program named like the agent's own, started by absolute path, that
+// starts the fake. A Codex seat also needs `codex mcp list --json` to work, so it gets a shim that lists
+// no servers.
 const CODEX_LAUNCH = {
-  launcher: "bunx",
-  serverArgs: [CODEX_PACKAGE, "codex-acp"],
+  seatAgent: "codex",
+  launcher: "codex-acp",
   codexShim: /** @type {unknown[]} */ ([]),
 };
-const CLAUDE_LAUNCH = { launcher: "bunx", serverArgs: [CLAUDE_PACKAGE, "claude-agent-acp"] };
+const CLAUDE_LAUNCH = { seatAgent: "claude", launcher: "claude-agent-acp" };
 test("a seat starts with named paths and locale, not the caller's keys, tokens or SSH agent", () => {
   const r = run({ env: SECRETS });
   assert.equal(r.code, 0);
@@ -672,20 +684,15 @@ test("a prefix named in ACP_PANEL_PASS_ENV passes and nothing else does", () => 
 });
 for (const [name, config, keeps, drops] of /** @type {[string, any, string[], string[]][]} */ ([
   [
-    "codex-acp by package",
+    "codex-acp",
     CODEX_LAUNCH,
     ["OPENAI_API_KEY"],
     ["ANTHROPIC_API_KEY", "DEVIN_API_KEY", "XAI_API_KEY", "CURSOR_API_KEY"],
   ],
+  ["claude-agent-acp", CLAUDE_LAUNCH, ["ANTHROPIC_API_KEY"], ["OPENAI_API_KEY", "DEVIN_API_KEY"]],
   [
-    "claude-agent-acp by package",
-    CLAUDE_LAUNCH,
-    ["ANTHROPIC_API_KEY"],
-    ["OPENAI_API_KEY", "DEVIN_API_KEY"],
-  ],
-  [
-    "an interpreter running a script under a cursor-agent directory",
-    { fakeSegment: "cursor-agent" },
+    "cursor-agent",
+    { seatAgent: "cursor", launcher: "cursor-agent" },
     ["CURSOR_API_KEY"],
     ["OPENAI_API_KEY", "ANTHROPIC_API_KEY"],
   ],
@@ -786,6 +793,253 @@ test("an unknown flag or a flag without its value is refused before any launch",
     assert.equal(r.code, 2, flags.join(" "));
     assert.match(r.error, /^usage:/m);
     assert.equal(r.launch, null);
+  }
+});
+test("--seat-agent is required and must name a known agent", () => {
+  const dir = mkdtempSync(join(process.env.HOUSE_RULES_TEST_TMP || tmpdir(), "acp-agent-"));
+  try {
+    writeFileSync(join(dir, "prompt.md"), "x");
+    for (const args of [[], ["--seat-agent", "bash"], ["--seat-agent"]]) {
+      const r = spawnSync(
+        process.execPath,
+        [client, ...args, join(dir, "prompt.md"), join(dir, "out.txt"), dir],
+        { encoding: "utf8" },
+      );
+      assert.equal(r.status, 2, args.join(" "));
+      assert.match(r.stderr, /usage:|not one of/);
+    }
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+test(
+  "a relative --bin-dir and one inside the checkout are refused before any launch",
+  POSIX_ONLY,
+  () => {
+    for (const [flags, re] of /** @type {[string[], RegExp][]} */ ([
+      [["--bin-dir", "relative"], /not an absolute path/],
+      [["--bin-dir", "%DIR%/repo"], /inside the review checkout/],
+    ])) {
+      const r = run({}, flags);
+      assert.equal(r.code, 2, flags.join(" "));
+      assert.match(r.error, re);
+      assert.equal(r.launch, null);
+    }
+  },
+);
+test("a package runner is refused as a server, by its name", POSIX_ONLY, () => {
+  for (const launcher of ["bunx", "npx", "pnpx"]) {
+    const r = run({ launcher });
+    assert.equal(r.code, 2, launcher);
+    assert.match(r.error, /package runner/);
+    assert.equal(r.launch, null);
+  }
+});
+test(
+  "a private-start seat starts in an empty folder outside the review root; agy starts in the root",
+  POSIX_ONLY,
+  () => {
+    for (const config of [
+      {},
+      { seatAgent: "claude", launcher: "claude-agent-acp" },
+      CODEX_LAUNCH,
+    ]) {
+      const r = run(config);
+      assert.equal(r.code, 0, r.error);
+      const start = String(r.launch?.startCwd);
+      assert.match(
+        start,
+        /\/acp-panel-[^/]+\/server-cwd-[^/]+$/,
+        "the client's own private folder",
+      );
+      assert.equal(
+        start.includes("/acp-review-"),
+        false,
+        "not the run directory holding the checkout",
+      );
+    }
+    const agy = run({ launcher: "agy" }, AGY_FLAGS, agyHome("t"));
+    assert.equal(agy.code, 0, agy.error);
+    assert.match(String(agy.launch?.startCwd), /\/repo$/, "agy starts in the review root");
+  },
+);
+test(
+  "the seat's PATH is one folder of links to the trusted programs: the caller's PATH and links into the checkout are left out",
+  POSIX_ONLY,
+  () => {
+    const prepare = (/** @type {string} */ root) => {
+      mkdirSync(join(root, "bin"));
+      writeFileSync(join(root, "bin", "tool"), "#!/bin/sh\nexit 0\n", { mode: 0o755 });
+    };
+    const r = run(
+      {
+        env: { PATH: "/definitely/not/trusted:%DIR%/repo/bin" },
+        shimLinks: { "checkout-tool": "%DIR%/repo/bin/tool" },
+      },
+      [],
+      prepare,
+    );
+    assert.equal(r.code, 0, r.error);
+    assert.match(String(r.launch?.pathValue), /\/acp-panel-[^/:]+\/bin$/, "one private folder");
+    const names = /** @type {string[]} */ (r.launch?.pathEntries);
+    assert.ok(names.length > 20, "the system's programs are there");
+    assert.ok(names.includes("sh") || names.includes("ls"));
+    assert.equal(names.includes("checkout-tool"), false, "a link into the checkout is left out");
+  },
+);
+test("a Codex MCP list that is not a list of named servers refuses the launch", POSIX_ONLY, () => {
+  for (const codexShim of [{}, { mcp_servers: [] }, [null], [{ name: 7 }]]) {
+    const r = run({ ...CODEX_LAUNCH, codexShim });
+    assert.equal(r.code, 2, JSON.stringify(codexShim));
+    assert.match(r.error, /cannot turn off Codex's MCP servers/);
+    assert.equal(r.launch, null);
+  }
+});
+
+test("a GIT_DIR that cannot be opened is a failure to check, not a non-checkout", () => {
+  const r = run(
+    { env: { GIT_DIR: join(tmpdir(), "acp-no-such-git-dir") } },
+    [],
+    gitRepoWithTracked,
+  );
+  assert.equal(r.code, 1);
+  assert.match(r.error, /FATAL: git status failed at launch/);
+});
+
+test("a git failure that is not 'not a git repository' is a failure to check, not a non-checkout", () => {
+  const dir = mkdtempSync(join(process.env.HOUSE_RULES_TEST_TMP || tmpdir(), "acp-badcfg-"));
+  try {
+    const bad = join(dir, "gitconfig");
+    writeFileSync(bad, "[core\nthis is not a config file\n");
+    const r = run({ env: { GIT_CONFIG_GLOBAL: bad } }, [], gitRepoWithTracked);
+    assert.equal(r.code, 1);
+    assert.match(r.error, /FATAL: git status failed at launch/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test(
+  "a git program anywhere in the checkout is refused, also when launched from below the repository root",
+  { skip: process.platform === "win32" },
+  () => {
+    const prepare = (/** @type {string} */ root, /** @type {string} */ dir) => {
+      gitRepoWithTracked(root);
+      mkdirSync(join(root, "bin"));
+      mkdirSync(join(root, "packages", "app"), { recursive: true });
+      writeFileSync(join(root, "packages", "app", "a.txt"), "x");
+      writeFileSync(
+        join(root, "bin", "git"),
+        `#!/bin/sh\n: > "${join(dir, "git-ran")}"\nexit 0\n`,
+        {
+          mode: 0o755,
+        },
+      );
+      return join(root, "packages", "app");
+    };
+    const r = run(
+      { env: { PATH: `%DIR%/repo/bin:${process.env.PATH}` }, readBack: ["git-ran"] },
+      [],
+      prepare,
+    );
+    assert.equal(r.code, 0, r.error);
+    assert.equal(r.read["git-ran"], null, "the checkout's git did not run");
+  },
+);
+
+test(
+  "a git program inside the review root on PATH is never the one the client runs",
+  { skip: process.platform === "win32" },
+  () => {
+    const prepare = (/** @type {string} */ root, /** @type {string} */ dir) => {
+      mkdirSync(join(root, "bin"));
+      writeFileSync(
+        join(root, "bin", "git"),
+        `#!/bin/sh\n: > "${join(dir, "git-ran")}"\nexit 0\n`,
+        {
+          mode: 0o755,
+        },
+      );
+    };
+    const r = run(
+      { env: { PATH: `%DIR%/repo/bin:${process.env.PATH}` }, readBack: ["git-ran"] },
+      [],
+      prepare,
+    );
+    assert.equal(r.code, 0, r.error);
+    assert.equal(r.read["git-ran"], null, "the checkout's git did not run");
+  },
+);
+
+test("a grouped list with no mode the client can move to is refused when the start mode can approve edits", () => {
+  const r = run({
+    grouped: true,
+    modes: ["plan", "smart"],
+    profiles: ["profile-a"],
+    modeStart: "auto",
+  });
+  assert.equal(r.code, 1);
+  assert.match(r.error, /can approve an edit without asking/);
+  const codex = run({ codex: true, grouped: true, modes: ["default"], modeStart: "auto" });
+  assert.equal(codex.code, 1, "Codex still needs read-only inside the groups");
+  assert.equal(
+    codex.log.some((m) => m.method === "session/prompt"),
+    false,
+  );
+});
+
+test("a model echo may add or drop a provider prefix but not change it", () => {
+  assert.equal(run({}, ["--model", "vendor-a/chosen"]).code, 0);
+  assert.equal(run({ echoModel: "vendor-a/Chosen" }, ["--model", "vendor-a/chosen"]).code, 0);
+  assert.equal(run({ echoModel: "vendor-a/chosen" }, ["--model", "chosen"]).code, 0);
+  const swapped = run({ echoModel: "vendor-b/chosen" }, ["--model", "vendor-a/chosen"]);
+  assert.equal(swapped.code, 1);
+  assert.equal(
+    swapped.log.some((m) => m.method === "session/prompt"),
+    false,
+  );
+});
+
+test("a malformed launch option is refused, not read as another option's value", POSIX_ONLY, () => {
+  const dir = mkdtempSync(join(process.env.HOUSE_RULES_TEST_TMP || tmpdir(), "acp-parse-"));
+  try {
+    writeFileSync(join(dir, "prompt.md"), "x");
+    const server = join(dir, "server");
+    writeFileSync(server, "#!/bin/sh\nexit 0\n", { mode: 0o755 });
+    const out = join(dir, "out.txt");
+    const attempt = (/** @type {string[]} */ args) =>
+      spawnSync(process.execPath, [client, ...args], { encoding: "utf8" });
+    // A `--server-arg` with no value of its own, then `--server-exe`: neither may be taken by the other.
+    const missing = attempt([
+      "--seat-agent",
+      "other",
+      "--server-arg",
+      "--server-exe",
+      server,
+      "unexpected",
+      join(dir, "prompt.md"),
+      out,
+      dir,
+      "--no-web",
+    ]);
+    assert.equal(missing.status, 2, missing.stderr);
+    assert.match(missing.stderr, /^usage:/m);
+    // An empty --server-exe is not "no --server-exe".
+    const empty = attempt([
+      "--seat-agent",
+      "grok",
+      "--server-exe",
+      "",
+      "--bin-dir",
+      dir,
+      join(dir, "prompt.md"),
+      out,
+      dir,
+    ]);
+    assert.equal(empty.status, 2, empty.stderr);
+    assert.match(empty.stderr, /--server-exe needs/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
   }
 });
 /** @param {string} body */
@@ -1050,9 +1304,10 @@ test("a server that exits before answering ends the run at once", () => {
   assert.equal(r.code, 1);
   assert.match(r.error, /FATAL: ACP server exited/);
 });
-test("a server command that cannot start ends the run at once", () => {
+test("a server executable that is not there is refused before anything starts", () => {
   const r = run({ serverNotFound: true });
-  assert.equal(r.code, 1);
+  assert.equal(r.code, 2);
+  assert.match(r.error, /not a regular executable/);
   assert.match(r.error, /FATAL: /);
 });
 /**
@@ -1155,8 +1410,8 @@ test(
   () => {
     const config = {
       codex: true,
-      launcher: "bunx",
-      serverArgs: [CODEX_PACKAGE, "codex-acp"],
+      seatAgent: "codex",
+      launcher: "codex-acp",
       codexShim: [{ name: "alpha" }, { name: "beta-2" }],
     };
     for (const flags of [[], ["--no-web"]]) {
@@ -1253,10 +1508,7 @@ test(
     const prepare = (/** @type {string} */ root) => {
       writeFileSync(join(root, "own.json"), JSON.stringify({ version: 1, hooks: { own: true } }));
     };
-    for (const serverArgs of [
-      ["--config", "own.json", "acp"],
-      ["--config=own.json", "acp"],
-    ]) {
+    for (const serverArgs of [["--config", "own.json"], ["--config=own.json"]]) {
       const r = run({ devinShim: true, serverArgs }, [], prepare);
       assert.equal(r.code, 0, r.error);
       const argv = r.launch?.argv ?? [];
@@ -1272,7 +1524,7 @@ test(
   },
 );
 test("a Devin config that cannot be read refuses the launch", POSIX_ONLY, () => {
-  const r = run({ devinShim: true, serverArgs: ["--config", "absent.json", "acp"] });
+  const r = run({ devinShim: true, serverArgs: ["--config", "absent.json"] });
   assert.equal(r.code, 2);
   assert.match(r.error, /cannot read Devin config/);
   assert.equal(r.launch, null);
@@ -1281,24 +1533,6 @@ test("another agent's command is not given a Devin config", () => {
   assert.equal(run({}).launch?.argv.includes("--config"), false);
 });
 
-test(
-  "agent detection does not take a flag's value or a stray --package= for the script",
-  POSIX_ONLY,
-  () => {
-    for (const serverArgs of [
-      ["--cwd", "/tools/claude", "%FAKE%"],
-      ["--package=@agentclientprotocol/claude-agent-acp@0.101.0", "%FAKE%"],
-      ["--cwd=/tools/codex", "%FAKE%"],
-    ]) {
-      const r = run({ launcher: "bun", serverArgs, env: SECRETS });
-      assert.equal(r.code, 0, r.error);
-      const env = seatEnvNames(r);
-      for (const key of ["ANTHROPIC_API_KEY", "OPENAI_API_KEY", "GH_TOKEN", "SSH_AUTH_SOCK"]) {
-        assert.equal(env.has(key), false, `${serverArgs.join(" ")}: ${key}`);
-      }
-    }
-  },
-);
 test("a flag's missing value cannot swallow the next flag", () => {
   for (const flags of [
     ["--policy-option", "--no-web"],
@@ -1672,20 +1906,19 @@ test("an offline Devin seat is refused while a Devin MCP server is enabled", POS
   );
 });
 test(
-  "a Devin launch that names --config twice is refused, and --config goes after a runner's devin",
+  "a Devin launch that names --config twice is refused, and --config goes right after Devin",
   POSIX_ONLY,
   () => {
     const twice = run({
       devinShim: true,
-      serverArgs: ["--config", "a.json", "--config=b.json", "acp"],
+      serverArgs: ["--config", "a.json", "--config=b.json"],
     });
     assert.equal(twice.code, 2);
     assert.match(twice.error, /names --config more than once/);
-    const r = run({ launcher: "bunx", serverArgs: ["devin", "acp"], env: { DEVIN_API_KEY: "d" } });
+    const r = run({ devinShim: true, env: { DEVIN_API_KEY: "d" } });
     assert.equal(r.code, 0, r.error);
-    assert.equal(r.launch?.argv[0], "devin");
-    assert.equal(r.launch?.argv[1], "--config");
-    assert.equal(r.launch?.argv[3], "acp");
+    assert.equal(r.launch?.argv[0], "--config");
+    assert.equal(r.launch?.argv[2], "acp");
   },
 );
 
@@ -1785,47 +2018,6 @@ test("a call typed as a web search is network use for any agent, kind search or 
     "reject",
   );
 });
-test("a model echo may add or drop a provider prefix but not change it", () => {
-  assert.equal(run({}, ["--model", "vendor-a/chosen"]).code, 0);
-  assert.equal(run({ echoModel: "vendor-a/Chosen" }, ["--model", "vendor-a/chosen"]).code, 0);
-  assert.equal(run({ echoModel: "vendor-a/chosen" }, ["--model", "chosen"]).code, 0);
-  const swapped = run({ echoModel: "vendor-b/chosen" }, ["--model", "vendor-a/chosen"]);
-  assert.equal(swapped.code, 1);
-  assert.equal(
-    swapped.log.some((m) => m.method === "session/prompt"),
-    false,
-  );
-});
-test(
-  "only a codex-acp package name makes a launch a Codex launch, not any argument containing it",
-  POSIX_ONLY,
-  () => {
-    // A script in a directory named codex-acp-tools is no Codex: no wrapper, so no `codex` is needed.
-    const plain = run({
-      fakeSegment: "codex-acp-tools",
-      serverArgs: ["--cwd", "/x/codex-acp-tools"],
-    });
-    assert.equal(plain.code, 0, plain.error);
-    assert.equal(plain.launch?.wrapper, undefined);
-    // A runner launch the client cannot read still names the package, so it gets the wrapper.
-    const ambiguous = run({
-      launcher: "npx",
-      codexShim: [],
-      // The launch is ambiguous, so the Codex login variables are not passed; CODEX_PATH is, by name.
-      env: { ACP_PANEL_PASS_ENV: "FAKE_,CODEX_PATH" },
-      serverArgs: ["--cache", "/x", "@agentclientprotocol/codex-acp@2.5.0"],
-    });
-    assert.equal(ambiguous.code, 0, ambiguous.error);
-    assert.ok(ambiguous.launch?.codexPath?.endsWith("codex-no-web"));
-  },
-);
-test("a Devin launch the client cannot read is refused before it starts", POSIX_ONLY, () => {
-  const r = run({ launcher: "npx", serverArgs: ["--cache", "/x", "devin", "acp"] });
-  assert.equal(r.code, 2);
-  assert.match(r.error, /may start Devin/);
-  assert.equal(r.launch, null);
-});
-
 test("the advertised spelling of a model is what the agent is sent", () => {
   const r = run({}, ["--model", "vendor/Chosen"]);
   assert.equal(r.code, 0, r.error);
@@ -1834,26 +2026,6 @@ test("the advertised spelling of a model is what the agent is sent", () => {
   );
   assert.equal(set.params.value, "chosen");
 });
-test(
-  "a Codex launch beside a preload is wrapped, a Grok launch that merely mentions codex-acp is not",
-  POSIX_ONLY,
-  () => {
-    const wrapped = run({
-      launcher: "node",
-      codexShim: [],
-      env: { ACP_PANEL_PASS_ENV: "FAKE_,CODEX_PATH" },
-      serverArgs: ["--import", "shared/preload.mjs", "codex-acp/index.js"],
-    });
-    assert.equal(wrapped.code, 0, wrapped.error);
-    assert.ok(wrapped.launch?.codexPath?.endsWith("codex-no-web"));
-    const plain = run({
-      launcher: "node",
-      serverArgs: ["--title", "codex-acp", "grok/server.mjs"],
-    });
-    assert.equal(plain.code, 0, plain.error);
-    assert.equal(plain.launch?.wrapper, undefined);
-  },
-);
 test("a web search request is refused when the tracking set is full, from the request itself", () => {
   const asked = (/** @type {string} */ id) => ({
     method: "session/request_permission",
@@ -2043,12 +2215,7 @@ test(
 );
 
 test("an agy launch is refused before any server starts unless the caller declares the seat masked", () => {
-  for (const config of [
-    { launcher: "agy" },
-    { serverArgs: ["-c", "env X=1 agy acp"] },
-    { serverArgs: ["--", "agy-acp"] },
-    { serverArgs: ["/opt/agy-acp/current/agy_acp_server.par"] },
-  ]) {
+  for (const config of [{ launcher: "agy" }]) {
     for (const flags of [
       [],
       ["--policy-option", "agy-masked=false"],
@@ -2079,7 +2246,7 @@ test("agy-masked with hooks-masked, bare or true, lets an agy launch through; ot
 
 test("a launch policy can neither set the agy-masked marker nor run before the agy refusal", () => {
   const r = run(
-    { serverArgs: ["agy-acp"], readBack: ["policy-ran"] },
+    { launcher: "agy", readBack: ["policy-ran"] },
     ["--policy", "%DIR%/policy.mjs"],
     policyModule(`
 import { writeFileSync } from "node:fs";
@@ -2280,13 +2447,6 @@ test(
       assert.match(r.error, /--policy-option hooks-masked/);
       assert.equal(r.launch, null);
     }
-    const unrecognized = run(
-      { serverArgs: ["agy-acp"], env: { HOME: "%DIR%/home" } },
-      AGY_FLAGS,
-      agyHome("t"),
-    );
-    assert.equal(unrecognized.code, 2);
-    assert.match(unrecognized.error, /hooks-masked/);
   },
 );
 test(
@@ -2326,7 +2486,7 @@ test(
       own.launch?.argv.filter((/** @type {string} */ a) => a === "--gemini-dir").length,
       1,
     );
-    const bare = run({ serverArgs: ["agy-acp"], env: { HOME: "%DIR%/home" } }, [
+    const bare = run({ ...AGY, serverArgs: [], env: { HOME: "%DIR%/home" } }, [
       ...AGY_FLAGS,
       "--policy-option",
       "hooks-masked=true",
