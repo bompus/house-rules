@@ -39,6 +39,8 @@ export const LOGIN_PREFIXES = {
 // CLAUDE_CODE_USE_VERTEX (dist/acp-agent.js:2016, 2023; SDK sdk.mjs:42), CLAUDE_SECURESTORAGE_CONFIG_DIR (SDK
 // sdk.mjs:161: where the CLI finds its stored login), the client certificate of a gateway that asks for one
 // (CLAUDE_CODE_CLIENT_CERT, _KEY and _KEY_PASSPHRASE: the CLI, found by the independent read of this change),
+// the two switches that stop the CLI resolving cloud credentials locally when a gateway authenticates instead
+// (CLAUDE_CODE_SKIP_BEDROCK_AUTH and _SKIP_VERTEX_AUTH: the CLI, also found by that read),
 // and the two program overrides CLAUDE_CODE_EXECUTABLE (dist/claude-cli.js:20) and CLAUDE_CODE_SHELL, which the
 // client forwards only as a checked absolute path (forwardPrograms in seat-paths.mjs). See
 // ../references/acp-client.md.
@@ -55,6 +57,8 @@ export const LOGIN_NAMES = {
     "CLAUDE_CODE_CLIENT_CERT",
     "CLAUDE_CODE_CLIENT_KEY",
     "CLAUDE_CODE_CLIENT_KEY_PASSPHRASE",
+    "CLAUDE_CODE_SKIP_BEDROCK_AUTH",
+    "CLAUDE_CODE_SKIP_VERTEX_AUTH",
   ],
 };
 // A name that ends so holds a command line (a program and arguments), which no path rule can check: it is never

@@ -138,14 +138,14 @@ What stays outside this: managed policy settings and an adapter's own hooks (Cla
 The seat starts with a narrowed environment, not the caller's: named locale,
 path, XDG, proxy and certificate variables (on Windows, also the variables a
 program needs to start), plus only the variables its own agent reads to log in
-(`CODEX_` and `OPENAI_` for Codex, `ANTHROPIC_` and ten `CLAUDE_` names for Claude, `DEVIN_`,
+(`CODEX_` and `OPENAI_` for Codex, `ANTHROPIC_` and twelve `CLAUDE_` names for Claude, `DEVIN_`,
 `GROK_` and `XAI_`, `GEMINI_` and `GOOGLE_` for Antigravity, `CURSOR_`).
 
 A Claude
 seat keeps `ANTHROPIC_*` and only these `CLAUDE_` names, each read by the installed claude-agent-acp 0.102.0, its SDK or the CLI:
 `CLAUDE_CONFIG_DIR` (adapter `dist/paths.js:5`; SDK `core-hz6x1gbv.mjs:16`), `CLAUDE_CODE_OAUTH_TOKEN`
 (`dist/acp-agent.js:11560`), `CLAUDE_CODE_USE_BEDROCK` and `CLAUDE_CODE_USE_VERTEX` (`dist/acp-agent.js:2016`, `2023`;
-SDK `sdk.mjs:42`), `CLAUDE_SECURESTORAGE_CONFIG_DIR` (SDK `sdk.mjs:161`, where the CLI finds its stored login), a gateway's client certificate (`CLAUDE_CODE_CLIENT_CERT`, `CLAUDE_CODE_CLIENT_KEY`, a path, and `CLAUDE_CODE_CLIENT_KEY_PASSPHRASE`; the native CLI, which has no source line to cite), and the program overrides `CLAUDE_CODE_EXECUTABLE` (`dist/claude-cli.js:20`) and `CLAUDE_CODE_SHELL`.
+SDK `sdk.mjs:42`), `CLAUDE_SECURESTORAGE_CONFIG_DIR` (SDK `sdk.mjs:161`, where the CLI finds its stored login), a gateway's client certificate (`CLAUDE_CODE_CLIENT_CERT`, `CLAUDE_CODE_CLIENT_KEY`, a path, and `CLAUDE_CODE_CLIENT_KEY_PASSPHRASE`; the native CLI, which has no source line to cite), the two switches a gateway uses so the CLI does not resolve AWS or Google credentials locally (`CLAUDE_CODE_SKIP_BEDROCK_AUTH`, `CLAUDE_CODE_SKIP_VERTEX_AUTH`; plain switches, the native CLI, no source line to cite), and the program overrides `CLAUDE_CODE_EXECUTABLE` (`dist/claude-cli.js:20`) and `CLAUDE_CODE_SHELL`.
 The CLI reads over a thousand `CLAUDE_` names, among them a shell prefix, helper commands and runner binaries, so the
 others are not passed. Known gaps, read by the adapter or SDK but not needed to log in by subscription, API key,
 Bedrock or Vertex: `CLAUDE_MODEL_CONFIG`, `CLAUDE_CODE_THINKING_DISPLAY`, `CLAUDE_CODE_IDLE_COMPACT_MIN_TOKENS`,
