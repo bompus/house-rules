@@ -413,6 +413,25 @@ test("a rejected delete still runs the landing checks, then exits 1 for the left
   expect(sh(work, "git", "rev-parse", "main")).toBe(squash);
 });
 
+test("a failed lookup of the remote head after the merge does not stop the landing checks", () => {
+  const { bin, remote, work, squash, run } = fixture({ staleDefault: true });
+  // Only the head lookup after the merge fails; the checks' own ls-remote calls keep working.
+  stub(
+    bin,
+    "git",
+    `case "$*" in *"ls-remote --heads origin refs/heads/feature"*) echo "fatal: unable to access" >&2; exit 128;; esac\nexec ${Bun.which("git")} "$@"`,
+  );
+  const r = run();
+  expect(r.out).toContain("merged: PR 7");
+  expect(r.err).toContain("could not read origin/feature");
+  // The branch was not deleted, and verify-landed.sh ran: it names the leftover branch and the
+  // primary's main was fast-forwarded to the merge commit.
+  expect(r.err).toContain("leftover branch: origin/feature still exists after merge");
+  expect(r.code).toBe(1);
+  expect(sh(remote, "git", "branch", "--list", "feature")).not.toBe("");
+  expect(sh(work, "git", "rev-parse", "main")).toBe(squash);
+});
+
 test("--merge lands with a merge commit instead of a squash", () => {
   const { oid, log, run } = fixture();
   const r = run("--merge");

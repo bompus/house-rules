@@ -639,7 +639,12 @@ fi
 if [ -n "$KEEP_HEAD" ]; then
   echo "$KEPT_MESSAGE" >&2
 elif [ "$FORK" != true ]; then
-  REMOTE_HEAD="$(git ls-remote --heads "$REMOTE" "refs/heads/$HEAD" | awk '{print $1}')"
+  # The merge has landed, so a lookup that fails (a network blip) must not end the run before the
+  # landing checks: the branch is left, and verify-landed.sh below reports on it.
+  if ! REMOTE_HEAD="$(git ls-remote --heads "$REMOTE" "refs/heads/$HEAD" | awk '{print $1}')"; then
+    REMOTE_HEAD=""
+    echo "could not read $REMOTE/$HEAD (git ls-remote failed); PR $PR is merged, so the landing checks still run" >&2
+  fi
   if [ "$REMOTE_HEAD" = "$OID" ]; then
     # --no-verify: pre-push hooks guard what a push adds, and a deletion adds nothing. The head was
     # already checked above, so a hook failing here (say a stale node_modules in this checkout) must
