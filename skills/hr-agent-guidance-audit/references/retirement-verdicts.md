@@ -13,8 +13,9 @@ Usage evidence is optional and only supporting. When session transcripts are
 available, count a use only when the skill or file was invoked or loaded for
 real work. Exclude sessions that only list, edit, audit or install it, and
 give anything added recently a grace period before low use counts against it.
-Low use alone never justifies retirement: rare skills can guard rare,
-expensive situations.
+Zero recent use is a review prompt, not a retire verdict: rare skills can
+guard rare, expensive situations. A reviewed item you keep goes in the kept
+list with its reason.
 
 ## Verdicts
 
