@@ -20,17 +20,16 @@ format for choices, with this round structure:
 ```
 **Question 1: <title>** <body>
 
-`1A` <option> (Recommended)
+- `1a` (Recommended) <option>
+- `1b` <option>
 
-`1B` <option>
-
-Recommended: reply `1A` or `go`
+Recommended: reply `1a` or `go`
 ```
 
-When a round asks several questions, close it with one line instead:
+Each option is its own list item with a lowercase code, the recommendation first. When a round asks several questions, close it with one line instead:
 
 ```
-Recommended combination: reply `1A, 2B` or `go`
+Recommended combination: reply `1a, 2b` or `go`
 ```
 
 For an open question with no options, end it with `Recommended: <answer>`.
