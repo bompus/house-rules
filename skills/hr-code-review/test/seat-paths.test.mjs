@@ -478,3 +478,20 @@ test("programFolder refuses a folder whose path would split or quote the PATH", 
     assert.equal(programFolder([bin], repo, join(dir, "links"), refuse), join(dir, "links"));
   });
 });
+
+test("a refusal names the variable, never its value (it can be a credential)", POSIX, () => {
+  withTree(({ repo }) => {
+    for (const [name, value] of /** @type {Array<[string, string]>} */ ([
+      ["CUSTOM_TOKEN", "../secret-value"],
+      ["CODEX_HOME", "relative-secret-value"],
+      ["CODEX_HOME", join(repo, "secret-value")],
+      ["LOGIN_URL", "file://user:secret-value@localhost/x"],
+    ])) {
+      assert.throws(
+        () => checkEnvPaths({ [name]: value }, repo, refuse),
+        (/** @type {Error} */ e) => e.message.includes(name) && !e.message.includes("secret-value"),
+        name,
+      );
+    }
+  });
+});

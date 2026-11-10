@@ -20,7 +20,7 @@ import { createHash } from "node:crypto";
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
 import { AGY_UNMASKED, gitEnvironment, gitProgram, privateDir } from "./seat-launch.mjs";
-import { programFolder, reviewBase, trustedDirs } from "./seat-paths.mjs";
+import { checkEnvPaths, programFolder, reviewBase, trustedDirs } from "./seat-paths.mjs";
 import { argParser, isFlagLike } from "./client-args.mjs";
 import { SEAT_AGENTS, launchPreview, takeServerArgs } from "./seat-spec.mjs";
 import { seatLaunch } from "./seat-hooks.mjs";
@@ -185,6 +185,14 @@ const refuseLaunch = /** @type {(message: string) => never} */ (refuse);
 // The server and git look programs up in a folder of links to the trusted programs, none of them in the checkout.
 const pathValue = programFolder(dirs, cwd, join(privateDir(), "bin"), refuseLaunch);
 const gitEnv = gitEnvironment(pathValue);
+// Git reads its configuration from HOME and the XDG folders, and runs what that configuration names, so
+// they are held to the path rules before the first git call (GIT_DIR and the like may point into the
+// checkout and are left out).
+checkEnvPaths(
+  Object.fromEntries(Object.entries(gitEnv).filter(([name]) => !name.startsWith("GIT_"))),
+  cwd,
+  refuseLaunch,
+);
 /**
  * @param {string[]} args
  * @param {"utf8" | "latin1"} encoding

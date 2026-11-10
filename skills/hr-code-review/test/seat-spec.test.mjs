@@ -206,7 +206,10 @@ test(
       writeFileSync(script, "export {};\n");
       const launch = build({ ...base(t), agent: "other", exe: bun, args: [script, "--flag"] });
       assert.deepEqual(launch.cmd, [bun, script, "--flag"], "argv is the caller's");
-      assert.match(String(launch.env.BUN_OPTIONS), /^--no-env-file --config=.+empty-bunfig\.toml$/);
+      assert.match(
+        String(launch.env.BUN_OPTIONS),
+        /^--no-env-file --no-install --config=.+empty-bunfig\.toml$/,
+      );
       for (const args of [
         [],
         ["x", "pkg"],
@@ -250,7 +253,10 @@ test(
               assert.equal(env[name], undefined, name);
             }
           }
-          assert.match(String(env.BUN_OPTIONS), /^--no-env-file --config=.+empty-bunfig\.toml$/);
+          assert.match(
+            String(env.BUN_OPTIONS),
+            /^--no-env-file --no-install --config=.+empty-bunfig\.toml$/,
+          );
           assert.doesNotMatch(String(env.BUN_OPTIONS), /preload/, "the caller's value is replaced");
           const own = build({ ...base(t), agent: "codex", exe: join(t.bin, "codex-acp") }).env;
           assert.equal(own.OPENAI_API_KEY, "o");
@@ -392,7 +398,7 @@ test(
             assert.equal(seen.env.FROM_DOTENV, undefined, agent);
             assert.equal(seen.env.HOME, t.home, `${agent}: HOME is the caller's, not the .env's`);
             assert.equal(seen.env.GH_TOKEN, undefined);
-            assert.match(String(seen.env.BUN_OPTIONS), /^--no-env-file --config=/);
+            assert.match(String(seen.env.BUN_OPTIONS), /^--no-env-file --no-install --config=/);
             assert.equal(seen.env.PATH, t.bin);
             assert.equal(realpathSync(seen.cwd), realpathSync(launch.cwd));
           }
@@ -479,7 +485,10 @@ test(
           ]) {
             assert.equal(env[name], undefined, name);
           }
-          assert.match(String(env.BUN_OPTIONS), /^--no-env-file --config=.+empty-bunfig\.toml$/);
+          assert.match(
+            String(env.BUN_OPTIONS),
+            /^--no-env-file --no-install --config=.+empty-bunfig\.toml$/,
+          );
         },
       );
     });
@@ -742,4 +751,91 @@ test("exeName drops every Windows executable suffix a lookup tries", () => {
     assert.equal(exeName(`C:\\tools\\${name}`), exeName(name));
   }
   assert.equal(exeName("C:\\tools\\node.com"), "node");
+});
+
+test("no argument may name a path in the checkout, for any program", POSIX, () => {
+  withTree((t) => {
+    for (const args of [
+      [join(t.repo, "adapter.py")],
+      ["--config=" + join(t.repo, "c.toml")],
+      ["-x", join(t.repo, "bin", "evil")],
+      [join(t.repo, "does", "not", "exist.rb")],
+    ]) {
+      assert.throws(
+        () => build({ ...base(t), agent: "other", exe: join(t.bin, "tool"), args }),
+        /server argument \d+ names a path inside the review checkout/,
+        args.join(" "),
+      );
+    }
+    // An outside path, a relative one (read from the private folder) and a bare word are fine.
+    build({
+      ...base(t),
+      agent: "other",
+      exe: join(t.bin, "tool"),
+      args: [join(t.dir, "x"), "rel/x", "word"],
+    });
+  });
+});
+
+test(
+  "a server script outside the checkout whose #! line names a program inside it is refused",
+  POSIX,
+  () => {
+    withTree((t) => {
+      const hostile = join(t.bin, "server-a");
+      writeFileSync(hostile, `#!${join(t.repo, "bin", "python")}\nprint(1)\n`, { mode: 0o755 });
+      assert.throws(
+        () => build({ ...base(t), agent: "other", exe: hostile }),
+        /#!.*which is inside the review checkout/,
+      );
+      for (const [name, line] of /** @type {Array<[string, string]>} */ ([
+        ["server-b", "#!/bin/sh"],
+        ["server-c", "#!/usr/bin/env sh"],
+        ["server-d", "no shebang"],
+      ])) {
+        const ok = join(t.bin, name);
+        writeFileSync(ok, `${line}\nexit 0\n`, { mode: 0o755 });
+        build({ ...base(t), agent: "other", exe: ok });
+      }
+    });
+  },
+);
+
+test("npm and the other package managers are refused as a server, by name or script", POSIX, () => {
+  withTree((t) => {
+    for (const name of ["npm", "pnpm", "yarn", "corepack", "npm-cli.js"]) {
+      writeFileSync(join(t.bin, name), "#!/bin/sh\nexit 0\n", { mode: 0o755 });
+      assert.throws(
+        () =>
+          build({
+            ...base(t),
+            agent: "other",
+            exe: join(t.bin, name),
+            args: ["exec", "--yes", "--", "pkg"],
+          }),
+        /package runner/,
+        name,
+      );
+    }
+  });
+});
+
+test("the profile's arguments follow an interpreter's script", POSIX, () => {
+  withTree((t) => {
+    const node = join(t.bin, "node");
+    writeFileSync(node, "#!/bin/sh\nexit 0\n", { mode: 0o755 });
+    const script = join(t.dir, "devin.js");
+    writeFileSync(script, "export {};\n");
+    const launch = build({ ...base(t), agent: "devin", exe: node, args: [script, "--flag"] });
+    assert.deepEqual(launch.cmd, [node, script, "acp", "--flag"]);
+    const deno = join(t.bin, "deno");
+    writeFileSync(deno, "#!/bin/sh\nexit 0\n", { mode: 0o755 });
+    const run = build({
+      ...base(t),
+      agent: "devin",
+      exe: deno,
+      args: ["run", "--allow-read", script],
+    });
+    assert.deepEqual(run.cmd, [deno, "run", "--allow-read", script, "acp"]);
+  });
 });

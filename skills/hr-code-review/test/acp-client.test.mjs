@@ -2546,3 +2546,20 @@ test(
     assert.match(String(masked.launch?.xdg), /\/xdg$/, "the user's folder stays");
   },
 );
+
+test("a HOME inside the checkout stops the launch before git runs there", POSIX_ONLY, () => {
+  const prepare = (/** @type {string} */ _root, /** @type {string} */ dir) => {
+    writeFileSync(join(dir, "fake-git"), `#!/bin/sh\ntouch "${join(dir, "git-ran")}"\n`, {
+      mode: 0o755,
+    });
+  };
+  const r = run(
+    { env: { HOME: "%DIR%/repo" }, shimLinks: { git: "%DIR%/fake-git" }, readBack: ["git-ran"] },
+    [],
+    prepare,
+  );
+  assert.equal(r.code, 2, r.error);
+  assert.match(r.error, /HOME is inside the review checkout/);
+  assert.equal(r.read["git-ran"], null, "git was not started");
+  assert.equal(r.launch, null);
+});

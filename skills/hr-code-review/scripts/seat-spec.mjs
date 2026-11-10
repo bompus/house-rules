@@ -2,7 +2,16 @@
 // the environment and the starting folder, built from the trusted program folders and an allowlist of
 // the caller's environment, never filtered out of a command and an environment the caller shaped. See
 // ../references/acp-client.md.
-import { existsSync, mkdtempSync, readlinkSync, realpathSync, statSync } from "node:fs";
+import {
+  closeSync,
+  existsSync,
+  mkdtempSync,
+  openSync,
+  readSync,
+  readlinkSync,
+  realpathSync,
+  statSync,
+} from "node:fs";
 import { basename, delimiter, dirname, isAbsolute, join, sep } from "node:path";
 import { emptyBunfig, exeName, privateDir, seatEnv } from "./seat-launch.mjs";
 import { checkEnvPaths, inside, resolveProgram, reviewBase } from "./seat-paths.mjs";
@@ -31,7 +40,19 @@ export const SEAT_AGENTS = Object.keys(PROFILES);
 // not a boundary against a caller that hides the program.
 const AGENT_PROGRAM =
   /^(devin|agy|agy-acp|agy_acp_server\.par|codex-acp|claude-agent-acp|cursor-agent|grok)$/i;
-const RUNNERS = new Set(["bunx", "npx", "npx-cli", "pnpx"]);
+// Package managers that fetch and run code (`npm exec`, `yarn dlx`, `pnpm dlx`, `corepack`) or run a
+// checkout's own scripts (`npm start`) are refused as a server like the runners.
+const RUNNERS = new Set([
+  "bunx",
+  "npx",
+  "npx-cli",
+  "pnpx",
+  "npm",
+  "npm-cli",
+  "pnpm",
+  "yarn",
+  "corepack",
+]);
 const RUNTIMES = new Set(["node", "bun", "deno"]);
 // Programs that start another program named in their arguments. The client sets the environment and
 // starts the server itself, so nothing needs one, and one would let a command restore a PATH, name a
@@ -78,6 +99,26 @@ function chainNames(path) {
 }
 
 /**
+ * The program a file's `#!` line names, when it has one.
+ * @param {string} file
+ * @returns {string | undefined}
+ */
+function shebangProgram(file) {
+  try {
+    const fd = openSync(file, "r");
+    try {
+      const head = Buffer.alloc(512);
+      const n = readSync(fd, head, 0, head.length, 0);
+      return /^#![ \t]*(\S+)/.exec(head.toString("latin1", 0, n))?.[1];
+    } finally {
+      closeSync(fd);
+    }
+  } catch {
+    return undefined;
+  }
+}
+
+/**
  * The launch of a seat's server.
  * @param {{ agent: string, exe?: string, args: string[], root: string, dirs: string[], extraPrefixes: string[], pathValue?: string }} spec
  *   `exe` is an absolute path, or absent for an agent whose profile names one; `dirs` is the trusted
@@ -110,7 +151,6 @@ export function seatSpec({ agent, exe, args, root, dirs, extraPrefixes, pathValu
     ? wanted
     : (dirs.map((d) => join(d, wanted)).find(existsSync) ?? program);
   const names = [...new Set([...chainNames(found), exeName(program)])];
-  const full = [...profile.args, ...args];
   const interpreter = [...RUNTIMES].find((n) => names.includes(n));
   // Where the script stands in the arguments: first for `bun` and `node`, after `run` and the
   // permission flags for `deno`. Only those flags may stand between `run` and the script: any other
@@ -118,11 +158,17 @@ export function seatSpec({ agent, exe, args, root, dirs, extraPrefixes, pathValu
   // mistaken for the script.
   let at = 0;
   if (interpreter === "deno") {
-    at = full[0] === "run" ? 1 : -1;
-    while (at > 0 && DENO_PERMISSION_FLAG.test(full[at] ?? "")) {
+    at = args[0] === "run" ? 1 : -1;
+    while (at > 0 && DENO_PERMISSION_FLAG.test(args[at] ?? "")) {
       at++;
     }
   }
+  // The profile's own arguments (`acp` for devin and agy) follow an interpreter's script, so
+  // `node SCRIPT acp` is the interpreted agent's form; otherwise they come first.
+  const full =
+    interpreter && at >= 0
+      ? [...args.slice(0, at + 1), ...profile.args, ...args.slice(at + 1)]
+      : [...profile.args, ...args];
   const script = interpreter && at >= 0 ? full[at] : undefined;
   // The names the script goes by along its own links, as the program's are (an absolute script only: a
   // relative one would be read from the private folder).
@@ -175,6 +221,21 @@ export function seatSpec({ agent, exe, args, root, dirs, extraPrefixes, pathValu
       );
     }
   }
+  // No argument may name a path in the checkout, whatever program reads it (`python /repo/x.py`,
+  // `--config=/repo/y`): a relative one is read from the private folder, so only an absolute one can
+  // reach the checkout.
+  const base = reviewBase(root);
+  for (const [i, arg] of full.entries()) {
+    const value = arg.startsWith("-") && arg.includes("=") ? arg.slice(arg.indexOf("=") + 1) : arg;
+    if (isAbsolute(value) && inside(base, value)) {
+      return refuse(`server argument ${i + 1} names a path inside the review checkout`);
+    }
+  }
+  // A script outside the checkout can name an interpreter inside it on its `#!` line.
+  const shebang = shebangProgram(program);
+  if (shebang && isAbsolute(shebang) && inside(base, shebang)) {
+    return refuse(`${program} starts with #!${shebang}, which is inside the review checkout`);
+  }
   const env = seatEnv(process.env, agent === "other" ? "" : agent, extraPrefixes);
   for (const key of Object.keys(env)) {
     if (key.toUpperCase() === "PATH" || INJECTORS.test(key)) {
@@ -185,7 +246,7 @@ export function seatSpec({ agent, exe, args, root, dirs, extraPrefixes, pathValu
   checkEnvPaths(env, root, refuse);
   // Any Bun in the server's process tree (the server itself, a `#!` line naming bun, a helper it starts)
   // reads no `.env` and an empty configuration, wherever it starts: the flags come from here, not argv.
-  env.BUN_OPTIONS = `--no-env-file --config=${emptyBunfig()}`;
+  env.BUN_OPTIONS = `--no-env-file --no-install --config=${emptyBunfig()}`;
   let cwd = root;
   if (profile.start === "private") {
     cwd = mkdtempSync(join(privateDir(), "server-cwd-"));

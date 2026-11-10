@@ -299,12 +299,10 @@ export function checkEnvPaths(env, root, refuse) {
         PATH_LISTS.has(upper) || /_DIRS$/i.test(name) ? value.split(delimiter) : [value];
       for (const part of parts.filter((p) => p !== "")) {
         if (!isAbsolute(part)) {
-          refuse(
-            `${name}=${value} holds a relative path; give absolute paths outside the review checkout`,
-          );
+          refuse(`${name} holds a relative path; give absolute paths outside the review checkout`);
         }
         if (inside(base, part)) {
-          refuse(`${name}=${value} is inside the review checkout; point it outside`);
+          refuse(`${name} is inside the review checkout; point it outside`);
         }
       }
     } else if (/^file:/i.test(value)) {
@@ -315,16 +313,14 @@ export function checkEnvPaths(env, root, refuse) {
         target = fileURLToPath(value);
       } catch {
         return refuse(
-          `${name}=${value} is not a file URL it can read; give an absolute path outside the review checkout`,
+          `${name} is not a file URL it can read; give an absolute path outside the review checkout`,
         );
       }
       if (inside(base, target)) {
-        refuse(`${name}=${value} is inside the review checkout; point it outside`);
+        refuse(`${name} is inside the review checkout; point it outside`);
       }
     } else if (value.split(delimiter).some((part) => /^\.\.?([\\/]|$)/.test(part))) {
-      refuse(
-        `${name}=${value} holds a relative path; give absolute paths outside the review checkout`,
-      );
+      refuse(`${name} holds a relative path; give absolute paths outside the review checkout`);
     }
   }
 }
