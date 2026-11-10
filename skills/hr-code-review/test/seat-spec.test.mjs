@@ -141,6 +141,16 @@ test(
   },
 );
 
+test("a grok seat starts Grok's ACP server, `grok agent stdio`, not its terminal UI", POSIX, () => {
+  withTree((t) => {
+    writeFileSync(join(t.bin, "grok"), "#!/bin/sh\nexit 0\n", { mode: 0o755 });
+    const launch = build({ ...base(t), agent: "grok", args: ["--model", "m"] });
+    assert.equal(launch.cmd[0], join(t.bin, "grok"));
+    assert.deepEqual(launch.cmd.slice(1), ["agent", "stdio", "--model", "m"]);
+    assert.deepEqual(launchPreview("grok", "", []), ["grok", "agent", "stdio"]);
+  });
+});
+
 test(
   "a program in the checkout never runs: the checkout's bin is not looked in, and a path or link into it is refused",
   POSIX,
@@ -191,6 +201,43 @@ test(
       assert.doesNotThrow(() =>
         build({ ...base(t), agent: "codex", exe: join(t.bin, "codex-acp") }),
       );
+    });
+  },
+);
+
+test(
+  "a program named like another agent's own is refused under any declared agent, directly or by its script",
+  POSIX,
+  () => {
+    withTree((t) => {
+      const node = join(t.bin, "node");
+      writeFileSync(node, "#!/bin/sh\nexit 0\n", { mode: 0o755 });
+      const out = join(t.dir, "scripts");
+      mkdirSync(out);
+      writeFileSync(join(out, "codex-acp.mjs"), "export {};\n");
+      for (const [agent, name] of /** @type {[string, string][]} */ ([
+        ["claude", "codex-acp"],
+        ["codex", "devin"],
+        ["devin", "agy"],
+        ["cursor", "codex-acp"],
+      ])) {
+        assert.throws(
+          () => build({ ...base(t), agent, exe: join(t.bin, name) }),
+          /agent's own program \(\w+\), not \w+'s; name it with --seat-agent \w+/,
+          `${agent} with ${name}`,
+        );
+      }
+      assert.throws(
+        () => build({ ...base(t), agent: "claude", exe: node, args: [join(out, "codex-acp.mjs")] }),
+        /agent's own program/,
+        "a script named for another agent",
+      );
+      // The program a seat is declared as stays accepted, as does a program with no agent's name.
+      assert.doesNotThrow(() =>
+        build({ ...base(t), agent: "codex", exe: join(t.bin, "codex-acp") }),
+      );
+      assert.doesNotThrow(() => build({ ...base(t), agent: "claude", exe: join(t.bin, "tool") }));
+      assert.doesNotThrow(() => build({ ...base(t), agent: "devin" }));
     });
   },
 );

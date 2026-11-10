@@ -163,9 +163,12 @@ function run(
       request.params.path = join(dir, "outside.txt");
     }
   }
+  // The server's log is outside `dir` when a test makes `dir` itself a checkout: a variable that names a
+  // path inside the checkout is refused.
+  const logDir = config.logOutside ? mkdtempSync(join(tmpdir(), "acp-log-")) : dir;
   try {
     const out = config.outInRoot ? join(root, "answer.txt") : join(dir, "out.txt"),
-      log = join(dir, "log.jsonl");
+      log = join(logDir, "log.jsonl");
     if (config.outMode !== undefined) {
       writeFileSync(out, "old", { mode: config.outMode });
       chmodSync(out, config.outMode);
@@ -242,6 +245,9 @@ function run(
   } finally {
     rmSync(dir, { recursive: true, force: true });
     rmSync(shims, { recursive: true, force: true });
+    if (logDir !== dir) {
+      rmSync(logDir, { recursive: true, force: true });
+    }
   }
 }
 test("rejects hostile terminals, writes and every permission kind while allowing confined reads", () => {
@@ -525,7 +531,7 @@ test("an enclosing checkout found after the launch checkout is gone does not mak
     writeFileSync(join(dir, ".gitignore"), "repo/\n");
     assert.equal(spawnSync("git", ["init", "-q", root]).status, 0);
   };
-  const r = run({ removeGit: true, writeFiles: ["stray.txt"] }, [], prepare);
+  const r = run({ removeGit: true, writeFiles: ["stray.txt"], logOutside: true }, [], prepare);
   assert.equal(r.code, 4, r.error);
   assert.match(r.error, /the git repository changed/);
 });

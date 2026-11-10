@@ -678,11 +678,11 @@ if (
   );
   const dirs = trustedDirs(binDirs, dir, refuse);
   try {
-    privateDir();
+    privateDir(true);
   } catch (e) {
     refuse(e instanceof Error ? e.message : String(e));
   }
-  env.PATH = programFolder(dirs, dir, join(privateDir(), "bin"), refuse);
+  env.PATH = programFolder(dirs, dir, join(privateDir(true), "bin"), refuse);
   const opencode = resolveProgram("opencode", dirs, dir, refuse);
   if (!opencode) {
     console.error(

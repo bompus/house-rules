@@ -313,6 +313,27 @@ test("the script reports an opencode that cannot start", POSIX_ONLY, () => {
   assert.equal(r.status, 127);
   assert.match(r.stderr, /opencode is not in the trusted program folders|cannot start opencode/);
 });
+test(
+  "a temporary folder with a space in its path does not stop an OpenCode launch",
+  POSIX_ONLY,
+  () => {
+    const tmp = mkdtempSync(join(tmpdir(), "opencode-space-"));
+    try {
+      const spaced = join(tmp, "First Last");
+      mkdirSync(spaced);
+      const r = spawnSync(process.execPath, [script, "m", "max", "prompt.md"], {
+        encoding: "utf8",
+        env: { PATH: "/nonexistent", TMPDIR: spaced },
+      });
+      // OpenCode sets no BUN_OPTIONS, so the space is not a problem: the launch gets as far as the program lookup.
+      assert.equal(r.status, 127, r.stderr);
+      assert.match(r.stderr, /opencode is not in the trusted program folders/);
+      assert.doesNotMatch(r.stderr, /TMPDIR/);
+    } finally {
+      rmSync(tmp, { recursive: true, force: true });
+    }
+  },
+);
 
 /** OpenCode's rule: the last matching pattern decides; `*` matches any run of characters. */
 function decision(/** @type {Record<string, string>} */ read, /** @type {string} */ name) {

@@ -131,7 +131,13 @@ export function seatEnv(env, agent, extraPrefixes) {
 /** @type {string | undefined} */
 let privateDirPath;
 const UNQUOTABLE = process.platform === "win32" ? /[\s"'`]/ : /[\s"'`\\]/;
-export function privateDir() {
+/**
+ * The client's private folder, made on first use. `plain` is for a seat that puts nothing of it in
+ * `BUN_OPTIONS` (the OpenCode seat): its path may then hold whitespace, as a Windows TEMP under a
+ * user name with a space does.
+ * @param {boolean} [plain]
+ */
+export function privateDir(plain = false) {
   if (!privateDirPath) {
     privateDirPath = mkdtempSync(join(tmpdir(), "acp-panel-"));
     chmodSync(privateDirPath, 0o700);
@@ -150,7 +156,7 @@ export function privateDir() {
   }
   // `BUN_OPTIONS` has no quoting, and PATH is split on the separator: the folder's path must carry
   // neither, so a TMPDIR that does is a refusal, not a seat that starts with the wrong options.
-  if (UNQUOTABLE.test(privateDirPath) || privateDirPath.includes(delimiter)) {
+  if (!plain && (UNQUOTABLE.test(privateDirPath) || privateDirPath.includes(delimiter))) {
     throw new Error(
       `the private folder ${privateDirPath} has whitespace, a quote, a backslash or "${delimiter}" in its path; set TMPDIR (TEMP on Windows) to a folder without them`,
     );

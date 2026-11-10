@@ -31,15 +31,25 @@ export const PROFILES = {
   devin: { exe: "devin", args: ["acp"], start: "private" },
   agy: { exe: "agy", args: ["acp"], start: "root" },
   cursor: { exe: "cursor-agent", args: [], start: "private" },
-  grok: { exe: "grok", args: [], start: "private" },
+  grok: { exe: "grok", args: ["agent", "stdio"], start: "private" },
   other: { args: [], start: "private" },
 };
 export const SEAT_AGENTS = Object.keys(PROFILES);
-// The names an agent's own program goes by: `other` is not for them, so a launch that is one is not
-// given the uniform treatment under a name that skips the agent's own rules. A guard against a mistake,
-// not a boundary against a caller that hides the program.
-const AGENT_PROGRAM =
-  /^(devin|agy|agy-acp|agy_acp_server\.par|codex-acp|claude-agent-acp|cursor-agent|grok)$/i;
+// The names each agent's own program goes by. A launch whose program or script is named for an agent
+// other than the declared one (`other` included) is refused, so it is not given another agent's rules
+// under a name that skips its own. A guard against a mistake, not a boundary against a caller that
+// hides the program.
+/** @type {Record<string, string>} */
+const AGENT_PROGRAM = {
+  devin: "devin",
+  agy: "agy",
+  "agy-acp": "agy",
+  "agy_acp_server.par": "agy",
+  "codex-acp": "codex",
+  "claude-agent-acp": "claude",
+  "cursor-agent": "cursor",
+  grok: "grok",
+};
 // Package managers that fetch and run code (`npm exec`, `yarn dlx`, `pnpm dlx`, `corepack`) or run a
 // checkout's own scripts (`npm start`) are refused as a server like the runners.
 const RUNNERS = new Set([
@@ -188,17 +198,18 @@ export function seatSpec({ agent, exe, args, root, dirs, extraPrefixes, pathValu
       `${wrapper} starts another program; give that program as --server-exe, since the client sets the environment and starts it itself`,
     );
   }
-  if (agent === "other") {
-    const named = [
-      ...names,
-      ...scriptNames,
-      ...(script ? [basename(script), basename(dirname(script))] : []),
-    ];
-    if (named.some((n) => AGENT_PROGRAM.test(bare(n)))) {
-      return refuse(
-        `${program} or its script is an agent's own program; name it with --seat-agent`,
-      );
-    }
+  const named = [
+    ...names,
+    ...scriptNames,
+    ...(script ? [basename(script), basename(dirname(script))] : []),
+  ];
+  const owner = named
+    .map((n) => AGENT_PROGRAM[bare(n).toLowerCase()])
+    .find((a) => a && a !== agent);
+  if (owner) {
+    return refuse(
+      `${program} or its script is an agent's own program (${owner}), not ${agent}'s; name it with --seat-agent ${owner}`,
+    );
   }
   if (interpreter) {
     // `bun SCRIPT`, `node SCRIPT`, `deno run [permission flags] SCRIPT` only: no subcommand and no option of

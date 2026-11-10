@@ -400,6 +400,39 @@ test("checkEnvPaths holds the agents' own configuration paths to the same rule",
 });
 
 test(
+  "checkEnvPaths refuses an absolute path inside the checkout whatever the variable is called",
+  POSIX,
+  () => {
+    withTree(({ repo, outside }) => {
+      symlinkSync(join(repo, "bin"), join(outside, "into"));
+      for (const [name, value] of /** @type {[string, string][]} */ ([
+        ["CLAUDE_CODE_EXECUTABLE", join(repo, "bin", "claude")],
+        ["CODEX_HELPER", join(repo, "helper")],
+        ["CLAUDE_CODE_TOOLS", `${outside}${delimiter}${join(repo, "bin")}`],
+        ["CURSOR_BINARY", join(outside, "into", "agent")],
+        ["CLAUDE_TOOLS_PATH", `${outside}${delimiter}${join(repo, "bin")}`],
+      ])) {
+        assert.throws(
+          () => checkEnvPaths({ [name]: value }, repo, refuse),
+          /inside the review checkout/,
+          `${name}=${value}`,
+        );
+      }
+      checkEnvPaths(
+        {
+          CLAUDE_CODE_EXECUTABLE: join(outside, "claude"),
+          CODEX_HELPER: "claude",
+          CLAUDE_CODE_TOOLS: `${outside}${delimiter}${join(outside, "x")}`,
+          OPENAI_BASE_URL: "http://hub:8080/v1",
+        },
+        repo,
+        refuse,
+      );
+    });
+  },
+);
+
+test(
   "checkEnvPaths reads a file: URL the way a program does, and refuses one it cannot read",
   POSIX,
   () => {

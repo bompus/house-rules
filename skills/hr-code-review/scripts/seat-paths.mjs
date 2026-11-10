@@ -282,7 +282,7 @@ const PATH_SUFFIX = /(_HOME|_DIR|_DIRS|_PATH|_FILE|_ROOT|_CREDENTIALS|_BUNDLE|_C
  * Refuses an environment value that names a relative path, or a path inside the checkout, where a
  * server could be steered by the checkout or resolve it against a folder other than the caller's.
  * Path-valued names must hold absolute paths outside the checkout; any other value must not carry an
- * element that starts with `./` or `../`.
+ * element that starts with `./` or `../`, or an absolute path inside the checkout.
  * @param {Record<string, string | undefined>} env
  * @param {string} root the review root
  * @param {(message: string) => never} refuse
@@ -305,6 +305,11 @@ export function checkEnvPaths(env, root, refuse) {
           refuse(`${name} is inside the review checkout; point it outside`);
         }
       }
+      // A `*_PATH` name can hold a list, and a `:` in a single path is part of its name: an element that
+      // is an absolute path inside the checkout is refused either way.
+      if (value.split(delimiter).some((part) => isAbsolute(part) && inside(base, part))) {
+        refuse(`${name} is inside the review checkout; point it outside`);
+      }
     } else if (/^file:/i.test(value)) {
       // Read the way a program reads it (`file://localhost/x` and `file:/x` are `/x`), not by cutting a prefix.
       /** @type {string} */
@@ -319,8 +324,17 @@ export function checkEnvPaths(env, root, refuse) {
       if (inside(base, target)) {
         refuse(`${name} is inside the review checkout; point it outside`);
       }
-    } else if (value.split(delimiter).some((part) => /^\.\.?([\\/]|$)/.test(part))) {
-      refuse(`${name} holds a relative path; give absolute paths outside the review checkout`);
+    } else {
+      // Any other name can hold a path too (`CLAUDE_CODE_EXECUTABLE` picks the program an adapter runs), and
+      // the agents' prefixes pass whatever they hold, so the value is read: an element that is an absolute
+      // path must be outside the checkout, whatever the name says.
+      const parts = value.split(delimiter);
+      if (parts.some((part) => /^\.\.?([\\/]|$)/.test(part))) {
+        refuse(`${name} holds a relative path; give absolute paths outside the review checkout`);
+      }
+      if ([value, ...parts].some((part) => isAbsolute(part) && inside(base, part))) {
+        refuse(`${name} is inside the review checkout; point it outside`);
+      }
     }
   }
 }
