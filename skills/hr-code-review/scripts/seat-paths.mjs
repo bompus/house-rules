@@ -281,6 +281,9 @@ const PATH_SUFFIX = /(_HOME|_DIR|_DIRS|_PATH|_FILE|_ROOT|_CREDENTIALS|_BUNDLE|_C
 const SINGLE_PATH = /(_HOME|_DIR|_FILE|_ROOT|_CREDENTIALS|_BUNDLE|_CERTS?)$/i;
 // A network URL (`file:` is not one) held by a variable that is named for a URL.
 const URL_NAME = /(^|_)(proxy|url|uri|endpoint)$/i;
+// A name that holds a program: absolute, or a bare name the server looks up on its own PATH (the trusted
+// folders). A relative path with a separator is read from the server's working directory, the review root.
+const PROGRAM_NAME = /_(EXECUTABLE|EXE|BINARY|BIN|PROGRAM)$/i;
 const NETWORK_URL = /^(?!file:)[a-z][a-z0-9+.-]+:\/\//i;
 
 /**
@@ -337,6 +340,11 @@ export function checkEnvPaths(env, root, refuse) {
     // to hold one path (`HOME`, `*_DIR`: a `:` in it is part of its name), and a network URL held by a
     // URL-named variable (`HTTP_PROXY=http://app:8080` holds the host `app`, not the path `//app`; the
     // scheme has two letters or more, since `C://x` is a Windows path).
+    if (PROGRAM_NAME.test(name) && (WINDOWS ? /[\\/]/ : /\//).test(value) && !isAbsolute(value)) {
+      refuse(
+        `${name} holds a relative path; give an absolute path outside the review checkout, or a bare program name`,
+      );
+    }
     const singlePath = PATH_VALUED.has(upper) || SINGLE_PATH.test(name);
     const networkUrl = URL_NAME.test(name) && NETWORK_URL.test(value);
     if (

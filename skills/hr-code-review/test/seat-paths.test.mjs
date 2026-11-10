@@ -453,6 +453,38 @@ test(
   },
 );
 
+test(
+  "a variable that names a program holds an absolute path outside the checkout or a bare name",
+  POSIX,
+  () => {
+    withTree(({ repo, outside }) => {
+      // The adapter starts it with the review root as its working directory, so `bin/claude` is the checkout's.
+      for (const [name, value] of /** @type {[string, string][]} */ ([
+        ["CLAUDE_CODE_EXECUTABLE", "bin/claude"],
+        ["CLAUDE_CODE_EXECUTABLE", "sub/dir/claude"],
+        ["CURSOR_BINARY", "tools/agent"],
+        ["CODEX_PROGRAM", "x/y"],
+      ])) {
+        assert.throws(
+          () => checkEnvPaths({ [name]: value }, repo, refuse),
+          /relative path/,
+          `${name}=${value}`,
+        );
+      }
+      checkEnvPaths(
+        {
+          CLAUDE_CODE_EXECUTABLE: "claude",
+          CURSOR_BINARY: join(outside, "agent"),
+          OPENAI_MODEL: "openai/gpt-x",
+          CODEX_PROFILE: "team/default",
+        },
+        repo,
+        refuse,
+      );
+    });
+  },
+);
+
 test("checkEnvPaths does not split a variable known to hold one path", POSIX, () => {
   withTree(({ repo, outside }) => {
     // A home folder named `repo:home` is not the checkout `repo`.
