@@ -281,6 +281,67 @@ test("a package.json with no bin of that name, or none, is refused as not instal
   }
 });
 
+test("a package.json that links out of the version folder is refused", POSIX, () => {
+  const h = host();
+  const manifest = join(
+    h.folder,
+    "node_modules",
+    "@agentclientprotocol",
+    "codex-acp",
+    "package.json",
+  );
+  const planted = join(h.repo, "package.json");
+  writeFileSync(
+    planted,
+    JSON.stringify({ name: ENTRY.package, bin: { "codex-acp": "dist/index.js" } }),
+  );
+  rmSync(manifest);
+  symlinkSync(planted, manifest);
+  assert.throws(() => resolve(h), /package\.json resolves outside/);
+});
+
+test("a package name is an npm name: no dot segments, no extra folders", POSIX, () => {
+  for (const name of ["../../../x", "@a/b/c", "/abs", "@scope", "a/b", ".hidden", ""]) {
+    const h = host((doc) => {
+      doc.adapters["codex-acp"].package = name;
+    });
+    writeFileSync(
+      join(h.folder, "installed.json"),
+      JSON.stringify({ adapter: "codex-acp", ...ENTRY, package: name }),
+    );
+    assert.throws(() => resolve(h), /invalid package/, JSON.stringify(name));
+  }
+});
+
+test("a single-executable package names its bin as a string", POSIX, () => {
+  const h = host();
+  const manifest = join(
+    h.folder,
+    "node_modules",
+    "@agentclientprotocol",
+    "codex-acp",
+    "package.json",
+  );
+  writeFileSync(manifest, JSON.stringify({ name: ENTRY.package, bin: "dist/index.js" }));
+  assert.equal(
+    resolve(h).args[0],
+    join(h.folder, "node_modules", "@agentclientprotocol", "codex-acp", "dist", "index.js"),
+  );
+  // The string stands for the executable named like the package, so another bin name finds none.
+  const g = host((doc) => {
+    doc.adapters["codex-acp"].bin = "other";
+  });
+  writeFileSync(
+    join(g.folder, "installed.json"),
+    JSON.stringify({ adapter: "codex-acp", ...ENTRY, bin: "other" }),
+  );
+  writeFileSync(
+    join(g.folder, "node_modules", "@agentclientprotocol", "codex-acp", "package.json"),
+    JSON.stringify({ name: ENTRY.package, bin: "dist/index.js" }),
+  );
+  assert.throws(() => resolve(g), /not installed/);
+});
+
 test("a version folder inside the checkout is refused", POSIX, () => {
   const h = host();
   const inside = host((doc) => {

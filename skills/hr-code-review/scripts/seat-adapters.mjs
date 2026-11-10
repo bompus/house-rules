@@ -11,6 +11,8 @@ import { inside, resolveProgram, reviewBase } from "./seat-paths.mjs";
 export const ADAPTER_FOR = { codex: "codex-acp", claude: "claude-agent-acp" };
 const VERSION = /^[0-9A-Za-z][0-9A-Za-z.+_-]*$/;
 const BIN = /^[0-9A-Za-z][0-9A-Za-z._-]*$/;
+// An npm package name: `name` or `@scope/name`, never a dot segment or a deeper path.
+const PACKAGE = /^(@[a-z0-9~][a-z0-9._~-]*\/)?[a-z0-9~][a-z0-9._~-]*$/;
 // What the marker `installed.json` must say beside the file's entry. Its lock hash is not compared.
 const MARKED = ["adapter", "package", "version", "bin", "runtime"];
 
@@ -83,7 +85,7 @@ export function resolveAdapter({ agent, file, dirs, root }, refuse) {
     return refuse(`${file} has no entry for ${adapter}`);
   }
   for (const [field, ok] of /** @type {const} */ ([
-    ["package", typeof entry.package === "string" && entry.package !== ""],
+    ["package", typeof entry.package === "string" && PACKAGE.test(entry.package)],
     ["version", typeof entry.version === "string" && VERSION.test(entry.version)],
     ["bin", typeof entry.bin === "string" && BIN.test(entry.bin)],
     ["runtime", entry.runtime === "node"],
@@ -130,18 +132,43 @@ export function resolveAdapter({ agent, file, dirs, root }, refuse) {
       );
     }
   }
+  if (inside(base, realFolder)) {
+    return refuse(
+      `seat adapter ${adapter} ${version} is inside the review checkout (${realFolder})`,
+    );
+  }
+  const pkgName = /** @type {string} */ (entry.package);
+  const pkgDir = join(realFolder, "node_modules", ...pkgName.split("/"));
+  /** @type {string} */
+  let manifest;
+  try {
+    manifest = realpathSync.native(join(pkgDir, "package.json"));
+  } catch {
+    return refuse(notInstalled);
+  }
+  // The package's own manifest, not a link to one elsewhere: it decides which file runs.
+  if (!inside(realFolder, manifest)) {
+    return refuse(
+      `${join(pkgDir, "package.json")} resolves outside ${folder} (${manifest}); reinstall with: ${doc.install}`,
+    );
+  }
   /** @type {string} */
   let script;
   try {
     // The script is the file the installed package's own `bin` names, not what `.bin` holds: on Windows
-    // npm leaves a shell shim there, which Node cannot run.
-    const pkgDir = join(
-      realFolder,
-      "node_modules",
-      .../** @type {string} */ (entry.package).split("/"),
-    );
-    const pkg = JSON.parse(readFileSync(join(pkgDir, "package.json"), "utf8"));
-    const target = isObject(pkg) && isObject(pkg.bin) ? pkg.bin[bin] : undefined;
+    // npm leaves a shell shim there, which Node cannot run. A string `bin` is the package's one
+    // executable, named like the package.
+    const pkg = JSON.parse(readFileSync(manifest, "utf8"));
+    const own = pkgName.slice(pkgName.lastIndexOf("/") + 1);
+    const target = !isObject(pkg)
+      ? undefined
+      : typeof pkg.bin === "string"
+        ? bin === own
+          ? pkg.bin
+          : undefined
+        : isObject(pkg.bin)
+          ? pkg.bin[bin]
+          : undefined;
     if (typeof target !== "string" || target === "") {
       return refuse(notInstalled);
     }
@@ -149,7 +176,7 @@ export function resolveAdapter({ agent, file, dirs, root }, refuse) {
   } catch {
     return refuse(notInstalled);
   }
-  if (inside(base, realFolder) || inside(base, script)) {
+  if (inside(base, script)) {
     return refuse(`seat adapter ${adapter} ${version} is inside the review checkout (${script})`);
   }
   if (!inside(realFolder, script)) {
