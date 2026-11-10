@@ -788,6 +788,15 @@ test(
         () => build({ ...base(t), agent: "other", exe: hostile }),
         /#!.*which is inside the review checkout/,
       );
+      // A checkout whose own path has a non-ASCII character: the `#!` bytes are UTF-8, as the path is.
+      const accented = join(t.dir, "répo");
+      mkdirSync(join(accented, ".git"), { recursive: true });
+      const unicode = join(t.bin, "server-u");
+      writeFileSync(unicode, `#!${join(accented, "bin", "python")}\nprint(1)\n`, { mode: 0o755 });
+      assert.throws(
+        () => build({ ...base(t), root: accented, agent: "other", exe: unicode }),
+        /#!.*which is inside the review checkout/,
+      );
       for (const [name, line] of /** @type {Array<[string, string]>} */ ([
         ["server-b", "#!/bin/sh"],
         ["server-c", "#!/usr/bin/env sh"],

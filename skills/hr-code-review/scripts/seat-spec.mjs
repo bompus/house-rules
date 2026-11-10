@@ -109,7 +109,7 @@ function shebangProgram(file) {
     try {
       const head = Buffer.alloc(512);
       const n = readSync(fd, head, 0, head.length, 0);
-      return /^#![ \t]*(\S+)/.exec(head.toString("latin1", 0, n))?.[1];
+      return /^#![ \t]*(\S+)/.exec(head.toString("utf8", 0, n))?.[1];
     } finally {
       closeSync(fd);
     }
