@@ -32,6 +32,9 @@ const DATED_LOGS = [
 ];
 const ISO_DATE = /\b20\d\d-[01]\d-[0-3]\d\b/;
 
+/** @param {string} file the path as the repository writes it, with `/` on every platform */
+const repoPath = (file) => relative(root, file).replaceAll("\\", "/");
+
 /** @param {string} dir @returns {string[]} */
 const markdownFiles = (dir) =>
   readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -119,7 +122,7 @@ test("the date rule skips code spans, link targets and fences", () => {
 
 test("no skill text has a prose block over the ceiling beyond the known ones", () => {
   const over = markdownFiles(join(root, "skills")).flatMap((file) => {
-    const name = relative(root, file);
+    const name = repoPath(file);
     const limit = FILE_CEILINGS[name] ?? BLOCK_CEILING;
     return longBlocks(readFileSync(file, "utf8"), limit).map(
       ({ line, chars }) => `${name}:${line} is ${chars} characters, over ${limit}`,
@@ -130,7 +133,7 @@ test("no skill text has a prose block over the ceiling beyond the known ones", (
 
 test("no skill text carries a dated label outside the logs", () => {
   const dated = markdownFiles(join(root, "skills"))
-    .map((file) => relative(root, file))
+    .map(repoPath)
     .filter((name) => !DATED_LOGS.some((log) => log.test(`/${name}`) || log.test(name)))
     .flatMap((name) =>
       datedLines(readFileSync(join(root, name), "utf8")).map((line) => `${name}:${line}`),
