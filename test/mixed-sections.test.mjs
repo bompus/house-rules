@@ -183,8 +183,10 @@ const MOVED = {
     "So is a change that only records dated findings",
     "For fixes intended for pull requests, try the simplest",
     "Do not run a formatter where the repository configures none",
-    "Enforced means the push is refused when the check fails",
-    "Run the check before the push and read its result",
+    "Enforced means the push goes through the repository's direct-push path",
+    "Use that path and never bypass it",
+    "A job that runs only after the push does not count",
+    "A repository with no such path keeps the review",
     "The check is the repository's and the list is the user's",
   ],
   "Coordination and isolation": [

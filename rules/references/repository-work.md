@@ -32,12 +32,15 @@ apply; neither replaces this review.
 A direct push is exempt when the repository's own enforced check proves every
 commit in it changes only paths or keys the user listed for direct push (records
 and single values the user chose). A pull request, a push the check does not
-prove and a change to the check or the list keep the review.
-Enforced means the push is refused when the check fails: a hook the pusher can
-skip, or a job that runs after the push, does not count. Run the check before the
-push and read its result; a repository with no such check keeps the review. The
-check is the repository's and the list is the user's, so neither is changed to fit
-a push.
+prove and a change to the check or the list keep the review; bypassing the
+repository's direct-push path voids the exemption.
+Enforced means the push goes through the repository's direct-push path, which
+runs the check and refuses to push when it fails: a push script that pushes only
+on a pass, a pre-push hook or a server-side rule. Use that path and never bypass
+it (no `--no-verify`, no raw push around the script); a bypass breaks this
+rule. A job that runs only after the push does not count. A
+repository with no such path keeps the review. The check is the repository's and
+the list is the user's, so neither is changed to fit a push.
 
 Run each check or test gate bare, or redirected to a log you read after it exits, and never pipe it into `head`, `tail` or `grep`, because the consumer can hide a failure or end the gate early. A test run in which no test ran, or every selected test was skipped, is a failure even when it exits 0: check how many tests actually ran, and say why when none did.
 

@@ -248,7 +248,8 @@ subagent when the host runs reviews through one. Fix or answer each finding.
 A direct push is exempt when the repository's own enforced check proves every
 commit in it changes only paths or keys the user listed for direct push (records
 and single values the user chose). A pull request, a push the check does not
-prove and a change to the check or the list keep the review.
+prove and a change to the check or the list keep the review; bypassing the
+repository's direct-push path voids the exemption.
 
 Review bots and the repository's own review requirements still
 apply; neither replaces this review.
