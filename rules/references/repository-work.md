@@ -29,13 +29,15 @@ configuration change; check each figure against its source before opening the
 pull request or pushing. Review bots and the repository's own review requirements still
 apply; neither replaces this review.
 
-A push is exempt when the repository's own enforced check proves it changes only
-paths or keys the user listed for direct push; any other change keeps the review.
-The exempt changes are records and single values the user chose (a pinned version, a
-setting). Run the check before the push and read its result; a repository with no such
-check, or a push the check does not prove, keeps the review. The check is the
-repository's and the list is the user's, so a change to either is reviewed, and a
-pull request keeps the review whatever it changes.
+A direct push is exempt when the repository's own enforced check proves every
+commit in it changes only paths or keys the user listed for direct push (records
+and single values the user chose). A pull request, a push the check does not
+prove and a change to the check or the list keep the review.
+Enforced means the push is refused when the check fails: a hook the pusher can
+skip, or a job that runs after the push, does not count. Run the check before the
+push and read its result; a repository with no such check keeps the review. The
+check is the repository's and the list is the user's, so neither is changed to fit
+a push.
 
 Run each check or test gate bare, or redirected to a log you read after it exits, and never pipe it into `head`, `tail` or `grep`, because the consumer can hide a failure or end the gate early. A test run in which no test ran, or every selected test was skipped, is a failure even when it exits 0: check how many tests actually ran, and say why when none did.
 

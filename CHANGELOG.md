@@ -4,7 +4,7 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
-- Repository work: a push into the default branch needs no local review when the repository's own enforced check proves every commit in it changes only paths or keys the user listed for direct push (records and single values the user chose). A push the check does not prove, a repository with no such check, a pull request, and a change to the check or the list keep the local review; the existing exemptions (trivially mechanical changes, records of dated findings copied from cited sources) are unchanged. The sentence is in the core rules' Repository work text and the full rule in `rules/references/repository-work.md`.
+- Repository work: a direct push needs no local review when the repository's own enforced check proves every commit in it changes only paths or keys the user listed for direct push (records and single values the user chose). Enforced means the push is refused when the check fails; a hook the pusher can skip or a job that runs after the push does not count. A pull request, a push the check does not prove, a repository with no such check and a change to the check or the list keep the local review; the existing exemptions (trivially mechanical changes, records of dated findings copied from cited sources) are unchanged. The sentence is in the core rules' Repository work text and the full rule in `rules/references/repository-work.md`.
 
 - `hr-pr-followup`'s `merge-pr.sh` no longer stops when `git ls-remote` fails after the merge has landed: it says it could not read the remote head, leaves the branch, and still runs the landing checks, which name the leftover branch.
 
