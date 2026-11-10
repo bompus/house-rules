@@ -512,6 +512,11 @@ export function sandboxArgs(home, shown, mounts = []) {
     "--unshare-pid",
     "--proc",
     "/proc",
+    // The host's PATH is a folder under its own /tmp, which this sandbox replaces: the seat looks
+    // programs up in the system folders it shows.
+    "--setenv",
+    "PATH",
+    "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
     "--tmpfs",
     "/tmp",
     "--tmpfs",
@@ -672,7 +677,12 @@ if (
     }
   );
   const dirs = trustedDirs(binDirs, dir, refuse);
-  env.PATH = programFolder(dirs, dir, join(privateDir(), "bin"));
+  try {
+    privateDir();
+  } catch (e) {
+    refuse(e instanceof Error ? e.message : String(e));
+  }
+  env.PATH = programFolder(dirs, dir, join(privateDir(), "bin"), refuse);
   const opencode = resolveProgram("opencode", dirs, dir, refuse);
   if (!opencode) {
     console.error(

@@ -97,6 +97,13 @@ if (!SEAT_AGENTS.includes(seatAgentName)) {
 const cwd = realpathSync(cwdArg || process.cwd());
 // The folders a program may come from: the system's and the caller's own, none of them in the checkout.
 const dirs = trustedDirs(binDirs, cwd, /** @type {(message: string) => never} */ (refuse));
+// The client's private folder is made here, so a TMPDIR that cannot be carried in PATH or BUN_OPTIONS
+// stops the launch before anything starts.
+try {
+  privateDir();
+} catch (e) {
+  refuse(e instanceof Error ? e.message : String(e));
+}
 // The answer goes to the physical path the output argument names now (a caller's symlink is followed
 // once, here); the write refuses a final symlink and a directory that is no longer this one.
 /** @type {string} */
@@ -176,7 +183,7 @@ const refuseLaunch = /** @type {(message: string) => never} */ (refuse);
 // configuration names, so it gets a seat's narrowed environment (plus the variables that locate a
 // repository, and a PATH outside the checkout) and the filesystem monitor is switched off.
 // The server and git look programs up in a folder of links to the trusted programs, none of them in the checkout.
-const pathValue = programFolder(dirs, cwd, join(privateDir(), "bin"));
+const pathValue = programFolder(dirs, cwd, join(privateDir(), "bin"), refuseLaunch);
 const gitEnv = gitEnvironment(pathValue);
 /**
  * @param {string[]} args

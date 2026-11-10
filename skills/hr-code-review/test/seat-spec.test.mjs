@@ -525,3 +525,135 @@ test(
     });
   },
 );
+
+test(
+  "a wrapper behind a link whose target goes through `hop/..` is found where the system finds it",
+  POSIX,
+  () => {
+    withTree((t) => {
+      // /T/entry -> hop/../alias, /T/hop -> /T/real/sub, /T/real/alias -> env, /T/real/env -> a copy of env.
+      // Read as text, `hop/../alias` is /T/alias, which does not exist; the system reads it as /T/real/alias.
+      const root = join(t.dir, "T");
+      mkdirSync(join(root, "real", "sub"), { recursive: true });
+      writeFileSync(join(root, "native"), "#!/bin/sh\nexit 0\n", { mode: 0o755 });
+      symlinkSync(join(root, "native"), join(root, "real", "env"));
+      symlinkSync("env", join(root, "real", "alias"));
+      symlinkSync(join(root, "real", "sub"), join(root, "hop"));
+      symlinkSync("hop/../alias", join(root, "entry"));
+      for (const agent of ["other", "codex"]) {
+        assert.throws(
+          () => build({ ...base(t), agent, exe: join(root, "entry"), args: ["PATH=/x", "/y"] }),
+          /starts another program/,
+          agent,
+        );
+      }
+    });
+  },
+);
+
+test("a bun server's script is returned as the canonical file that was checked", POSIX, () => {
+  withTree((t) => {
+    const bun = join(t.bin, "bun");
+    writeFileSync(bun, "#!/bin/sh\nexit 0\n", { mode: 0o755 });
+    const real = join(t.dir, "server.mjs");
+    writeFileSync(real, "export {};\n");
+    const alias = join(t.dir, "alias.mjs");
+    symlinkSync(real, alias);
+    const launch = build({ ...base(t), agent: "other", exe: bun, args: [alias, "--flag"] });
+    assert.deepEqual(launch.cmd, [bun, real, "--flag"], "a link swapped later changes nothing");
+  });
+});
+
+test("an interpreter's start-up variables are dropped whatever prefix names them", POSIX, () => {
+  withTree((t) => {
+    const names = [
+      "PYTHONUSERBASE",
+      "PYTHONPLATLIBDIR",
+      "RUBYGEMS_GEMDEPS",
+      "GEM_HOME",
+      "GEM_PATH",
+      "PERL5LIB",
+    ];
+    withEnv(Object.fromEntries(names.map((n) => [n, "/outside/x"])), () => {
+      const env = build({
+        ...base(t),
+        extraPrefixes: ["PYTHON", "RUBY", "GEM_", "PERL"],
+        agent: "other",
+        exe: join(t.bin, "tool"),
+      }).env;
+      for (const name of names) {
+        assert.equal(env[name], undefined, name);
+      }
+    });
+  });
+});
+
+test(
+  "an agent's or runner's name reached through the script a runtime starts is refused",
+  POSIX,
+  () => {
+    withTree((t) => {
+      const node = join(t.bin, "node");
+      writeFileSync(node, "#!/bin/sh\nexit 0\n", { mode: 0o755 });
+      const out = join(t.dir, "scripts");
+      mkdirSync(out);
+      writeFileSync(join(out, "codex-acp.mjs"), "export {};\n");
+      writeFileSync(join(out, "npx-cli.js"), "export {};\n", { mode: 0o755 });
+      symlinkSync(join(out, "codex-acp.mjs"), join(out, "client.mjs"));
+      for (const [script, message] of /** @type {Array<[string, RegExp]>} */ ([
+        ["client.mjs", /agent's own program/],
+        ["npx-cli.js", /package runner/],
+      ])) {
+        assert.throws(
+          () => build({ ...base(t), agent: "other", exe: node, args: [join(out, script)] }),
+          message,
+          script,
+        );
+      }
+      // A program that is a link to the runner's script, under an unrelated name.
+      symlinkSync(join(out, "npx-cli.js"), join(t.bin, "innocent"));
+      assert.throws(
+        () => build({ ...base(t), agent: "other", exe: join(t.bin, "innocent") }),
+        /package runner/,
+      );
+    });
+  },
+);
+
+test("Windows shells start another program, so they are wrappers", POSIX, () => {
+  withTree((t) => {
+    for (const name of ["cmd", "cmd.exe", "powershell", "pwsh", "wsl"]) {
+      writeFileSync(join(t.bin, name), "#!/bin/sh\nexit 0\n", { mode: 0o755 });
+      assert.throws(
+        () => build({ ...base(t), agent: "other", exe: join(t.bin, name), args: ["/c", "x"] }),
+        /starts another program/,
+        name,
+      );
+    }
+  });
+});
+
+test("a private folder whose path BUN_OPTIONS or PATH cannot carry stops the client", POSIX, () => {
+  const dir = realpathSync(mkdtempSync(join(tmpdir(), "seat-private-")));
+  try {
+    const probe = `import { privateDir } from ${JSON.stringify(new URL("../scripts/seat-launch.mjs", import.meta.url).href)};
+try { console.log("ok " + privateDir()); } catch (e) { console.log("refused " + e.message); }`;
+    for (const [name, ok] of [
+      ["with space", false],
+      ["with\ttab", false],
+      ["with'quote", false],
+      ['with"quote', false],
+      ["with:colon", false],
+      ["plain", true],
+    ]) {
+      mkdirSync(join(dir, String(name)));
+      const r = spawnSync(process.execPath, ["-e", probe], {
+        env: { ...process.env, TMPDIR: join(dir, String(name)) },
+        encoding: "utf8",
+      });
+      assert.match(r.stdout, ok ? /^ok / : /^refused .*TMPDIR/, String(name));
+    }
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});

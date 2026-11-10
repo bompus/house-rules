@@ -12,6 +12,7 @@ import {
   symlinkSync,
 } from "node:fs";
 import { delimiter, dirname, isAbsolute, join, sep } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const WINDOWS = process.platform === "win32";
 
@@ -133,6 +134,9 @@ export function trustedDirs(named, root, refuse) {
     } catch {
       return refuse(`--bin-dir ${dir} does not exist`);
     }
+    if (!statSync(real).isDirectory()) {
+      refuse(`--bin-dir ${dir} is not a folder`);
+    }
     if (inside(base, real)) {
       refuse(`--bin-dir ${dir} is inside the review checkout (${base})`);
     }
@@ -205,11 +209,19 @@ export function resolveProgram(name, dirs, root, refuse) {
  * @param {string[]} dirs the trusted folders (trustedDirs)
  * @param {string} root the review root
  * @param {string} into the folder to make (must not exist)
+ * @param {(message: string) => never} refuse
  * @returns {string} the folder the server's PATH names
  */
-export function programFolder(dirs, root, into) {
+export function programFolder(dirs, root, into, refuse) {
   if (WINDOWS) {
     return dirs.join(delimiter);
+  }
+  // PATH is split on the separator: a `:` in the folder's own path (TMPDIR=/x/stem:/tail) would make
+  // `/x/stem` an entry of its own, and that can be a link into the checkout.
+  if (into.includes(delimiter)) {
+    return refuse(
+      `${into} has a "${delimiter}" in its name, which would split a PATH entry; set TMPDIR to another folder`,
+    );
   }
   const base = reviewBase(root);
   mkdirSync(into, { mode: 0o700 });
@@ -244,7 +256,7 @@ export function programFolder(dirs, root, into) {
 // Variables whose values are paths (or lists of them): a relative one is refused, since the server does
 // not start where the caller did, and so is one that points into the checkout.
 const PATH_VALUED = new Set(
-  "HOME TMPDIR TEMP TMP XDG_CONFIG_HOME XDG_DATA_HOME XDG_CACHE_HOME XDG_STATE_HOME XDG_RUNTIME_DIR BUN_INSTALL BUN_INSTALL_CACHE_DIR BUN_INSTALL_BIN BUN_INSTALL_GLOBAL_DIR SSL_CERT_FILE SSL_CERT_DIR NODE_EXTRA_CA_CERTS REQUESTS_CA_BUNDLE CURL_CA_BUNDLE SHELL".split(
+  "HOME APPDATA LOCALAPPDATA USERPROFILE COMSPEC PROGRAMDATA TMPDIR TEMP TMP XDG_CONFIG_HOME XDG_DATA_HOME XDG_CACHE_HOME XDG_STATE_HOME XDG_RUNTIME_DIR BUN_INSTALL BUN_INSTALL_CACHE_DIR BUN_INSTALL_BIN BUN_INSTALL_GLOBAL_DIR SSL_CERT_FILE SSL_CERT_DIR NODE_EXTRA_CA_CERTS REQUESTS_CA_BUNDLE CURL_CA_BUNDLE SHELL".split(
     " ",
   ),
 );
@@ -283,11 +295,20 @@ export function checkEnvPaths(env, root, refuse) {
           refuse(`${name}=${value} is inside the review checkout; point it outside`);
         }
       }
-    } else if (
-      /^file:/i.test(value) &&
-      inside(base, decodeURIComponent(value.replace(/^file:(\/\/)?/i, "")))
-    ) {
-      refuse(`${name}=${value} is inside the review checkout; point it outside`);
+    } else if (/^file:/i.test(value)) {
+      // Read the way a program reads it (`file://localhost/x` and `file:/x` are `/x`), not by cutting a prefix.
+      /** @type {string} */
+      let target;
+      try {
+        target = fileURLToPath(value);
+      } catch {
+        return refuse(
+          `${name}=${value} is not a file URL it can read; give an absolute path outside the review checkout`,
+        );
+      }
+      if (inside(base, target)) {
+        refuse(`${name}=${value} is inside the review checkout; point it outside`);
+      }
     } else if (value.split(delimiter).some((part) => /^\.\.?([\\/]|$)/.test(part))) {
       refuse(
         `${name}=${value} holds a relative path; give absolute paths outside the review checkout`,

@@ -2112,3 +2112,24 @@ test(
     }
   },
 );
+
+test(
+  "the sandbox's PATH is the system folders it shows, not the host's private link folder",
+  POSIX_ONLY,
+  () => {
+    const home = mkdtempSync(join(tmpdir(), "opencode-path-"));
+    try {
+      const args = sandboxArgs(home, []);
+      const at = args.indexOf("PATH");
+      assert.ok(at > 0 && args[at - 1] === "--setenv", "the sandbox sets its own PATH");
+      const entries = String(args[at + 1]).split(":");
+      assert.ok(entries.includes("/usr/bin"));
+      assert.ok(
+        entries.every((e) => /^\/(usr|bin|sbin)(\/|$)/.test(e)),
+        entries.join(":"),
+      );
+    } finally {
+      rmSync(home, { recursive: true, force: true });
+    }
+  },
+);

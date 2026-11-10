@@ -3,7 +3,7 @@
 // the caller's environment, never filtered out of a command and an environment the caller shaped. See
 // ../references/acp-client.md.
 import { existsSync, mkdtempSync, readlinkSync, realpathSync, statSync } from "node:fs";
-import { basename, delimiter, dirname, isAbsolute, join } from "node:path";
+import { basename, delimiter, dirname, isAbsolute, join, sep } from "node:path";
 import { emptyBunfig, exeName, privateDir, seatEnv } from "./seat-launch.mjs";
 import { checkEnvPaths, inside, resolveProgram, reviewBase } from "./seat-paths.mjs";
 
@@ -37,14 +37,14 @@ const RUNTIMES = new Set(["node", "bun", "deno"]);
 // starts the server itself, so nothing needs one, and one would let a command restore a PATH, name a
 // package runner or start an agent under another name.
 const WRAPPERS = new Set(
-  "env sh bash dash ash zsh ksh csh tcsh fish busybox coreutils xargs nohup nice ionice timeout time setsid sudo doas su stdbuf chroot unshare nsenter flock taskset chrt command exec strace ltrace watch parallel".split(
+  "env sh bash dash ash zsh ksh csh tcsh fish cmd powershell pwsh wsl wscript cscript mshta busybox coreutils xargs nohup nice ionice timeout time setsid sudo doas su stdbuf chroot unshare nsenter flock taskset chrt command exec strace ltrace watch parallel".split(
     " ",
   ),
 );
 // What the caller's environment can never inject into a seat, whatever prefixes it passes: each runs or
 // loads code before the server's own. The client sets BUN_OPTIONS itself, below.
 const INJECTORS =
-  /^(NODE_OPTIONS|NODE_PATH|NODE_EXTRA_.*_HOOK.*|BASH_ENV|ENV|BUN_OPTIONS|LD_.*|DYLD_.*|GCONV_PATH|LOCPATH|NLSPATH|PYTHON(PATH|STARTUP|HOME|INSPECT)|RUBYOPT|RUBYLIB|PERL5OPT|PERL5LIB|JAVA_TOOL_OPTIONS|_JAVA_OPTIONS|JDK_JAVA_OPTIONS|CLASSPATH|DOTNET_STARTUP_HOOKS)$/i;
+  /^(NODE_OPTIONS|NODE_PATH|NODE_EXTRA_.*_HOOK.*|BASH_ENV|ENV|BUN_OPTIONS|LD_.*|DYLD_.*|GCONV_PATH|LOCPATH|NLSPATH|PYTHON.*|RUBY.*|GEM_(HOME|PATH|ROOT)|PERL.*|JAVA_TOOL_OPTIONS|_JAVA_OPTIONS|JDK_JAVA_OPTIONS|CLASSPATH|DOTNET_STARTUP_HOOKS)$/i;
 const SCRIPT_EXT = /\.[cm]?[jt]s$/i;
 
 /**
@@ -62,7 +62,13 @@ function chainNames(path) {
     } catch {
       break;
     }
-    at = isAbsolute(target) ? target : join(dirname(at), target);
+    // A relative target is read from the folder the link is in, as the system reads it: `hop/..` goes
+    // through the link `hop`, so the target is not normalized by cutting names off as text.
+    try {
+      at = isAbsolute(target) ? target : `${realpathSync.native(dirname(at))}${sep}${target}`;
+    } catch {
+      break;
+    }
     names.push(exeName(at));
   }
   return names;
@@ -101,7 +107,14 @@ export function seatSpec({ agent, exe, args, root, dirs, extraPrefixes, pathValu
     ? wanted
     : (dirs.map((d) => join(d, wanted)).find(existsSync) ?? program);
   const names = [...new Set([...chainNames(found), exeName(program)])];
-  const runner = names.find((n) => RUNNERS.has(n));
+  const full = [...profile.args, ...args];
+  const runtime = names.some((n) => RUNTIMES.has(n));
+  const script = runtime ? full.find((a) => !a.startsWith("-")) : undefined;
+  // The names the script goes by along its own links, as the program's are (an absolute script only: a
+  // relative one would be read from the private folder).
+  const bare = (/** @type {string} */ n) => n.replace(SCRIPT_EXT, "");
+  const scriptNames = script && isAbsolute(script) ? chainNames(script).map(bare) : [];
+  const runner = [...names.map(bare), ...scriptNames].find((n) => RUNNERS.has(n));
   if (runner) {
     return refuse(
       `${runner} is a package runner, which fetches and runs code at review time; install the adapter and give its absolute path`,
@@ -113,12 +126,12 @@ export function seatSpec({ agent, exe, args, root, dirs, extraPrefixes, pathValu
       `${wrapper} starts another program; give that program as --server-exe, since the client sets the environment and starts it itself`,
     );
   }
-  const full = [...profile.args, ...args];
-  const runtime = names.some((n) => RUNTIMES.has(n));
-  const script = runtime ? full.find((a) => !a.startsWith("-")) : undefined;
   if (agent === "other") {
-    const bare = (/** @type {string} */ n) => n.replace(SCRIPT_EXT, "");
-    const named = [...names, ...(script ? [basename(script), basename(dirname(script))] : [])];
+    const named = [
+      ...names,
+      ...scriptNames,
+      ...(script ? [basename(script), basename(dirname(script))] : []),
+    ];
     if (named.some((n) => AGENT_PROGRAM.test(bare(n)))) {
       return refuse(
         `${program} or its script is an agent's own program; name it with --seat-agent`,
@@ -134,6 +147,8 @@ export function seatSpec({ agent, exe, args, root, dirs, extraPrefixes, pathValu
       try {
         const real = realpathSync.native(full[0]);
         ok = statSync(real).isFile() && !inside(reviewBase(root), real);
+        // The script that runs is the file that was checked, so a link changed afterwards changes nothing.
+        full[0] = real;
       } catch {
         ok = false;
       }

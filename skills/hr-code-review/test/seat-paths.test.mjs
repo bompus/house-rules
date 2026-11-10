@@ -316,7 +316,7 @@ test(
       writeFileSync(join(bin, "not-runnable"), "x", { mode: 0o644 });
       // A name whose first match is inside the checkout is taken from the next folder, never from the checkout.
       program(join(outside, "hostile"));
-      const folder = programFolder([bin, outside], repo, join(dir, "links"));
+      const folder = programFolder([bin, outside], repo, join(dir, "links"), refuse);
       assert.equal(folder, join(dir, "links"));
       assert.equal(statSync(folder).mode & 0o777, 0o700);
       const names = readdirSync(folder).sort();
@@ -396,5 +396,66 @@ test("checkEnvPaths holds the agents' own configuration paths to the same rule",
       repo,
       refuse,
     );
+  });
+});
+
+test(
+  "checkEnvPaths reads a file: URL the way a program does, and refuses one it cannot read",
+  POSIX,
+  () => {
+    withTree(({ repo, outside }) => {
+      for (const value of [
+        `file://localhost${join(repo, "login.json")}`,
+        `FILE://LOCALHOST${join(repo, "login.json")}`,
+        `file:${join(repo, "login.json")}`,
+        `file://${join(repo, "login.json")}`,
+      ]) {
+        assert.throws(
+          () => checkEnvPaths({ CUSTOM_CONFIG_URL: value }, repo, refuse),
+          /inside the review checkout/,
+          value,
+        );
+      }
+      for (const value of ["file://remote.example/x"]) {
+        assert.throws(
+          () => checkEnvPaths({ CUSTOM_CONFIG_URL: value }, repo, refuse),
+          (/** @type {Error} */ e) =>
+            !(e instanceof URIError) && e.message.includes("not a file URL it can read"),
+          value,
+        );
+      }
+      checkEnvPaths({ CUSTOM_CONFIG_URL: `file://localhost${outside}/x` }, repo, refuse);
+      // A malformed escape is read as it is written: an outside file, not an exception.
+      checkEnvPaths({ CUSTOM_CONFIG_URL: "file:///%ZZ" }, repo, refuse);
+    });
+  },
+);
+
+test("the Windows variables that hold a path are held to the same rule", POSIX, () => {
+  withTree(({ repo, outside }) => {
+    for (const name of ["APPDATA", "LOCALAPPDATA", "USERPROFILE", "COMSPEC", "PROGRAMDATA"]) {
+      assert.throws(
+        () => checkEnvPaths({ [name]: join(repo, "x") }, repo, refuse),
+        /inside the review checkout/,
+        name,
+      );
+      checkEnvPaths({ [name]: join(outside, "x") }, repo, refuse);
+    }
+  });
+});
+
+test("a --bin-dir that is a file is refused, not left for a later throw", POSIX, () => {
+  withTree(({ repo, outside }) => {
+    const file = join(outside, "a-file");
+    writeFileSync(file, "x");
+    assert.throws(() => trustedDirs([file], repo, refuse), /is not a folder/);
+  });
+});
+
+test("programFolder refuses a folder whose path would split or quote the PATH", POSIX, () => {
+  withTree(({ dir, repo, bin }) => {
+    mkdirSync(join(dir, "a:b"));
+    assert.throws(() => programFolder([bin], repo, join(dir, "a:b", "links"), refuse), /has a ":"/);
+    assert.equal(programFolder([bin], repo, join(dir, "links"), refuse), join(dir, "links"));
   });
 });

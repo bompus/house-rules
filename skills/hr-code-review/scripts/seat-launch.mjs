@@ -12,7 +12,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { constants as osConstants, tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { delimiter, dirname, join, resolve } from "node:path";
 import { resolveProgram } from "./seat-paths.mjs";
 
 // A seat's environment: named locale, path, proxy and certificate variables plus its own agent's login
@@ -130,6 +130,7 @@ export function seatEnv(env, agent, extraPrefixes) {
 // The files the client writes for a seat live in one private directory, removed when it exits.
 /** @type {string | undefined} */
 let privateDirPath;
+const UNQUOTABLE = process.platform === "win32" ? /[\s"'`]/ : /[\s"'`\\]/;
 export function privateDir() {
   if (!privateDirPath) {
     privateDirPath = mkdtempSync(join(tmpdir(), "acp-panel-"));
@@ -146,6 +147,13 @@ export function privateDir() {
         }
       });
     }
+  }
+  // `BUN_OPTIONS` has no quoting, and PATH is split on the separator: the folder's path must carry
+  // neither, so a TMPDIR that does is a refusal, not a seat that starts with the wrong options.
+  if (UNQUOTABLE.test(privateDirPath) || privateDirPath.includes(delimiter)) {
+    throw new Error(
+      `the private folder ${privateDirPath} has whitespace, a quote, a backslash or "${delimiter}" in its path; set TMPDIR (TEMP on Windows) to a folder without them`,
+    );
   }
   return privateDirPath;
 }
