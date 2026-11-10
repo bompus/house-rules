@@ -2581,6 +2581,10 @@ function adapterHost() {
   }
   symlinkSync(process.execPath, join(bin, "node"));
   writeFileSync(join(dist, "index.js"), fake);
+  writeFileSync(
+    join(dist, "..", "package.json"),
+    JSON.stringify({ name: "@a/claude-agent-acp", bin: { "claude-agent-acp": "dist/index.js" } }),
+  );
   symlinkSync(
     "../@a/claude-agent-acp/dist/index.js",
     join(folder, "node_modules", ".bin", "claude-agent-acp"),

@@ -4,6 +4,7 @@ import {
   chmodSync,
   mkdirSync,
   mkdtempSync,
+  readFileSync,
   realpathSync,
   rmSync,
   symlinkSync,
@@ -28,6 +29,22 @@ const ENTRY = {
 };
 
 /**
+ * The installed package's own package.json, one folder above its `dist`: the script a seat runs is the
+ * file its `bin` names.
+ * @param {string} dist
+ */
+function writePackage(dist) {
+  writeFileSync(
+    join(dist, "..", "package.json"),
+    JSON.stringify({
+      name: ENTRY.package,
+      version: ENTRY.version,
+      bin: { "codex-acp": "dist/index.js" },
+    }),
+  );
+}
+
+/**
  * A host: `repo` (the review root), `bin` with a stand-in node, `root` with an installed adapter version
  * and its marker, and the version file. `edit` changes the file's document before it is written.
  * @param {(doc: any) => void} [edit]
@@ -46,6 +63,7 @@ function host(edit) {
   mkdirSync(pkg, { recursive: true });
   mkdirSync(join(folder, "node_modules", ".bin"));
   writeFileSync(join(pkg, "index.js"), "// adapter\n");
+  writePackage(pkg);
   symlinkSync(
     join("..", "@agentclientprotocol", "codex-acp", "dist", "index.js"),
     join(folder, "node_modules", ".bin", "codex-acp"),
@@ -187,14 +205,80 @@ test("a malformed file is refused, each way", POSIX, () => {
   assert.throws(() => resolve(h), /schema/);
 });
 
-test("a bin that links out of the version folder is refused", POSIX, () => {
+test("a script that links out of the version folder is refused", POSIX, () => {
   const h = host();
   const outside = join(h.base, "elsewhere.js");
   writeFileSync(outside, "//\n");
-  const link = join(h.folder, "node_modules", ".bin", "codex-acp");
-  rmSync(link);
-  symlinkSync(outside, link);
+  const script = join(
+    h.folder,
+    "node_modules",
+    "@agentclientprotocol",
+    "codex-acp",
+    "dist",
+    "index.js",
+  );
+  rmSync(script);
+  symlinkSync(outside, script);
   assert.throws(() => resolve(h), /outside .*2\.6\.0/);
+});
+
+test("a version file that links into the checkout is refused", POSIX, () => {
+  const h = host();
+  const planted = join(h.repo, "seat-adapters.json");
+  writeFileSync(planted, readFileSync(h.file));
+  rmSync(h.file);
+  symlinkSync(planted, h.file);
+  assert.throws(() => resolve(h), /inside the review checkout/);
+});
+
+test("a marker that links out of the version folder is refused", POSIX, () => {
+  const h = host();
+  const planted = join(h.repo, "installed.json");
+  writeFileSync(planted, JSON.stringify({ adapter: "codex-acp", ...ENTRY }));
+  rmSync(join(h.folder, "installed.json"));
+  symlinkSync(planted, join(h.folder, "installed.json"));
+  assert.throws(() => resolve(h), /installed\.json/);
+});
+
+test(
+  "an entry cannot name its own adapter: the expected adapter comes from the agent",
+  POSIX,
+  () => {
+    const h = host((doc) => {
+      doc.adapters["codex-acp"].adapter = "claude-agent-acp";
+    });
+    writeFileSync(
+      join(h.folder, "installed.json"),
+      JSON.stringify({ adapter: "claude-agent-acp", ...ENTRY }),
+    );
+    assert.throws(() => resolve(h), /installed\.json.*adapter/s);
+  },
+);
+
+test(
+  "the script is the package's own bin target, not what .bin holds (a shell shim on Windows)",
+  POSIX,
+  () => {
+    const h = host();
+    const shim = join(h.folder, "node_modules", ".bin", "codex-acp");
+    rmSync(shim);
+    writeFileSync(shim, '#!/bin/sh\nexec node "$basedir/../x" "$@"\n', { mode: 0o755 });
+    assert.equal(
+      resolve(h).args[0],
+      join(h.folder, "node_modules", "@agentclientprotocol", "codex-acp", "dist", "index.js"),
+    );
+  },
+);
+
+test("a package.json with no bin of that name, or none, is refused as not installed", POSIX, () => {
+  for (const bin of [{ other: "dist/index.js" }, undefined, "../../../../elsewhere.js"]) {
+    const h = host();
+    writeFileSync(
+      join(h.folder, "node_modules", "@agentclientprotocol", "codex-acp", "package.json"),
+      JSON.stringify({ name: ENTRY.package, bin }),
+    );
+    assert.throws(() => resolve(h), /not installed|outside/, JSON.stringify(bin));
+  }
 });
 
 test("a version folder inside the checkout is refused", POSIX, () => {
@@ -208,6 +292,7 @@ test("a version folder inside the checkout is refused", POSIX, () => {
   mkdirSync(pkg, { recursive: true });
   mkdirSync(join(folder, "node_modules", ".bin"));
   writeFileSync(join(pkg, "index.js"), "//\n");
+  writePackage(pkg);
   symlinkSync(
     join("..", "@agentclientprotocol", "codex-acp", "dist", "index.js"),
     join(folder, "node_modules", ".bin", "codex-acp"),

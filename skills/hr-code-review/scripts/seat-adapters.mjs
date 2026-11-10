@@ -40,10 +40,18 @@ export function resolveAdapter({ agent, file, dirs, root }, refuse) {
   if (!adapter) {
     return refuse(`--seat-agent ${agent} has no adapter in a version file; give --server-exe`);
   }
+  const base = reviewBase(root);
   /** @type {string} */
   let text;
   try {
-    text = readFileSync(file, "utf8");
+    // The file the path leads to, links followed: a host-owned file is not one the checkout holds.
+    const realFile = realpathSync.native(file);
+    if (inside(base, realFile)) {
+      return refuse(
+        `${file} is inside the review checkout (${realFile}); point --adapters outside it`,
+      );
+    }
+    text = readFileSync(realFile, "utf8");
   } catch (e) {
     if (/** @type {NodeJS.ErrnoException} */ (e).code === "ENOENT") {
       return refuse(
@@ -91,16 +99,30 @@ export function resolveAdapter({ agent, file, dirs, root }, refuse) {
   let marker;
   /** @type {string} */
   let realFolder;
+  /** @type {string} */
+  let realMarker;
   try {
     realFolder = realpathSync.native(folder);
-    marker = JSON.parse(readFileSync(join(realFolder, "installed.json"), "utf8"));
+    realMarker = realpathSync.native(join(realFolder, "installed.json"));
+  } catch {
+    return refuse(notInstalled);
+  }
+  // The marker is the version folder's own file, not a link to one elsewhere.
+  if (!inside(realFolder, realMarker)) {
+    return refuse(
+      `${join(folder, "installed.json")} resolves outside ${folder} (${realMarker}); reinstall with: ${doc.install}`,
+    );
+  }
+  try {
+    marker = JSON.parse(readFileSync(realMarker, "utf8"));
   } catch {
     return refuse(notInstalled);
   }
   if (!isObject(marker)) {
     return refuse(notInstalled);
   }
-  const wanted = { adapter, ...entry };
+  // The adapter is the agent's, whatever the entry says of itself.
+  const wanted = { ...entry, adapter };
   for (const field of MARKED) {
     if (marker[field] !== wanted[/** @type {keyof typeof wanted} */ (field)]) {
       return refuse(
@@ -108,11 +130,22 @@ export function resolveAdapter({ agent, file, dirs, root }, refuse) {
       );
     }
   }
-  const base = reviewBase(root);
   /** @type {string} */
   let script;
   try {
-    script = realpathSync.native(join(realFolder, "node_modules", ".bin", bin));
+    // The script is the file the installed package's own `bin` names, not what `.bin` holds: on Windows
+    // npm leaves a shell shim there, which Node cannot run.
+    const pkgDir = join(
+      realFolder,
+      "node_modules",
+      .../** @type {string} */ (entry.package).split("/"),
+    );
+    const pkg = JSON.parse(readFileSync(join(pkgDir, "package.json"), "utf8"));
+    const target = isObject(pkg) && isObject(pkg.bin) ? pkg.bin[bin] : undefined;
+    if (typeof target !== "string" || target === "") {
+      return refuse(notInstalled);
+    }
+    script = realpathSync.native(join(pkgDir, target));
   } catch {
     return refuse(notInstalled);
   }
