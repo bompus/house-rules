@@ -694,6 +694,9 @@ test(
                 ["run", "--allow-env", "--config", script, inRepo],
                 ["run", "--preload=/x/y.ts", script],
                 ["run", "--import-map", "m.json", script],
+                ["run", "--allow-scripts", script],
+                ["run", "--allow-scripts=npm:x", script],
+                ["run", "--import-map", script, script],
               ]
             : []),
         ]) {
