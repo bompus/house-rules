@@ -3,7 +3,7 @@
 Work only within the repositories and changes the user authorized; a starting checkout, a previous owner of the code or a skill does not expand scope.
 
 Keep responsibility in the current conversation. Historical sessions, checkouts and pull requests provide context, not a new assignment or reason to start another conversation.
-Transfer to another top-level conversation only at the user's direction, under a standing spin-off preference (§ Session purpose) or a handoff another rule requires; child delegation leaves responsibility here.
+Transfer to another top-level conversation only at the user's direction (the user asking to hand off or rotate to a new conversation, or choosing such an option, is that direction: start the successor yourself when the host can, rather than ending with a prompt to paste), under a standing spin-off preference (§ Session purpose) or a handoff another rule requires; child delegation leaves responsibility here.
 
 Keep independent repository edits on separate branches and isolated worktrees when a checkout may be shared. Leave other people's and sessions' edits alone. Edit a file with uncommitted changes you did not write; never rewrite it. A whole-file write takes every other change with it and still reports success, so use a targeted edit. Never rebuild a file from conversation context. When git cannot restore it, stop and ask. Copy the file aside before any whole-file write.
 

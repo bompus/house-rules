@@ -102,13 +102,11 @@ Include a **Git** section when the handoff involves repo work:
 
 If two chats run in parallel on this repo, owns must not overlap. Prefer one implementation chat at a time.
 
-End your report with a ready-to-paste prompt for the resuming agent inside a
-fenced code block, so the user can copy it into a fresh session verbatim. It
-must name the handoff's absolute path, tell the resuming session to read the
-handoff fully before acting (which itself directs the guidance re-read), and
-state the recorded next action plus any provider or host constraint the user
-gave. Keep it under ten lines; the handoff carries the detail, the prompt only
-points at it.
+Write a prompt for the resuming agent. It must name the handoff's absolute path, tell the resuming session to read the handoff fully before acting (which itself directs the guidance re-read), and state the recorded next action plus any provider or host constraint the user gave. When the outgoing thread starts the successor, the prompt also says the successor archives the outgoing thread as successor-thread.md describes. Keep it under ten lines; the handoff carries the detail, the prompt only points at it.
+
+When the user has directed the move to a new conversation (their own words, or choosing a handoff or rotate option), or a rule requires it, and the host can start a conversation, start the successor yourself with that prompt as its first message, then retire the outgoing thread as [successor-thread.md](references/successor-thread.md) says. Do not end by asking the user to paste the prompt. That direction is the user's direction § Repository work asks for. When the direction is ambiguous, start the successor and say so in one line.
+
+End the report with the prompt in a fenced code block, so the user can copy it into a fresh session verbatim, only as the fallback: the host cannot start a conversation, the start failed (say why), or the handoff was written with no direction to move to a new conversation (a pause, or a low-quota handoff where the user chose no successor; a request only to write or save a handoff directs no move).
 
 Redact any sensitive information, such as API keys, passwords, or personally identifiable information.
 
