@@ -9,19 +9,19 @@ allowance. Launch it only within the user's authorization.
 cd <trusted-folder> && bun --no-env-file --config=<empty-bunfig.toml> \
   <skill-directory>/scripts/acp-panel-client.mjs \
   --seat-agent <codex|claude|devin|agy|cursor|grok|other> \
-  [--server-exe <absolute-path>] [--server-arg <argument>]... [--bin-dir <absolute-folder>]... \
+  [--server-exe <absolute-path>] [--server-arg <argument>]... [--bin-dir <absolute-folder>]... [--adapters <absolute-file>] \
   brief.md answer.txt <review-root> \
   --model <advertised-model-id> --effort <advertised-effort-value> \
   --verdict 'VERDICT:' --max-turns 2 --idle-min 5 --timeout-min 60 --no-web
 ```
 
-`--seat-agent NAME` is required: the client takes the agent from it and never works it out from a command. `--server-exe` is the absolute path of the server program (required for `codex`, `claude` and `other`; `devin`, `agy`, `cursor` and `grok` default to their own program name, looked up in the trusted program folders). `--server-arg` (repeatable; `--server-arg=VALUE` takes any value, `--server-arg VALUE` one that is not itself a flag) adds the server's arguments after the agent's own (`acp` for `devin` and `agy`). `--bin-dir` names an absolute folder outside the checkout that programs may be found in, besides the system's (`/usr/local/bin`, `/usr/bin`, `/bin` and the like). See Launch below.
+`--seat-agent NAME` is required: the client takes the agent from it and never works it out from a command. `--server-exe` is the absolute path of the server program (required for `other`; a `codex` or `claude` seat with none runs the adapter the host's version file names, see Adapters below; `devin`, `agy`, `cursor` and `grok` default to their own program name, looked up in the trusted program folders). `--server-arg` (repeatable; `--server-arg=VALUE` takes any value, `--server-arg VALUE` one that is not itself a flag) adds the server's arguments after the agent's own (`acp` for `devin` and `agy`). `--bin-dir` names an absolute folder outside the checkout that programs may be found in, besides the system's (`/usr/local/bin`, `/usr/bin`, `/bin` and the like). See Launch below.
 
 Launch it from a folder you trust, never from inside the checkout, and pass the review root as the third positional argument. Bun reads `.env` and `bunfig.toml` (a `preload` runs code) from the launch folder before the script starts, so a client launched in the checkout lets the checkout set environment variables and run code ahead of every guard below. As a second layer, `--no-env-file` stops the `.env` loading and `--config=PATH` (the `=` form, an existing empty TOML file; `/dev/null` is rejected) replaces the launch folder's `bunfig.toml`; both were checked on Bun 1.4.4. `opencode-seat.mjs` takes the checkout as `--root CHECKOUT` and is launched the same way.
 
-Node 22+ and Bun can run the same file. It imports `seat-launch.mjs`, `seat-paths.mjs`, `seat-spec.mjs`, `seat-hooks.mjs` and `client-args.mjs` from the same
+Node 22+ and Bun can run the same file. It imports `seat-launch.mjs`, `seat-paths.mjs`, `seat-spec.mjs`, `seat-hooks.mjs`, `client-args.mjs` and `seat-adapters.mjs` from the same
 directory (the seat's environment, the program folders, the launch, the Codex, Devin and
-Antigravity setup and the flag reader), so a copy needs all five files. Arguments after the output path are
+Antigravity setup, the flag reader and the adapter version file), so a copy needs all six files. Arguments after the output path are
 optional. The default is one turn, no required verdict, five minutes of idle
 silence counted from launch and a sixty-minute hard deadline. The hard deadline has a one-minute
 minimum.
@@ -190,6 +190,21 @@ configuration can name programs git runs. A seat that writes git configuration
 there (a clean filter, for example) can still get a command run, with that
 narrowed environment; the status comparison does not see the file because
 `.git` is not part of the listing.
+
+## Adapters
+
+`codex-acp` and `claude-agent-acp` are npm packages, and a package runner (`bunx`, `npx`) would fetch and run code chosen at review time, so the client does not run one. A `codex` or `claude` seat with no `--server-exe` starts the adapter that a version file names, from a folder an install step filled earlier: `node` (found in the trusted program folders) and the adapter's script, both by absolute path. `--adapters FILE` (absolute) names the file; the default is `$XDG_CONFIG_HOME/seat-adapters.json`, else `~/.config/seat-adapters.json`. `--adapters` cannot go with `--server-exe` or another agent. The client names no host path of its own.
+
+The file is JSON, schema 1: `root` (an absolute folder, or `~/` and a path), `install` (the command that installs every listed version, written by the host and quoted in the refusal) and `adapters`, one entry per adapter with `package`, `version`, `bin` and `runtime` (`"node"`). Each version is installed on its own at `<root>/<adapter>/<version>/node_modules/.bin/<bin>`, with an `installed.json` in that folder written last, holding `adapter`, `package`, `version`, `bin` and `runtime` (other fields, such as a lock hash, are not compared). The client refuses before any process starts when:
+
+- the file is missing: `this host has no seat adapters installed`, naming `--server-exe ABSOLUTE-PATH` as the way to run an adapter from a path;
+- the file is not schema 1 JSON, the adapter has no entry, or a field is invalid (`version` and `bin` are one path element, with no `/` or `..`);
+- the version's folder or `installed.json` is missing or unreadable: `seat adapter ADAPTER VERSION is not installed under ROOT; run: INSTALL`;
+- `installed.json` differs from the file's entry in any compared field;
+- the script `bin` resolves to is outside the version's folder, or the folder or script is inside the checkout;
+- no `node` is in the trusted program folders.
+
+Rolling back is editing `version` in the file. The client reads the file; it does not install, update or prune anything. The folder at `root` is read-only to the seat only if the caller's sandbox binds it so.
 
 ## OpenCode
 

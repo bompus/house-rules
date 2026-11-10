@@ -596,6 +596,7 @@ test("a copy of the client and the file beside it runs without its source checko
       "seat-paths.mjs",
       "seat-spec.mjs",
       "client-args.mjs",
+      "seat-adapters.mjs",
     ]) {
       writeFileSync(join(dir, file), readFileSync(join(dirname(client), file)));
     }
@@ -2564,3 +2565,151 @@ test("a HOME inside the checkout stops the launch before git runs there", POSIX_
   assert.equal(r.read["git-ran"], null, "git was not started");
   assert.equal(r.launch, null);
 });
+
+/**
+ * A host for the adapter tests: a trusted folder with a `node` (this runtime), an installed
+ * claude-agent-acp whose script is the fake server, and the version file naming it.
+ */
+function adapterHost() {
+  const dir = mkdtempSync(join(process.env.HOUSE_RULES_TEST_TMP || tmpdir(), "acp-adapters-"));
+  const repo = join(dir, "repo");
+  const bin = join(dir, "bin");
+  const folder = join(dir, "root", "claude-agent-acp", "1.0.0");
+  const dist = join(folder, "node_modules", "@a", "claude-agent-acp", "dist");
+  for (const d of [repo, bin, dist, join(folder, "node_modules", ".bin")]) {
+    mkdirSync(d, { recursive: true });
+  }
+  symlinkSync(process.execPath, join(bin, "node"));
+  writeFileSync(join(dist, "index.js"), fake);
+  symlinkSync(
+    "../@a/claude-agent-acp/dist/index.js",
+    join(folder, "node_modules", ".bin", "claude-agent-acp"),
+  );
+  const entry = {
+    package: "@a/claude-agent-acp",
+    version: "1.0.0",
+    bin: "claude-agent-acp",
+    runtime: "node",
+  };
+  writeFileSync(
+    join(folder, "installed.json"),
+    JSON.stringify({ adapter: "claude-agent-acp", ...entry }),
+  );
+  const file = join(dir, "seat-adapters.json");
+  writeFileSync(
+    file,
+    JSON.stringify({
+      schema: 1,
+      root: join(dir, "root"),
+      install: "install-the-adapters",
+      adapters: { "claude-agent-acp": entry },
+    }),
+  );
+  writeFileSync(join(dir, "prompt.md"), "Review the supplied scope.");
+  /** @param {string[]} before @param {Record<string, string>} [env] */
+  const client_ = (before, env = {}) =>
+    spawnSync(
+      process.execPath,
+      [
+        client,
+        ...before,
+        join(dir, "prompt.md"),
+        join(dir, "out.txt"),
+        repo,
+        "--verdict",
+        "VERDICT:",
+      ],
+      {
+        env: {
+          ...process.env,
+          FAKE_CONFIG: "{}",
+          FAKE_LOG: join(dir, "log"),
+          ACP_PANEL_PASS_ENV: "FAKE_",
+          ...env,
+        },
+        encoding: "utf8",
+        timeout: 20000,
+      },
+    );
+  return { dir, repo, bin, file, run: client_ };
+}
+
+test(
+  "a claude seat with no --server-exe runs the adapter the version file names",
+  POSIX_ONLY,
+  () => {
+    const h = adapterHost();
+    try {
+      const r = h.run(["--seat-agent", "claude", "--adapters", h.file, "--bin-dir", h.bin]);
+      assert.equal(r.status, 0, r.stderr);
+      assert.match(readFileSync(join(h.dir, "out.txt"), "utf8"), /VERDICT: A/);
+      const launch = JSON.parse(readFileSync(join(h.dir, "log.launch"), "utf8"));
+      assert.notEqual(launch.startCwd, h.repo, "starts in the private folder");
+    } finally {
+      rmSync(h.dir, { recursive: true, force: true });
+    }
+  },
+);
+
+test(
+  "the version file defaults to $XDG_CONFIG_HOME/seat-adapters.json; none says so",
+  POSIX_ONLY,
+  () => {
+    const h = adapterHost();
+    try {
+      const ok = h.run(["--seat-agent", "claude", "--bin-dir", h.bin], { XDG_CONFIG_HOME: h.dir });
+      assert.equal(ok.status, 0, ok.stderr);
+      const none = h.run(["--seat-agent", "claude", "--bin-dir", h.bin], {
+        XDG_CONFIG_HOME: join(h.dir, "empty"),
+      });
+      assert.equal(none.status, 2);
+      assert.match(none.stderr, /no seat adapters installed.*--server-exe ABSOLUTE-PATH/s);
+    } finally {
+      rmSync(h.dir, { recursive: true, force: true });
+    }
+  },
+);
+
+test(
+  "--adapters is refused when relative, empty, with --server-exe or for another agent",
+  POSIX_ONLY,
+  () => {
+    const h = adapterHost();
+    try {
+      const exe = join(h.dir, "server");
+      writeFileSync(exe, "#!/bin/sh\nexit 0\n", { mode: 0o755 });
+      for (const args of [
+        ["--seat-agent", "claude", "--adapters", "seat-adapters.json"],
+        ["--seat-agent", "claude", "--adapters"],
+        ["--seat-agent", "claude", "--adapters", h.file, "--server-exe", exe],
+        ["--seat-agent", "devin", "--adapters", h.file],
+      ]) {
+        const r = h.run([...args, "--bin-dir", h.bin]);
+        assert.equal(r.status, 2, args.join(" "));
+        assert.match(r.stderr, /--adapters/, args.join(" "));
+      }
+    } finally {
+      rmSync(h.dir, { recursive: true, force: true });
+    }
+  },
+);
+
+test(
+  "a version that is not installed stops the launch before any server starts",
+  POSIX_ONLY,
+  () => {
+    const h = adapterHost();
+    try {
+      rmSync(join(h.dir, "root", "claude-agent-acp", "1.0.0", "installed.json"));
+      const r = h.run(["--seat-agent", "claude", "--adapters", h.file, "--bin-dir", h.bin]);
+      assert.equal(r.status, 2);
+      assert.match(
+        r.stderr,
+        /seat adapter claude-agent-acp 1\.0\.0 is not installed under .*; run: install-the-adapters/,
+      );
+      assert.equal(existsSync(join(h.dir, "log.launch")), false);
+    } finally {
+      rmSync(h.dir, { recursive: true, force: true });
+    }
+  },
+);

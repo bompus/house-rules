@@ -22,6 +22,7 @@ import { pathToFileURL } from "node:url";
 import { AGY_UNMASKED, gitEnvironment, gitProgram, privateDir } from "./seat-launch.mjs";
 import { checkEnvPaths, programFolder, reviewBase, trustedDirs } from "./seat-paths.mjs";
 import { argParser, isFlagLike } from "./client-args.mjs";
+import { launchFromFlags } from "./seat-adapters.mjs";
 import { SEAT_AGENTS, launchPreview, takeServerArgs } from "./seat-spec.mjs";
 import { seatLaunch } from "./seat-hooks.mjs";
 const rawArgs = process.argv.slice(2);
@@ -57,6 +58,8 @@ const serverArgs = takeServerArgs(rawArgs);
 const seatAgentName = takeFlag("--seat-agent", "");
 const exeGiven = rawArgs.includes("--server-exe");
 const serverExe = takeFlag("--server-exe", "");
+const adaptersGiven = rawArgs.includes("--adapters");
+const adaptersArg = takeFlag("--adapters", "");
 const binDirs = takeAll("--bin-dir");
 const maxTurns = Math.max(1, parseInt(takeFlag("--max-turns", "1"), 10));
 const verdictMarker = takeFlag("--verdict", "");
@@ -75,7 +78,7 @@ const timeoutMin = Math.max(1, Number(takeFlag("--timeout-min", "60")) || 60);
 const idleArg = Number(takeFlag("--idle-min", "5"));
 const IDLE_MS = (idleArg > 0 ? idleArg : 5) * 60 * 1000;
 const USAGE =
-  "usage: bun acp-panel-client.mjs --seat-agent NAME [--server-exe ABS] [--server-arg ARG]... [--bin-dir ABS]... <prompt-file> <out-text> [cwd] [--max-turns N] [--verdict MARK] [--model ID] [--effort LEVEL] [--idle-min N] [--timeout-min N] [--no-web] [--allow-reads] [--policy MODULE] [--policy-option KEY[=VALUE]]...";
+  "usage: bun acp-panel-client.mjs --seat-agent NAME [--server-exe ABS] [--server-arg ARG]... [--bin-dir ABS]... [--adapters ABS-FILE] <prompt-file> <out-text> [cwd] [--max-turns N] [--verdict MARK] [--model ID] [--effort LEVEL] [--idle-min N] [--timeout-min N] [--no-web] [--allow-reads] [--policy MODULE] [--policy-option KEY[=VALUE]]...";
 // A flag the client does not know, or one missing its value, must not be taken for a positional
 // argument or ignored: a caller that passes a restriction this version lacks would run unrestricted.
 const [promptFile, outText, cwdArg] = rawArgs;
@@ -104,6 +107,11 @@ try {
 } catch (e) {
   refuse(e instanceof Error ? e.message : String(e));
 }
+// A codex or claude seat with no --server-exe runs the adapter the host's version file names.
+const { exe: serverExeUsed, args: serverArgsUsed } = launchFromFlags(
+  { agent: seatAgentName, serverExe, serverArgs, adaptersGiven, adaptersArg, dirs, root: cwd },
+  /** @type {(message: string) => never} */ (refuse),
+);
 // The answer goes to the physical path the output argument names now (a caller's symlink is followed
 // once, here); the write refuses a final symlink and a directory that is no longer this one.
 /** @type {string} */
@@ -170,7 +178,7 @@ if (policyPath) {
       model: modelArg,
       effort: effortArg,
       agent: seatAgentName,
-      command: launchPreview(seatAgentName, serverExe, serverArgs),
+      command: launchPreview(seatAgentName, serverExeUsed ?? "", serverArgsUsed),
       options: policyOptions,
     });
   } catch (e) {
@@ -329,8 +337,8 @@ try {
 }
 const launch = seatLaunch({
   agent: seatAgentName,
-  exe: serverExe || undefined,
-  args: serverArgs,
+  exe: serverExeUsed,
+  args: serverArgsUsed,
   root: cwd,
   dirs,
   pathValue,
