@@ -622,7 +622,7 @@ test(
 
 test("Windows shells start another program, so they are wrappers", POSIX, () => {
   withTree((t) => {
-    for (const name of ["cmd", "cmd.exe", "powershell", "pwsh", "wsl"]) {
+    for (const name of ["cmd", "cmd.exe", "cmd.com", "powershell", "pwsh", "wsl"]) {
       writeFileSync(join(t.bin, name), "#!/bin/sh\nexit 0\n", { mode: 0o755 });
       assert.throws(
         () => build({ ...base(t), agent: "other", exe: join(t.bin, name), args: ["/c", "x"] }),
@@ -732,4 +732,11 @@ test("a deno server's script is held to the runner and agent-name guards too", P
       /agent's own program/,
     );
   });
+});
+
+test("exeName drops every Windows executable suffix a lookup tries", () => {
+  for (const name of ["cmd.exe", "cmd.com", "CMD.COM", "x.bat", "x.cmd"]) {
+    assert.equal(exeName(`C:\\tools\\${name}`), exeName(name));
+  }
+  assert.equal(exeName("C:\\tools\\node.com"), "node");
 });

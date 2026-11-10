@@ -441,7 +441,18 @@ test(
 
 test("the Windows variables that hold a path are held to the same rule", POSIX, () => {
   withTree(({ repo, outside }) => {
-    for (const name of ["APPDATA", "LOCALAPPDATA", "USERPROFILE", "COMSPEC", "PROGRAMDATA"]) {
+    for (const name of [
+      "APPDATA",
+      "LOCALAPPDATA",
+      "USERPROFILE",
+      "COMSPEC",
+      "PROGRAMDATA",
+      "SYSTEMROOT",
+      "WINDIR",
+      "PROGRAMFILES",
+      "PROGRAMFILES(X86)",
+      "PROGRAMW6432",
+    ]) {
       assert.throws(
         () => checkEnvPaths({ [name]: join(repo, "x") }, repo, refuse),
         /inside the review checkout/,

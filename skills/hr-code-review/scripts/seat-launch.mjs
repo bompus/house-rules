@@ -45,7 +45,7 @@ const fold = (name) => (WINDOWS ? name.toUpperCase() : name);
  * @param {string} s
  */
 export function exeName(s) {
-  return (s.split(/[\\/]/).at(-1) ?? s).replace(/\.(exe|cmd|bat)$/i, "");
+  return (s.split(/[\\/]/).at(-1) ?? s).replace(/\.(exe|cmd|bat|com)$/i, "");
 }
 /**
  * The environment git runs with: a seat's narrowed one plus the variables that locate a repository, and
