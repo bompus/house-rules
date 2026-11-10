@@ -6,12 +6,13 @@ import {
   mkdtempSync,
   readFileSync,
   realpathSync,
+  renameSync,
   rmSync,
   symlinkSync,
   writeFileSync,
 } from "node:fs";
 import { homedir, tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { ADAPTER_FOR, adaptersFile, resolveAdapter } from "../scripts/seat-adapters.mjs";
 
 const POSIX = { skip: process.platform === "win32" ? "POSIX paths" : false };
@@ -290,7 +291,7 @@ test("a package.json that links out of the version folder is refused", POSIX, ()
     "codex-acp",
     "package.json",
   );
-  const planted = join(h.repo, "package.json");
+  const planted = join(h.base, "elsewhere-package.json");
   writeFileSync(
     planted,
     JSON.stringify({ name: ENTRY.package, bin: { "codex-acp": "dist/index.js" } }),
@@ -340,6 +341,51 @@ test("a single-executable package names its bin as a string", POSIX, () => {
     JSON.stringify({ name: ENTRY.package, bin: "dist/index.js" }),
   );
   assert.throws(() => resolve(g), /not installed/);
+});
+
+test(
+  "a package.json that links into a checkout nested in the version folder is refused",
+  POSIX,
+  () => {
+    const h = host();
+    const work = join(h.folder, "work");
+    mkdirSync(work);
+    const planted = join(work, "package.json");
+    writeFileSync(
+      planted,
+      JSON.stringify({ name: ENTRY.package, bin: { "codex-acp": "dist/index.js" } }),
+    );
+    const manifest = join(
+      h.folder,
+      "node_modules",
+      "@agentclientprotocol",
+      "codex-acp",
+      "package.json",
+    );
+    rmSync(manifest);
+    symlinkSync(planted, manifest);
+    assert.throws(
+      () => resolveAdapter({ agent: "codex", file: h.file, dirs: h.dirs, root: work }, refuse),
+      /inside the review checkout/,
+    );
+  },
+);
+
+test("scoped npm names with an underscore or hyphen start are packages too", POSIX, () => {
+  for (const name of ["@scope/_adapter", "@_scope/adapter", "@-s/-a", "_adapter"]) {
+    const h = host((doc) => {
+      doc.adapters["codex-acp"].package = name;
+    });
+    const nm = join(h.folder, "node_modules");
+    const dir = join(nm, ...name.split("/"));
+    mkdirSync(dirname(dir), { recursive: true });
+    renameSync(join(nm, "@agentclientprotocol", "codex-acp"), dir);
+    writeFileSync(
+      join(h.folder, "installed.json"),
+      JSON.stringify({ adapter: "codex-acp", ...ENTRY, package: name }),
+    );
+    assert.equal(resolve(h).args[0], join(dir, "dist", "index.js"), name);
+  }
 });
 
 test("a version folder inside the checkout is refused", POSIX, () => {

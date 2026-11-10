@@ -11,8 +11,9 @@ import { inside, resolveProgram, reviewBase } from "./seat-paths.mjs";
 export const ADAPTER_FOR = { codex: "codex-acp", claude: "claude-agent-acp" };
 const VERSION = /^[0-9A-Za-z][0-9A-Za-z.+_-]*$/;
 const BIN = /^[0-9A-Za-z][0-9A-Za-z._-]*$/;
-// An npm package name: `name` or `@scope/name`, never a dot segment or a deeper path.
-const PACKAGE = /^(@[a-z0-9~][a-z0-9._~-]*\/)?[a-z0-9~][a-z0-9._~-]*$/;
+// An npm package name: `name` or `@scope/name`, never a dot segment (a part cannot start with a dot) or a
+// deeper path.
+const PACKAGE = /^(@[a-z0-9~_-][a-z0-9._~-]*\/)?[a-z0-9~_-][a-z0-9._~-]*$/;
 // What the marker `installed.json` must say beside the file's entry. Its lock hash is not compared.
 const MARKED = ["adapter", "package", "version", "bin", "runtime"];
 
@@ -147,6 +148,9 @@ export function resolveAdapter({ agent, file, dirs, root }, refuse) {
     return refuse(notInstalled);
   }
   // The package's own manifest, not a link to one elsewhere: it decides which file runs.
+  if (inside(base, manifest)) {
+    return refuse(`${join(pkgDir, "package.json")} is inside the review checkout (${manifest})`);
+  }
   if (!inside(realFolder, manifest)) {
     return refuse(
       `${join(pkgDir, "package.json")} resolves outside ${folder} (${manifest}); reinstall with: ${doc.install}`,
