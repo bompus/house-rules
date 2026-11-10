@@ -820,22 +820,21 @@ test("npm and the other package managers are refused as a server, by name or scr
   });
 });
 
-test("the profile's arguments follow an interpreter's script", POSIX, () => {
+test("devin and agy run as their own program, not under an interpreter", POSIX, () => {
   withTree((t) => {
-    const node = join(t.bin, "node");
-    writeFileSync(node, "#!/bin/sh\nexit 0\n", { mode: 0o755 });
     const script = join(t.dir, "devin.js");
     writeFileSync(script, "export {};\n");
-    const launch = build({ ...base(t), agent: "devin", exe: node, args: [script, "--flag"] });
-    assert.deepEqual(launch.cmd, [node, script, "acp", "--flag"]);
-    const deno = join(t.bin, "deno");
-    writeFileSync(deno, "#!/bin/sh\nexit 0\n", { mode: 0o755 });
-    const run = build({
-      ...base(t),
-      agent: "devin",
-      exe: deno,
-      args: ["run", "--allow-read", script],
-    });
-    assert.deepEqual(run.cmd, [deno, "run", "--allow-read", script, "acp"]);
+    for (const name of ["node", "bun", "deno"]) {
+      const exe = join(t.bin, name);
+      writeFileSync(exe, "#!/bin/sh\nexit 0\n", { mode: 0o755 });
+      for (const agent of ["devin", "agy"]) {
+        assert.throws(
+          () =>
+            build({ ...base(t), agent, exe, args: name === "deno" ? ["run", script] : [script] }),
+          /runs as its own program, not under/,
+          `${agent} ${name}`,
+        );
+      }
+    }
   });
 });

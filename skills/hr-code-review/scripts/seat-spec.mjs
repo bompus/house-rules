@@ -163,12 +163,14 @@ export function seatSpec({ agent, exe, args, root, dirs, extraPrefixes, pathValu
       at++;
     }
   }
-  // The profile's own arguments (`acp` for devin and agy) follow an interpreter's script, so
-  // `node SCRIPT acp` is the interpreted agent's form; otherwise they come first.
-  const full =
-    interpreter && at >= 0
-      ? [...args.slice(0, at + 1), ...profile.args, ...args.slice(at + 1)]
-      : [...profile.args, ...args];
+  // Devin's and Antigravity's own flags (`--config`, `--gemini-dir`) and `acp` are placed right after
+  // the executable, which an interpreter would take for its own options: they run as their own program.
+  if (interpreter && profile.args.length > 0) {
+    return refuse(
+      `--seat-agent ${agent} runs as its own program, not under ${interpreter}; give its executable as --server-exe`,
+    );
+  }
+  const full = [...profile.args, ...args];
   const script = interpreter && at >= 0 ? full[at] : undefined;
   // The names the script goes by along its own links, as the program's are (an absolute script only: a
   // relative one would be read from the private folder).
