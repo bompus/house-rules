@@ -63,8 +63,8 @@ solely because a fix changed logic.
 When a confirmed finding marks one case of a pattern (a late poll, a second
 account, a boundary value), fix the class, not the instance: list the other cases of
 that pattern within the task's scope as a table of inputs and expected results,
-check each, and fix the ones that fail in the same push. A case outside the task
-is parked as § Session purpose says, not fixed. One case per review round turns one defect into
+check each, and fix the ones that fail in the same round of fixes. A case outside the
+task is handled as § Session purpose says: parked unless it blocks the task. One case per review round turns one defect into
 a chain of rounds.
 
 Before a follow-up, record its scope and round limit in the plan. A further

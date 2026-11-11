@@ -29,8 +29,8 @@ After review, treat each finding as a claim. Fix it when a reproduced failure
 confirms it, with the smallest change that clears it; a reviewer's proposed
 remedy is a suggestion. A confirmed finding that marks one case of a pattern
 gets the other cases of that pattern within the task's scope checked, and the
-failing ones fixed, in the same push (fix the class, not the instance); park what
-is outside the task. Answer an unconfirmed finding with the reason. Run
+failing ones fixed, in the same round of fixes (fix the class, not the instance);
+park what is outside the task unless it blocks it. Answer an unconfirmed finding with the reason. Run
 relevant checks. A logic change permits a follow-up review but does not
 require one. Request it only for a named risk
 local checks cannot resolve. Record its scope and round limit first; further
