@@ -4,6 +4,8 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- Multi-agent review rule: when a confirmed review finding marks one case of a pattern (a late poll, a second account, a boundary value), fix the class, not the instance: list the area's other cases as a table of inputs and expected results, check each and fix them in the same push, instead of one case per review round. The always-on `multi-agent` modifier carries one sentence and `rules/references/multi-agent.md` the full rule.
+
 - `hr-grilling`'s round example follows the coded-offers rules: each option is its own list item, with a lowercase code and "(Recommended)" right after the first one, and the acceptance lines use lowercase codes.
 
 - `hr-agent-guidance-audit` adds the method lessons from a recent guidance audit: run the repository's own guidance checks first and read their numbers critically, read prior reports and the kept and rejected lists first, cite both sides of every contradiction, state a rule's discovery path before deleting it and grep the whole repository, installed adapters and layer sources for pointers before deleting a file, replace whole sentences and run the link and anchor check over the whole repository after a deletion, brief a delegated audit with the settled list and verify a sample of its claims, and treat zero recent use as a review prompt recorded in the kept list. A new `references/rule-placement.md` says what rule files hold: current behavior only, one owner per rule and a changing value written once, paragraphs over about 2.5 KB split one rule per bullet, end conditions on transition text, script manuals in script headers, no hand-kept directory indexes. No always-on text changes.
