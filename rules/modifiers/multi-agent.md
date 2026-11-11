@@ -28,8 +28,9 @@ After review, treat each finding as a claim. Fix it when a reproduced failure
 (a test that fails before the fix, where one fits) or a cited requirement
 confirms it, with the smallest change that clears it; a reviewer's proposed
 remedy is a suggestion. A confirmed finding that marks one case of a pattern
-gets the area's other cases listed and fixed in the same push (fix the class,
-not the instance). Answer an unconfirmed finding with the reason. Run
+gets the other cases of that pattern in the code it touches checked, and the
+failing ones fixed, in the same push (fix the class, not the instance); park the
+rest. Answer an unconfirmed finding with the reason. Run
 relevant checks. A logic change permits a follow-up review but does not
 require one. Request it only for a named risk
 local checks cannot resolve. Record its scope and round limit first; further

@@ -4,7 +4,7 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
-- Multi-agent review rule: when a confirmed review finding marks one case of a pattern (a late poll, a second account, a boundary value), fix the class, not the instance: list the area's other cases as a table of inputs and expected results, check each and fix them in the same push, instead of one case per review round. The always-on `multi-agent` modifier carries one sentence and `rules/references/multi-agent.md` the full rule.
+- Multi-agent review rule: when a confirmed review finding marks one case of a pattern (a late poll, a second account, a boundary value), fix the class, not the instance: list the other cases of that pattern in the code the finding touches as a table of inputs and expected results, check each and fix the ones that fail in the same push (cases outside that code are parked), instead of one case per review round. The always-on `multi-agent` modifier carries one sentence and `rules/references/multi-agent.md` the full rule.
 
 - `hr-grilling`'s round example follows the coded-offers rules: each option is its own list item, with a lowercase code and "(Recommended)" right after the first one, and the acceptance lines use lowercase codes.
 

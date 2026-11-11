@@ -61,9 +61,11 @@ changed logic and unresolved findings. Never restart a whole-change review
 solely because a fix changed logic.
 
 When a confirmed finding marks one case of a pattern (a late poll, a second
-account, a boundary value), fix the class, not the instance: list the area's other
-cases as a table of inputs and expected results, check each, and fix them in the
-same push. One case per review round turns one defect into a chain of rounds.
+account, a boundary value), fix the class, not the instance: list the other cases of
+that pattern in the code the finding touches as a table of inputs and expected
+results, check each, and fix the ones that fail in the same push. Cases outside
+that code are parked, not fixed. One case per review round turns one defect into
+a chain of rounds.
 
 Before a follow-up, record its scope and round limit in the plan. A further
 logic fix does not reset that limit. When the limit is reached, report any
