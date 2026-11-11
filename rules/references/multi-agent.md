@@ -51,11 +51,7 @@ file or line, and one finding from two helpers. Downgrade, correct or drop each.
 After a model review, treat each finding as a claim. Fix it when a reproduced
 failure (a test that fails before the fix, where one fits) or a cited
 requirement confirms it, with the smallest change that clears it; a reviewer's
-proposed remedy is a suggestion. When a confirmed finding marks one case of a
-pattern (a late poll, a second account, a boundary value), fix the class, not the
-instance: list the area's other cases as a table of inputs and expected results,
-check each, and fix them in the same push. One case per review round turns one
-defect into a chain of rounds. Answer an unconfirmed finding with the reason.
+proposed remedy is a suggestion. Answer an unconfirmed finding with the reason.
 Run the relevant checks. A fix that changes code logic permits a follow-up
 review; it does not require one.
 Code logic includes control flow, data handling, interfaces, queries and values
@@ -63,6 +59,11 @@ a program reads. Request a follow-up only for a named remaining risk that
 local checks cannot resolve. Batch known fixes first, then focus the review on
 changed logic and unresolved findings. Never restart a whole-change review
 solely because a fix changed logic.
+
+When a confirmed finding marks one case of a pattern (a late poll, a second
+account, a boundary value), fix the class, not the instance: list the area's other
+cases as a table of inputs and expected results, check each, and fix them in the
+same push. One case per review round turns one defect into a chain of rounds.
 
 Before a follow-up, record its scope and round limit in the plan. A further
 logic fix does not reset that limit. When the limit is reached, report any
