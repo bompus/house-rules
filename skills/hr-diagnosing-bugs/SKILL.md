@@ -69,10 +69,12 @@ perform a reproduction step, give clear steps and the expected observation.
 Before you accept a result as the cause, read
 [Keeping a diagnosis honest](references/evidence-discipline.md).
 
-When tracing a failure back cause by cause, stop at the step that names what
-produced the bad state and that you can change, not at the place the symptom
-surfaced (see § Fix and verify). Stopping after one or two steps usually
-means you stopped at a symptom; a chain of more than about seven steps means the
+When tracing a failure back cause by cause, stop at the step that names
+something you can change that would have prevented it. If the triggering state
+should never exist, that is what produced the state, not the place the symptom
+surfaced; if the system may legitimately be in that state, it is the code that
+mishandles it (§ Fix and verify). Stopping after one or two steps usually means
+you stopped at a symptom; a chain of more than about seven steps means the
 steps are too small, so merge them.
 
 ## Bound the loop

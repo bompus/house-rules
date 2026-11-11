@@ -34,8 +34,11 @@ effect that you observed in the code, config, documentation or a probe.
 Magnitude: the numbers are large enough to explain the effect. Necessity: look
 for an occasion when the same trigger fired without the claimed cause, or
 remove the cause in a probe, and check that the effect did not follow. A link
-whose test has not run yet stays an inference; a link whose test shows the
-opposite is refuted, and the theory is dead (see above).
+whose test has not run yet stays an inference. A link whose test shows the
+opposite is refuted, and the theory is dead (see above), unless a second cause
+could still produce the same effect: when the effect persists with the claimed
+cause removed, isolate each candidate cause and test it alone before refuting
+either.
 
 **Inherited numbers are measured again.** Counts, blast radius and timings from
 earlier tickets, dashboards or drafts are re-measured, not copied; when that is

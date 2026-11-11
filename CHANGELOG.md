@@ -4,7 +4,7 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
-- `hr-diagnosing-bugs`' `references/evidence-discipline.md` adds three rules for a chain of causes: label each claim measured, derived or inferred (an inference names the observation or report it rests on), test each causal link on timing, mechanism, magnitude and necessity (a case where the trigger fired without the cause, or a probe that removes it) and treat a refuted link as a dead theory, and re-measure inherited numbers, with claims about people or ownership held to the same evidence as claims about systems. `SKILL.md` adds a stop rule for tracing a failure back cause by cause: stop at the step that names what produced the bad state, not at the symptom, and merge steps past about seven.
+- `hr-diagnosing-bugs`' `references/evidence-discipline.md` adds three rules for a chain of causes: label each claim measured, derived or inferred (an inference names the observation or report it rests on), test each causal link on timing, mechanism, magnitude and necessity (a case where the trigger fired without the cause, or a probe that removes it) and treat a refuted link as a dead theory unless a second cause could produce the same effect, and re-measure inherited numbers, with claims about people or ownership held to the same evidence as claims about systems. `SKILL.md` adds a stop rule for tracing a failure back cause by cause: stop at the step that names something you can change that would have prevented it (what produced a state that should never exist, or the code that mishandles a legitimate one), and merge steps past about seven.
 
 ## 0.23.0 - 2026-11-11
 
