@@ -45,6 +45,22 @@ Source: https://github.com/caldoai/skills, `skills/untangle-codebase/SKILL.md`
 This repository's MIT licence applies to the newly written guidance, not to the
 source skill.
 
+## intercom/2x-skills five-whys skill
+
+Source: https://github.com/intercom/2x-skills,
+`plugins/incident-tools/skills/five-whys/SKILL.md` (compared at revision
+`241f2c9d3d4035e4c5723111bec51288799a2606`, MIT licence, Copyright (c) 2026
+Intercom).
+
+- `skills/hr-diagnosing-bugs/references/evidence-discipline.md` and
+  `skills/hr-diagnosing-bugs/SKILL.md`: the claim labels, the four tests for a
+  causal link, the rule to re-measure inherited numbers and the stop rule for a
+  chain of causes are independently written guidance informed by that skill's
+  ground rules and its link tests. No text from the skill is reproduced.
+
+This repository's MIT licence applies to the newly written guidance, not to the
+source skill.
+
 ## Cursor workflow ideas
 
 Source: https://cursor.com/docs/skills

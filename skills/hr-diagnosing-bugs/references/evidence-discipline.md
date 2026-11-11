@@ -20,6 +20,30 @@ when the shared premise is the wrong part. Reasoning and a
 measurement that meet are still one claim. Settle it with something outside
 both. Run a copy of the working fixture instead of comparing the two arguments.
 
+**Label each claim by how you know it.** Mark a claim _measured_ (observed
+directly in this investigation), _derived_ (arithmetic on measured values,
+shown) or _inferred_ (anything else: a mechanism not yet observed, or a figure
+taken from a report you cannot check). An inferred claim names the observation
+that would confirm or refute it, or the report it rests on. Never state an
+inference as fact.
+
+**A cause is not settled until each link to the effect passes four tests.**
+Timing: the cause precedes the effect on a timeline converted to one timezone
+(UTC) before any elapsed-time arithmetic. Mechanism: a named path from cause to
+effect that you observed in the code, config, documentation or a probe.
+Magnitude: the numbers are large enough to explain the effect. Necessity: look
+for an occasion when the same trigger fired without the claimed cause, or
+remove the cause in a probe, and check that the effect did not follow. A link
+whose test has not run yet stays an inference; a link whose test shows the
+opposite is refuted, and the theory is dead (see above).
+
+**Inherited numbers are measured again.** Counts, blast radius and timings from
+earlier tickets, dashboards or drafts are re-measured, not copied; when that is
+not possible, cite the source and label the figure inferred. A claim about
+people or ownership ("no owner", "team X ignored it") needs the same evidence
+as a claim about a system. Prefer a framing you can test: "no standing signal
+prompted review".
+
 **A projection you chose the columns of is not the data.** Rows that look
 identical may differ in a field your query left out. A duplicate, a collision or
 a merged key is a claim about your query before it is a claim about the store.

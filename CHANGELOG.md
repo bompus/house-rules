@@ -4,6 +4,8 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- `hr-diagnosing-bugs`' `references/evidence-discipline.md` adds three rules for a chain of causes: label each claim measured, derived or inferred (an inference names the observation or report it rests on), test each causal link on timing, mechanism, magnitude and necessity (a case where the trigger fired without the cause, or a probe that removes it) and treat a refuted link as a dead theory, and re-measure inherited numbers, with claims about people or ownership held to the same evidence as claims about systems. `SKILL.md` adds a stop rule for tracing a failure back cause by cause: stop at the step that names what produced the bad state, not at the symptom, and merge steps past about seven.
+
 ## 0.23.0 - 2026-11-11
 
 - Multi-agent review rule: when a confirmed review finding marks one case of a pattern (a late poll, a second account, a boundary value), fix the class, not the instance: list the other cases of that pattern within the task's scope as a table of inputs and expected results, check each and fix the ones that fail in the same round of fixes (a case outside the task is parked unless it blocks the task), instead of one case per review round. The always-on `multi-agent` modifier carries one sentence and `rules/references/multi-agent.md` the full rule.

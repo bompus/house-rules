@@ -20,6 +20,20 @@ Source: https://github.com/cursor/plugins (compared at revision `e43c7ee`)
 
 Copyright (c) 2026 Lauren Tan
 
+## intercom/2x-skills (ideas)
+
+Source: https://github.com/intercom/2x-skills (compared at revision
+`241f2c9d3d4035e4c5723111bec51288799a2606`, MIT licence, Copyright (c) 2026
+Intercom)
+
+- `references/evidence-discipline.md` and `SKILL.md`: the claim labels, the four
+  tests for a causal link, the rule to re-measure inherited numbers and the stop
+  rule for a chain of causes are independently written instructions informed by
+  the ground rules and link tests in
+  `plugins/incident-tools/skills/five-whys/SKILL.md`.
+
+No source text is copied; these instructions are independently written.
+
 ## house-rules and MIT permission notice
 
 MIT License
