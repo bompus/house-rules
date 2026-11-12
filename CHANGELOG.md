@@ -4,6 +4,7 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- `hr-sqlite`'s `references/evidence.md` adds a rerun of three measured rows (planner statistics after `PRAGMA optimize`, `synchronous` FULL against NORMAL, and `backup()` against `VACUUM INTO`) on Node 26.13.1 with SQLite 3.54.1. The first figures stay with their versions; the section says the new host, disk and data differ, so the gaps are not attributable to Node or SQLite. Planner statistics still fixed the query (20.4, 6.7 and 8.3 ms to 0.0059 ms); the `synchronous` gap is 7.5 times on this disk, not 87.
 - `hr-diagnosing-bugs`' `references/evidence-discipline.md` adds three rules for a chain of causes: label each claim measured, derived or inferred (an inference names the observation or report it rests on), test each causal link on timing, mechanism, magnitude and necessity (a case where the trigger fired without the cause, or a probe that removes it) and treat a refuted link as a dead theory unless a second cause could produce the same effect, and re-measure inherited numbers, with claims about people or ownership held to the same evidence as claims about systems. `SKILL.md` adds a stop rule for tracing a failure back cause by cause: stop at the step that names something you can change that would have prevented it (what produced a state that should never exist, or the code that mishandles a legitimate one), and merge steps past about seven.
 
 ## 0.23.0 - 2026-11-11
