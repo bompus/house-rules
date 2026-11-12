@@ -70,20 +70,30 @@ unknown.
 
 Three rows above were measured again on 2026-11-12 with Node 26.13.1, whose bundled
 SQLite is 3.54.1 (read with `select sqlite_version()` in every run). The first runs
-were on Linux under WSL2 (ext4 on a virtual disk), Node 26.11.1, SQLite 3.53.4 and a
-15.2 GB copy of an application database. The rerun was on native Linux (xfs on an
-NVMe disk) against the live file of the same application, 13.9 GB, with a writer
-running. Host, disk, file system and data all changed with the versions, so a gap
-between a first figure and a rerun figure cannot be assigned to Node or SQLite. No run
-on Node 26.11.1 was made on the new host. Hyperfine 2.0.0 timed whole commands and
+were on Linux under WSL2 (ext4 on a virtual disk). Where the records state them, they used
+Node 26.11.1 and SQLite 3.53.4 (planner statistics and `backup()`); the Node patch version
+of the first synchronous run and the versions of the first `VACUUM INTO` run, made in the
+`sqlite3` shell, were not recorded. The first planner run used a 15.2 GB copy of an
+application database, made by the first `backup()`; the first `VACUUM INTO` copied that
+application's live file (14 GB); the first synchronous run used a fresh benchmark
+database.
+
+The rerun was on native Linux (xfs on an NVMe disk): the planner on a
+`backup()` copy of the live file of the same application (13.9 GB), both copy arms on
+the live file with a writer running, and the synchronous run on a fresh benchmark
+database on the live file's disk.
+
+Host, disk, file system and data all changed with the versions, so a gap between a first
+figure and a rerun figure cannot be assigned to Node or SQLite. No run on Node 26.11.1
+was made on the new host. Hyperfine 2.0.0 timed whole commands and
 Tinybench 6.2.2 timed operations. Variation is (maximum minus minimum) over the median
 of the runs, and above 25% counts as flagged. **M** applies to every figure below.
 
-| Row                                           | First run                                                                                                            | Rerun on Node 26.13.1                                                                                                                                                                                                                                                                                                                          | Reading                                                                                                                                                                                                         |
-| --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Missing planner statistics                    | One query 10.3 to 12.5 ms on the three largest threads, 0.0075 ms after `PRAGMA optimize`; first optimize 72 to 80 s | The same query text on the three largest threads and one of 40 nodes: 20.4, 6.7, 8.3 and 0.0098 ms with no statistics, 0.0059 ms on all four after `PRAGMA optimize` (130 rows in `sqlite_stat1`). Median of 5 fresh processes per cell, variation 1% to 5%. First `PRAGMA optimize` with the copy's file cache dropped: 9.57, 9.38 and 9.40 s | No regression: the query got faster on every thread and returned the same row and row hash in every process. The plan changed from a search by thread index to a search by primary key                          |
-| `synchronous` FULL to NORMAL (microbenchmark) | 1,170 to 13.4 µs per commit                                                                                          | 119.5 µs (range 118.9 to 120.3, variation 1.2%) to 15.9 µs (15.6 to 16.3, 4.3%) per commit; p99 122 to 132 µs and 17 to 19 µs                                                                                                                                                                                                                  | NORMAL is still about 7.5 times lower, not 87 times: FULL is about 10 times lower on this disk, NORMAL 18% higher, which is inside the flag and not attributable to a version. The disk is the likely cause (U) |
-| Live-database copy                            | `VACUUM INTO` 54 s for 14 GB (the `sqlite3` shell); driver `backup()` 36.4 s for 15.2 GB; one sample each            | `backup()` 5.03, 5.17 and 5.27 s (variation 4.6%); `VACUUM INTO` 6.80, 6.89 and 6.93 s (1.9%); both through `node:sqlite` from a read-only connection to the live file; peak resident memory 59 MB                                                                                                                                             | `VACUUM INTO` took about 1.3 times as long as `backup()` (first run about 1.5 times). Times fall with the disk and a warm file cache (U)                                                                        |
+| Row                                           | First run                                                                                                            | Rerun on Node 26.13.1                                                                                                                                                                                                                                                                                                                          | Reading                                                                                                                                                                                                                                     |
+| --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Missing planner statistics                    | One query 10.3 to 12.5 ms on the three largest threads, 0.0075 ms after `PRAGMA optimize`; first optimize 72 to 80 s | The same query text on the three largest threads and one of 40 nodes: 20.4, 6.7, 8.3 and 0.0098 ms with no statistics, 0.0059 ms on all four after `PRAGMA optimize` (130 rows in `sqlite_stat1`). Median of 5 fresh processes per cell, variation 1% to 5%. First `PRAGMA optimize` with the copy's file cache dropped: 9.57, 9.38 and 9.40 s | Statistics made the query faster on all four threads, with the same row and row hash in every process. Whether 3.54.1 changed the no-statistics time is untested. The plan changed from a search by thread index to a search by primary key |
+| `synchronous` FULL to NORMAL (microbenchmark) | 1,170 to 13.4 µs per commit                                                                                          | 119.5 µs (range 118.9 to 120.3, variation 1.2%) to 15.9 µs (15.6 to 16.3, 4.3%) per commit; p99 of the batch averages 122 to 132 µs and 17 to 19 µs                                                                                                                                                                                            | NORMAL is still about 7.5 times lower, not 87 times: FULL is about 10 times lower on this disk, NORMAL 18% higher, which is inside the flag and not attributable to a version. The disk is the likely cause (U)                             |
+| Live-database copy                            | `VACUUM INTO` 54 s for 14 GB (the `sqlite3` shell); driver `backup()` 36.4 s for 15.2 GB; one sample each            | `backup()` 5.03, 5.17 and 5.27 s (variation 4.6%); `VACUUM INTO` 6.80, 6.89 and 6.93 s (1.9%); both through `node:sqlite` from a read-only connection to the live file; peak resident memory 59 MB                                                                                                                                             | `VACUUM INTO` took about 1.3 times as long as `backup()` (first run about 1.5 times). Times fall with the disk and a warm file cache (U)                                                                                                    |
 
 Workloads, in the order of the table:
 
@@ -102,7 +112,8 @@ Workloads, in the order of the table:
   and one index entry, `COMMIT`) in WAL mode, on the disk that holds the live file. One
   fresh process and database per run, one warmup batch and 10 timed batches, 5 runs per
   arm, alternating. A batch's milliseconds equal the microseconds per commit; the figure
-  is the median of the run medians.
+  is the median of the run medians. Tinybench reports batch statistics, so the p99 is a
+  percentile of batch averages, not of single commits.
 - **Copy.** Whole commands, 3 rounds with the order alternating, one run per arm per
   round, each output deleted after its run. `backup()` ran in one step. The file cache
   was not dropped, so after the first read the source came from memory (770 KB read from
