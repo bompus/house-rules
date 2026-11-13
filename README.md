@@ -1,6 +1,6 @@
 <h1 align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/bompus/house-rules/HEAD/docs/assets/banner-dark.png">
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/bompus/house-rules/HEAD/docs/assets/banner-dark.png?v=1">
     <img src="docs/assets/banner-light.png" alt="house-rules: Working rules and skills for AI coding agents" width="100%">
   </picture>
 </h1>
@@ -24,7 +24,7 @@ Fresh installs select eight skills for setup, review, diagnosis, explanation,
 planning, tests, writing and remaining work. Modifiers start off. Add guidance
 when a task needs it, and let each repository supply its own safeguards.
 
-<p align="center"><img src="docs/assets/overview.png" alt="The four layers: core, opt-in modifiers and your own layer are composed into one rules file, and each repository's AGENTS.md adds to it. Beside them, what a fresh install selects: core rules on, modifiers off, eight skills." width="100%"></p>
+<p align="center"><img src="docs/assets/overview.png?v=1" alt="The four layers: core, opt-in modifiers and your own layer are composed into one rules file, and each repository's AGENTS.md adds to it. Beside them, what a fresh install selects: core rules on, modifiers off, eight skills." width="100%"></p>
 
 If you are an AI agent reading this for your user, the prompt under
 [Evaluate it with your agent](#evaluate-it-with-your-agent) is the evaluation
@@ -289,56 +289,56 @@ changing the configuration.
 
 ## Skills
 
-| Skill                       | Use it to                                                                                                 |
-| --------------------------- | --------------------------------------------------------------------------------------------------------- |
-| `hr-agent-guidance-audit`   | Audit agent guidance for stale or conflicting rules, and decide what to retire or merge.                  |
-| `hr-agent-guidance-refresh` | Re-read guidance that changed since the session started.                                                  |
-| `hr-api-exposure-check`     | Keep API responses to the fields a consumer reads and the caller may see.                                 |
-| `hr-audit-choices`          | List and check the decisions made while implementing a task.                                              |
-| `hr-benchmarking`           | Design, run and assess timing, CPU and memory comparisons; choose tools by the question they answer.      |
-| `hr-better-accessibility`   | Build and review keyboard access, semantics, forms, focus, motion and reflow in web UI.                   |
-| `hr-better-colors`          | Choose and check palettes, semantic tokens, themes, gamut and rendered contrast.                          |
-| `hr-better-interface`       | Review a whole screen or flow through the `hr-better-*` skills into one report; explicit-only.            |
-| `hr-better-layout`          | Build and review grouping, alignment, spacing, responsive layout and clipping.                            |
-| `hr-better-typography`      | Style and review type scales, wrapping, spacing, truncation and font loading.                             |
-| `hr-better-writing`         | Write and review interface labels, errors, empty states and product terminology.                          |
-| `hr-break`                  | Render one component with worst-case content and states and report what breaks; explicit-only.            |
-| `hr-code-review`            | Review a diff against standards and the request, and check what it can break beyond its lines.            |
-| `hr-codebase-design`        | Shape a module interface: small surface, deep implementation, a clean seam; compare two designs.          |
-| `hr-design-exploration`     | Compare visual directions, or variants of one component, and refine toward one design.                    |
-| `hr-diagnosing-bugs`        | Work a hard bug or regression to a confirmed cause.                                                       |
-| `hr-domain-modeling`        | Resolve project terminology into a `CONTEXT.md` glossary and record decisions as ADRs.                    |
-| `hr-explain-code`           | Trace how existing code works, read-only, before changing it.                                             |
-| `hr-explain-interface`      | Explain how a live page or effect was built, or rebuild one from a screenshot; explicit-only.             |
-| `hr-extract-shared-steps`   | Move operations repeated across workflows into shared functions.                                          |
-| `hr-forgotten-work-audit`   | Audit past sessions, plans and handoffs for promised work that dropped off every list.                    |
-| `hr-grilling`               | Stress-test a plan or decision through rounds of questions, each with a recommended answer.               |
-| `hr-handoff`                | Write a handoff a fresh session can resume from.                                                          |
-| `hr-house-rules-setup`      | Choose modifiers, create your layer and connect your hosts.                                               |
-| `hr-issue-tracker-setup`    | Configure project tracker, domain-term and ADR conventions; explicit-only.                                |
-| `hr-lean-plan`              | Write or tighten an implementation plan with the fewest moving parts.                                     |
-| `hr-lessons-sweep`          | Triage lesson candidates, re-check staged lessons and find unrecorded takeaways in trackers.              |
-| `hr-maintainability-review` | Review a diff or entire codebase strictly for structure, over-engineering and leftover scaffolding.       |
-| `hr-manual-qa`              | Give reproducible human checks after reporting agent verification results.                                |
-| `hr-multi-model-panel`      | Get independent opinions from different model families on a question that is not a diff.                  |
-| `hr-navigation-retro`       | Audit navigation failures in selected transcripts and propose verified findability fixes.                 |
-| `hr-ordering-tests`         | Enumerate event orderings through the real code to find race bugs.                                        |
-| `hr-plain-prose`            | Make text people read plain and specific.                                                                 |
-| `hr-ponytail`               | Prefer the simplest adequate implementation: reuse and the standard library before custom code.           |
-| `hr-ponytail-review`        | Review one diff for complexity that can be deleted without changing behavior.                             |
-| `hr-pr-followup`            | Address conflicts, feedback and failing checks for a PR; landing authority; CodeRabbit and cubic gate.    |
-| `hr-progress-report`        | Report current task activity, milestone completion and remaining wall-clock time.                         |
-| `hr-read-reddit`            | Read Reddit feed output while supported; RSS support ends November 13, 2026. Partial web-search fallback. |
-| `hr-read-x-links`           | Read the full content of X posts.                                                                         |
-| `hr-research-shared-links`  | Research a shared link or repository in depth, compare it with your setup and rate each idea.             |
-| `hr-sqlite`                 | Check settings, locking, queries and copies in SQLite code against measured findings.                     |
-| `hr-stock-ui-audit`         | Find and triage template-default styling in frontend code.                                                |
-| `hr-tdd`                    | Implement requested test-first work through one red-green slice at a time; simplify during review.        |
-| `hr-test-audit`             | Decide which new tests are worth keeping and which old ones to prune.                                     |
-| `hr-usage-report`           | Measure where agent usage went by provider, model and role, and chart model comparisons.                  |
-| `hr-what-next`              | Reconcile remaining session work and recommend priorities when asked what comes next.                     |
-| `hr-writing-for-agents`     | Write skills, rules and other documents agents read.                                                      |
-| `hr-writing-pr`             | Write a pull request title and body from the final diff; split work into several PRs.                     |
+| Skill                       | Use it to                                                                                                                     |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `hr-agent-guidance-audit`   | Audit agent guidance for stale or conflicting rules, and decide what to retire or merge.                                      |
+| `hr-agent-guidance-refresh` | Re-read guidance that changed since the session started.                                                                      |
+| `hr-api-exposure-check`     | Keep API responses to the fields a consumer reads and the caller may see.                                                     |
+| `hr-audit-choices`          | List and check the decisions made while implementing a task.                                                                  |
+| `hr-benchmarking`           | Design, run and assess timing, CPU and memory comparisons; choose tools by the question they answer.                          |
+| `hr-better-accessibility`   | Build and review keyboard access, semantics, forms, focus, motion and reflow in web UI.                                       |
+| `hr-better-colors`          | Choose and check palettes, semantic tokens, themes, gamut and rendered contrast.                                              |
+| `hr-better-interface`       | Review a whole screen or flow through the `hr-better-*` skills into one report; explicit-only.                                |
+| `hr-better-layout`          | Build and review grouping, alignment, spacing, responsive layout and clipping.                                                |
+| `hr-better-typography`      | Style and review type scales, wrapping, spacing, truncation and font loading.                                                 |
+| `hr-better-writing`         | Write and review interface labels, errors, empty states and product terminology.                                              |
+| `hr-break`                  | Render one component with worst-case content and states and report what breaks; explicit-only.                                |
+| `hr-code-review`            | Review a diff against standards and the request, and check what it can break beyond its lines.                                |
+| `hr-codebase-design`        | Shape a module interface: small surface, deep implementation, a clean seam; compare two designs.                              |
+| `hr-design-exploration`     | Compare visual directions, or variants of one component, and refine toward one design.                                        |
+| `hr-diagnosing-bugs`        | Work a hard bug or regression to a confirmed cause.                                                                           |
+| `hr-domain-modeling`        | Resolve project terminology into a `CONTEXT.md` glossary and record decisions as ADRs.                                        |
+| `hr-explain-code`           | Trace how existing code works, read-only, before changing it.                                                                 |
+| `hr-explain-interface`      | Explain how a live page or effect was built, or rebuild one from a screenshot; explicit-only.                                 |
+| `hr-extract-shared-steps`   | Move operations repeated across workflows into shared functions.                                                              |
+| `hr-forgotten-work-audit`   | Audit past sessions, plans and handoffs for promised work that dropped off every list.                                        |
+| `hr-grilling`               | Stress-test a plan or decision through rounds of questions, each with a recommended answer.                                   |
+| `hr-handoff`                | Write a handoff a fresh session can resume from.                                                                              |
+| `hr-house-rules-setup`      | Choose modifiers, create your layer and connect your hosts.                                                                   |
+| `hr-issue-tracker-setup`    | Configure project tracker, domain-term and ADR conventions; explicit-only.                                                    |
+| `hr-lean-plan`              | Write or tighten an implementation plan with the fewest moving parts.                                                         |
+| `hr-lessons-sweep`          | Triage lesson candidates, re-check staged lessons and find unrecorded takeaways in trackers.                                  |
+| `hr-maintainability-review` | Review a diff or entire codebase strictly for structure, over-engineering and leftover scaffolding.                           |
+| `hr-manual-qa`              | Give reproducible human checks after reporting agent verification results.                                                    |
+| `hr-multi-model-panel`      | Get independent opinions from different model families on a question that is not a diff.                                      |
+| `hr-navigation-retro`       | Audit navigation failures in selected transcripts and propose verified findability fixes.                                     |
+| `hr-ordering-tests`         | Enumerate event orderings through the real code to find race bugs.                                                            |
+| `hr-plain-prose`            | Make text people read plain and specific.                                                                                     |
+| `hr-ponytail`               | Prefer the simplest adequate implementation: reuse and the standard library before custom code.                               |
+| `hr-ponytail-review`        | Review one diff for complexity that can be deleted without changing behavior.                                                 |
+| `hr-pr-followup`            | Address conflicts, feedback and failing checks for a PR; landing authority; CodeRabbit and cubic gate.                        |
+| `hr-progress-report`        | Report current task activity, milestone completion and remaining wall-clock time.                                             |
+| `hr-read-reddit`            | Read Reddit feed output; Reddit announced RSS support ends November 13, 2026, so feeds can fail. Partial web-search fallback. |
+| `hr-read-x-links`           | Read the full content of X posts.                                                                                             |
+| `hr-research-shared-links`  | Research a shared link or repository in depth, compare it with your setup and rate each idea.                                 |
+| `hr-sqlite`                 | Check settings, locking, queries and copies in SQLite code against measured findings.                                         |
+| `hr-stock-ui-audit`         | Find and triage template-default styling in frontend code.                                                                    |
+| `hr-tdd`                    | Implement requested test-first work through one red-green slice at a time; simplify during review.                            |
+| `hr-test-audit`             | Decide which new tests are worth keeping and which old ones to prune.                                                         |
+| `hr-usage-report`           | Measure where agent usage went by provider, model and role, and chart model comparisons.                                      |
+| `hr-what-next`              | Reconcile remaining session work and recommend priorities when asked what comes next.                                         |
+| `hr-writing-for-agents`     | Write skills, rules and other documents agents read.                                                                          |
+| `hr-writing-pr`             | Write a pull request title and body from the final diff; split work into several PRs.                                         |
 
 The `hr-navigation-retro` skill finds navigation failures in selected tool-call
 transcripts, then proposes fixes verified against current source. Any agent with

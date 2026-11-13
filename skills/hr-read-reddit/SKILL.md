@@ -1,6 +1,6 @@
 ---
 name: hr-read-reddit
-description: Read Reddit posts and comments from Reddit's public feeds (output can omit comments) and search subreddits, with links kept inline. Use whenever a task needs Reddit content or needs to collect links posted on Reddit; generic web fetch and reddit.com JSON are blocked for agents. Reddit's RSS support ends November 13, 2026; a partial search fallback remains.
+description: Read Reddit posts and comments from Reddit's public feeds (output can omit comments) and search subreddits, with links kept inline. Use whenever a task needs Reddit content or needs to collect links posted on Reddit; generic web fetch and reddit.com JSON are blocked for agents. Reddit announced that RSS support ends November 13, 2026, so feeds can fail; a partial search fallback remains.
 ---
 
 # Read Reddit
@@ -12,9 +12,10 @@ returned by Reddit's public Atom feeds without a key. Feed output can omit
 comments; do not present it as an exhaustive thread.
 
 [Reddit's announcement](https://www.reddit.com/r/modnews/comments/1wubgvt/continuing_our_infrastructure_updates_whats/)
-says RSS support ends November 13, 2026. Until then, try the feeds below and
-report any retrieval failure. After the cutoff, use the partial search fallback
-below rather than assuming the feeds remain supported.
+says RSS support ends November 13, 2026, so a feed request can fail. Try the feeds
+below, report any retrieval failure and use the partial search fallback below when
+one fails; do not assume a feed is supported. On that day search feeds answered
+HTTP 403 while a thread feed still answered.
 
 Read feeds with:
 
