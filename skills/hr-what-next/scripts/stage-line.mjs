@@ -1,19 +1,20 @@
 // Reading an "Approved, not built:" ledger line: its `trigger:` clause says what the stage waits on, and each
 // offer the rest of the line names is judged by its own clause.
 
-// The real `trigger:` field (the last one not written as `trigger:` in backticks) and its clause, which ends at ";",
-// `recheck:` or `done-when:`. Offers written after the clause stay part of the rest of the line.
+// The real `trigger:` field (the last one outside a Markdown code span) and its clause, which ends at ";", `recheck:`
+// or `done-when:` outside code. Offers written after the clause stay part of the rest of the line.
 /** @param {string} text @returns {{ trigger: string, rest: string }} */
 export function splitStage(text) {
-  const starts = [...text.matchAll(/(?<!`)\btrigger:/gi)];
-  const start = starts.at(-1)?.index;
+  // Code spans are blanked, same length, so a field name or ";" quoted in code is not read as syntax.
+  const plain = text.replace(/`[^`]*`/g, (span) => " ".repeat(span.length));
+  const start = [...plain.matchAll(/\btrigger:/gi)].at(-1)?.index;
   if (start === undefined) {
     return { trigger: "", rest: text };
   }
-  const after = text.slice(start + "trigger:".length);
-  const end = after.search(/;|\b(?:recheck|done-when):/i);
-  const cut = end < 0 ? after.length : end;
-  return { trigger: after.slice(0, cut), rest: text.slice(0, start) + after.slice(cut) };
+  const from = start + "trigger:".length;
+  const end = plain.slice(from).search(/;|\b(?:recheck|done-when):/i);
+  const cut = end < 0 ? text.length : from + end;
+  return { trigger: text.slice(from, cut), rest: text.slice(0, start) + text.slice(cut) };
 }
 
 // What the line says about an offer's reply: asked, sent or relayed, or a reply, answer or selection awaited.
