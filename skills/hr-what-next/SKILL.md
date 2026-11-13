@@ -22,8 +22,11 @@ completed state before the completion message; a report alone does not do so.
    floor whatever the scope: every question from an earlier offer in this
    conversation that the user has not answered, every item deferred with only the
    user's selection as its trigger, every owned uncommitted file, unpushed commit
-   or held checkout, and the number of other live ledger items (deferred,
-   awaiting selection, blocked or follow-up) with a link to the ledger.
+   or held checkout, every open line that starts "Approved, not built:" (an
+   unbuilt stage of approved work: it is not parked, so it is eligible for the
+   offer; `scripts/check-open-work.mjs` lists it), and the number of other live
+   ledger items (deferred, awaiting selection, blocked or follow-up) with a link
+   to the ledger.
    When the session keeps a plan file, `scripts/check-open-work.mjs <plan>`
    computes this floor (add `--checkout <path>` for each checkout touched, or
    `--app-managed <path>` for one an app retires, which is reported but not a

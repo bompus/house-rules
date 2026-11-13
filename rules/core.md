@@ -19,7 +19,8 @@ A completed step, a status answer or a notification does not skip that check:
    "next I'll…" line or an offer to continue does not end the work.
 2. The current request needs a decision or the check finds a ready candidate
    needing selection: give an offer using § Offers. Include decisions needed to
-   finish authorized work and owned changes that need landing. Present the next
+   finish authorized work, owned changes that need landing and the next unbuilt
+   stage of approved work (§ Session purpose). Present the next
    ready decision on the session's purpose automatically; the user need not ask
    "next?". Parked items (§ Session purpose) are not candidates.
 3. Otherwise, answer the current request and state the remaining blockers or
@@ -218,6 +219,14 @@ parked work or a broader scope, or evidence shows an item blocks selected work.
 Finishing the purpose does not widen that scope. Keep parked items in the ledger;
 counting them does not make them eligible for offers. Report a security or
 production risk at once.
+
+An unbuilt stage of work the user approved (a later phase, "PR N", a follow-up
+pull request of an approved design) is open work, never a parked item. When the
+stage is deferred, write it as its own open ledger line that starts "Approved, not
+built:" (`- [ ]`, not deferred) and names the stage and what it waits on. It is a
+candidate for the offer when the stage before it lands and on every "next?"
+(§ End of every reply); one such line per stage is the project's list, kept in the
+plan's Ledger, and no issue is created for it unless the user asks.
 
 A parked item becomes its own top-level conversation when the user asks, or
 under their standing preference for spin-offs. When parked items are in the

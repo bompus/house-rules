@@ -107,6 +107,28 @@ test("a deferral whose only trigger is the user's own action is listed as awaiti
   expect(text).toContain("3 awaiting your yes/no");
 });
 
+test("an open line that starts 'Approved, not built' is listed as an unbuilt approved stage, a deferred one is a finding", () => {
+  const { plan } = setup({
+    ledger: [
+      "- [ ] Approved, not built: PR 5 betting-line points on the card (design approved 1a; after PR 4 lands)",
+      "- [ ] approved, not built: weights history stage 2",
+      "- [~] Approved, not built: parked by mistake - trigger: user selects",
+      "- [ ] a: an ordinary open line that says approved, not built later",
+      "- [x] Approved, not built: PR 3 (built) ... evidence: merged",
+    ],
+  });
+  const { code, report } = check(plan);
+  expect(code).toBe(2);
+  expect(report.unbuiltStages).toHaveLength(2);
+  expect(report.unbuiltStages.join("\n")).toContain("PR 5 betting-line points");
+  expect(report.findings.join("\n")).toContain(
+    "L8 is an unbuilt stage of approved work filed as deferred",
+  );
+  const text = spawnSync(process.execPath, [script, plan], { encoding: "utf8" }).stdout;
+  expect(text).toContain("approved, not built: L6 [ ] Approved, not built: PR 5");
+  expect(text).toContain("2 approved, not built");
+});
+
 test("a deferral with a dated, event or compound trigger is not listed as awaiting a yes or no", () => {
   const { plan } = setup({
     ledger: [

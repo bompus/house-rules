@@ -8,6 +8,9 @@
 // trigger text, which must be the user plus a verb such as selects, picks, decides, asks or approves and
 // at most a short object ("it", "the backlog"); a trigger with a date, event or another condition
 // stays an ordinary deferred item. The group is a subset of `open` and does not change the exit code.
+// "approved, not built" lists the open lines that start "Approved, not built": the stages of approved work that
+// were deferred, which stay candidates for every "next?" and the offer after the stage before them lands. A deferred
+// (`[~]`) line that starts this way is a finding: it was filed in the wrong bucket.
 // "close-out due" prints when every open item is deferred and the plan is not completed: the session's work
 // is finished, so the user owes a decision on each item and the reply offers All done or Pause. A plan whose
 // Status is paused without a done line recording the user's Pause choice is a finding; with one, the pause
@@ -59,6 +62,7 @@ import { basename, dirname, join, resolve, sep } from "node:path";
  * @property {string | null} owner
  * @property {string[]} open
  * @property {string[]} awaitingUser
+ * @property {string[]} unbuiltStages
  * @property {string[]} unansweredOffers
  * @property {string[]} stale
  * @property {string[]} recheckDue
@@ -77,6 +81,8 @@ import { basename, dirname, join, resolve, sep } from "node:path";
 const usage =
   "usage: check-open-work.mjs <plan.md> [--checkout <path>]... [--app-managed <path>]... [--scratch <dir>] [--repo <owner/repo>] [--offline] [--today <YYYY-MM-DD>] [--archive] [--json] [--session <id> --turn <id>]\n" +
   'The output lists deferred items whose trigger is only the user\'s own action ("user selects", "user asks for the backlog") as "awaiting your yes/no"; this is a text match, see the header.';
+// An unbuilt stage of work the user approved (a later phase, "PR N"): an open line that starts this way, never a deferred one.
+const UNBUILT_STAGE = /^approved,? not built\b/i;
 const TERMINAL_STATUS = /^(completed?|done|archived)\b/i;
 const COMPLETED_STATUS = /^completed\b/i;
 const PAUSED_STATUS = /^paused\b/i;
@@ -700,6 +706,7 @@ async function run(options) {
     owner: plan.owner ?? null,
     open: [],
     awaitingUser: [],
+    unbuiltStages: [],
     unansweredOffers: [],
     stale: [],
     recheckDue: [],
@@ -732,6 +739,16 @@ async function run(options) {
     );
   }
   report.awaitingUser = open.filter(awaitsUser).map(row);
+  report.unbuiltStages = open
+    .filter((item) => item.mark === " " && UNBUILT_STAGE.test(item.text))
+    .map(row);
+  for (const item of open) {
+    if (item.mark === "~" && UNBUILT_STAGE.test(item.text)) {
+      report.findings.push(
+        `L${item.line} is an unbuilt stage of approved work filed as deferred; make it an open line (§ Session purpose)`,
+      );
+    }
+  }
   if (TERMINAL_STATUS.test(plan.status ?? "") && open.length) {
     report.findings.push(
       `Status says "${plan.status}" but ${open.length} ledger item(s) are open or deferred`,
@@ -896,6 +913,7 @@ async function main() {
     for (const [label, rows] of /** @type {[string, string[]][]} */ ([
       ["error", report.errors],
       ["open", report.open],
+      ["approved, not built", report.unbuiltStages],
       ["awaiting your yes/no", report.awaitingUser],
       ["unanswered offer", report.unansweredOffers],
       ["possibly finished", report.stale],
@@ -923,7 +941,7 @@ async function main() {
         ? "result: nothing open"
         : code === 1
           ? `result: invalid input${report.invalidPlan ? " (the checks that read only the plan text still ran)" : ""}`
-          : `result: ${report.open.length} open item(s) (${report.awaitingUser.length} awaiting your yes/no), ${report.findings.length} finding(s)`,
+          : `result: ${report.open.length} open item(s) (${report.awaitingUser.length} awaiting your yes/no, ${report.unbuiltStages.length} approved, not built), ${report.findings.length} finding(s)`,
     );
   }
   process.exit(code);
