@@ -110,7 +110,7 @@ test("a deferral whose only trigger is the user's own action is listed as awaiti
 test("an open line that starts 'Approved, not built' is listed as an unbuilt approved stage, a deferred one is a finding", () => {
   const { plan } = setup({
     ledger: [
-      "- [ ] Approved, not built: PR 5 betting-line points on the card (design approved 1a; after PR 4 lands)",
+      "- [ ] Approved, not built: PR 5 betting-line points on the card (design approved 1a) trigger: PR 4 lands",
       "- [ ] approved, not built: weights history stage 2",
       "- [~] Approved, not built: parked by mistake - trigger: user selects",
       "- [ ] a: an ordinary open line that says approved, not built later",
@@ -127,6 +127,39 @@ test("an open line that starts 'Approved, not built' is listed as an unbuilt app
   const text = spawnSync(process.execPath, [script, plan], { encoding: "utf8" }).stdout;
   expect(text).toContain("approved, not built: L6 [ ] Approved, not built: PR 5");
   expect(text).toContain("2 approved, not built");
+});
+
+test("approved stages that name answered offers are not unanswered offers, and a genuinely open offer still counts", () => {
+  const { plan } = setup({
+    ledger: [
+      "- [ ] Approved, not built: search stage, approved in Offer SEARCH-1 trigger: PR 4 lands",
+      "- [ ] Approved, not built: export stage, approved in Offer SEARCH-2 trigger: PR 5 lands",
+      "- [ ] Approved, not built: sync stage, approved in Offer SEARCH-3 trigger: PR 6 lands",
+      "- [ ] Offer DEMO-9 question 1 still unanswered",
+    ],
+  });
+  const { report } = check(plan);
+  expect(report.unansweredOffers).toHaveLength(1);
+  expect(report.unansweredOffers.join("\n")).toContain("DEMO-9");
+});
+
+test("an approved stage keeps its whole text, trigger included, in text and JSON output", () => {
+  const trigger = "trigger: the export stage lands and its schema is frozen after the review round";
+  const { plan } = setup({
+    ledger: [`- [ ] Approved, not built: ${"a long stage description ".repeat(5)}${trigger}`],
+  });
+  const { report } = check(plan);
+  expect(report.unbuiltStages[0]).toContain(trigger);
+  const text = spawnSync(process.execPath, [script, plan], { encoding: "utf8" }).stdout;
+  expect(text).toContain(trigger);
+});
+
+test("an open approved stage with a recheck date is listed due when the date arrives", () => {
+  const { plan } = setup({
+    ledger: ["- [ ] Approved, not built: PR 5 ... trigger: upstream release recheck: 2026-10-01"],
+  });
+  const { report } = check(plan, "--today", "2026-10-02");
+  expect(report.recheckDue.join("\n")).toContain("overdue since 2026-10-01");
 });
 
 test("a deferral with a dated, event or compound trigger is not listed as awaiting a yes or no", () => {

@@ -680,7 +680,8 @@ function unansweredOffers(items) {
   /** @type {Map<string, string>} */
   const unanswered = new Map();
   for (const item of items) {
-    if (item.mark === " ") {
+    // A stage that names the offer approving it records an answer, not an open offer.
+    if (item.mark === " " && !UNBUILT_STAGE.test(item.text)) {
       for (const id of offersNamed(item.text)) {
         if (!closed.has(id) && !unanswered.has(id)) {
           unanswered.set(id, row(item));
@@ -739,9 +740,10 @@ async function run(options) {
     );
   }
   report.awaitingUser = open.filter(awaitsUser).map(row);
+  // Whole text: the stage's `trigger:` is at the end, and a report needs it to say what the stage waits on.
   report.unbuiltStages = open
     .filter((item) => item.mark === " " && UNBUILT_STAGE.test(item.text))
-    .map(row);
+    .map((item) => `L${item.line} [ ] ${item.text}`);
   for (const item of open) {
     if (item.mark === "~" && UNBUILT_STAGE.test(item.text)) {
       report.findings.push(
