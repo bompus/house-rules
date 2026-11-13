@@ -12,7 +12,9 @@ run instead of polling, and keep workers from delegating further unless asked;
 a fork is no exception.
 
 Brief a fresh worker by default: its brief is its only context, so state the
-goal, the files and what is ruled out. Where the host offers a fork (a worker
+goal, the files and what is ruled out, and that it never offers or asks the user
+anything: it returns any choice, with options and a recommendation, in its final
+report, and you decide or ask the user. Where the host offers a fork (a worker
 that inherits the whole conversation), use one only when the task depends on so
 many decisions from the conversation that a brief would be long or lose them;
 a fork costs more context and time than a brief. Never fork a reviewer or panel
@@ -142,8 +144,10 @@ On a host whose delegated tasks run through T3 Code (`delegate_task`), the T3 se
 ### Reading a T3 delegated task's progress
 
 How a parent thread tells whether a task from `delegate_task` is working, waiting
-or stuck. Two events wake the parent: the task finishing, and a user question
-from the child, which also ends a `mode=wait` call early (`hasPendingQuestion`).
+or stuck. Two events wake the parent: the task finishing, and a question
+pending in the child (`hasPendingQuestion`), which also ends a `mode=wait` call
+early. A brief forbids a child to ask the user, so a pending question means the
+brief lacked that rule or the child broke it.
 An approval request does not send an asynchronous wake. A blocking `mode=wait`
 returns `pendingApproval` on servers with pingdotgg/t3code #20037. Read the
 fresh request in the child; that result grants no authority to approve it.
@@ -189,8 +193,9 @@ for progress.
   (`t3_thread_read` with `limit: 1`, `maxCharsPerItem: 1`, `runLimit: 1`) must show
   `pendingRequestCount` 0 and an `updatedAt` after the start. A count above zero
   is not by itself a blockage: read the pending requests first (see
-  `pendingRequestCount` below) and handle a legitimate question instead of
-  interrupting. Interrupt with `t3_thread_interrupt` only when the child waits
+  `pendingRequestCount` below) and handle a question by deciding it or asking the
+  user, then answering it in the child, instead of interrupting; fix the brief.
+  Interrupt with `t3_thread_interrupt` only when the child waits
   on an approval nobody will see, or the stall check under "Is it stuck?"
   (pending requests, then the newest activity) confirms nothing is moving.
   Say so to the user and relaunch only after fixing the cause. Do not poll beyond this check while
