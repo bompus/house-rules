@@ -211,7 +211,10 @@ newest first, and their `limit` and `maxCharsPerItem` defaults differ. Read item
 
 The newest item is the one with the highest `position`. To read the end of a thread,
 take `itemCount` N from the header and read from `afterPosition` max(0, N minus 60) with
-`limit` 30, following `nextPosition` while `hasMore` is true. The thread header carries:
+`limit` 30, following `nextPosition` while `hasMore` is true. A check for background
+work reads back (N minus 120, then 240 and so on) until an item is older than the
+current run's `startedAt`, because a command started early can still be running. The
+thread header carries:
 
 - `status` and `activeRunId`: whether a run is in progress.
 - `updatedAt`: the latest change to the thread; each activity item has its own.
@@ -263,8 +266,8 @@ behavior.
   background command or subagent of that run is still running: check the
   message against the active run's identity or `startedAt`, ignore sentinel
   messages from earlier runs in the same thread, which a follow-up in that
-  thread leaves behind, and check the newest activity for live background
-  work. Read the answer first; while background work runs, wait for it
+  thread leaves behind, and check the run's activity for live background
+  work (read back to the run's start, as under "While it runs"). Read the answer first; while background work runs, wait for it
   instead of cancelling, then `task_cancel`. Any item over 10 minutes
   old without the sentinel is only a trigger to investigate, as above: a long
   command can run quietly for longer than that. Cancel after confirming a
@@ -298,7 +301,7 @@ behavior.
   ignore any line older than the current run's `startedAt` (from the header of `t3_thread_read`). The line is a prompt to
   inspect, not the end of the task: read the end of the thread (as under "While it runs"), confirm the last assistant item belongs to the
   current run and is the report, and that no background command, nested delegate or queued turn of the
-  run is still working, then `task_cancel`. The `turn-ended` time minus the run's start is the model
+  run is still working (read back to the run's start), then `task_cancel`. The `turn-ended` time minus the run's start is the model
   turn's duration; a review that waits on background or delegated work is complete only when the last
   of that work settles, so time it to that moment.
 - Measured once: `run.completed` reached the log exactly 8 h 00 min after `turn-ended` (06:45:28.009Z,
