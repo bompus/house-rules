@@ -40,6 +40,6 @@ chose text only (the opt-out above).
    hosts it arrives as a new turn.
 
 With no such tool, or when the tool fails, send the text offer alone and call no
-substitute. When you answer a card a delegated agent raised despite § Offers, key each answer by
+substitute. When you answer a card a delegated agent raised despite § End of every reply, key each answer by
 the question id in the request; some hosts end that agent's first run while its
 card waits, so wait for the run the answer starts.

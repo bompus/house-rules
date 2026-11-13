@@ -17,7 +17,7 @@ An incomplete worker report is a checkpoint. A worker with a background command
 or subagent still running is not done. Verify reports against evidence and use
 host durations or timestamps for elapsed time. Keep workers from delegating
 further unless asked. Say in each worker's brief that it never offers or asks the
-user (§ Offers). Never fork a reviewer or panel seat: a fork inherits the
+user (§ End of every reply). Never fork a reviewer or panel seat: a fork inherits the
 author's reasoning, so it is not independent.
 
 Give implementers the task, file boundaries, public APIs and architectural

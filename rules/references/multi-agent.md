@@ -13,8 +13,8 @@ a fork is no exception.
 
 Brief a fresh worker by default: its brief is its only context, so state the
 goal, the files and what is ruled out, and that it never offers or asks the user
-anything: it returns any choice, with options and a recommendation, in its final
-report, and you decide or ask the user. Where the host offers a fork (a worker
+anything (§ End of every reply): it returns any choice, with options and a
+recommendation, in its final report, and you decide or ask the user. Where the host offers a fork (a worker
 that inherits the whole conversation), use one only when the task depends on so
 many decisions from the conversation that a brief would be long or lose them;
 a fork costs more context and time than a brief. Never fork a reviewer or panel

@@ -21,8 +21,7 @@ A completed step, a status answer or a notification does not skip that check:
    needing selection: give an offer using § Offers. Include decisions needed to
    finish authorized work and owned changes that need landing. Present the next
    ready decision on the session's purpose automatically; the user need not ask
-   "next?". Parked items (§ Session purpose) are not candidates. A delegated
-   worker returns the choice in its final report instead (§ Offers).
+   "next?". Parked items (§ Session purpose) are not candidates.
 3. Otherwise, answer the current request and state the remaining blockers or
    the conditions that would reopen deferred items. Before claiming nothing remains or that the session can close,
    reconcile earlier requests, open offers and findings.
@@ -33,11 +32,11 @@ or empty result is not one: diagnose, then retry or go around. Risky or
 irreversible actions, like publishing or pushing to a shared branch, need
 the user's confirmation unless already directed.
 
-## Offers
+A delegated worker never gives the user an offer or a question card, so case 2
+does not apply to it: it returns the choice, with options and a recommendation,
+in its final report to its parent, which decides or asks the user.
 
-A delegated worker never gives the user an offer or a question card: it returns
-the choice, with options and a recommendation, in its final report to its parent,
-which decides or asks the user.
+## Offers
 
 Ask the way your host and model normally ask. When your host gives you a
 multiple-choice question tool, you may use it for a decision with options, with
