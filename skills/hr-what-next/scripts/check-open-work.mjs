@@ -83,6 +83,7 @@ const usage =
   'The output lists deferred items whose trigger is only the user\'s own action ("user selects", "user asks for the backlog") as "awaiting your yes/no"; this is a text match, see the header.';
 // An unbuilt stage of work the user approved (a later phase, "PR N"): an open line that starts this way, never a deferred one.
 const UNBUILT_STAGE = /^approved,? not built\b/i;
+const PENDING_OFFER = /\b(?:asked|pending|unanswered)\b/i;
 const TERMINAL_STATUS = /^(completed?|done|archived)\b/i;
 const COMPLETED_STATUS = /^completed\b/i;
 const PAUSED_STATUS = /^paused\b/i;
@@ -680,8 +681,8 @@ function unansweredOffers(items) {
   /** @type {Map<string, string>} */
   const unanswered = new Map();
   for (const item of items) {
-    // A stage that names the offer approving it records an answer, not an open offer.
-    if (item.mark === " " && !UNBUILT_STAGE.test(item.text)) {
+    // An offer a stage line names is the approval it records, unless the line says the offer was asked and is pending.
+    if (item.mark === " " && (!UNBUILT_STAGE.test(item.text) || PENDING_OFFER.test(item.text))) {
       for (const id of offersNamed(item.text)) {
         if (!closed.has(id) && !unanswered.has(id)) {
           unanswered.set(id, row(item));
@@ -740,7 +741,7 @@ async function run(options) {
     );
   }
   report.awaitingUser = open.filter(awaitsUser).map(row);
-  // Whole text: the stage's `trigger:` is at the end, and a report needs it to say what the stage waits on.
+  // Whole text: a report needs the stage's `trigger:`, which a 90-character row can cut off.
   report.unbuiltStages = open
     .filter((item) => item.mark === " " && UNBUILT_STAGE.test(item.text))
     .map((item) => `L${item.line} [ ] ${item.text}`);

@@ -223,8 +223,9 @@ production risk at once.
 An unbuilt stage of work the user approved (a later phase, "PR N", a follow-up
 pull request of an approved design) is open work, never a parked item. When the
 stage is deferred, write it as its own open ledger line that starts "Approved, not
-built:" (`- [ ]`, not deferred), names the stage and ends with `trigger: <what it
-waits on>` (and `recheck: YYYY-MM-DD` when that is another thread). It is a
+built:" (`- [ ]`, not deferred), names the stage and carries `trigger: <what it
+waits on>` (and `recheck: YYYY-MM-DD` when that is another thread; a `done-when:`
+clause, if any, comes last). It is a
 candidate for the offer when the stage before it lands and on every "next?"
 (§ End of every reply); one such line per stage is the project's list, kept in the
 plan's Ledger, and no issue is created for it unless the user asks. A session that

@@ -143,6 +143,30 @@ test("approved stages that name answered offers are not unanswered offers, and a
   expect(report.unansweredOffers.join("\n")).toContain("DEMO-9");
 });
 
+test("a stage line that says its offer was asked and is pending counts as an unanswered offer", () => {
+  const { plan } = setup({
+    ledger: [
+      "- [ ] Offer DEMO-1 question 1 still unanswered",
+      "- [ ] Offer DEMO-2 question 1 still unanswered",
+      "- [ ] Approved, not built: export stage, asked in Offer NEXT-3, reply pending trigger: PR 4 lands",
+    ],
+  });
+  const { report } = check(plan);
+  expect(report.unansweredOffers).toHaveLength(3);
+  expect(report.warnings.join("\n")).toContain("3 offers are open and unanswered");
+});
+
+test("a stage line with trigger, recheck and a final done-when clause is accepted", () => {
+  const { plan } = setup({
+    ledger: [
+      "- [ ] Approved, not built: PR 5 trigger: PR 4 lands recheck: 2099-01-01 done-when: pr-merged acme/tool#5",
+    ],
+  });
+  const { report } = check(plan, "--offline");
+  expect(report.errors).toEqual([]);
+  expect(report.unbuiltStages).toHaveLength(1);
+});
+
 test("an approved stage keeps its whole text, trigger included, in text and JSON output", () => {
   const trigger = "trigger: the export stage lands and its schema is frozen after the review round";
   const { plan } = setup({
