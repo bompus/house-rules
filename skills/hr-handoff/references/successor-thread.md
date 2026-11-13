@@ -158,13 +158,16 @@ The host adapter for the steps above; the tool calls are T3's, and each takes
 - `t3_thread_launch` has no pin or snooze field. It takes `projectId` (omitted:
   the launcher's own project), `scratch: true` (a new scratch folder, not the
   outgoing thread's) and `environmentId` (omitted: the launcher's own
-  environment). Pass the outgoing thread's `projectId` from `t3_thread_read`,
+  environment). Pass the outgoing thread's `projectId` from a header-only `t3_thread_read` (`limit: 1`,
+  `maxCharsPerItem: 1`, `runLimit: 1`),
   `scratch` only when its record has none, and its `environmentId` (the second
   part of its thread link). Then call `t3_thread_organize` on the successor's
   `threadId`: `action: pin` when the outgoing thread is pinned, and `snooze`
   with its `snoozedUntil` when it is snoozed. Pin and snooze are separate; set
   each that applies, with `unpin` or `unsnooze` for a change made meanwhile.
-- `t3_thread_read` and `t3_thread_list` show `projectId`, `title`, `settled`,
+- The header of `t3_thread_read` (a header-only read, as above) and `t3_thread_list` (newest
+  first; state `limit`, 100 at most, and follow `cursor` while `nextCursor` is set, because
+  the default differs between T3 builds) show `projectId`, `title`, `settled`,
   `snoozed`, `snoozedUntil` and `archived`, but not the pin. Read the pin as
   `pinnedAt` in the local state database of the environment the thread lives
   on: the `payload_json` of its row in `orchestration_v2_projection_threads`,
@@ -175,5 +178,5 @@ The host adapter for the steps above; the tool calls are T3's, and each takes
   the launch, and read the successor's back with the same call.
 - `t3_thread_organize` with `action: settle`, then `archive`. A thread's own
   settle applies at the end of its turn and a failed turn or queued message
-  leaves it active, so verify with `t3_thread_read` after the run ends.
+  leaves it active, so verify with a header-only `t3_thread_read` after the run ends.
   `unarchive` undoes a premature archive, for the repair in step 4.

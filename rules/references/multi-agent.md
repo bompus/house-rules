@@ -185,7 +185,8 @@ for progress.
 - Ask for a bounded result: name what the report must contain and the stop
   cases as a list in the prompt. Give no word limit; a model that follows limits
   closely meets one by dropping findings.
-- Check once about two minutes after launching: `t3_thread_read` must show
+- Check once about two minutes after launching: a header-only read of the child
+  (`t3_thread_read` with `limit: 1`, `maxCharsPerItem: 1`, `runLimit: 1`) must show
   `pendingRequestCount` 0 and an `updatedAt` after the start. A count above zero
   is not by itself a blockage: read the pending requests first (see
   `pendingRequestCount` below) and handle a legitimate question instead of
@@ -200,9 +201,17 @@ for progress.
 
 #### While it runs
 
-Read the child's `childThreadId` with `t3_thread_read` and `view=activity`. Use a
-small `limit` and `maxCharsPerItem`, then continue with `afterPosition`; a full
-read of a long thread is very large. The thread header carries:
+Read the child's `childThreadId` with `t3_thread_read`. Every read returns the
+thread header, so a header-only read is `limit: 1`, `maxCharsPerItem: 1`,
+`runLimit: 1`. T3 builds differ in what a read does by default (pingdotgg/t3code
+#33428): with no `afterPosition` one returns the oldest items first and another the
+newest first, and their `limit` and `maxCharsPerItem` defaults differ. Read items with
+`view=activity` and state `afterPosition` (an integer of 0 or more), `limit` and
+`maxCharsPerItem` in every call; a full read of a long thread is very large.
+
+The newest item is the one with the highest `position`. To read the end of a thread,
+take `itemCount` N from the header and read from `afterPosition` max(0, N minus 60) with
+`limit` 30, following `nextPosition` while `hasMore` is true. The thread header carries:
 
 - `status` and `activeRunId`: whether a run is in progress.
 - `updatedAt`: the latest change to the thread; each activity item has its own.
@@ -218,7 +227,8 @@ read of a long thread is very large. The thread header carries:
 A running child whose `updatedAt` has not moved for a window you choose may be
 stalled. No threshold is documented. A model can reason silently for minutes, so
 a quiet interval alone is not failure: check `pendingRequestCount` first, then
-read the newest activity item, then decide whether to wait or `task_cancel`.
+read the newest activity item (the end of the thread, as under "While it runs"),
+then decide whether to wait or `task_cancel`.
 `task_cancel` also stops queued turns in the backing thread. From nightly 3373
 (pingdotgg/t3code #21487) it removes the task's own queued run even while the
 thread's queue is held, leaves other queued work in place, and the parent task
@@ -241,9 +251,9 @@ behavior.
 
 - End every brief for a panel seat with a fixed last line, such as
   `END-OF-REPORT`, and say it is the last thing the seat writes.
-- Keep the `taskId` and the `childThreadId`. Read the child with
-  `t3_thread_read` and `view=activity`, a small `limit`, and `itemId` for the full
-  text of a long answer.
+- Keep the `taskId` and the `childThreadId`. Read the child as
+  under "While it runs" (an explicit `afterPosition`, `limit` and `maxCharsPerItem`,
+  the last large enough for the report), and `itemId` for the rest of a longer answer.
 - Rules of thumb, not T3 contract. Because these children send no completion
   wake, bounded follow-up reads replace it: check at the intervals the task's
   expected duration suggests, not continuously. A reasoning or tool item under
@@ -260,7 +270,8 @@ behavior.
   command can run quietly for longer than that. Cancel after confirming a
   stall, or at a timeout selected for the task in advance, not on age alone.
 - Cancelling shows the task as cancelled or interrupted, not `result_available`.
-  Take the result from the thread read. `t3_thread_interrupt` on such a child
+  Take the result from the end of the thread, read as under "While it runs".
+  `t3_thread_interrupt` on such a child
   closed it in about 10 seconds, the SDK's interrupt timeout.
 - A finish signal without the sentinel: T3 writes the SDK's `turn-ended` update to the child's
   provider log, `<T3 home>/userdata/logs/provider/events.thread-delegated-task-command-3amcp-3a<mcp-id>*.log`
@@ -284,8 +295,8 @@ behavior.
   a `cut` after the `grep` stayed silent through a finished review). Re-arming after the Monitor
   expires is the same command. Reading from the start replays older events, and a follow-up in the same
   child thread leaves earlier `turn-ended` lines in the file: each line starts with its UTC timestamp, so
-  ignore any line older than the current run's `startedAt` (from `t3_thread_read`). The line is a prompt to
-  inspect, not the end of the task: read the thread, confirm the last assistant item belongs to the
+  ignore any line older than the current run's `startedAt` (from the header of `t3_thread_read`). The line is a prompt to
+  inspect, not the end of the task: read the end of the thread (as under "While it runs"), confirm the last assistant item belongs to the
   current run and is the report, and that no background command, nested delegate or queued turn of the
   run is still working, then `task_cancel`. The `turn-ended` time minus the run's start is the model
   turn's duration; a review that waits on background or delegated work is complete only when the last
