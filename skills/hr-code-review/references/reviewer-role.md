@@ -3,7 +3,9 @@
 Use this brief when a host lets you define a standing reviewer, or when you hand
 a review to a read-only sub-agent. The parent supplies intent, the diff (or, when it is too large to include, the head, the base
 and the path of a file inside the review root where the parent wrote the diff, because a reviewer
-with only read and search tools cannot run a comparison command), changed paths and verification evidence, and names every
+with only read and search tools cannot run a comparison command; the parent leaves out of that
+file any path the review must not read (secrets, `.env` files, credentials) and lists the paths
+it left out, because a saved diff is as readable to the reviewer as any file in the root), changed paths and verification evidence, and names every
 model that wrote any part of the reviewed change, committed or not (vendor, name, version, effort
 if known), or says that none did, so the reviewer can check that it is not one of them. The reviewer works within that scope.
 

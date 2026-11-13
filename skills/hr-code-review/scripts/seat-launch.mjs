@@ -46,6 +46,9 @@ export const LOGIN_PREFIXES = {
 // ../references/acp-client.md.
 /** @type {Record<string, string[]>} */
 export const LOGIN_NAMES = {
+  // codex-acp passes MODEL_PROVIDER (a provider name, not a path) to Codex for new sessions (its README, "Runtime
+  // options"; dist/index.js startAcpServer, 2.6.0); without it a seat cannot use the provider the caller selected.
+  codex: ["MODEL_PROVIDER"],
   claude: [
     "CLAUDE_CONFIG_DIR",
     "CLAUDE_CODE_OAUTH_TOKEN",

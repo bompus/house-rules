@@ -110,6 +110,24 @@ test(
     assert.deepEqual(Object.keys(env).sort(), ["FAKE_KEEP", "GROK_HOME"]);
   },
 );
+test(
+  "a Codex seat keeps MODEL_PROVIDER, which codex-acp passes to Codex, and no other seat does",
+  POSIX,
+  () => {
+    const env = {
+      ...ENV,
+      MODEL_PROVIDER: "gateway",
+      DEFAULT_AUTH_REQUEST: "{}",
+      INITIAL_AGENT_MODE: "agent",
+    };
+    assert.equal(seatEnv(env, "codex", []).MODEL_PROVIDER, "gateway");
+    assert.equal(seatEnv(env, "claude", []).MODEL_PROVIDER, undefined);
+    assert.equal(seatEnv(env, "", []).MODEL_PROVIDER, undefined);
+    // The client sets the Codex seat's mode itself, and the auth request is not part of this change.
+    assert.equal(seatEnv(env, "codex", []).INITIAL_AGENT_MODE, undefined);
+    assert.equal(seatEnv(env, "codex", []).DEFAULT_AUTH_REQUEST, undefined);
+  },
+);
 test("each agent keeps only its own login variables", POSIX, () => {
   const claude = seatEnv(ENV, "claude", []);
   assert.equal(claude.ANTHROPIC_AUTH_TOKEN, "a");

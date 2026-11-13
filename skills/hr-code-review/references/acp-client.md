@@ -138,7 +138,7 @@ What stays outside this: managed policy settings and an adapter's own hooks (Cla
 The seat starts with a narrowed environment, not the caller's: named locale,
 path, XDG, proxy and certificate variables (on Windows, also the variables a
 program needs to start), plus only the variables its own agent reads to log in
-(`CODEX_` and `OPENAI_` for Codex, `ANTHROPIC_` and twelve `CLAUDE_` names for Claude, `DEVIN_`,
+(`CODEX_`, `OPENAI_` and the name `MODEL_PROVIDER` for Codex, `ANTHROPIC_` and twelve `CLAUDE_` names for Claude, `DEVIN_`,
 `GROK_` and `XAI_`, `GEMINI_` and `GOOGLE_` for Antigravity, `CURSOR_`).
 
 A Claude seat keeps `ANTHROPIC_*` and only these `CLAUDE_` names, each read by the installed claude-agent-acp 0.102.0, its SDK or the CLI:
