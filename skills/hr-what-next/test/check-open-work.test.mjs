@@ -190,6 +190,51 @@ test("each offer a stage line names is judged by its own clause, not by the stag
   expect(mixedReport.unansweredOffers.join("\n")).not.toContain("approved in Offer MIX-1 ,");
 });
 
+test("a stage line's offer state is read per offer, with approval, negation and ordinary reply wording", () => {
+  const unanswered = (/** @type {string} */ line) =>
+    check(setup({ ledger: [`- [ ] Approved, not built: ${line}`] }).plan).report.unansweredOffers;
+  expect(
+    unanswered("export, approved in Offer OLD-1 and asked in Offer NEW-1 trigger: PR 4 lands"),
+  ).toHaveLength(1);
+  expect(unanswered("export; Offer OLD-1 sent and approved by user trigger: PR 4 lands")).toEqual(
+    [],
+  );
+  expect(unanswered("export; Offer NEW-1 not sent trigger: PR 4 lands")).toEqual([]);
+  expect(unanswered("export; approved in Offer OLD-1, build pending trigger: PR 4 lands")).toEqual(
+    [],
+  );
+  expect(
+    unanswered("export; Offer NEW-1 awaiting the user's reply trigger: PR 4 lands"),
+  ).toHaveLength(1);
+  expect(
+    unanswered("export; Offer NEW-1 waiting for the user reply trigger: PR 4 lands"),
+  ).toHaveLength(1);
+  expect(
+    unanswered("export trigger: local build; asked in Offer NEW-1; reply pending"),
+  ).toHaveLength(1);
+});
+
+test("an open stage's real trigger is found after quoted field names, and a spelled-out pull request counts as another thread", () => {
+  const warnings = (/** @type {string} */ line) =>
+    check(setup({ ledger: [`- [ ] Approved, not built: ${line}`] }).plan).report.warnings.join(
+      "\n",
+    );
+  const missing = "waits on another thread but has no `recheck:";
+  expect(
+    warnings(
+      "a stage that names the `trigger:` and `done-when:` fields trigger: upstream PR 4 lands",
+    ),
+  ).toContain(missing);
+  expect(warnings("export; trigger: pull request 4 lands")).toContain(missing);
+  expect(warnings("export; trigger: pull request 4 lands recheck: 2099-01-01")).not.toContain(
+    missing,
+  );
+  const deferred = check(
+    setup({ ledger: ["- [~] export: later - trigger: pull request 4 lands"] }).plan,
+  ).report;
+  expect(deferred.warnings.join("\n")).toContain(missing);
+});
+
 test("an open approved stage waiting on an upstream pull request needs a recheck date, like the same line deferred", () => {
   const open = setup({
     ledger: ["- [ ] Approved, not built: export trigger: upstream PR 4 lands"],

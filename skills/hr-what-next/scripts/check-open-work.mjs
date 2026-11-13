@@ -41,6 +41,7 @@
 import { pathToFileURL } from "node:url";
 import { evaluateDoneWhen } from "./done-when.mjs";
 import { githubStates } from "./github-state.mjs";
+import { openStageOffers, splitStage } from "./stage-line.mjs";
 import { MARKS, RECHECK, droppedByUserUnasked, parsePlan, planSnapshot } from "./plan-ledger.mjs";
 import { spawnSync } from "node:child_process";
 import {
@@ -85,9 +86,6 @@ const usage =
   'The output lists deferred items whose trigger is only the user\'s own action ("user selects", "user asks for the backlog") as "awaiting your yes/no"; this is a text match, see the header.';
 // An unbuilt stage of work the user approved (a later phase, "PR N"): an open line that starts this way, never a deferred one.
 const UNBUILT_STAGE = /^approved,? not built\b/i;
-// What a stage line says about one offer it names: the offer was asked, or its reply is awaited.
-const OFFER_OPEN_STATE =
-  /\b(?:asked|sent|relayed|pending|unanswered)\b|\bawait\w*\s+(?:a\s+|the\s+)?(?:user\s+)?(?:reply|answer|response|go|selection)\b/i;
 const TERMINAL_STATUS = /^(completed?|done|archived)\b/i;
 const COMPLETED_STATUS = /^completed\b/i;
 const PAUSED_STATUS = /^paused\b/i;
@@ -120,7 +118,7 @@ const OFFER_LIMIT = 3;
 // A deferred item that waits on another thread (an upstream issue or pull request, a maintainer, another
 // session), or an open question sent to one, needs a `recheck:` date: "trigger: reply" never fires itself.
 const EXTERNAL =
-  /https:\/\/github\.com\/|\b[\w.-]+\/[\w.-]+#\d+|\bPR\s*#?\s*\d+|(?<![\w/#&])#\d+\b|\bupstream\b|\bmaintainers?\b|\b(?:another|other|the [\w-]+) (?:session|thread)\b/i;
+  /https:\/\/github\.com\/|\b[\w.-]+\/[\w.-]+#\d+|\bPR\s*#?\s*\d+|\b(?:pull request|issue)s?\s*#?\s*\d+|\bother (?:pull request|PR|issue)\b|(?<![\w/#&])#\d+\b|\bupstream\b|\bmaintainers?\b|\b(?:another|other|the [\w-]+) (?:session|thread)\b/i;
 const SENT_QUESTION =
   /\b(?:asked|relayed|sent)\b.*\b(?:session|thread|owner|maintainer)s?\b|\b(?:awaiting|waiting (?:on|for)) (?:a |the )?(?:reply|answer|response)\b/i;
 const GITHUB_URL = /https:\/\/github\.com\/([\w.-]+)\/([\w.-]+)\/(?:pull|issues)\/(\d+)/g;
@@ -532,7 +530,7 @@ function rechecks(open, today, warnings) {
     } else if (
       !date &&
       ((item.mark === "~" && EXTERNAL.test(item.text)) ||
-        (UNBUILT_STAGE.test(item.text) && EXTERNAL.test(stageTrigger(item.text))) ||
+        (UNBUILT_STAGE.test(item.text) && EXTERNAL.test(splitStage(item.text).trigger)) ||
         SENT_QUESTION.test(item.text))
     ) {
       undated.push(
@@ -672,29 +670,6 @@ function offersNamed(text) {
   return ids;
 }
 
-// A stage line's `trigger:` clause (up to `recheck:` or `done-when:`) says what it waits on, not what became of an offer.
-/** @param {string} text */
-function stageTrigger(text) {
-  return /\btrigger:(.*?)(?=\b(?:recheck|done-when):|$)/is.exec(text)?.[1] ?? "";
-}
-
-// The offers a stage line names whose own clause says they were asked and await a reply. Clauses split at ";" and ",";
-// a clause naming no offer ("awaiting user reply") belongs to the offer named before it; the trigger is not read.
-/** @param {string} text */
-function openStageOffers(text) {
-  /** @type {Map<string, string>} */
-  const state = new Map();
-  /** @type {string[]} */
-  let last = [];
-  for (const clause of text.replace(/\btrigger:.*$/is, "").split(/[;,]/)) {
-    last = offersNamed(clause).length > 0 ? offersNamed(clause) : last;
-    for (const id of last) {
-      state.set(id, `${state.get(id) ?? ""} ${clause}`);
-    }
-  }
-  return [...state].filter(([, said]) => OFFER_OPEN_STATE.test(said)).map(([id]) => id);
-}
-
 // One entry per offer ID that has an open line and no line recording an answer, a drop or a supersession.
 /** @param {LedgerItem[]} items */
 function unansweredOffers(items) {
@@ -714,7 +689,9 @@ function unansweredOffers(items) {
       continue;
     }
     // A stage line's offer is the approval it records unless its own clause says it was asked and awaits a reply.
-    const ids = UNBUILT_STAGE.test(item.text) ? openStageOffers(item.text) : offersNamed(item.text);
+    const ids = UNBUILT_STAGE.test(item.text)
+      ? openStageOffers(item.text, offersNamed)
+      : offersNamed(item.text);
     for (const id of ids) {
       if (!closed.has(id) && !unanswered.has(id)) {
         unanswered.set(id, row(item));
