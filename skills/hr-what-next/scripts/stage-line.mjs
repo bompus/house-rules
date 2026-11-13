@@ -1,3 +1,5 @@
+import { maskCodeSpans } from "./plan-ledger.mjs";
+
 // Reading an "Approved, not built:" ledger line: its `trigger:` clause says what the stage waits on, and each
 // offer the rest of the line names is judged by its own clause.
 
@@ -6,7 +8,7 @@
 /** @param {string} text @returns {{ trigger: string, rest: string }} */
 export function splitStage(text) {
   // Code spans are blanked, same length, so a field name or ";" quoted in code is not read as syntax.
-  const plain = text.replace(/`[^`]*`/g, (span) => " ".repeat(span.length));
+  const plain = maskCodeSpans(text);
   const start = [...plain.matchAll(/\btrigger:/gi)].at(-1)?.index;
   if (start === undefined) {
     return { trigger: "", rest: text };

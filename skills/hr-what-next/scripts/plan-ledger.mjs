@@ -42,7 +42,7 @@ const GITHUB_REF = /^([\w.-]+\/[\w.-]+)#(\d+)$/;
  * at the next run of exactly the same length; a run with no closing run is literal text and is skipped whole.
  * @param {string} text
  */
-function maskCodeSpans(text) {
+export function maskCodeSpans(text) {
   let out = "";
   let at = 0;
   while (at < text.length) {

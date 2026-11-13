@@ -25,3 +25,14 @@ test("a trigger: written inside a code span is not the field", () => {
   expect(splitStage(text).trigger).toBe(" PR 4 lands");
   expect(splitStage("export, the `see trigger: x` field").trigger).toBe("");
 });
+
+test("code spans of any backtick run length are masked, and an escaped backtick opens none", () => {
+  expect(splitStage("export, the ``trigger: x`` field").trigger).toBe("");
+  const quoted = splitStage("Approved, not built: export trigger: ``a; b`` ships").trigger;
+  expect(quoted).toContain("ships");
+  expect(quoted).toContain("``a; b``");
+  expect(splitStage("export trigger: ``a; b`` ships; asked in Offer X-1").trigger).toBe(
+    " ``a; b`` ships",
+  );
+  expect(splitStage("export \\`trigger: PR 4 lands").trigger).toBe(" PR 4 lands");
+});
