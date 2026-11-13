@@ -32,9 +32,12 @@ Timing: the cause precedes the effect on a timeline converted to one timezone
 (UTC) before any elapsed-time arithmetic. Mechanism: a named path from cause to
 effect that you observed in the code, config, documentation or a probe.
 Magnitude: the numbers are large enough to explain the effect. Necessity: look
-for an occasion when the same trigger fired without the claimed cause, or
-remove the cause in a probe, and check that the effect did not follow. A link
-whose test has not run yet stays an inference. A link whose test shows the
+for an occasion when the same trigger fired without the claimed cause, with the
+other inputs and state the effect depends on alike (an occasion that differs in
+another input tests nothing), or remove the cause in a probe, and check that the
+effect did not follow.
+
+A link whose test has not run yet stays an inference. A link whose test shows the
 opposite is refuted, and the theory is dead (see above), unless a second cause
 could still produce the same effect: when the effect persists with the claimed
 cause removed, isolate each candidate cause and test it alone before refuting

@@ -217,8 +217,8 @@ newest first, and their `limit` and `maxCharsPerItem` defaults differ. Read item
 The newest item is the one with the highest `position`. To read the end of a thread,
 take `itemCount` N from the header and read from `afterPosition` max(0, N minus 60) with
 `limit` 30, following `nextPosition` while `hasMore` is true. A check for background
-work reads back (N minus 120, then 240 and so on) until an item is older than the
-current run's `startedAt`, because a command started early can still be running. The
+work reads back (from `afterPosition` max(0, N minus 120), then max(0, N minus 240) and so
+on; stop when the start reaches 0) until an item is older than the current run's `startedAt`, because a command started early can still be running. The
 thread header carries:
 
 - `status` and `activeRunId`: whether a run is in progress.
