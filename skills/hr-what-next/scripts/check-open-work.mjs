@@ -11,6 +11,8 @@
 // "approved, not built" lists the open lines that start "Approved, not built": the stages of approved work that
 // were deferred, which stay candidates for every "next?" and the offer after the stage before them lands. A deferred
 // (`[~]`) line that starts this way is a finding: it was filed in the wrong bucket.
+// A stage line's offer counts as unanswered only when its own clause says it was asked or awaits a reply, not its
+// `trigger:`; an open stage whose `trigger:` waits on another thread needs a `recheck:` date, as a deferred one does.
 // "close-out due" prints when every open item is deferred and the plan is not completed: the session's work
 // is finished, so the user owes a decision on each item and the reply offers All done or Pause. A plan whose
 // Status is paused without a done line recording the user's Pause choice is a finding; with one, the pause
@@ -83,7 +85,9 @@ const usage =
   'The output lists deferred items whose trigger is only the user\'s own action ("user selects", "user asks for the backlog") as "awaiting your yes/no"; this is a text match, see the header.';
 // An unbuilt stage of work the user approved (a later phase, "PR N"): an open line that starts this way, never a deferred one.
 const UNBUILT_STAGE = /^approved,? not built\b/i;
-const PENDING_OFFER = /\b(?:asked|pending|unanswered)\b/i;
+// What a stage line says about one offer it names: the offer was asked, or its reply is awaited.
+const OFFER_OPEN_STATE =
+  /\b(?:asked|sent|relayed|pending|unanswered)\b|\bawait\w*\s+(?:a\s+|the\s+)?(?:user\s+)?(?:reply|answer|response|go|selection)\b/i;
 const TERMINAL_STATUS = /^(completed?|done|archived)\b/i;
 const COMPLETED_STATUS = /^completed\b/i;
 const PAUSED_STATUS = /^paused\b/i;
@@ -527,7 +531,9 @@ function rechecks(open, today, warnings) {
       due.push(`${row(item)} — due ${date}`);
     } else if (
       !date &&
-      ((item.mark === "~" && EXTERNAL.test(item.text)) || SENT_QUESTION.test(item.text))
+      ((item.mark === "~" && EXTERNAL.test(item.text)) ||
+        (UNBUILT_STAGE.test(item.text) && EXTERNAL.test(stageTrigger(item.text))) ||
+        SENT_QUESTION.test(item.text))
     ) {
       undated.push(
         `L${item.line} waits on another thread but has no \`recheck: YYYY-MM-DD\` date: ${clip(item.text, 60)}`,
@@ -666,6 +672,29 @@ function offersNamed(text) {
   return ids;
 }
 
+// A stage line's `trigger:` clause (up to `recheck:` or `done-when:`) says what it waits on, not what became of an offer.
+/** @param {string} text */
+function stageTrigger(text) {
+  return /\btrigger:(.*?)(?=\b(?:recheck|done-when):|$)/is.exec(text)?.[1] ?? "";
+}
+
+// The offers a stage line names whose own clause says they were asked and await a reply. Clauses split at ";" and ",";
+// a clause naming no offer ("awaiting user reply") belongs to the offer named before it; the trigger is not read.
+/** @param {string} text */
+function openStageOffers(text) {
+  /** @type {Map<string, string>} */
+  const state = new Map();
+  /** @type {string[]} */
+  let last = [];
+  for (const clause of text.replace(/\btrigger:.*$/is, "").split(/[;,]/)) {
+    last = offersNamed(clause).length > 0 ? offersNamed(clause) : last;
+    for (const id of last) {
+      state.set(id, `${state.get(id) ?? ""} ${clause}`);
+    }
+  }
+  return [...state].filter(([, said]) => OFFER_OPEN_STATE.test(said)).map(([id]) => id);
+}
+
 // One entry per offer ID that has an open line and no line recording an answer, a drop or a supersession.
 /** @param {LedgerItem[]} items */
 function unansweredOffers(items) {
@@ -681,12 +710,14 @@ function unansweredOffers(items) {
   /** @type {Map<string, string>} */
   const unanswered = new Map();
   for (const item of items) {
-    // An offer a stage line names is the approval it records, unless the line says the offer was asked and is pending.
-    if (item.mark === " " && (!UNBUILT_STAGE.test(item.text) || PENDING_OFFER.test(item.text))) {
-      for (const id of offersNamed(item.text)) {
-        if (!closed.has(id) && !unanswered.has(id)) {
-          unanswered.set(id, row(item));
-        }
+    if (item.mark !== " ") {
+      continue;
+    }
+    // A stage line's offer is the approval it records unless its own clause says it was asked and awaits a reply.
+    const ids = UNBUILT_STAGE.test(item.text) ? openStageOffers(item.text) : offersNamed(item.text);
+    for (const id of ids) {
+      if (!closed.has(id) && !unanswered.has(id)) {
+        unanswered.set(id, row(item));
       }
     }
   }

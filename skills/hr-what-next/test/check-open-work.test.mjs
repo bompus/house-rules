@@ -156,6 +156,59 @@ test("a stage line that says its offer was asked and is pending counts as an una
   expect(report.warnings.join("\n")).toContain("3 offers are open and unanswered");
 });
 
+test("each offer a stage line names is judged by its own clause, not by the stage's trigger", () => {
+  const sent = setup({
+    ledger: [
+      "- [ ] Approved, not built: export; Offer NEXT-1 sent; awaiting user reply; trigger: user reply",
+      "- [ ] Approved, not built: import; Offer NEXT-2 sent; awaiting user reply; trigger: user reply",
+      "- [ ] Approved, not built: sync; Offer NEXT-3 sent; awaiting user reply; trigger: user reply",
+    ],
+  });
+  const sentReport = check(sent.plan).report;
+  expect(sentReport.unansweredOffers).toHaveLength(3);
+  expect(sentReport.warnings.join("\n")).toContain("3 offers are open and unanswered");
+
+  const approved = setup({
+    ledger: [
+      "- [ ] Approved, not built: export, approved in Offer SEARCH-1 trigger: pending local build",
+      "- [ ] Approved, not built: import, approved in Offer SEARCH-2 trigger: pending local build",
+      "- [ ] Approved, not built: sync, approved in Offer SEARCH-3 trigger: pending local build",
+    ],
+  });
+  const approvedReport = check(approved.plan).report;
+  expect(approvedReport.unansweredOffers).toEqual([]);
+  expect(approvedReport.warnings.join("\n")).not.toContain("offers are open and unanswered");
+
+  const mixed = setup({
+    ledger: [
+      "- [ ] Approved, not built: export, approved in Offer MIX-1, asked in Offer MIX-2, reply pending trigger: PR 4 lands",
+    ],
+  });
+  const mixedReport = check(mixed.plan).report;
+  expect(mixedReport.unansweredOffers).toHaveLength(1);
+  expect(mixedReport.unansweredOffers.join("\n")).toContain("MIX-2");
+  expect(mixedReport.unansweredOffers.join("\n")).not.toContain("approved in Offer MIX-1 ,");
+});
+
+test("an open approved stage waiting on an upstream pull request needs a recheck date, like the same line deferred", () => {
+  const open = setup({
+    ledger: ["- [ ] Approved, not built: export trigger: upstream PR 4 lands"],
+  });
+  expect(check(open.plan).report.warnings.join("\n")).toContain(
+    "waits on another thread but has no `recheck:",
+  );
+  const dated = setup({
+    ledger: ["- [ ] Approved, not built: export trigger: upstream PR 4 lands recheck: 2099-01-01"],
+  });
+  expect(check(dated.plan).report.warnings.join("\n")).not.toContain("recheck: YYYY-MM-DD");
+  const ownTrigger = setup({
+    ledger: [
+      "- [ ] Approved, not built: export, built on PR 4's design trigger: the export schema is frozen",
+    ],
+  });
+  expect(check(ownTrigger.plan).report.warnings.join("\n")).not.toContain("recheck: YYYY-MM-DD");
+});
+
 test("a stage line with trigger, recheck and a final done-when clause is accepted", () => {
   const { plan } = setup({
     ledger: [
