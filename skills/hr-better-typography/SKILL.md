@@ -4,7 +4,7 @@ description: "Typography rules for web UI: type scale, line-height, wrapping, tr
 license: MIT
 metadata:
   upstream: https://github.com/jakubkrehel/skills
-  upstream_ref: 157da62016338e8693dcff93d47154a9e36f2157
+  upstream_ref: a72290d140249813898ba8648becf6415abcb059
   upstream_path: skills/better-typography/
   local_patches: "Use-when description; scaled-input recipe keeps a focus ring and cannot shrink; enforce the scale with a lint or guard; per-field wrap/truncate choice and middle truncation (from emilkowalski/skills break-ui); text-stroke overlap note keeps static cuts as possibly overlapping; text-box Firefox 154+ support; review verdict says Report Block"
   house_rules_patches: "Portable provenance and review verdict"

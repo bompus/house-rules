@@ -4,7 +4,7 @@ description: "Color rules for web UI: palette ramps, semantic color tokens, colo
 license: MIT
 metadata:
   upstream: https://github.com/jakubkrehel/skills
-  upstream_ref: 157da62016338e8693dcff93d47154a9e36f2157
+  upstream_ref: a72290d140249813898ba8648becf6415abcb059
   upstream_path: skills/better-colors/
   local_patches: "Use-when description; 14pt bold = 18.67px; P3 fallback severity matches Reporting; better-ui handoff dropped (not vendored); enforce tokens with a lint or guard; gamut mapping described as chroma reduction; light-end spacing outranks even lightness steps"
   house_rules_patches: "Portable provenance and review verdict"

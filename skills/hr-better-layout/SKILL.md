@@ -4,7 +4,7 @@ description: "Layout rules for web UI: grouping, alignment, spacing, reading ord
 license: MIT
 metadata:
   upstream: https://github.com/jakubkrehel/skills
-  upstream_ref: 157da62016338e8693dcff93d47154a9e36f2157
+  upstream_ref: a72290d140249813898ba8648becf6415abcb059
   upstream_path: skills/better-layout/
   local_patches: "Use-when description; peek-scroller arithmetic; better-ui handoff dropped (not vendored); dvh/svh, viewport-fit, theme-color and row-squeeze rules (from emilkowalski/skills)"
   house_rules_patches: "Portable provenance and review verdict"
@@ -76,20 +76,20 @@ Never park a critical action where resizing, zoom or scrolling clips it. Keep it
 
 ## Before you finish
 
-| Detection pattern                                                                                       | Fix                                                                               |
-| ------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| `grid-template-columns: … 1fr` or a flex child holding long text or a wide table, overflowing its track | `minmax(0, 1fr)` on the track, `min-width: 0` on the flex child                   |
-| `width: 100vw`                                                                                          | `width: 100%`; `100vw` includes the scrollbar and scrolls horizontally on desktop |
-| `height: 100vh` on a full-height mobile pane or hero                                                    | `100dvh` for a shell that tracks the browser chrome, `100svh` for a first screen  |
-| Long text pushes a row's trailing action off-screen or squashes its avatar                              | `min-width: 0` on the text column, `flex-shrink: 0` on fixed-size items           |
-| `height:` with a fixed length on a box holding text                                                     | `min-height`, or `max-height` with `overflow-y: auto`                             |
-| `@media (max-width: …)` inside a reusable component                                                     | `@container` on the component's parent                                            |
-| `container-type: inline-size` on a flex item, inline-block or absolute element with no width            | Give it a definite width; size containment collapses a shrink-to-fit box to zero  |
-| `env(safe-area-inset-*)` with no `viewport-fit=cover` in the viewport meta                              | Add it, or the insets resolve to `0`                                              |
-| `inset-inline-*` or `*-inline-*` combined with `safe-area-inset-left` or `-right`                       | Physical `left` or `right` with the matching inset, plus a `[dir="rtl"]` override |
-| `float: left` on mirrored UI                                                                            | `float: inline-start`                                                             |
-| `translateX` or `background-position: left` on mirrored UI                                              | A `[dir="rtl"]` override; neither has a logical form                              |
-| Sticky header with no `scroll-padding-block-start`                                                      | Set it to the header height                                                       |
+| Detection pattern                                                                                       | Fix                                                                                                                                                                                   |
+| ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `grid-template-columns: … 1fr` or a flex child holding long text or a wide table, overflowing its track | `minmax(0, 1fr)` on the track, `min-width: 0` on the flex child                                                                                                                       |
+| `width: 100vw`                                                                                          | `width: 100%`; `100vw` includes the scrollbar and scrolls horizontally on desktop                                                                                                     |
+| `height: 100vh` on a full-height mobile pane or hero                                                    | `100dvh` for a shell that tracks the browser chrome, `100svh` for a first screen. The on-screen keyboard resizes only the visual viewport, so keep the bottom action in stable chrome |
+| Long text pushes a row's trailing action off-screen or squashes its avatar                              | `min-width: 0` on the text column, `flex-shrink: 0` on fixed-size items                                                                                                               |
+| `height:` with a fixed length on a box holding text                                                     | `min-height`, or `max-height` with `overflow-y: auto`                                                                                                                                 |
+| `@media (max-width: …)` inside a reusable component                                                     | `@container` on the component's parent                                                                                                                                                |
+| `container-type: inline-size` on a flex item, inline-block or absolute element with no width            | Give it a definite width; size containment collapses a shrink-to-fit box to zero                                                                                                      |
+| `env(safe-area-inset-*)` with no `viewport-fit=cover` in the viewport meta                              | Add it, or the insets resolve to `0`                                                                                                                                                  |
+| `inset-inline-*` or `*-inline-*` combined with `safe-area-inset-left` or `-right`                       | Physical `left` or `right` with the matching inset, plus a `[dir="rtl"]` override                                                                                                     |
+| `float: left` on mirrored UI                                                                            | `float: inline-start`                                                                                                                                                                 |
+| `translateX` or `background-position: left` on mirrored UI                                              | A `[dir="rtl"]` override; neither has a logical form                                                                                                                                  |
+| Sticky header with no `scroll-padding-block-start`                                                      | Set it to the header height                                                                                                                                                           |
 
 ## Reporting
 

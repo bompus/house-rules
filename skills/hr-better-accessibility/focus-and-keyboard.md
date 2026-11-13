@@ -103,7 +103,7 @@ dialogRef.current?.close();
 triggerRef.current?.focus(); // return focus to the element that opened it
 ```
 
-A custom overlay that can't use `<dialog>` needs `role="dialog"`, `aria-modal="true"` and an accessible name via `aria-labelledby`. Make the background `inert` and use the project's tested focus-management utility. Prefer an eligible autofocus target, then a visible, enabled focusable control. Skip hidden, disabled and inert candidates. If none exists, focus the dialog container with `tabindex="-1"`. Restore background interactivity when closing.
+A custom overlay that can't use `<dialog>` needs `role="dialog"`, `aria-modal="true"` and an accessible name via `aria-labelledby`. Make the background `inert`, and render the overlay outside the inert container, in a portal or a sibling element, because `inert` on an ancestor disables the dialog too. Use the project's tested focus-management utility. Prefer an eligible autofocus target, then a visible, enabled focusable control. Skip hidden, disabled and inert candidates. If none exists, focus the dialog container with `tabindex="-1"`. Restore background interactivity when closing.
 
 Either way:
 

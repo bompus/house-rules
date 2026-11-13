@@ -4,9 +4,9 @@ This notice accompanies the hr-explain-interface bundle when copied on its own.
 
 ## jakubkrehel/skills
 
-Source: https://github.com/jakubkrehel/skills/tree/d574cc8a576dc24256ad38268b8d03d86724a1b3/skills/explain-interface
+Source: https://github.com/jakubkrehel/skills/tree/a72290d140249813898ba8648becf6415abcb059/skills/explain-interface
 
-Adapted from `skills/explain-interface/` at revision `d574cc8a576dc24256ad38268b8d03d86724a1b3`.
+Adapted from `skills/explain-interface/` at revision `a72290d140249813898ba8648becf6415abcb059`.
 
 Copyright (c) 2026 Jakub Krehel
 
