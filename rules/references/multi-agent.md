@@ -3,8 +3,10 @@
 A worker's report that leaves items open without naming a blocker is a
 checkpoint, not completion: send it back naming them, and after two or three
 continuations review the work yourself. A worker with a background command or
-subagent still running is not done. Take its elapsed time from the host's
-durations or timestamps, not from its report. When wall-clock time matters,
+subagent still running is not done. A wait on a worker that times out is not a
+finished run: follow the tool's next step or wait again, and never act as if the
+worker had finished (a timeout does not stop it). Take its elapsed time from the
+host's durations or timestamps, not from its report. When wall-clock time matters,
 give a budget and restate the elapsed time in each follow-up, or say that an
 earlier correct result beats a later one; budgets are advisory, hard timeouts
 are not. Reuse workers for related follow-ups, do independent work while they
@@ -161,8 +163,13 @@ a heuristic, not a T3 contract.
 work is not a finished task. `summary` is the final result, including a provider
 error on failure. `hasPendingChildRuns` reports later queued or running turns in
 the backing thread. Completion also wakes the parent, so end the turn instead of
-polling. `t3_thread_wait` reports run status only, a timeout does not stop the
-child, and waiting does not acknowledge the result.
+polling. `t3_thread_wait` reports run status only and waiting does not acknowledge
+the result. On servers with pingdotgg/t3code #15622, `t3_thread_wait` and
+`delegate_task` `mode=wait` stop observing after 30 seconds by default and at most
+45 (the tool description states the limit); a timed-out wait returns the handles
+and the child keeps running, so end the turn when the result names a `next` step
+and otherwise call the same wait again, and read `task_status` before treating
+the task as over.
 
 On servers with pingdotgg/t3code #22709, completion is checked again when a
 child's background work or nested delegates settle. A run ending before that
