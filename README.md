@@ -148,7 +148,7 @@ installers follow the default branch; npm follows published versions.
 
 ### Manual steps
 
-To keep the checkout somewhere else, run the same steps by hand. The commands use `node`; `bun` runs them the same way.
+To keep the checkout somewhere else, run the same steps by hand. The commands use `bun`; `node` runs them the same way.
 
 ```bash
 git clone https://github.com/bompus/house-rules.git
