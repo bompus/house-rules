@@ -167,8 +167,8 @@ polling. `t3_thread_wait` reports run status only and waiting does not acknowled
 the result. On servers with pingdotgg/t3code #15622, `t3_thread_wait` and
 `delegate_task` `mode=wait` stop observing after 30 seconds by default and at most
 45 (the tool description states the limit); a timed-out wait returns the handles
-and the child keeps running, so end the turn when the result names a `next` step
-and otherwise call the same wait again, and read `task_status` before treating
+and the child keeps running, so finish any independent work first, then end the turn
+when the result names a `next` step and otherwise call the same wait again, and read `task_status` before treating
 the task as over.
 
 On servers with pingdotgg/t3code #22709, completion is checked again when a
