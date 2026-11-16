@@ -29,9 +29,15 @@ import {
 const WIN =
   process.platform === "win32" && "the sweep and the folder modes are not used on Windows";
 
-/** A scratch folder removed when the test ends, even if it fails. @param {import("node:test").TestContext} t */
+/**
+ * A scratch folder, as its canonical path (the guard returns canonical paths), in the selected scratch root
+ * (`HOUSE_RULES_TEST_TMP`, else the system one), removed when the test ends, even if it fails.
+ * @param {import("node:test").TestContext} t
+ */
 const scratch = (t) => {
-  const base = mkdtempSync(join(tmpdir(), "tmp-guard-test-"));
+  const base = realpathSync(
+    mkdtempSync(join(process.env.HOUSE_RULES_TEST_TMP || tmpdir(), "tmp-guard-test-")),
+  );
   t.after(() => removeTree(base));
   return base;
 };
@@ -134,54 +140,60 @@ test("the guard works only in a folder this user alone can write to", { skip: WI
   const uid = process.getuid?.();
   const closed = scratch(t);
   chmodSync(closed, 0o700);
-  assert.equal(privateBase(closed), closed);
+  // Accepting a base needs every folder on the way to be root's or ours and closed to others' renames; where this
+  // host's scratch root has an untrusted ancestor the guard is off by design, so only the refusals are checked there.
+  const trustedHere = trusted(closed);
   const sticky = scratch(t);
   chmodSync(sticky, 0o1777);
-  const own = privateBase(sticky);
-  assert.equal(own, join(sticky, `${PRIVATE_NAME}-${uid}`));
-  assert.equal(statSync(String(own)).mode & 0o777, 0o700);
-  assert.equal(privateBase(sticky), own);
   const open = scratch(t);
   chmodSync(open, 0o777);
   assert.equal(privateBase(open), null);
-  const link = join(sticky, "link-base");
-  symlinkSync(closed, link);
-  // A link is followed once, to the canonical folder that is then checked and returned.
-  assert.equal(privateBase(link), realpathSync(closed));
   // A subfolder open to others, or a link in its place, is refused.
   const loose = scratch(t);
   chmodSync(loose, 0o1777);
   mkdirSync(join(loose, `${PRIVATE_NAME}-${uid}`), { mode: 0o755 });
   chmodSync(join(loose, `${PRIVATE_NAME}-${uid}`), 0o755);
   assert.equal(privateBase(loose), null);
+  const swapped = scratch(t);
+  chmodSync(swapped, 0o1777);
+  symlinkSync(closed, join(swapped, `${PRIVATE_NAME}-${uid}`));
+  assert.equal(privateBase(swapped), null);
   // A folder on the way that others can rename (open to writes and not sticky) refuses the base below it.
   const ancestor = scratch(t);
   chmodSync(ancestor, 0o777);
   const below = join(ancestor, "below");
   mkdirSync(below, { mode: 0o700 });
   assert.equal(privateBase(below), null);
-  chmodSync(ancestor, 0o1777);
-  assert.equal(privateBase(below), below);
-  // The path that was checked is the path that is returned: a link followed by `..` and a relative spelling both come back canonical.
+  // The path checked is not resolved a second time: a link is untrusted even when it points at a trusted folder.
   const hop = scratch(t);
   mkdirSync(join(hop, "real", "inner"), { recursive: true, mode: 0o700 });
   chmodSync(join(hop, "real"), 0o700);
   symlinkSync(join(hop, "real", "inner"), join(hop, "via"));
+  assert.equal(trusted(join(hop, "via")), false);
+  if (!trustedHere) {
+    return;
+  }
+  assert.equal(privateBase(closed), closed);
+  const own = privateBase(sticky);
+  assert.equal(own, join(sticky, `${PRIVATE_NAME}-${uid}`));
+  assert.equal(statSync(String(own)).mode & 0o777, 0o700);
+  assert.equal(privateBase(sticky), own);
+  const link = join(sticky, "link-base");
+  symlinkSync(closed, link);
+  // A link is followed once, to the canonical folder that is then checked and returned.
+  assert.equal(privateBase(link), closed);
+  chmodSync(ancestor, 0o1777);
+  assert.equal(privateBase(below), below);
+  // The path that was checked is the path that is returned: a link followed by `..` and a relative spelling both come back canonical.
   const viaLink = privateBase(`${hop}/via/..`);
   assert.equal(viaLink, realpathSync(String(viaLink)));
-  assert.ok(String(viaLink).startsWith(realpathSync(hop)));
+  assert.ok(String(viaLink).startsWith(hop));
   const here = process.cwd();
   try {
     process.chdir(join(hop, "real"));
-    assert.equal(privateBase("."), join(realpathSync(hop), "real"));
+    assert.equal(privateBase("."), join(hop, "real"));
   } finally {
     process.chdir(here);
   }
-  // The path checked is not resolved a second time: a link is untrusted even when it points at a trusted folder.
   assert.equal(trusted(join(hop, "real")), true);
-  assert.equal(trusted(join(hop, "via")), false);
-  const swapped = scratch(t);
-  chmodSync(swapped, 0o1777);
-  symlinkSync(closed, join(swapped, `${PRIVATE_NAME}-${uid}`));
-  assert.equal(privateBase(swapped), null);
 });
