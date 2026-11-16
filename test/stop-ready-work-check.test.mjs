@@ -137,6 +137,44 @@ test("a due re-check date makes an item ready even when it also names a trigger 
   }
 });
 
+const LONG = `Approved, not built: ${"a long stage description ".repeat(5)}trigger: PR 4 lands`;
+
+test("a due re-check is read from the real field: a quoted example is ignored, a bad date or extra digits never overrides a wait", () => {
+  for (const [item, ready] of [
+    [
+      "Approved, not built: document `recheck: 2020-01-01`; trigger: PR 4 lands recheck: 2099-01-01",
+      false,
+    ],
+    [
+      "Approved, not built: document `recheck: 2099-01-01`; trigger: PR 4 lands recheck: 2020-01-01",
+      true,
+    ],
+    ["Item; trigger: PR 4 lands recheck: 2026-02-31", false],
+    ["Item; trigger: PR 4 lands recheck: 2020-01-011", false],
+    ["Item; trigger: PR 4 lands recheck: 2020-01-01", true],
+    ["Item; recheck: `2020-01-01`", true],
+  ]) {
+    for (const header of ["", STRICT_HEADER]) {
+      assert.equal(
+        check("Working on it.", `${header}${plan(`- [ ] ${item}`)}`).block,
+        ready,
+        `${header ? "strict " : ""}${item}`,
+      );
+    }
+  }
+});
+
+test("a block caused by a due re-check says so, names the date and sends the assistant to check what it waits on", () => {
+  for (const header of ["", STRICT_HEADER]) {
+    const result = check("Working on it.", `${header}${plan(`- [ ] ${LONG} recheck: 2026-10-29`)}`);
+    assert.equal(result.block, true);
+    assert.match(result.reason ?? "", /recheck 2026-10-29 is due/);
+    assert.match(result.reason ?? "", /check what it waits on and update the record/);
+  }
+  const plain = check("Working on it.", plan("- [ ] Write the next step"));
+  assert.doesNotMatch(plain.reason ?? "", /is due/);
+});
+
 test("a plan that is not active passes", () => {
   for (const status of ["paused", "blocked-on-user", "completed"]) {
     assert.equal(

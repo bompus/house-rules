@@ -35,7 +35,7 @@
 //   { "hooks": { "Stop": [ { "hooks": [ { "type": "command", "command": "bun <checkout>/scripts/stop-ready-work-check.mjs" } ] } ] } }
 import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { pathToFileURL } from "node:url";
-import { parsePlan, RECHECK } from "../skills/hr-what-next/scripts/plan-ledger.mjs";
+import { maskCodeSpans, parsePlan } from "../skills/hr-what-next/scripts/plan-ledger.mjs";
 import { replyFacts } from "./continuity-boundary.mjs";
 import {
   entries,
@@ -129,6 +129,20 @@ const localDate = () => new Date().toLocaleDateString("en-CA");
 const HANDBACK =
   /(?<!\b(?:not|never|no|n't) (?:yet )?)\bhand(?:ed|ing)? (?:this |it |the work )?(?:back|off|over)\b|\bhandback\b/i;
 
+const RECHECK_FIELD = /\brecheck:\s*(\d{4}-\d{2}-\d{2})(?!\d)/i;
+/**
+ * The item's `recheck:` date: the first one written outside a code span, else the first one in the raw text (a
+ * quoted date is accepted when it is the only one). A date that is not on the calendar is no date.
+ * @param {string} text
+ * @returns {string | undefined}
+ */
+function recheckDate(text) {
+  const date = (maskCodeSpans(text).match(RECHECK_FIELD) ?? text.match(RECHECK_FIELD))?.[1];
+  const valid =
+    date !== undefined && new Date(`${date}T00:00:00Z`).toISOString().slice(0, 10) === date;
+  return valid ? date : undefined;
+}
+
 /**
  * An open `[ ]` item carries a wait when it names a trigger, a `recheck:` date that is still ahead, an owner other
  * than the plan's own, or something it waits on. A due re-check date is work to do, not a wait.
@@ -137,7 +151,7 @@ const HANDBACK =
  * @param {string} today
  */
 function waits(text, planOwner, today) {
-  const recheck = text.match(RECHECK)?.[1];
+  const recheck = recheckDate(text);
   // A re-check date that has come is the time to look again, whatever else the line says it waits on.
   if (recheck !== undefined && recheck <= today) {
     return false;
@@ -205,9 +219,19 @@ export function decide({ reply, planPath, planText, today = localDate() }) {
     .slice(0, 3)
     .map((item) => `L${item.line} ${item.text.replace(/\s+/g, " ").slice(0, 80)}`)
     .join("; ");
-  const what = strict
-    ? `${ready.length} ready open item(s) that name no wait`
-    : `${open.length} open item(s) and none of them waits on anyone or anything`;
+  const due = ready.flatMap((item) => {
+    const date = recheckDate(item.text);
+    return date !== undefined && date <= today && WAIT.test(item.text)
+      ? [`L${item.line} recheck ${date}`]
+      : [];
+  });
+  const what =
+    (strict
+      ? `${ready.length} ready open item(s) that name no wait`
+      : `${open.length} open item(s) and none of them waits on anyone or anything`) +
+    (due.length
+      ? `; ${due.join(", ")} is due: check what it waits on and update the record before treating it as ready`
+      : "");
   return {
     block: true,
     reason:
