@@ -14,7 +14,7 @@ export function splitStage(text) {
     return { trigger: "", rest: text };
   }
   const from = start + "trigger:".length;
-  const end = plain.slice(from).search(/;|\b(?:recheck|done-when):/i);
+  const end = plain.slice(from).search(/;|(?<![\w-])(?:recheck|done-when):/i);
   const cut = end < 0 ? text.length : from + end;
   return { trigger: text.slice(from, cut), rest: text.slice(0, start) + text.slice(cut) };
 }

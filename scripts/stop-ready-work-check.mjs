@@ -35,7 +35,7 @@
 //   { "hooks": { "Stop": [ { "hooks": [ { "type": "command", "command": "bun <checkout>/scripts/stop-ready-work-check.mjs" } ] } ] } }
 import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { pathToFileURL } from "node:url";
-import { maskCodeSpans, parsePlan } from "../skills/hr-what-next/scripts/plan-ledger.mjs";
+import { parsePlan, recheckField } from "../skills/hr-what-next/scripts/plan-ledger.mjs";
 import { replyFacts } from "./continuity-boundary.mjs";
 import {
   entries,
@@ -129,20 +129,6 @@ const localDate = () => new Date().toLocaleDateString("en-CA");
 const HANDBACK =
   /(?<!\b(?:not|never|no|n't) (?:yet )?)\bhand(?:ed|ing)? (?:this |it |the work )?(?:back|off|over)\b|\bhandback\b/i;
 
-const RECHECK_FIELD = /\brecheck:\s*(\d{4}-\d{2}-\d{2})(?!\d)/i;
-/**
- * The item's `recheck:` date: the first one written outside a code span, else the first one in the raw text (a
- * quoted date is accepted when it is the only one). A date that is not on the calendar is no date.
- * @param {string} text
- * @returns {string | undefined}
- */
-function recheckDate(text) {
-  const date = (maskCodeSpans(text).match(RECHECK_FIELD) ?? text.match(RECHECK_FIELD))?.[1];
-  const valid =
-    date !== undefined && new Date(`${date}T00:00:00Z`).toISOString().slice(0, 10) === date;
-  return valid ? date : undefined;
-}
-
 /**
  * An open `[ ]` item carries a wait when it names a trigger, a `recheck:` date that is still ahead, an owner other
  * than the plan's own, or something it waits on. A due re-check date is work to do, not a wait.
@@ -151,12 +137,22 @@ function recheckDate(text) {
  * @param {string} today
  */
 function waits(text, planOwner, today) {
-  const recheck = recheckDate(text);
+  const recheck = recheckField(text).date;
   // A re-check date that has come is the time to look again, whatever else the line says it waits on.
-  if (recheck !== undefined && recheck <= today) {
+  if (recheck !== null && recheck <= today) {
     return false;
   }
-  if (WAIT.test(text) || (recheck !== undefined && recheck > today)) {
+  return declaredWait(text, planOwner) || recheck !== null;
+}
+
+/**
+ * Whether the item names a wait besides its `recheck:` date: a trigger, a blocker, an owner other than the plan's
+ * own, or something it waits on.
+ * @param {string} text
+ * @param {string | undefined} planOwner
+ */
+function declaredWait(text, planOwner) {
+  if (WAIT.test(text)) {
     return true;
   }
   const owner = text
@@ -220,8 +216,8 @@ export function decide({ reply, planPath, planText, today = localDate() }) {
     .map((item) => `L${item.line} ${item.text.replace(/\s+/g, " ").slice(0, 80)}`)
     .join("; ");
   const due = ready.flatMap((item) => {
-    const date = recheckDate(item.text);
-    return date !== undefined && date <= today && WAIT.test(item.text)
+    const date = recheckField(item.text).date;
+    return date !== null && date <= today && declaredWait(item.text, plan.owner)
       ? [`L${item.line} recheck ${date}`]
       : [];
   });

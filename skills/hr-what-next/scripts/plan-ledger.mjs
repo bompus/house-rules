@@ -31,7 +31,6 @@ const NARRATIVE =
 // A labelled follow-up inside a prose sentence ("Merged. Deferred: the listing", "Still open for later: x").
 const PROSE_MARKER =
   /(?:^|[.;!?]\s+|\*\*)\s*(?:follow-?ups?|deferred|todo|(?:still )?open for later)\**\s*:/i;
-export const RECHECK = /\brecheck:\s*(\d{4}-\d{2}-\d{2})/i;
 // `done-when: <condition>[; <condition>]` ends an open or deferred item. Text in backticks is prose about the
 // convention, not a clause.
 const DONE_WHEN = /(?:^|\s)done-when:\s*(.*)$/i;
@@ -88,6 +87,38 @@ export function maskCodeSpans(text) {
     }
   }
   return out;
+}
+
+const RECHECK_MARK = /(?<![\w-])recheck:[ \t]*`?([^\s`;,)]*)/gi;
+/**
+ * The item's `recheck:` field: the first one written outside a code span, whatever its value, with the value read
+ * from the original text (a value in backticks counts); when every field is inside a code span, the only one. A
+ * longer name such as `last-recheck:` is no field. `written` is a date-shaped value as typed (null for any other), `date` the same
+ * when it is a whole calendar date (not followed by more digits) and null when not.
+ * @param {string} text
+ * @returns {{ written: string | null, date: string | null }}
+ */
+export function recheckField(text) {
+  const masked = maskCodeSpans(text);
+  const all = [...text.matchAll(RECHECK_MARK)];
+  const actual = [...masked.matchAll(RECHECK_MARK)][0];
+  const found =
+    actual !== undefined
+      ? all.find((one) => one.index === actual.index)
+      : all.length === 1
+        ? all[0]
+        : undefined;
+  const written =
+    found !== undefined && /^\d{4}-\d{2}-\d{2}\d*$/.test(found[1] ?? "")
+      ? (found[1] ?? null)
+      : null;
+  const stamp = written === null ? Number.NaN : Date.parse(`${written}T00:00:00Z`);
+  const real =
+    written !== null &&
+    /^\d{4}-\d{2}-\d{2}$/.test(written) &&
+    !Number.isNaN(stamp) &&
+    new Date(stamp).toISOString().slice(0, 10) === written;
+  return { written, date: real ? written : null };
 }
 
 /**
@@ -259,7 +290,7 @@ export function planSnapshot(planText) {
       .map(({ doneWhen: _doneWhen, ...item }) => ({
         id: `L${item.line}:${sha256(item.mark + item.text)}`,
         ...item,
-        recheck: item.text.match(RECHECK)?.[1] ?? null,
+        recheck: recheckField(item.text).written,
       })),
   };
 }

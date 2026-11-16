@@ -42,7 +42,13 @@ import { pathToFileURL } from "node:url";
 import { evaluateDoneWhen } from "./done-when.mjs";
 import { githubStates } from "./github-state.mjs";
 import { openStageOffers, splitStage } from "./stage-line.mjs";
-import { MARKS, RECHECK, droppedByUserUnasked, parsePlan, planSnapshot } from "./plan-ledger.mjs";
+import {
+  MARKS,
+  droppedByUserUnasked,
+  parsePlan,
+  planSnapshot,
+  recheckField,
+} from "./plan-ledger.mjs";
 import { spawnSync } from "node:child_process";
 import {
   existsSync,
@@ -517,7 +523,7 @@ function rechecks(open, today, warnings) {
   const undated = [];
   const soon = addDays(today, 7);
   for (const item of open) {
-    const written = item.text.match(RECHECK)?.[1];
+    const written = recheckField(item.text).written ?? undefined;
     if (written && !validDate(written)) {
       undated.push(`L${item.line} has \`recheck: ${written}\`, which is not a calendar date`);
       continue;

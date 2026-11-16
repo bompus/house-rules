@@ -36,3 +36,9 @@ test("code spans of any backtick run length are masked, and an escaped backtick 
   );
   expect(splitStage("export \\`trigger: PR 4 lands").trigger).toBe(" PR 4 lands");
 });
+
+test("a longer field name such as last-recheck: does not end the trigger clause", () => {
+  expect(splitStage("export trigger: PR 4 lands last-recheck: 2020-01-01").trigger).toBe(
+    " PR 4 lands last-recheck: 2020-01-01",
+  );
+});

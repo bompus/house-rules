@@ -164,6 +164,38 @@ test("a due re-check is read from the real field: a quoted example is ignored, a
   }
 });
 
+test("the re-check field is found by name, whatever its value, and a bad value never throws or cancels a wait", () => {
+  for (const [item, ready] of [
+    ["Item; trigger: PR 4 lands recheck: 2026-13-01", false],
+    ["Item; trigger: PR 4 lands recheck: 2026-00-01", false],
+    ["Document `recheck: 2020-01-01`; trigger: PR 4 lands; recheck: 2026-02-301", false],
+    ["Document `recheck: 2020-01-01` and `recheck: 2020-01-02`; trigger: PR 4 lands", false],
+    ["Item; trigger: PR 4 lands; recheck: `2020-01-01`", true],
+    ["Item; trigger: PR 4 lands; recheck: `2099-01-01`", false],
+    ["last-recheck: 2020-01-01; trigger: PR 4 lands; recheck: 2099-01-01", false],
+    ["last-recheck: 2020-01-01; trigger: PR 4 lands", false],
+  ]) {
+    for (const header of ["", STRICT_HEADER]) {
+      assert.equal(
+        check("Working on it.", `${header}${plan(`- [ ] ${item}`)}`).block,
+        ready,
+        `${header ? "strict " : ""}${item}`,
+      );
+    }
+  }
+});
+
+test("a due re-check of another owner's work also asks the assistant to check first", () => {
+  for (const header of ["", STRICT_HEADER]) {
+    const result = check(
+      "Working on it.",
+      `${header}${plan(`- [ ] ${"a long item ".repeat(8)}owner: worker-2; recheck: 2026-10-29`)}`,
+    );
+    assert.equal(result.block, true);
+    assert.match(result.reason ?? "", /recheck 2026-10-29 is due/);
+  }
+});
+
 test("a block caused by a due re-check says so, names the date and sends the assistant to check what it waits on", () => {
   for (const header of ["", STRICT_HEADER]) {
     const result = check("Working on it.", `${header}${plan(`- [ ] ${LONG} recheck: 2026-10-29`)}`);
