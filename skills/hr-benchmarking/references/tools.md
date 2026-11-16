@@ -15,6 +15,12 @@ Figures from a different runner are not directly comparable, so a move means
 rerunning every arm. Check the official version's documentation before relying on
 flags or interpreting output.
 
+A question about the machine itself (CPU, memory, disk, a database server, a kernel build)
+may instead be timed by the program made for it: kcbench, sysbench, fio, pgbench, Geekbench
+or STREAM. Each times itself; name it with its version in the run plan, like a runner. A
+hand-written timing loop is still not a runner, and a question about project code still
+uses Hyperfine, Tinybench or oha.
+
 Do not add Mitata as a runner; an existing Mitata workload stays a comparison input
 until the project authorizes replacing its runner. In a repository on Vitest 5, `vitest
 bench` uses Tinybench unless the project configures another `benchmark.provider`; check

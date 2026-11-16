@@ -9,7 +9,8 @@ Follow the repository and host's commands, resource limits, authorization and
 landing rules. Reuse an existing workload. Take the runner from
 [the tool reference](references/tools.md): never time with a loop you write
 (`performance.now()`, `Date.now()`, `process.hrtime`, shell `time` around a
-script). Read the reference before creating or extending any benchmark, and when
+script); a question about the machine itself may use a named machine benchmark program
+(kcbench, sysbench, fio, pgbench, Geekbench, STREAM), as the reference says. Read the reference before creating or extending any benchmark, and when
 selecting a profiler or correctness check or interpreting measurements. A project
 that already times with a hand-written loop, or with a runner outside the three
 there, names it in the plan before the first run, then moves the timing onto a
