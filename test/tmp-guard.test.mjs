@@ -5,6 +5,7 @@ import {
   existsSync,
   mkdirSync,
   mkdtempSync,
+  realpathSync,
   statSync,
   symlinkSync,
   utimesSync,
@@ -144,7 +145,8 @@ test("the guard works only in a folder this user alone can write to", { skip: WI
   assert.equal(privateBase(open), null);
   const link = join(sticky, "link-base");
   symlinkSync(closed, link);
-  assert.equal(privateBase(link), null);
+  // A link is followed once, to the canonical folder that is then checked and returned.
+  assert.equal(privateBase(link), realpathSync(closed));
   // A subfolder open to others, or a link in its place, is refused.
   const loose = scratch(t);
   chmodSync(loose, 0o1777);
@@ -159,6 +161,21 @@ test("the guard works only in a folder this user alone can write to", { skip: WI
   assert.equal(privateBase(below), null);
   chmodSync(ancestor, 0o1777);
   assert.equal(privateBase(below), below);
+  // The path that was checked is the path that is returned: a link followed by `..` and a relative spelling both come back canonical.
+  const hop = scratch(t);
+  mkdirSync(join(hop, "real", "inner"), { recursive: true, mode: 0o700 });
+  chmodSync(join(hop, "real"), 0o700);
+  symlinkSync(join(hop, "real", "inner"), join(hop, "via"));
+  const viaLink = privateBase(`${hop}/via/..`);
+  assert.equal(viaLink, realpathSync(String(viaLink)));
+  assert.ok(String(viaLink).startsWith(realpathSync(hop)));
+  const here = process.cwd();
+  try {
+    process.chdir(join(hop, "real"));
+    assert.equal(privateBase("."), join(realpathSync(hop), "real"));
+  } finally {
+    process.chdir(here);
+  }
   const swapped = scratch(t);
   chmodSync(swapped, 0o1777);
   symlinkSync(closed, join(swapped, `${PRIVATE_NAME}-${uid}`));

@@ -159,17 +159,20 @@ function trusted(path) {
 export function privateBase(base) {
   const uid = process.getuid?.();
   try {
-    const stat = lstatSync(base);
+    // One canonical absolute path is checked and returned, so what was verified is what is used (not a spelling with a
+    // link followed by `..`, and not a relative one).
+    const real = realpathSync(base);
+    const stat = lstatSync(real);
     if (!stat.isDirectory()) {
       return null;
     }
     if (stat.uid === uid && (stat.mode & 0o022) === 0) {
-      return trusted(base) ? base : null;
+      return trusted(real) ? real : null;
     }
     if ((stat.mode & 0o1000) === 0) {
       return null;
     }
-    const own = join(base, `${PRIVATE_NAME}-${uid}`);
+    const own = join(real, `${PRIVATE_NAME}-${uid}`);
     try {
       mkdirSync(own, { mode: 0o700 });
     } catch (error) {
