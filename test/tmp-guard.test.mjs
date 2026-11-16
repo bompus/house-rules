@@ -151,6 +151,14 @@ test("the guard works only in a folder this user alone can write to", { skip: WI
   mkdirSync(join(loose, `${PRIVATE_NAME}-${uid}`), { mode: 0o755 });
   chmodSync(join(loose, `${PRIVATE_NAME}-${uid}`), 0o755);
   assert.equal(privateBase(loose), null);
+  // A folder on the way that others can rename (open to writes and not sticky) refuses the base below it.
+  const ancestor = scratch(t);
+  chmodSync(ancestor, 0o777);
+  const below = join(ancestor, "below");
+  mkdirSync(below, { mode: 0o700 });
+  assert.equal(privateBase(below), null);
+  chmodSync(ancestor, 0o1777);
+  assert.equal(privateBase(below), below);
   const swapped = scratch(t);
   chmodSync(swapped, 0o1777);
   symlinkSync(closed, join(swapped, `${PRIVATE_NAME}-${uid}`));

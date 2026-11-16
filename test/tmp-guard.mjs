@@ -13,11 +13,12 @@ import {
   mkdtempSync,
   readdirSync,
   readFileSync,
+  realpathSync,
   rmSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 
 export const PREFIX = "house-rules-test-";
 export const MARKER = ".house-rules-test-owner";
@@ -127,9 +128,31 @@ export function makeRoot(root) {
 export const PRIVATE_NAME = "house-rules-test-private";
 
 /**
+ * Whether no user but root and this one can rename or replace any folder on the way to `path`: every folder from the
+ * real path up to the root belongs to root or this user, and is closed to others' writes unless it is sticky.
+ * @param {string} path
+ */
+function trusted(path) {
+  const uid = process.getuid?.();
+  for (let dir = realpathSync(path); ; dir = dirname(dir)) {
+    const stat = lstatSync(dir);
+    if (stat.uid !== 0 && stat.uid !== uid) {
+      return false;
+    }
+    if ((stat.mode & 0o022) !== 0 && (stat.mode & 0o1000) === 0) {
+      return false;
+    }
+    if (dirname(dir) === dir) {
+      return true;
+    }
+  }
+}
+
+/**
  * A folder only this user can write to, to hold the run folders: the base itself when it is ours and closed to others'
  * writes, else a private subfolder of a base that is sticky (others cannot rename or replace our entries), made 0700 and
- * checked with `lstat` (ours, a folder, closed to others, not a link). Null when neither holds; the guard then stays off.
+ * checked with `lstat` (ours, a folder, closed to others, not a link), and only when no one but root and this user can rename
+ * a folder on the way to it. Null when neither holds; the guard then stays off.
  * @param {string} base
  * @returns {string | null}
  */
@@ -141,7 +164,7 @@ export function privateBase(base) {
       return null;
     }
     if (stat.uid === uid && (stat.mode & 0o022) === 0) {
-      return base;
+      return trusted(base) ? base : null;
     }
     if ((stat.mode & 0o1000) === 0) {
       return null;
@@ -155,7 +178,9 @@ export function privateBase(base) {
       }
     }
     const mine = lstatSync(own);
-    return mine.isDirectory() && mine.uid === uid && (mine.mode & 0o077) === 0 ? own : null;
+    return mine.isDirectory() && mine.uid === uid && (mine.mode & 0o077) === 0 && trusted(own)
+      ? own
+      : null;
   } catch {
     return null;
   }
