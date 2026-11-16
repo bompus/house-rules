@@ -6,8 +6,8 @@
 // way stop-claim-check.mjs finds it.
 //
 // A wait on an open item is a `trigger:` or `recheck:` field, `blocked-by:`, `owner:`, or the words "waiting
-// on/for", "waits on", "awaiting" or "blocked on/by" in the item. A `recheck:` date counts while it is still ahead,
-// and `owner:` only when it names someone other than the plan's own owner. Deferred `[~]` items do not count: they were
+// on/for", "waits on", "awaiting" or "blocked on/by" in the item. A `recheck:` date counts while it is still ahead;
+// once it is due the item is ready work whatever else it names. `owner:` counts only when it names someone other than the plan's own owner. Deferred `[~]` items do not count: they were
 // parked on purpose and carry their own trigger. A plan whose `Status:` begins with paused,
 // blocked, waiting, on hold, held, complete, completed, done, archived, abandoned, cancelled, superseded or closed is skipped,
 // because the user or the record already stopped it; any other text (`active`, or a sentence about progress) counts
@@ -137,11 +137,12 @@ const HANDBACK =
  * @param {string} today
  */
 function waits(text, planOwner, today) {
-  if (WAIT.test(text)) {
-    return true;
-  }
   const recheck = text.match(RECHECK)?.[1];
-  if (recheck !== undefined && recheck > today) {
+  // A re-check date that has come is the time to look again, whatever else the line says it waits on.
+  if (recheck !== undefined && recheck <= today) {
+    return false;
+  }
+  if (WAIT.test(text) || (recheck !== undefined && recheck > today)) {
     return true;
   }
   const owner = text

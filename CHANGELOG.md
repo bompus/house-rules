@@ -4,6 +4,7 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- `scripts/stop-ready-work-check.mjs` reads an open item's `recheck:` date before its wait words: a date that is due (today or past) makes the item ready work even when the line also names a `trigger:`, `blocked-by:`, an owner or "waiting on", as its header already said (an "Approved, not built:" stage whose recheck has come is no longer treated as waiting). A date still ahead still counts as a wait. A plan with some waiting and some ready items still passes by default and blocks only with `Stop-check: strict`; that is the documented reading and is unchanged.
 - `hr-code-review`'s `references/impact.md` adds a "Scripts and procedures" section with three questions for a change to a script that acts on files or to the text an operator follows (release, deploy, cleanup): do the check and the action read the same inputs, does the script ever empty a folder the caller supplied, and does the procedure name the operator's likely mistakes. It is loaded at review time only; no always-on rule text changes.
 
 ## 0.24.0 - 2026-11-15

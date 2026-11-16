@@ -11,7 +11,7 @@ const plan = (/** @type {string} */ ledger, status = "active") =>
   `Owner: test\nStatus: ${status}\n## Ledger\n${ledger}\n`;
 const READY = plan("- [ ] Write the next step\n- [x] Done; evidence: checked");
 const WAITING = plan(
-  "- [ ] Write the next step\n- [ ] Land the change; waiting on CI run 12, recheck: 2026-11-01",
+  "- [ ] Write the next step\n- [ ] Land the change; waiting on CI run 12, recheck: 2099-01-01",
 );
 const DEFERRED_ONLY = plan(
   "- [~] Later work; trigger: user decides\n- [x] Done; evidence: checked",
@@ -118,6 +118,25 @@ test("work the plan's own owner holds, or whose re-check is already due, is read
   }
 });
 
+test("a due re-check date makes an item ready even when it also names a trigger or another wait", () => {
+  for (const item of [
+    "Approved, not built: PR 5; trigger: PR 4 lands recheck: 2026-10-29",
+    "Item; trigger: upstream release recheck: 2020-01-01",
+    "Item; blocked-by: #12 recheck: 2026-10-01",
+    "Item; waiting on CI run 12 recheck: 2026-10-28",
+    "Item; owner: another session recheck: 2026-10-29",
+  ]) {
+    assert.equal(check("Working on it.", plan(`- [ ] ${item}`)).block, true, item);
+  }
+  for (const item of [
+    "Approved, not built: PR 5; trigger: PR 4 lands recheck: 2026-10-30",
+    "Item; trigger: upstream release",
+    "Item; waiting on CI run 12 recheck: 2026-11-01",
+  ]) {
+    assert.equal(check("Working on it.", plan(`- [ ] ${item}`)).block, false, item);
+  }
+});
+
 test("a plan that is not active passes", () => {
   for (const status of ["paused", "blocked-on-user", "completed"]) {
     assert.equal(
@@ -144,7 +163,7 @@ test("a reply that only quotes a satisfying phrase does not pass, and one that q
 const STRICT_HEADER = "Stop-check: strict\n";
 // One ready item and one that waits: the installed reading passes this plan, the strict one does not.
 const MIXED = plan(
-  "- [ ] Write the next step\n- [ ] Land it; waiting on CI run 12, recheck: 2026-11-01",
+  "- [ ] Write the next step\n- [ ] Land it; waiting on CI run 12, recheck: 2099-01-01",
 );
 const strictPlan = (/** @type {string} */ ledger, status = "active") =>
   `${STRICT_HEADER}${plan(ledger, status)}`;
