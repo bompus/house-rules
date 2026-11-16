@@ -89,29 +89,28 @@ export function maskCodeSpans(text) {
   return out;
 }
 
-const RECHECK_MARK = /(?<![\w-])recheck:[ \t]*`?([^\s`;,)]*)/gi;
+const RECHECK_MARK = /(?<![\w-])recheck:[ \t]*`?(\d{4}-\d{2}-\d{2}\d*)?/gi;
 /**
- * The item's `recheck:` field: the first one written outside a code span, whatever its value, with the value read
- * from the original text (a value in backticks counts); when every field is inside a code span, the only one. A
- * longer name such as `last-recheck:` is no field. `written` is a date-shaped value as typed (null for any other), `date` the same
- * when it is a whole calendar date (not followed by more digits) and null when not.
+ * The item's `recheck:` field: the last one written outside a code span, whatever its value (a line is a log, and the
+ * latest note is the current one), with the value read
+ * from the original text (a value in backticks counts); when every field is inside a code span, the only one that
+ * has a date. A longer name such as `last-recheck:` is no field. The value is its date-shaped prefix, so a period,
+ * bracket or emphasis after it does not void it. `written` is that prefix as typed (null when the value is not
+ * date-shaped), `date` the same when it is a whole calendar date (not followed by more digits) and null when not.
  * @param {string} text
  * @returns {{ written: string | null, date: string | null }}
  */
 export function recheckField(text) {
-  const masked = maskCodeSpans(text);
   const all = [...text.matchAll(RECHECK_MARK)];
-  const actual = [...masked.matchAll(RECHECK_MARK)][0];
+  const actual = [...maskCodeSpans(text).matchAll(RECHECK_MARK)].at(-1);
+  const dated = all.filter((one) => one[1] !== undefined);
   const found =
     actual !== undefined
       ? all.find((one) => one.index === actual.index)
-      : all.length === 1
-        ? all[0]
+      : dated.length === 1
+        ? dated[0]
         : undefined;
-  const written =
-    found !== undefined && /^\d{4}-\d{2}-\d{2}\d*$/.test(found[1] ?? "")
-      ? (found[1] ?? null)
-      : null;
+  const written = found?.[1] ?? null;
   const stamp = written === null ? Number.NaN : Date.parse(`${written}T00:00:00Z`);
   const real =
     written !== null &&

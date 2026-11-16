@@ -137,6 +137,13 @@ test("a due re-check date makes an item ready even when it also names a trigger 
   }
 });
 
+test("the latest re-check note on a line decides: an old due date followed by a future one is a wait", () => {
+  const waiting = "Item; waiting on CI run 12 recheck: 2026-10-01; later note, recheck: 2099-01-01";
+  assert.equal(check("Working on it.", plan(`- [ ] ${waiting}`)).block, false);
+  const due = "Item; waiting on CI run 12 recheck: 2099-01-01; later note, recheck: 2026-10-29";
+  assert.equal(check("Working on it.", plan(`- [ ] ${due}`)).block, true);
+});
+
 const LONG = `Approved, not built: ${"a long stage description ".repeat(5)}trigger: PR 4 lands`;
 
 test("a due re-check is read from the real field: a quoted example is ignored, a bad date or extra digits never overrides a wait", () => {

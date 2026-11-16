@@ -28,6 +28,43 @@ test("the re-check field is the first one outside a code span, by whole name, wi
   }
 });
 
+test("the re-check date is the date-shaped prefix of the value, so punctuation or emphasis after it does not void it", () => {
+  for (const text of [
+    "x; recheck: 2020-01-01.",
+    "(recheck: 2020-01-01)",
+    "**recheck: 2020-01-01**",
+    "recheck: 2020-01-01, then look",
+    "recheck: 2020-01-01]",
+    "*recheck: 2020-01-01*",
+  ]) {
+    expect(recheckField(text), text).toEqual({ written: "2020-01-01", date: "2020-01-01" });
+  }
+  expect(recheckField("recheck: 2026-02-31.")).toEqual({ written: "2026-02-31", date: null });
+  expect(recheckField("recheck: 2020-01-011.")).toEqual({ written: "2020-01-011", date: null });
+  expect(recheckField("recheck: soon.")).toEqual({ written: null, date: null });
+});
+
+test("the last re-check field written outside a code span is the current one, whatever its value", () => {
+  expect(recheckField("recheck: 2020-01-01; later note, recheck: 2099-12-31").date).toBe(
+    "2099-12-31",
+  );
+  expect(recheckField("recheck: 2099-12-31; then recheck: 2020-01-01").date).toBe("2020-01-01");
+  expect(recheckField("recheck: 2020-01-01; then recheck: soon")).toEqual({
+    written: null,
+    date: null,
+  });
+  expect(recheckField("recheck: 2020-01-01 `recheck: 2099-12-31`").date).toBe("2020-01-01");
+});
+
+test("only a dated quoted field counts for the sole-candidate rule, and an undated quoted label is ignored", () => {
+  expect(recheckField("`recheck:` and `recheck: 2020-01-01`").date).toBe("2020-01-01");
+  expect(recheckField("`recheck:` label only")).toEqual({ written: null, date: null });
+  expect(recheckField("`recheck: 2020-01-01` and `recheck: 2021-01-01`").date).toBe(null);
+  expect(recheckField("`recheck:`, `recheck:` and `recheck: 2020-01-01`").date).toBe("2020-01-01");
+  // An actual undated field still hides a quoted example.
+  expect(recheckField("`recheck: 2020-01-01`; recheck: soon").date).toBe(null);
+});
+
 test("the plan snapshot records the same re-check field the hook and the checker read", () => {
   const plan = [
     "Owner: t",
