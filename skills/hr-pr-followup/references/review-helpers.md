@@ -127,6 +127,13 @@ to that review and head. A minimized comment or another account's edit does not
 qualify. The helper verifies association and a nonblank reason; the caller
 judges whether the explanation answers the findings.
 
+`--expect-head <full commit id>` pins the head the caller means to land. Every read, at every
+poll, is compared with it: a read of any other head ends the wait with the open item `head moved
+during the review` (exit 1), even when the head moves back at the next poll. Reviews and checks
+already count only on the head they were read against, so with the pin they count only on the
+pinned head. The head the run judged is printed first as `judged head: <commit id>`, so a caller can
+compare it with its own pin (a head that changes inside one read, between its pages, still exits 2). A value that is not a full lowercase commit id is a usage error (exit 2).
+
 Connections are paginated. Partial responses, malformed fields, repeated
 cursors and head changes fail closed. A final head read does not make review
 feedback an atomic snapshot. `--wait --timeout 30` polls while CodeRabbit,
@@ -221,6 +228,36 @@ reset, switch or delete a checkout.
   merge passes `--match-head-commit`. It lists worktrees still on the merged branch so
   their owners clean up. The merge never waits on a local checkout; the local default is
   synchronized afterwards as `verify-landed.sh` describes.
+  `merge-pr.sh` reads the pull request once at the start and keeps that read as its pin: the head
+  commit, the base branch and the base commit. It runs the review checker with `--expect-head` on
+  that head and refuses when the checker reports judging another one. After the repository's check,
+  just before the merge or the push, it reads the head, base branch and base commit again and
+  refuses when any differs from the pin (a push, a retarget, or a base that advanced), telling the
+  caller to rerun. `--explain` lands nothing and skips that second read.
+
+  The pin leaves five windows open. Two belong to a caller that wraps this helper, and this
+  helper cannot close them. (1) A caller that exempts a pull request from the private reviewer by
+  reading its files before it runs the helper: the helper pins the head it reads itself, so a head
+  pushed after the caller's last read and before the helper's first one is covered by an exemption
+  decided for another head. The file list a caller reads also moves with the base tip, so a base
+  advance can change the landed diff while the head stays put. This needs another actor to push or
+  advance the base within seconds of the run, in a repository that has such an exemption.
+
+  (2) A caller that retries a refused merge with administrator rights against a base branch name it
+  read earlier: a pull request retargeted to another branch and back between that read and the retry
+  is gated against the other branch and merged against the first. This needs two retargets by
+  another actor inside the same window; one retarget fails closed.
+
+  The rest are in this helper. (3) The last milliseconds between the second read and the merge or
+  push: `gh pr merge` has no base match, and the push does not lease the base, so only the second
+  read guards the base (a push still refuses a base that is no longer an ancestor of the head, and
+  `--match-head-commit` pins the head). (4) A force-push of an identical commit is not seen, because
+  the commit id is the same. (5) The checker reads the required checks of the base branch the pull
+  request has at each read, and the second read only compares final values: a retarget to another
+  branch and back during the review reads is not seen. A review records the head it covers, never
+  the base, so a review made while the pull request targeted another branch is accepted too. A base advance that leaves the diff unchanged
+  is refused by the second read like any other; rerun.
+
 - `verify-landed.sh --commit <sha> [--ff]` fetches, checks that the default branch
   contains the commit, and checks the local default. `--ff` brings the local default
   current: it moves the branch ref when no checkout has it, and runs

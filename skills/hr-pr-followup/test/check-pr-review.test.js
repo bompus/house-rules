@@ -1,10 +1,6 @@
 import { expect, test } from "bun:test";
-import {
-  openFeedback,
-  requiredCheckNames,
-  reviewFeedback,
-  waitForReview,
-} from "../scripts/check-pr-review.ts";
+import { openFeedback, reviewFeedback, waitForReview } from "../scripts/check-pr-review.ts";
+import { requiredCheckNames } from "../scripts/review-values.ts";
 
 // The private reviewer is whatever HR_PRIVATE_REVIEWER names; these tests run with one configured.
 process.env.HR_PRIVATE_REVIEWER = "acme-reviewer";
@@ -329,6 +325,38 @@ test("waitForReview polls while cubic runs and stops on its result", async () =>
   expect(clock).toBe(60_000);
   expect(open).toHaveLength(1);
   expect(open[0]).toContain("NEUTRAL");
+});
+
+// A head read that differs from the pin ends the wait as open at that poll, even when the head moves back.
+test("waitForReview with a pinned head stops at the poll that reads another head, and A-B-A stays open", async () => {
+  const A = "a".repeat(40);
+  const B = "b".repeat(40);
+  const running = pr({ contexts: [{ name: CUBIC, status: "IN_PROGRESS", conclusion: null }] });
+  const other = { ...pr(), headRefOid: B };
+  let clock = 0;
+  const opts = {
+    pollMs: 30_000,
+    sleep: async (/** @type {number} */ ms) => (clock += ms),
+    now: () => clock,
+    timeoutMs: 600_000,
+    expectHead: A,
+  };
+  const reads = [running, other, pr()];
+  const open = await waitForReview(() => reads.shift(), opts);
+  expect(open).toHaveLength(1);
+  expect(open[0]).toContain("head moved during the review");
+  expect(open[0]).toContain(B.slice(0, 12));
+  expect(reads).toHaveLength(1);
+});
+
+test("waitForReview with a pinned head reports a first read of another head, and passes on the pinned one", async () => {
+  const opts = { pollMs: 0, sleep: async () => {}, timeoutMs: 600_000 };
+  const moved = await waitForReview(() => ({ ...pr(), headRefOid: "c".repeat(40) }), {
+    ...opts,
+    expectHead: "a".repeat(40),
+  });
+  expect(moved[0]).toContain("head moved during the review");
+  expect(await waitForReview(() => pr(), { ...opts, expectHead: "a".repeat(40) })).toEqual([]);
 });
 
 // Hand-written wait loops read a field that stays blank and never stopped; --wait polls this way.

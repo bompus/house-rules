@@ -1,7 +1,8 @@
 #!/usr/bin/env bun
 // See ../references/review-helpers.md. One selected thread, dry-run by default, no mutation retries.
 import { parseArgs } from "node:util";
-import { author, date, githubGraphQL, record, text } from "./check-pr-review";
+import { githubGraphQL } from "./check-pr-review";
+import { author, date, record, text } from "./review-values.ts";
 
 type Selection = { pr: string; thread: string; head: string; reply: string; apply: boolean };
 type Thread = { id: string; isResolved: boolean; isOutdated: boolean; viewerCanResolve: boolean };

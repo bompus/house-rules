@@ -80,7 +80,8 @@ function stub(bin, name, body) {
  *   sharing?: string[], sharingFails?: boolean, upstream?: boolean, originUrl?: string,
  *   botReviews?: number, alias?: boolean, silentReviewFailure?: boolean,
  *   checks?: object[] | null, helperBunfig?: boolean, bunCalls?: boolean, checkerArgs?: boolean, afterWait?: string | null, workName?: string,
- *   executableFiles?: string[] }} [options]
+ *   executableFiles?: string[], beforeMerge?: string | null, judgedOther?: string | null,
+ *   noBaseOid?: boolean }} [options]
  */
 function fixture({
   // The checkout directory's name, for a test that needs an unusual one.
@@ -137,6 +138,14 @@ function fixture({
   // What the second read of the pull request finds, as after a wait: closed, retargeted, a moved head or an
   // open PR that targets the head.
   afterWait = null,
+  // What the read just before landing finds: a pushed head, a retargeted base, a base that advanced, or
+  // nothing (the read fails).
+  beforeMerge = null,
+  // The review checker reports judging another head than the one it was given ("other"), or the right
+  // head and then a second line naming another ("extra").
+  judgedOther = null,
+  // The first read of the pull request has no base commit.
+  noBaseOid = false,
 } = {}) {
   const root = mkdtempSync(join(process.env.HOUSE_RULES_TEST_TMP ?? tmpdir(), "merge-pr-"));
   roots.push(root);
@@ -203,9 +212,10 @@ exec bash -c "$(printf '%s' "\${@: -1}" | sed -e "s#^git-#git #" -e "s#'[^']*'#'
     `echo "$*" >> "${log}"
 case "$*" in
   *mergeCommit*) echo "${queued ? "" : squash}";;
+  "pr view"*"--json headRefOid,baseRefName,baseRefOid"*) ${beforeMerge === "unreadable" ? "exit 1" : `printf '${beforeMerge === "moved" ? "0".repeat(40) : oid}\\t${beforeMerge === "retarget" ? "release" : "main"}\\t${beforeMerge === "advanced" ? "0".repeat(40) : squash}\\t${beforeMerge === "closed" ? "CLOSED" : "OPEN"}\\n'`};;
   "pr view"*) n=$(cat "${root}/prview.count" 2>/dev/null || echo 0); echo $((n+1)) > "${root}/prview.count"
-    if [ "$n" -ge 1 ]; then printf 'feature\\t${afterWait === "moved" ? "0".repeat(40) : oid}\\t${afterWait === "retarget" ? "release" : "main"}\\t${afterWait === "closed" ? "CLOSED" : "OPEN"}\\tfalse\\n'
-    else printf 'feature\\t${oid}\\tmain\\tOPEN\\tfalse\\n'; fi;;
+    if [ "$n" -ge 1 ]; then printf 'feature\\t${afterWait === "moved" ? "0".repeat(40) : oid}\\t${afterWait === "retarget" ? "release" : "main"}\\t${afterWait === "closed" ? "CLOSED" : "OPEN"}\\tfalse\\t${squash}\\n'
+    else printf 'feature\\t${oid}\\tmain\\tOPEN\\tfalse\\t${noBaseOid ? "" : squash}\\n'; fi;;
   "pr list"*) n=$(cat "${root}/prlist.count" 2>/dev/null || echo 0); echo $((n+1)) > "${root}/prlist.count"
     if [ "$n" -ge 1 ] && [ "${afterWait}" = dependent ]; then printf '9\\n'; else printf '%s' "${dependents}"; fi;;
   "repo view"*) echo "${upstream ? "pingdotgg/t3code" : repo}";;
@@ -231,6 +241,13 @@ esac
       bin,
       "bun",
       `for a in "$@"; do case "$a" in *check-pr-review.ts) echo "$*" >> "${checkerLog}";; esac; done\nexec "${bun}" "$@"\n`,
+    );
+  }
+  if (judgedOther !== null) {
+    stub(
+      bin,
+      "bun",
+      `for a in "$@"; do case "$a" in *check-pr-review.ts) ${judgedOther === "extra" ? `echo "judged head: ${oid}"; ` : ""}echo "judged head: ${"0".repeat(40)}"; exit 0;; esac; done\nexec "${Bun.which("bun")}" "$@"\n`,
     );
   }
   if (silentReviewFailure) {
@@ -1221,15 +1238,94 @@ test("--wait is passed to the review checker, with --timeout when given, and the
   expect(run("--wait", "--timeout", "5").code).toBe(0);
   const calls = readFileSync(checkerLog, "utf8").trim().split("\n");
   expect(calls.length).toBe(2);
-  expect(calls[0]).toMatch(/check-pr-review\.ts 7 --repo [^ ]+ --wait$/);
-  expect(calls[1]).toMatch(/check-pr-review\.ts 7 --repo [^ ]+ --wait --timeout 5$/);
+  expect(calls[0]).toMatch(/check-pr-review\.ts 7 --repo [^ ]+ --expect-head [0-9a-f]{40} --wait$/);
+  expect(calls[1]).toMatch(
+    /check-pr-review\.ts 7 --repo [^ ]+ --expect-head [0-9a-f]{40} --wait --timeout 5$/,
+  );
   expect(readFileSync(log, "utf8")).toContain("pr merge 7 --squash");
 });
 
-test("without --wait the review checker is called as before", () => {
+test("without --wait the review checker is called with the pinned head only", () => {
   const { checkerLog, run } = fixture({ checkerArgs: true });
   expect(run().code).toBe(0);
-  expect(readFileSync(checkerLog, "utf8").trim()).toMatch(/check-pr-review\.ts 7 --repo [^ ]+$/);
+  expect(readFileSync(checkerLog, "utf8").trim()).toMatch(
+    /check-pr-review\.ts 7 --repo [^ ]+ --expect-head [0-9a-f]{40}$/,
+  );
+});
+
+test("the review checker is pinned to the head the helper read first, in a landing and in --explain", () => {
+  const { checkerLog, oid, run } = fixture({ checkerArgs: true });
+  expect(run().code).toBe(0);
+  expect(run("--explain").code).toBe(0);
+  const calls = readFileSync(checkerLog, "utf8").trim().split("\n");
+  expect(calls.length).toBe(2);
+  for (const call of calls) {
+    expect(call).toContain(`--expect-head ${oid}`);
+  }
+});
+
+test("a review check that judged another head than the pinned one refuses before any merge", () => {
+  const { log, run } = fixture({ judgedOther: "other" });
+  const r = run();
+  expect(r.code).toBe(1);
+  expect(r.err).toContain("the review check judged head");
+  expect(readFileSync(log, "utf8")).not.toContain("pr merge");
+});
+
+test("only the first judged-head line counts: marker-shaped text printed after it is ignored", () => {
+  const { log, run } = fixture({ judgedOther: "extra" });
+  expect(run().code).toBe(0);
+  expect(readFileSync(log, "utf8")).toContain("pr merge");
+});
+
+test("a first read with no base commit refuses before the review check or any merge", () => {
+  const { log, run } = fixture({ noBaseOid: true });
+  const r = run();
+  expect(r.code).toBe(1);
+  expect(r.err).toContain("could not read the base commit");
+  expect(readFileSync(log, "utf8")).not.toContain("pr merge");
+});
+
+// The head, base branch and base commit are read once at the start and again just before landing.
+for (const [moved, why] of [
+  ["moved", "head was pushed"],
+  ["retarget", "PR was retargeted"],
+  ["advanced", "base branch advanced"],
+  ["closed", "PR was closed"],
+  ["unreadable", "read fails"],
+]) {
+  test(`${why} after the checks: a GitHub merge is refused`, () => {
+    const { log, run } = fixture({ beforeMerge: moved });
+    const r = run();
+    expect(r.code).toBe(1);
+    expect(r.err).toMatch(
+      /changed after it was reviewed|is CLOSED just before|could not read PR 7 again/,
+    );
+    expect(readFileSync(log, "utf8")).not.toContain("pr merge");
+  });
+  test(`${why} after the checks: a fast-forward push is refused`, () => {
+    const { remote, oid, run } = fixture({
+      repo: "bompus/house-rules",
+      baseCurrent: true,
+      beforeMerge: moved,
+    });
+    const before = sh(remote, "git", "rev-parse", "main");
+    const r = run();
+    expect(r.code).toBe(1);
+    expect(r.err).toMatch(
+      /changed after it was reviewed|is CLOSED just before|could not read PR 7 again/,
+    );
+    expect(sh(remote, "git", "rev-parse", "main")).toBe(before);
+    expect(sh(remote, "git", "branch", "--list", "feature")).toContain("feature");
+    expect(oid).not.toBe(before);
+  });
+}
+
+test("--explain lands nothing and does not read the PR a second time before landing", () => {
+  const { log, run } = fixture({ beforeMerge: "moved" });
+  const r = run("--explain");
+  expect(r.code).toBe(0);
+  expect(readFileSync(log, "utf8")).not.toContain("--json headRefOid,baseRefName,baseRefOid");
 });
 
 test("--explain passes --wait to the review checker too and lands nothing", () => {

@@ -67,6 +67,12 @@
 # of the head and the head branch is still at the reviewed commit (the lease the push holds). It
 # runs the repository's check as a landing does. Exit 0 when every condition is met, 1 otherwise.
 #
+# The first read of the PR is the pin: its head commit, base branch and base commit. The review check runs with
+# --expect-head on that head and must report it back as the head it judged; a head that differs at any poll
+# refuses the landing. A head, base branch or base commit that differs just before the merge or push (a second
+# read, after the repository's check) refuses it too. The checker does not pin the base: a retarget to another
+# branch and back while it reads is not seen (see references/review-helpers.md).
+#
 # --wait [--timeout <minutes>] is passed to check-pr-review.ts, which then polls while a review or another
 # check on the head is still running (30 minutes by default) and reports as usual afterwards. A timeout or any
 # open finding still refuses, so nothing is landed on a review that has not finished. After a wait the script
@@ -231,9 +237,15 @@ met() {
   return 0
 }
 
-IFS=$'\t' read -r HEAD OID BASE STATE FORK < <(gh pr view "$PR" --repo "$REPO" \
-  --json headRefName,headRefOid,baseRefName,state,isCrossRepository \
-  --jq '[.headRefName, .headRefOid, .baseRefName, .state, .isCrossRepository] | @tsv')
+# This read is the pin: the head commit, base branch and base commit every later step is judged
+# against. Nothing after it adopts a newer value; a step that finds another one refuses.
+BASE_OID=""
+IFS=$'\t' read -r HEAD OID BASE STATE FORK BASE_OID < <(gh pr view "$PR" --repo "$REPO" \
+  --json headRefName,headRefOid,baseRefName,state,isCrossRepository,baseRefOid \
+  --jq '[.headRefName, .headRefOid, .baseRefName, .state, .isCrossRepository, .baseRefOid] | @tsv')
+if ! [[ "$BASE_OID" =~ ^([0-9a-f]{40}|[0-9a-f]{64})$ ]]; then
+  unmet "base commit read" "refused: could not read the base commit of PR $PR; PR $PR is not merged"
+fi
 if [ "$STATE" = OPEN ]; then
   met "PR is open"
 else
@@ -359,16 +371,46 @@ recheck_after_wait() {
     met "no open PR targets the head branch after the wait"
   fi
 }
+# Just before the PR lands, the head, base branch and base commit are read again and must equal the pin
+# taken at the top. A push, a retarget or a base advance before this read refuses the landing; a retarget there and
+# back before it does not, since the values equal the pin again.
+recheck_pin() {
+  local oid_now="" base_now="" base_oid_now="" state_now=""
+  IFS=$'\t' read -r oid_now base_now base_oid_now state_now < <(gh pr view "$PR" --repo "$REPO" \
+    --json headRefOid,baseRefName,baseRefOid,state \
+    --jq '[.headRefOid, .baseRefName, .baseRefOid, .state] | @tsv') || true
+  if [ -z "$state_now" ]; then
+    echo "refused: could not read PR $PR again just before landing; PR $PR is not landed" >&2
+    exit 1
+  fi
+  if [ "$state_now" != OPEN ]; then
+    echo "refused: PR $PR is $state_now just before landing; PR $PR is not landed" >&2
+    exit 1
+  fi
+  if [ "$oid_now" != "$OID" ] || [ "$base_now" != "$BASE" ] || [ "$base_oid_now" != "$BASE_OID" ]; then
+    echo "refused: PR $PR changed after it was reviewed (head ${OID:0:12} to ${oid_now:0:12}, base $BASE at ${BASE_OID:0:12} to $base_now at ${base_oid_now:0:12}); rerun to review the new state; PR $PR is not landed" >&2
+    exit 1
+  fi
+}
 if [ "$EXPLAIN" != 1 ]; then
-  if ! bun_isolated "$CHECKER" "$PR" --repo "$REPO" ${WAIT_ARGS[@]+"${WAIT_ARGS[@]}"}; then
+  REVIEW_OUT=""
+  if ! REVIEW_OUT="$(bun_isolated "$CHECKER" "$PR" --repo "$REPO" --expect-head "$OID" ${WAIT_ARGS[@]+"${WAIT_ARGS[@]}"})"; then
+    if [ -n "$REVIEW_OUT" ]; then echo "$REVIEW_OUT"; fi
     echo "refused: review feedback is open (check-pr-review.ts); PR $PR is not merged" >&2
+    exit 1
+  fi
+  if [ -n "$REVIEW_OUT" ]; then echo "$REVIEW_OUT"; fi
+  # The checker prints this line before any text taken from the API, so only the first one is the checker's.
+  JUDGED="$(printf '%s\n' "$REVIEW_OUT" | sed -n '/^judged head: /{s///p;q;}')"
+  if [ "$JUDGED" != "$OID" ]; then
+    echo "refused: the review check judged head ${JUDGED:-none}, not the pinned ${OID:0:12}; PR $PR is not merged" >&2
     exit 1
   fi
   if [ "$WAIT" = 1 ]; then recheck_after_wait; fi
 else
   # The checker prints each open item as an indented line on stderr. Sort them into the conditions they break.
   REVIEW_CODE=0
-  REVIEW_ERR="$(bun_isolated "$CHECKER" "$PR" --repo "$REPO" ${WAIT_ARGS[@]+"${WAIT_ARGS[@]}"} 2>&1 >/dev/null)" || REVIEW_CODE=$?
+  REVIEW_ERR="$(bun_isolated "$CHECKER" "$PR" --repo "$REPO" --expect-head "$OID" ${WAIT_ARGS[@]+"${WAIT_ARGS[@]}"} 2>&1 >/dev/null)" || REVIEW_CODE=$?
   THREADS="" BOT="" CHECKS="" OTHER=""
   if [ "$REVIEW_CODE" = 1 ]; then
     while IFS= read -r LINE; do
@@ -592,6 +634,7 @@ if [[ "${PUSH_LANDED,,}" == *" ${REPO,,} "* ]]; then
     fi
   fi
   if [ "$EXPLAIN" != 1 ]; then
+    recheck_pin
     if ! git push --quiet "$REMOTE" "${PUSH[@]}"; then
       echo "refused: the fast-forward push of ${OID:0:12} to $BASE failed (a moved base or head refuses it); PR $PR is not landed" >&2
       exit 1
@@ -605,6 +648,7 @@ if [[ "${PUSH_LANDED,,}" == *" ${REPO,,} "* ]]; then
 elif [ "$EXPLAIN" = 1 ]; then
   met "landing is a GitHub merge pinned to the head commit" "gh pr merge --match-head-commit ${OID:0:12}"
 else
+  recheck_pin
   if ! gh pr merge "$PR" "$STRATEGY" --match-head-commit "$OID" --repo "$REPO"; then
     echo "refused: gh pr merge failed; PR $PR is not merged" >&2
     exit 1

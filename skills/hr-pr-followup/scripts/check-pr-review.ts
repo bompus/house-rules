@@ -35,7 +35,10 @@
 // --wait gives it a few minutes to appear after a push, like the CodeRabbit check. Only what the
 // API shows the viewer is read: classic branch protection can be hidden from a viewer without
 // write access.
-//   bun --config=/dev/null --no-env-file scripts/check-pr-review.ts <pr> [--repo <owner>/<name>] [--wait [--timeout <minutes>]]
+//   bun --config=/dev/null --no-env-file scripts/check-pr-review.ts <pr> [--repo <owner>/<name>] [--expect-head <oid>] [--wait [--timeout <minutes>]]
+// --expect-head pins the head the caller means to land: every read, at every poll, is compared with it, and a read of any other head
+// ends the wait with the open item "head moved during the review" even if the head moves back later. Reviews and checks already count only on the head
+// they were read against, so with the pin they count only on the pinned head. The head it judged is printed as `judged head: <oid>`.
 // With the CodeRabbit app suspended, HR_CODERABBIT_SUSPENDED=1 records its check or status, missing or stale, as skipped.
 // Exit 1 while feedback is open, 2 when gh fails. Without --repo, gh resolves the repository from
 // the current checkout. --wait polls every 30 s while CodeRabbit's or cubic's review or any other check is still running, and for up to 3 minutes while the head commit has no CodeRabbit check yet (CodeRabbit posts it a little
@@ -57,6 +60,7 @@
 import { spawnSync } from "node:child_process";
 import { parseArgs } from "node:util";
 import * as cfg from "./review-settings.ts";
+import { author, date, record, requiredCheckNames, text } from "./review-values.ts";
 
 const CODERABBIT = /coderabbit/i;
 const CUBIC = /^cubic · AI code reviewer$/i;
@@ -102,6 +106,9 @@ const CODERABBIT_RETRIGGER_COMMAND = "`@coderabbitai full review`";
 // A second bare failure this long after the re-trigger shows CodeRabbit cannot review the pull request.
 const CODERABBIT_RETRY_WAIT_MS = 3_600_000;
 const POLL_MS = 30_000;
+const HEAD_MOVED = "head moved during the review: ";
+const headMoved = (pinned: string, read: string) =>
+  `${HEAD_MOVED}pinned ${pinned.slice(0, 12)}, read ${read.slice(0, 12)}; rerun to review the new head`;
 const NO_CHECK_GRACE_MS = 180_000;
 
 type Author = { __typename: string; login: string } | null;
@@ -181,29 +188,6 @@ const REQUIRED_CHECKS_FIELDS = `baseRef{branchProtectionRule{requiredStatusCheck
 type Connection = keyof typeof CONNECTIONS;
 type Page = { nodes: unknown[]; pageInfo: { hasNextPage: boolean; endCursor: string | null } };
 
-export function record(value: unknown): Record<string, unknown> {
-  if (!value || typeof value !== "object" || Array.isArray(value)) {
-    throw new Error("malformed API object");
-  }
-  return value as Record<string, unknown>;
-}
-export function text(value: unknown): value is string {
-  return typeof value === "string";
-}
-export function date(value: unknown): boolean {
-  return text(value) && Number.isFinite(Date.parse(value));
-}
-export function author(value: unknown): boolean {
-  if (value === null) {
-    return true;
-  }
-  const a = record(value);
-  return (
-    text(a.__typename) &&
-    ["Bot", "EnterpriseUserAccount", "Mannequin", "Organization", "User"].includes(a.__typename) &&
-    text(a.login)
-  );
-}
 function validNode(key: Connection, value: unknown): boolean {
   const n = record(value);
   switch (key) {
@@ -330,53 +314,6 @@ export function githubGraphQL(
     throw new Error("GraphQL returned errors; coverage is incomplete");
   }
   return record(response.data);
-}
-
-/** Names of the checks the base branch requires; rejects a missing base ref or a partial rule list. */
-export function requiredCheckNames(baseRef: unknown): string[] {
-  const ref = record(baseRef);
-  const rules = record(ref.rules);
-  if (record(rules.pageInfo).hasNextPage !== false || !Array.isArray(rules.nodes)) {
-    throw new Error("base branch rules are incomplete");
-  }
-  const names = new Set<string>();
-  const add = (value: unknown) => {
-    if (!text(value)) {
-      throw new Error("malformed required check");
-    }
-    names.add(value);
-  };
-  if (ref.branchProtectionRule !== null) {
-    const rule = record(ref.branchProtectionRule);
-    const contexts = rule.requiredStatusCheckContexts;
-    const checks = rule.requiredStatusChecks;
-    if (!Array.isArray(contexts) || !Array.isArray(checks)) {
-      throw new Error("malformed branch protection rule");
-    }
-    for (const context of contexts) {
-      add(context);
-    }
-    for (const check of checks) {
-      add(record(check).context);
-    }
-  }
-  for (const node of rules.nodes) {
-    const rule = record(node);
-    if (!text(rule.type)) {
-      throw new Error("malformed base branch rule");
-    }
-    if (rule.type !== "REQUIRED_STATUS_CHECKS") {
-      continue;
-    }
-    const checks = record(rule.parameters).requiredStatusChecks;
-    if (!Array.isArray(checks)) {
-      throw new Error("malformed required checks rule");
-    }
-    for (const check of checks) {
-      add(record(check).context);
-    }
-  }
-  return [...names].sort();
 }
 
 /**
@@ -916,9 +853,12 @@ export async function waitForReview(
     pollMs = POLL_MS,
     sleep = Bun.sleep,
     now = Date.now,
+    expectHead,
   }: {
     timeoutMs: number;
     pollMs?: number;
+    /** The head the caller means to land: a read of any other head ends the wait as open. */
+    expectHead?: string;
     sleep?: (ms: number) => Promise<unknown>;
     now?: () => number;
   },
@@ -930,6 +870,9 @@ export async function waitForReview(
       open.some((line) => line.startsWith(NO_CHECK) || line.startsWith(REQUIRED_MISSING)));
   let appSeen = false;
   const readOpen = (s = read()) => {
+    if (expectHead && s.headRefOid !== expectHead) {
+      return [headMoved(expectHead, s.headRefOid)];
+    }
     appSeen = appSeen || s.appActive === true;
     return openFeedback(appSeen ? { ...s, appActive: true } : s);
   };
@@ -948,6 +891,7 @@ if (import.meta.main) {
       repo: { type: "string" },
       wait: { type: "boolean" },
       timeout: { type: "string", default: "30" },
+      "expect-head": { type: "string" },
     },
   });
   if (values.repo && !/^[^/\s]+\/[^/\s]+$/.test(values.repo)) {
@@ -956,9 +900,15 @@ if (import.meta.main) {
   }
   const pr = Number(positionals[0]);
   const waitMinutes = Number(values.timeout);
-  if (!Number.isInteger(pr) || pr < 1 || !(waitMinutes > 0)) {
+  const expectHead = values["expect-head"];
+  if (
+    !Number.isInteger(pr) ||
+    pr < 1 ||
+    !(waitMinutes > 0) ||
+    (expectHead !== undefined && !/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/.test(expectHead))
+  ) {
     console.error(
-      "usage: check-pr-review.ts <pr> [--repo <owner>/<name>] [--wait [--timeout <minutes>]]",
+      "usage: check-pr-review.ts <pr> [--repo <owner>/<name>] [--expect-head <full lowercase commit id>] [--wait [--timeout <minutes>]]",
     );
     process.exit(2);
   }
@@ -968,7 +918,7 @@ if (import.meta.main) {
     cfg.validateReviewSettings();
     const read = () => (state = readReviewState(owner!, name!, pr));
     if (values.wait) {
-      open = await waitForReview(read, { timeoutMs: waitMinutes * 60_000 });
+      open = await waitForReview(read, { timeoutMs: waitMinutes * 60_000, expectHead });
     } else {
       read();
     }
@@ -980,6 +930,10 @@ if (import.meta.main) {
   }
   const { open: current, skipped } = reviewFeedback(state!);
   open ??= current;
+  if (expectHead && state!.headRefOid !== expectHead) {
+    open = [headMoved(expectHead, state!.headRefOid)];
+  }
+  console.log(`judged head: ${state!.headRefOid}`);
   for (const line of skipped) {
     console.log(`skipped review bot ${line}`);
   }

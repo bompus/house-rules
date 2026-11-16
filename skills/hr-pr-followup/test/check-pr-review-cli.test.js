@@ -100,6 +100,7 @@ mock.module("node:child_process", () => ({spawnSync: (command, args, options) =>
       script,
       "7",
       ...(options.defaultRepo ? [] : ["--repo", "owner/app"]),
+      ...(options.args ?? []),
     ],
     {
       env: {
@@ -205,6 +206,27 @@ test("CLI reports a malformed review commit as a contract violation, not open fe
 test("CLI permits complete empty feedback, including a head without status rollup", () => {
   expect(run().code).toBe(0);
   expect(run({ nullContexts: true }).code).toBe(0);
+});
+
+test("CLI prints the head it judged, and --expect-head accepts only that head", () => {
+  const plain = run();
+  expect(plain.code).toBe(0);
+  expect(plain.out).toContain(`judged head: ${head}`);
+  const pinned = run({ args: ["--expect-head", head] });
+  expect(pinned.code).toBe(0);
+  expect(pinned.out).toContain(`judged head: ${head}`);
+  const other = run({ args: ["--expect-head", "b".repeat(40)] });
+  expect(other.code).toBe(1);
+  expect(other.err).toContain("head moved during the review");
+  expect(other.out).toContain(`judged head: ${head}`);
+});
+
+test("CLI refuses an --expect-head that is not a full lowercase commit id", () => {
+  for (const bad of ["abc123", head.toUpperCase(), "", "main"]) {
+    const r = run({ args: ["--expect-head", bad] });
+    expect(r.code).toBe(2);
+    expect(r.err).toContain("usage:");
+  }
 });
 
 test("CLI rejects a head change on the final metadata-only read", () => {
