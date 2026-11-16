@@ -23,6 +23,7 @@ import {
   removeStale,
   removeTree,
   startTime,
+  trusted,
 } from "./tmp-guard.mjs";
 
 const WIN =
@@ -176,6 +177,9 @@ test("the guard works only in a folder this user alone can write to", { skip: WI
   } finally {
     process.chdir(here);
   }
+  // The path checked is not resolved a second time: a link is untrusted even when it points at a trusted folder.
+  assert.equal(trusted(join(hop, "real")), true);
+  assert.equal(trusted(join(hop, "via")), false);
   const swapped = scratch(t);
   chmodSync(swapped, 0o1777);
   symlinkSync(closed, join(swapped, `${PRIVATE_NAME}-${uid}`));

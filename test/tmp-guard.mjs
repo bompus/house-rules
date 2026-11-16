@@ -6,6 +6,9 @@
 // the system temporary folder. Active only under Bun on Linux and macOS: `node --test` imports this file for its
 // helpers and changes nothing. Everything happens in a folder only this user can write to: the base itself when it is,
 // else a private subfolder of a sticky base (as `/tmp` is); a base others can rename entries in turns the guard off.
+// The check reads owners and mode bits only. On macOS an access list can give another user write or delete rights on
+// a folder whose mode bits are 0700, and the guard does not see it: use a scratch folder without such an access list
+// there. Linux POSIX ACLs act through the group bits, which the mode check already covers.
 import {
   chmodSync,
   lstatSync,
@@ -128,13 +131,14 @@ export function makeRoot(root) {
 export const PRIVATE_NAME = "house-rules-test-private";
 
 /**
- * Whether no user but root and this one can rename or replace any folder on the way to `path`: every folder from the
- * real path up to the root belongs to root or this user, and is closed to others' writes unless it is sticky.
+ * Whether no user but root and this one can rename or replace any folder on the way to `path`: every folder from `path`
+ * up to the root belongs to root or this user, and is closed to others' writes unless it is sticky. `path` must already
+ * be a canonical path (the caller resolved it once); it is not resolved again, so a link there is untrusted.
  * @param {string} path
  */
-function trusted(path) {
+export function trusted(path) {
   const uid = process.getuid?.();
-  for (let dir = realpathSync(path); ; dir = dirname(dir)) {
+  for (let dir = path; ; dir = dirname(dir)) {
     const stat = lstatSync(dir);
     if (stat.uid !== 0 && stat.uid !== uid) {
       return false;
