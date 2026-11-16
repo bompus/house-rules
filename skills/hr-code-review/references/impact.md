@@ -51,6 +51,26 @@ Each search is a finding. "No other reader of `order_status` found in this
 repository or its deploy config" is worth reporting; say where you looked.
 Never name a caller, consumer or API you have not seen at a real location.
 
+## Scripts and procedures
+
+When the change adds or edits a script that acts on files, or the text an
+operator follows to run one (a release, a deploy, a cleanup), ask three more
+questions.
+
+- **Do the check and the action read the same inputs?** A guard that tests one
+  path, branch, version or file list while the command acts on another proves
+  nothing. Compare what the check reads with what the action reads, down to the
+  argument, the working directory and the environment.
+- **Does the script ever empty a folder the caller supplied?** A script may
+  clear a directory it created. It must not delete the contents of one it was
+  handed: refuse a folder that is not empty, or work in a new folder under it.
+- **Does the procedure name the operator's likely mistakes?** Read the steps as
+  someone in a hurry would: the wrong checkout, a skipped step, a stale tag, a
+  command run twice. Each should either be impossible, be caught by a check, or
+  be named in the text with what to do.
+
+Report each answer with where you read it, as for any other claim.
+
 ## Find the load-bearing assumption
 
 A change that looks risky usually rests on one or two facts: no
