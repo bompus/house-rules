@@ -4,8 +4,8 @@
 // 000), which a plain recursive remove cannot delete. A run that was killed leaves its folder; the next run removes
 // guard folders a day old whose run is gone. The folder is made inside `HOUSE_RULES_TEST_TMP` when that is set, else
 // the system temporary folder. Active only under Bun on Linux and macOS: `node --test` imports this file for its
-// helpers and changes nothing. The temporary folder is assumed private to the user or sticky (as `/tmp` is); a folder
-// another user can rename entries in is out of scope.
+// helpers and changes nothing. Everything happens in a folder only this user can write to: the base itself when it is,
+// else a private subfolder of a sticky base (as `/tmp` is); a base others can rename entries in turns the guard off.
 import {
   chmodSync,
   lstatSync,
@@ -59,24 +59,21 @@ export function startTime(pid) {
 }
 
 /**
- * Whether the run that made this guard folder has ended: its process is gone, or its id now belongs to a process that
- * started at another time. A marker that names another process is not ours; a missing one (an interrupted cleanup)
- * leaves the process id in the folder's name to go by.
+ * Whether the run that made this guard folder has ended: its marker names the process in the folder's name, and that
+ * process is gone, or its id now belongs to a process that started at another time. A folder without a readable marker
+ * that names that process is not proven ours and is kept.
  * @param {string} path @param {string} name
  */
 function abandoned(path, name) {
   const pid = Number(NAME.exec(name)?.[1]);
-  /** @type {string[]} */
-  let marker = [];
+  let marker;
   try {
     marker = readFileSync(join(path, MARKER), "utf8").trim().split(" ");
-    if (Number(marker[0]) !== pid) {
-      return false;
-    }
-  } catch (error) {
-    if (/** @type {NodeJS.ErrnoException} */ (error).code !== "ENOENT") {
-      return false;
-    }
+  } catch {
+    return false;
+  }
+  if (!pid || Number(marker[0]) !== pid) {
+    return false;
   }
   try {
     process.kill(pid, 0);
@@ -127,12 +124,52 @@ export function makeRoot(root) {
   }
 }
 
+export const PRIVATE_NAME = "house-rules-test-private";
+
+/**
+ * A folder only this user can write to, to hold the run folders: the base itself when it is ours and closed to others'
+ * writes, else a private subfolder of a base that is sticky (others cannot rename or replace our entries), made 0700 and
+ * checked with `lstat` (ours, a folder, closed to others, not a link). Null when neither holds; the guard then stays off.
+ * @param {string} base
+ * @returns {string | null}
+ */
+export function privateBase(base) {
+  const uid = process.getuid?.();
+  try {
+    const stat = lstatSync(base);
+    if (!stat.isDirectory()) {
+      return null;
+    }
+    if (stat.uid === uid && (stat.mode & 0o022) === 0) {
+      return base;
+    }
+    if ((stat.mode & 0o1000) === 0) {
+      return null;
+    }
+    const own = join(base, `${PRIVATE_NAME}-${uid}`);
+    try {
+      mkdirSync(own, { mode: 0o700 });
+    } catch (error) {
+      if (/** @type {NodeJS.ErrnoException} */ (error).code !== "EEXIST") {
+        throw error;
+      }
+    }
+    const mine = lstatSync(own);
+    return mine.isDirectory() && mine.uid === uid && (mine.mode & 0o077) === 0 ? own : null;
+  } catch {
+    return null;
+  }
+}
+
 /** The run's private folder, or null where the guard is not active. */
 export const GUARD_ROOT = await (async () => {
   if (!process.versions.bun || process.platform === "win32") {
     return null;
   }
-  const base = process.env.HOUSE_RULES_TEST_TMP || tmpdir();
+  const base = privateBase(process.env.HOUSE_RULES_TEST_TMP || tmpdir());
+  if (base === null) {
+    return null;
+  }
   removeStale(base);
   const root = mkdtempSync(join(base, `${PREFIX}${process.pid}-`));
   makeRoot(root);
