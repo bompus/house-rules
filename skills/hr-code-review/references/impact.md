@@ -63,7 +63,11 @@ questions.
   argument, the working directory and the environment.
 - **Does the script ever empty a folder the caller supplied?** A script may
   clear a directory it created. It must not delete the contents of one it was
-  handed: refuse a folder that is not empty, or work in a new folder under it.
+  merely handed as an input or an output: refuse a folder that is not empty, or
+  work in a new folder under it. Removing a folder the operator named for
+  removal (a `--topic NAME` cleanup, say) is fine when the script says what it
+  will remove, and listing or confirming it first is better. Tell the two cases
+  apart and say where you read which one the script does.
 - **Does the procedure name the operator's likely mistakes?** Read the steps as
   someone in a hurry would: the wrong checkout, a skipped step, a stale tag, a
   command run twice. Each should either be impossible, be caught by a check, or
