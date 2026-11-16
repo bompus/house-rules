@@ -9,10 +9,11 @@ Follow the repository and host's commands, resource limits, authorization and
 landing rules. Reuse an existing workload. Take the runner from
 [the tool reference](references/tools.md): never time with a loop you write
 (`performance.now()`, `Date.now()`, `process.hrtime`, shell `time` around a
-script); a question about the machine itself may use a named machine benchmark program
-(kcbench, sysbench, fio, pgbench, Geekbench, STREAM), as the reference says. Read the reference before creating or extending any benchmark, and when
-selecting a profiler or correctness check or interpreting measurements. A project
-that already times with a hand-written loop, or with a runner outside the three
+script); a question about the machine itself may use a named machine program
+(kcbench, sysbench, fio, pgbench, Geekbench, STREAM), which is no outside runner.
+Read the reference before creating or extending any benchmark, and when selecting
+a profiler or correctness check or interpreting measurements. A project that
+already times with a hand-written loop, or with another runner outside the three
 there, names it in the plan before the first run, then moves the timing onto a
 listed runner, or says what the listed runners cannot measure and gets the
 user's agreement to keep it.
@@ -93,7 +94,10 @@ A faster wrong result or skipped operation is not a performance improvement.
 Have each run print counts of the work it did, such as files read, rows written
 or operations completed, and a hash of its output. Compare them on the first
 pair of runs, before the remaining runs. A mismatch means the arms did different
-work; find the cause before timing anything else.
+work; find the cause before timing anything else. A run that lasts a fixed time
+(pgbench, fio, sysbench, oha) does equal work per operation when the mix, inputs,
+settings and checks match; its completed count is the measurement, and a changed mix
+or an uncounted failure is the mismatch.
 
 When a change should leave a query tool's answers unchanged, replay real
 queries. Harvest queries or tool calls from past session transcripts, and keep

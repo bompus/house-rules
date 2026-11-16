@@ -7,8 +7,8 @@ replace it, so `/usr/bin/time` around a loop you wrote is not a Hyperfine run. A
 project's own runner counts only when it wraps one of the three, as `vitest bench`
 wraps Tinybench. A hand-written timing loop is not a runner, however small or old: it
 leaves warmup, outlier handling and statistics to the author. Any other project
-runner (a language-native one such as Criterion, a browser tracer) stays only
-with the user's agreement, after the plan names it and what the three runners
+runner (a language-native one such as Criterion, a browser tracer; not a machine
+program named below) stays only with the user's agreement, after the plan names it and what the three runners
 cannot measure. When a project has a hand-written loop, name it in the plan before
 the first run and either move the timing onto a runner or get that agreement.
 Figures from a different runner are not directly comparable, so a move means
