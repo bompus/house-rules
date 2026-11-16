@@ -6,3 +6,7 @@ auto = "disable"
 # @types/bun and bun-types follow the installed Bun and typescript is pinned, so they skip the wait.
 minimumReleaseAge = "3d"
 minimumReleaseAgeExcludes = ["@types/bun", "bun-types", "typescript"]
+
+[test]
+# Each run's temporary files live in one private folder that is removed when the run ends.
+preload = ["./test/tmp-guard.mjs"]
