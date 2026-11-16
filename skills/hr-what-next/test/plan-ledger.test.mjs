@@ -56,6 +56,22 @@ test("the last re-check field written outside a code span is the current one, wh
   expect(recheckField("recheck: 2020-01-01 `recheck: 2099-12-31`").date).toBe("2020-01-01");
 });
 
+test("a date followed by any other numeric character, Unicode digits included, is no date", () => {
+  for (const digit of ["１", "٣", "²"]) {
+    expect(recheckField(`recheck: 2020-01-01${digit}`).date, digit).toBe(null);
+    expect(recheckField(`recheck: 2099-01-01${digit}.`).date, digit).toBe(null);
+  }
+  expect(recheckField("recheck: 2020-01-01.").date).toBe("2020-01-01");
+});
+
+test("a quoted label followed by its date, with or without a space, is a dated quoted field", () => {
+  expect(recheckField("`recheck:` 2020-01-01").date).toBe("2020-01-01");
+  expect(recheckField("`recheck:`2020-01-01").date).toBe("2020-01-01");
+  expect(recheckField("`recheck:` 2020-01-01; example `recheck: 2099-01-01`").date).toBe(null);
+  expect(recheckField("`recheck:`2020-01-01; example `recheck: 2099-01-01`").date).toBe(null);
+  expect(recheckField("`recheck:` label only")).toEqual({ written: null, date: null });
+});
+
 test("only a dated quoted field counts for the sole-candidate rule, and an undated quoted label is ignored", () => {
   expect(recheckField("`recheck:` and `recheck: 2020-01-01`").date).toBe("2020-01-01");
   expect(recheckField("`recheck:` label only")).toEqual({ written: null, date: null });

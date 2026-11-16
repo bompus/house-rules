@@ -89,12 +89,12 @@ export function maskCodeSpans(text) {
   return out;
 }
 
-const RECHECK_MARK = /(?<![\w-])recheck:[ \t]*`?(\d{4}-\d{2}-\d{2}\d*)?/gi;
+const RECHECK_MARK = /(?<![\w-])recheck:[ \t]*`?[ \t]*(\d{4}-\d{2}-\d{2}\p{N}*)?/giu;
 /**
  * The item's `recheck:` field: the last one written outside a code span, whatever its value (a line is a log, and the
  * latest note is the current one), with the value read
  * from the original text (a value in backticks counts); when every field is inside a code span, the only one that
- * has a date. A longer name such as `last-recheck:` is no field. The value is its date-shaped prefix, so a period,
+ * has a date. A longer name such as `last-recheck:` is no field. The value is its date-shaped prefix (a date followed by any other numeric character, Unicode digits included, is no date), so a period,
  * bracket or emphasis after it does not void it. `written` is that prefix as typed (null when the value is not
  * date-shaped), `date` the same when it is a whole calendar date (not followed by more digits) and null when not.
  * @param {string} text

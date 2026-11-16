@@ -137,6 +137,14 @@ test("a due re-check date makes an item ready even when it also names a trigger 
   }
 });
 
+test("a date followed by a Unicode digit is no date: a trigger stays a wait, a future one never hides ready work", () => {
+  assert.equal(
+    check("Working on it.", plan("- [ ] Item; trigger: PR 4 lands; recheck: 2020-01-01１")).block,
+    false,
+  );
+  assert.equal(check("Working on it.", plan("- [ ] Item; recheck: 2099-01-01１")).block, true);
+});
+
 test("the latest re-check note on a line decides: an old due date followed by a future one is a wait", () => {
   const waiting = "Item; waiting on CI run 12 recheck: 2026-10-01; later note, recheck: 2099-01-01";
   assert.equal(check("Working on it.", plan(`- [ ] ${waiting}`)).block, false);
