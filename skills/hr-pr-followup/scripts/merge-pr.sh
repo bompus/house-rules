@@ -401,7 +401,14 @@ if [ "$EXPLAIN" != 1 ]; then
   fi
   if [ -n "$REVIEW_OUT" ]; then echo "$REVIEW_OUT"; fi
   # The checker prints this line before any text taken from the API, so only the first one is the checker's.
-  JUDGED="$(printf '%s\n' "$REVIEW_OUT" | sed -n '/^judged head: /{s///p;q;}')"
+  JUDGED=""
+  while IFS= read -r LINE; do
+    case "$LINE" in "judged head: "*)
+      JUDGED="${LINE#judged head: }"
+      break
+      ;;
+    esac
+  done <<<"$REVIEW_OUT"
   if [ "$JUDGED" != "$OID" ]; then
     echo "refused: the review check judged head ${JUDGED:-none}, not the pinned ${OID:0:12}; PR $PR is not merged" >&2
     exit 1

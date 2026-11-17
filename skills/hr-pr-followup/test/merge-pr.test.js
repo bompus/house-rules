@@ -247,7 +247,7 @@ esac
     stub(
       bin,
       "bun",
-      `for a in "$@"; do case "$a" in *check-pr-review.ts) ${judgedOther === "extra" ? `echo "judged head: ${oid}"; ` : ""}echo "judged head: ${"0".repeat(40)}"; exit 0;; esac; done\nexec "${Bun.which("bun")}" "$@"\n`,
+      `for a in "$@"; do case "$a" in *check-pr-review.ts) ${judgedOther === "extra" ? `echo "judged head: ${oid}"; ` : ""}${judgedOther === "flood" ? `echo "judged head: ${oid}"; head -c 300000 /dev/zero | tr '\\0' 'x'; echo; ` : ""}${judgedOther === "flood" ? "" : `echo "judged head: ${"0".repeat(40)}"; `}exit 0;; esac; done\nexec "${Bun.which("bun")}" "$@"\n`,
     );
   }
   if (silentReviewFailure) {
@@ -1275,6 +1275,13 @@ test("a review check that judged another head than the pinned one refuses before
 test("only the first judged-head line counts: marker-shaped text printed after it is ignored", () => {
   const { log, run } = fixture({ judgedOther: "extra" });
   expect(run().code).toBe(0);
+  expect(readFileSync(log, "utf8")).toContain("pr merge");
+});
+
+test("a clear review with feedback output longer than a pipe buffer still lands", () => {
+  const { log, run } = fixture({ judgedOther: "flood" });
+  const r = run();
+  expect(r.code).toBe(0);
   expect(readFileSync(log, "utf8")).toContain("pr merge");
 });
 
