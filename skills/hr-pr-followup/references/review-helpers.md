@@ -235,7 +235,7 @@ reset, switch or delete a checkout.
   refuses when any differs from the pin (a push, a retarget, or a base that advanced), telling the
   caller to rerun. `--explain` lands nothing and skips that second read.
 
-  The pin leaves five windows open. Two belong to a caller that wraps this helper, and this
+  The pin leaves six windows open. Two belong to a caller that wraps this helper, and this
   helper cannot close them. (1) A caller that exempts a pull request from the private reviewer by
   reading its files before it runs the helper: the helper pins the head it reads itself, so a head
   pushed after the caller's last read and before the helper's first one is covered by an exemption
@@ -255,7 +255,11 @@ reset, switch or delete a checkout.
   the commit id is the same. (5) The checker reads the required checks of the base branch the pull
   request has at each read, and the second read only compares final values: a retarget to another
   branch and back during the review reads is not seen. A review records the head it covers, never
-  the base, so a review made while the pull request targeted another branch is accepted too. A base advance that leaves the diff unchanged
+  the base, so a review made while the pull request targeted another branch is accepted too.
+
+  (6) A repository with a merge queue: `gh pr merge` then enqueues the pull request and the helper exits
+  with status 1 (no merge commit yet); the queue merges it later against its own base, which no
+  read here can pin. A base advance that leaves the diff unchanged
   is refused by the second read like any other; rerun.
 
 - `verify-landed.sh --commit <sha> [--ff]` fetches, checks that the default branch
