@@ -111,6 +111,9 @@ Authoring rejects new tests that match; audits hunt for existing ones that do.
   different APIs
 - negative tests that pass for an unrelated reason (a different guard rejects
   the input, or the production path never reaches the check)
+- tests that only assert a removed feature, file, export or option is gone,
+  unless the absence is itself a contract (a security removal, a migration or
+  a documented deprecation)
 - names or fixtures that promise more than the test exercises
 - tests that break under a behavior-preserving refactor
 - tests for modules the change did not touch, or a new harness or snapshot
