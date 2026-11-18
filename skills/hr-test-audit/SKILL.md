@@ -55,6 +55,13 @@ the repository. It reports new suppression comments, added skips or
 exits 0 clean, 1 with findings, 2 when it could not run. Each finding still
 needs a reason; a 2 is never a pass.
 
+When a change touches a test that matches a junk pattern, delete the matching
+assertion (the whole test when nothing else in it survives) instead of rewriting
+its expected value to match new output. Fill the audit-mode step 2 fields first,
+chiefly the failure it still detects and the stronger test that remains: a test
+that mixes a junk assertion with a behavior check keeps the behavior check, and
+the retention bar can keep what remains.
+
 A run that executed no cases proves nothing. When you report a test result, say
 how many cases executed. If every case was skipped, the runner found no tests, or
 a comparison could not run, report the change as unproven, never as a pass: a
@@ -116,6 +123,12 @@ Authoring rejects new tests that match; audits hunt for existing ones that do.
   a documented deprecation)
 - names or fixtures that promise more than the test exercises
 - tests that break under a behavior-preserving refactor
+- tests that assert copy or translations, CSS class names, a constant's own
+  value, third-party library behavior, timing, or how often something ran (call
+  or render counts), unless that value is itself the contract (a public API
+  string, a documented limit, an exactly-once side effect such as one charge or
+  one email). Behavior that fails when a constant is wrong is a different test
+  and stays
 - tests for modules the change did not touch, or a new harness or snapshot
   suite added for completeness
 - tests written to lift a coverage threshold that still pass with the branch
@@ -174,6 +187,9 @@ Original synthesis, adapting:
   (MIT): the diff checker.
 - obra/superpowers `writing-good-tests.md`: the mutation check behind
   authoring-gate question 2.
+- Dave Kiss's [post](https://x.com/davekiss/status/2123035173847441868) quoting
+  Stably's Orca repo rules: the named never-test list and deleting a junk test
+  when touched. Its "no tests by default" stance is not adopted.
 - omkamal's [pypict skill](https://github.com/omkamal/pypict-claude-skill):
   pairwise coverage.
 
