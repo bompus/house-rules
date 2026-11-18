@@ -143,7 +143,7 @@ const SECTIONS = [
   },
 ];
 const modifiers = SECTIONS.flatMap((s) => (s.modifier ? [s.modifier] : []));
-const MAX_EXCERPT_BYTES = 1400;
+const MAX_EXCERPT_BYTES = 1550;
 const MAX_ALL_EXCERPTS_BYTES = 9000;
 const bytes = (/** @type {string} */ text) => Buffer.byteLength(text, "utf8");
 

@@ -340,8 +340,9 @@ Before starting a long-running command, which runs under a supervisor that outli
 Reuse first (existing code, standard library, installed dependencies, supported
 extension points) and pick the simplest solution that meets requirements, with no
 speculative abstraction, never at the cost of security, validation or stated
-requirements. Replace rather than wrap: when nothing outside the change depends on the
-old shape (no released interface, stored data or outside caller), update every caller,
+requirements. When the user's approach is materially harder than one you know, say so
+once before starting, then do what they choose. Replace rather than wrap: when nothing
+outside the change depends on the old shape (no released interface, stored data or outside caller), update every caller,
 keep no compatibility path, delete what the change leaves unused and list it in the
 report; keep no silent fallback; if you cannot tell whether something still has a
 user, ask. Stay compatible with versions in use; make no blind upgrades: check
