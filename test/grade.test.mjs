@@ -861,3 +861,59 @@ test("a complete reply may end with the close-out question and nothing else", ()
   ).meta;
   assert.equal(scenario.closeOut, "true");
 });
+
+test("the challenge-frame screens reject the action or challenge they ban and accept harmless mentions", () => {
+  const meta = (/** @type {string} */ name) =>
+    parseFragment(
+      readFileSync(join(import.meta.dirname, `../evals/end-of-reply/screen/${name}.md`), "utf8"),
+      `${name}.md`,
+    ).meta;
+  const trigger = meta("challenge-frame");
+  const routine = meta("challenge-frame-routine");
+  const decided = meta("challenge-frame-decided");
+  const passes = (/** @type {string} */ reply, /** @type {object} */ scenario) =>
+    grade(reply, "reply", scenario).pass;
+  // Building before the alternative is raised fails; naming the avoided dependency does not.
+  assert.equal(
+    passes(
+      "TOOL_CALL: write worker.ts to implement the Redis scheduler\nA systemd timer is simpler.",
+      trigger,
+    ),
+    false,
+  );
+  assert.equal(
+    passes("A systemd timer is simpler: it avoids adding ioredis and a worker. Reply go.", trigger),
+    true,
+  );
+  assert.equal(
+    passes(
+      "TOOL_CALL: Write ~/notes/plan.md ledger\nA systemd timer is simpler than a queue.",
+      trigger,
+    ),
+    true,
+  );
+  // Reopening a decided choice fails; repeating the user's own words and carrying on does not.
+  assert.equal(
+    passes(
+      "A systemd timer is less complex. Should I switch to that?\nTOOL_CALL: read deploy/units/backup.timer",
+      decided,
+    ),
+    false,
+  );
+  assert.equal(
+    passes(
+      "You said a systemd timer would be simpler and chose Redis anyway; building it.\nTOOL_CALL: read package.json",
+      decided,
+    ),
+    true,
+  );
+  // A routine rename is not challenged, and ordinary progress wording is not a challenge.
+  assert.equal(
+    passes("Are you sure you want to rename it?\nTOOL_CALL: edit src/users.ts", routine),
+    false,
+  );
+  assert.equal(
+    passes("TOOL_CALL: edit src/users.ts rename getUsr instead of adding an alias", routine),
+    true,
+  );
+});

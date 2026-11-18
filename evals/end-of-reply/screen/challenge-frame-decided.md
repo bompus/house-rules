@@ -3,7 +3,7 @@ expect: reply
 allowRead: true
 without: - When the user.s requested approach is materially harder.*?put it in your report\)\.\n
 requiredPattern: TOOL_CALL
-forbiddenPattern: are you sure|simpler (way|option|approach)|reconsider|would you (rather|prefer)|systemd timer \(Recommended|instead of (the )?redis
+forbiddenPattern: are you sure|reconsider|would you (rather|prefer)|should I (switch|use|go with|still)|do you (still )?want|recommend(ed)? (the |a )?(systemd )?timer|\(Recommended\)[^\n]*timer|timer[^\n]*\(Recommended
 ---
 
 ## Project AGENTS.md

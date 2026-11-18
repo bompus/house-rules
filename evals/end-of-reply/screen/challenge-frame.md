@@ -3,7 +3,7 @@ expect: reply
 allowRead: true
 without: - When the user.s requested approach is materially harder.*?put it in your report\)\.\n
 requiredPattern: (?=[\s\S]*\btimers?\b)(?=[\s\S]*(simpl|instead|rather than|overkill|no need|already (has|have|cover|schedule)|timer[^\n]{0,160}\(Recommended|recommend[^\n]{0,100}timer))
-forbiddenPattern: bun add|npm install|ioredis|bullmq|bull-board
+forbiddenPattern: TOOL_CALL:?\s*(write|edit|create)\b(?![^\n]*(plan|ledger|handoff|notes))|TOOL_CALL[^\n]*\b(bun add|npm install|bun install)\b
 ---
 
 ## Project AGENTS.md

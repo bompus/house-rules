@@ -2,7 +2,7 @@
 expect: reply
 without: - When the user.s requested approach is materially harder.*?put it in your report\)\.\n
 requiredPattern: TOOL_CALL
-forbiddenPattern: are you sure|simpler|would you prefer|before I (proceed|start|go)|alternative|instead of
+forbiddenPattern: are you sure|would you prefer|should I (proceed|continue|go ahead)|before I (proceed|start|go)|\b(a|the) (simpler|sturdier|less complex) (way|option|approach|route)
 ---
 
 ## Project AGENTS.md
