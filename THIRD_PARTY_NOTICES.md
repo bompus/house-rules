@@ -15,6 +15,18 @@ https://x.com/nateberkopec/status/2114819619513135180.
   No post text or screenshot is reproduced. The posts state no reuse licence;
   this repository's MIT licence applies to its newly written guidance.
 
+## Stably's Orca repository rules
+
+Source: https://x.com/davekiss/status/2123035173847441868 (a post quoting the
+rule from Stably's Orca repository; the repository itself was not read).
+
+- `skills/hr-test-audit/SKILL.md`: independently written guidance informed by the
+  rule the post shows: a named list of test targets that are not worth a test
+  (copy, class names, constants, timing, call counts) and deleting such a test
+  when it is touched. The post's "no tests by default" stance is not adopted. No
+  text from the post or its screenshot is reproduced. The post states no reuse
+  licence; this repository's MIT licence applies to the newly written guidance.
+
 ## Session history in comments
 
 Sources: https://github.com/astral-sh/uv/blob/main/AGENTS.md (compared at

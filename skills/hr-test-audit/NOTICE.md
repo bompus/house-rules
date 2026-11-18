@@ -1,8 +1,9 @@
 # Source notices
 
 This notice accompanies the hr-test-audit bundle when copied on its own.
-Each source below is published under the MIT License. The licence text at the
-end applies to each of them, with the copyright line shown for that source.
+Each source below, except the last one before the licence text, is published
+under the MIT License. The licence text at the end applies to each of them, with
+the copyright line shown for that source.
 
 ## obra/superpowers
 
@@ -55,6 +56,16 @@ Source: https://github.com/pingdotgg/t3code (revision `3b2f958603a51d8c42c4ede02
   and `.agents/skills/test-t3-app/references/sqlite-fixtures.md`.
 
 Copyright (c) 2026 T3 Tools Inc.
+
+## Stably's Orca repository rules
+
+Source: https://x.com/davekiss/status/2123035173847441868 (a post quoting the
+rule from Stably's Orca repository; the repository itself was not read)
+
+- `SKILL.md`: the junk-pattern bullet and the delete-when-touched paragraph are
+  independently written, informed by the rule the post shows. No text from the
+  post or its screenshot is reproduced. The post states no reuse licence; the
+  MIT licence below applies to the newly written guidance.
 
 ## MIT License text
 

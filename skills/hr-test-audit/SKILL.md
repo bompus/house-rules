@@ -58,9 +58,11 @@ needs a reason; a 2 is never a pass.
 When a change touches a test that matches a junk pattern, delete the matching
 assertion (the whole test when nothing else in it survives) instead of rewriting
 its expected value to match new output. Fill the audit-mode step 2 fields first,
-chiefly the failure it still detects and the stronger test that remains: a test
-that mixes a junk assertion with a behavior check keeps the behavior check, and
-the retention bar can keep what remains.
+chiefly the failure it still detects and the stronger test that remains. An
+assertion that is the only guard of a credible regression, such as a time bound
+on a very large input, stays or is replaced by a sturdier check, never deleted
+alone. A test that mixes a junk assertion with a behavior check keeps the
+behavior check.
 
 A run that executed no cases proves nothing. When you report a test result, say
 how many cases executed. If every case was skipped, the runner found no tests, or
@@ -127,7 +129,7 @@ Authoring rejects new tests that match; audits hunt for existing ones that do.
   value, third-party library behavior, timing, or how often something ran (call
   or render counts), unless that value is itself the contract (a public API
   string, a documented limit, an exactly-once side effect such as one charge or
-  one email). Behavior that fails when a constant is wrong is a different test
+  one email, a time bound that guards a credible slowdown). Behavior that fails when a constant is wrong is a different test
   and stays
 - tests for modules the change did not touch, or a new harness or snapshot
   suite added for completeness
