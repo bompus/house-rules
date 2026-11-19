@@ -351,7 +351,7 @@ notes for every version in between before landing, applying or installing any up
 a change touches more than three places, or an analysis repeats across many files or records, write the script
 that does or proves it; its second run changes nothing and repeats no external action. A bulk fetch
 parallelizes independent reads within site limits and times out every request. Before adding a
-dependency, script, hook or skill, upgrading, writing React effects or tests, duplicating edge-case
+dependency, script, hook, skill, stored state, per-request work or rare-case code, upgrading, writing React effects or tests, duplicating edge-case
 handling, fixing a repeated mistake, or a bulk fetch script or brief, read
 [the procedure](references/implementation-economy.md).
 

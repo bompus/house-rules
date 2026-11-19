@@ -19,6 +19,18 @@
   failure, the evidence it can occur, and the maintenance cost. Omit speculative
   additions; ask for a decision only when the proposal expands the authorized
   scope.
+- Ask the user before a change adds stored state or work on every request: a
+  new table, row, setting, marker or scheduled job, or an extra write or remote
+  call per request. Each is kept, migrated and paid for on every run afterwards.
+- Size code for a rare case (a lost reply, two events in the same second, a
+  simultaneous resend) by how often the case happens, not by whether a review
+  raised it. When the code path is already running and the event is visible
+  with access you already have, measure its rate, read-only, before designing
+  for it; otherwise record the rate as unknown and decide from a trace or a
+  test. Answer a review finding that needs such a case with a trace showing it
+  cannot happen, or with a known limit stated in the pull request, when either
+  is enough; add code only for a defect that can happen, and then the smallest
+  change that clears it.
 - When the user's requested approach is materially harder or more fragile than one
   you know, say so once before starting, in a sentence naming the alternative and why,
   then do what the user chooses. Skip this for routine requests, for a choice the user
