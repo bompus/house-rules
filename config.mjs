@@ -46,7 +46,7 @@ import { changePanelPreferences } from "./skills/hr-code-review/scripts/panel-pr
  * @typedef {{ questions?: string } & Record<string, unknown>} SelectionOptions
  */
 
-const COMMANDS = ["catalog", "status", "validate", "preview", "set"];
+const COMMANDS = new Set(["catalog", "status", "validate", "preview", "set"]);
 const TOGGLES = ["enable-modifier", "disable-modifier", "enable-skill", "disable-skill"];
 const revisionOf = (/** @type {string | null} */ text) =>
   text === null ? "missing" : createHash("sha256").update(text).digest("hex");
@@ -440,7 +440,7 @@ export function configCommand(argv) {
   if (command === "help" || command === "--help") {
     return console.log(renderHelp());
   }
-  if (!COMMANDS.includes(command)) {
+  if (!COMMANDS.has(command)) {
     throw new Error(`unknown config command "${command}" (see config help)`);
   }
   const { values } = parseArgs({

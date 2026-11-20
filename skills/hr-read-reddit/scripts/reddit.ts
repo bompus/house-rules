@@ -132,7 +132,7 @@ async function getFeed(url: string): Promise<Entry[]> {
   throw new Error(`HTTP 429 three times for ${url}`);
 }
 
-const SORTS = ["new", "relevance", "top"];
+const SORTS = new Set(["new", "relevance", "top"]);
 
 export function parseArgs(argv: string[]): Options | { error: string } {
   let parsed;
@@ -161,7 +161,7 @@ export function parseArgs(argv: string[]): Options | { error: string } {
   if (Number.isNaN(since)) {
     return { error: `bad --since value ${values.since}` };
   }
-  if (!SORTS.includes(sort)) {
+  if (!SORTS.has(sort)) {
     return { error: `bad --sort value ${sort}` };
   }
   const opts: Options = { command, args, json: values.json === true, pages, since, sort };

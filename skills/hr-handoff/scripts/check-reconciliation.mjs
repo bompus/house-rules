@@ -28,7 +28,7 @@ const object = (value) => value !== null && typeof value === "object" && !Array.
  * @returns {value is string}
  */
 const text = (value) => typeof value === "string" && value.trim().length > 0;
-const states = ["done", "open", "deferred"];
+const states = new Set(["done", "open", "deferred"]);
 /** @type {(source: unknown, record: unknown) => string} */
 const key = (source, record) => JSON.stringify([source, record]);
 
@@ -335,7 +335,7 @@ function check(receipt, directory) {
         openLines.add(key(source.id, row.id));
       }
       if (row.outcome !== undefined) {
-        if (!object(row.outcome) || !states.includes(row.outcome.state)) {
+        if (!object(row.outcome) || !states.has(row.outcome.state)) {
           errors.push(`${label} record ${row.id}: invalid outcome`);
           continue;
         }
@@ -429,7 +429,7 @@ function check(receipt, directory) {
     const label = `item ${item.id}`;
     requireText(item.owner, `${label}.owner`);
     requireText(item.next, `${label}.next`);
-    if (!states.includes(item.state)) {
+    if (!states.has(item.state)) {
       errors.push(`${label}: invalid state`);
     }
     evidence(item.evidence, label, item.id);

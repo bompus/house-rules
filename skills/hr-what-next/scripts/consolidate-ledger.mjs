@@ -56,7 +56,7 @@ const USAGE = [
   "       consolidate-ledger.mjs verify <outdir> [--exclude <file>] [--offline]",
   "       consolidate-ledger.mjs apply <outdir> <plan.md> [--dry-run] [--time <text>]",
 ].join("\n");
-const VERDICTS = ["DONE", "SUPERSEDED", "WAITING", "DECISION", "OPEN", "UNCLEAR"];
+const VERDICTS = new Set(["DONE", "SUPERSEDED", "WAITING", "DECISION", "OPEN", "UNCLEAR"]);
 const SNAPSHOT = "plan.snapshot.md";
 const BACKUP = "plan.before-closures.md";
 const CANDIDATES = "closure-candidates.json";
@@ -263,7 +263,7 @@ async function verify(outdir, { exclude, offline }) {
     const valid =
       columns.length >= 3 &&
       columns.length <= 4 &&
-      VERDICTS.includes(upper) &&
+      VERDICTS.has(upper) &&
       item !== undefined &&
       (item.mark === " " || item.mark === "~");
     rows.push({

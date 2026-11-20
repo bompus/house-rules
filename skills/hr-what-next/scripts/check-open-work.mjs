@@ -259,7 +259,9 @@ function ownedScratch(directory, owner) {
   if (!existsSync(directory)) {
     return result;
   }
-  const identities = [owner, ...owner.split(/[,;]/)].map((part) => part.trim().toLowerCase());
+  const identities = new Set(
+    [owner, ...owner.split(/[,;]/)].map((part) => part.trim().toLowerCase()),
+  );
   for (const name of readdirSync(directory)) {
     const manifest = join(directory, name, "manifest.json");
     if (!existsSync(manifest)) {
@@ -270,7 +272,7 @@ function ownedScratch(directory, owner) {
       if (typeof parsed.owner !== "string") {
         throw new Error("no owner");
       }
-      if (identities.includes(parsed.owner.trim().toLowerCase())) {
+      if (identities.has(parsed.owner.trim().toLowerCase())) {
         result.owned.push(name);
       }
     } catch {
@@ -304,7 +306,7 @@ function checkoutState(path) {
 }
 
 // A name counts only as a whole token, so "main" inside "update main docs" or "/a/b" inside "/a/bc" does not.
-const GENERIC_BRANCHES = ["main", "master", "HEAD", "No"];
+const GENERIC_BRANCHES = new Set(["main", "master", "HEAD", "No"]);
 /** @param {string} text @param {string} name */
 function mentions(text, name) {
   const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -806,7 +808,7 @@ async function run(options) {
     } else if (state.dirty || state.unpushed) {
       accountFor(
         `checkout ${path} (${state.dirty} changed file(s), ${state.unpushed} unpushed commit(s))`,
-        [path, ...(GENERIC_BRANCHES.includes(state.branch) ? [] : [state.branch])],
+        [path, ...(GENERIC_BRANCHES.has(state.branch) ? [] : [state.branch])],
         plan.items,
         report.findings,
       );

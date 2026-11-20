@@ -73,7 +73,7 @@ const FOLLOW_UP = "check the review integration and repository review policy";
 const RUNNING = "review still running: ";
 const CHECK_RUNNING = "check still running: ";
 // Check-run conclusions that do not block a merge; every other conclusion does.
-const PASSING_CONCLUSIONS = ["SUCCESS", "NEUTRAL", "SKIPPED"];
+const PASSING_CONCLUSIONS = new Set(["SUCCESS", "NEUTRAL", "SKIPPED"]);
 const NO_CHECK = "no CodeRabbit check on the head commit";
 const REQUIRED_MISSING = "required check has not reported: ";
 // A neutral cubic result means it did not review the head; a person has to ask again.
@@ -749,7 +749,7 @@ export function reviewFeedback(pr: ReviewState): { open: string[]; skipped: stri
       if (ctx.status !== undefined) {
         if (ctx.status !== "COMPLETED") {
           open.push(`${CHECK_RUNNING}${name}`);
-        } else if (!PASSING_CONCLUSIONS.includes(ctx.conclusion ?? "")) {
+        } else if (!PASSING_CONCLUSIONS.has(ctx.conclusion ?? "")) {
           open.push(`check ${name} concluded ${ctx.conclusion ?? "(missing conclusion)"}`);
         }
       } else if (ctx.state === "PENDING" || ctx.state === "EXPECTED") {
