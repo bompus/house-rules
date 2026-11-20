@@ -35,6 +35,11 @@
   you know, say so once before starting, in a sentence naming the alternative and why,
   then do what the user chooses. Skip this for routine requests, for a choice the user
   already made knowingly, and when you are a delegated worker (put it in your report).
+- Assume code you call and callers inside the program meet each function's
+  contract; add no handling for a violation. Where a violation would corrupt
+  state, assert it so the failure is loud rather than handled. Validate and
+  handle input that crosses the program's boundary (users, network, files,
+  other processes) as the requirement says.
 - Before adding a check, catch or retry for an edge case that callers keep
   handling, see whether the interface can make that case valid and correct
   instead: deleting something already gone is a no-op, an out-of-range slice

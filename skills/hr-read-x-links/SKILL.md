@@ -1,6 +1,6 @@
 ---
 name: hr-read-x-links
-description: Read X/Twitter post links (x.com, twitter.com and mirrors) in full, including quoted posts, long-form articles, expanded links and attached images. Use whenever a task needs the content of an X post; generic web fetch returns truncated text and no images.
+description: Read X/Twitter post links (x.com, twitter.com and mirrors) in full, including quoted posts, long-form articles, expanded links, attached images and replies. Use whenever a task needs the content of an X post; generic web fetch returns truncated text and no images.
 ---
 
 # Read X links
@@ -29,9 +29,17 @@ Then:
    only points at the substance.
 3. Report what stayed unread: videos (the script prints the video URL and a
    thumbnail), earlier posts in a thread (a reply shows its parent's ID; fetch
-   that URL to walk up), and any post the script reported as failed. Say so
+   that URL to walk up), replies not reached (step 4), and any post the script
+   reported as failed. Say so
    rather than rating content you did not see.
-4. When the post promotes a tool, method or result, keep what the post claims
+4. Read the replies too; the script returns the post and its quoted post, never
+   the replies, and they often hold the useful answers. Open the post URL in the host's browser tool, scroll the
+   conversation and read each reply. A logged-out view shows only the first few
+   replies before a login wall, so compare the count you read with the post's
+   reply count and say how many were unread. A reply cut at "Show more" is
+   read in full by passing its own URL to the script. With no browser tool, say
+   the replies were not read.
+5. When the post promotes a tool, method or result, keep what the post claims
    apart from what its source shows. Check each claim against the repository,
    docs or paper it links, report what the tool actually does, and name each
    claim with no evidence behind it, such as a benchmark with no method or a
