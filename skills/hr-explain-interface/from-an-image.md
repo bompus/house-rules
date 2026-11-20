@@ -21,7 +21,7 @@ Sample the actual pixels with a script on the image file rather than describing 
 - Convert each to OKLCH, so lightness is comparable across hues.
 - Sort by lightness to see whether the samples form a ramp and whether steps sit denser at the light end.
 - Compare hue across the ramp and report how far it moves. The sampled values do not establish how the author chose them.
-- Measure contrast on every foreground and background pair you can isolate. It is exact and the most valuable single number an image gives you.
+- Measure contrast on every foreground and background pair you can isolate. From sampled pixels it is exact and the most valuable single number an image gives you. From estimated colors it is inferred: say so, and never present it as a pass or fail.
 - Watch for a tinted neutral. A gray carrying a few percent of the accent hue is a deliberate choice worth naming.
 
 ## Type, by category not by name

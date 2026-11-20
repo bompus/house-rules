@@ -27,11 +27,13 @@ Semantic CSS gives you a hashed class name instead (`Hero_glow__a1b2c`). Take th
 
 ## Inline styles carry the values utilities cannot express
 
-A multi-stop gradient is usually too specific for a utility, so it lands in a `style` attribute:
+A multi-stop gradient is usually too specific for a utility, so it lands in a `style` attribute.
+
+Both patterns match up to three levels of parentheses, enough for a `color-mix()` holding a `var()`. A gradient nested deeper, or split across lines, needs a manual read of the source.
 
 ```bash
-grep -oE 'linear-gradient\(([^()]|\([^()]*\))*\)' page.html | sort -u | head
-grep -oE 'radial-gradient\(([^()]|\([^()]*\))*\)' page.html | sort -u | head
+grep -oE 'linear-gradient\(([^()]|\(([^()]|\([^()]*\))*\))*\)' page.html | sort -u | head
+grep -oE 'radial-gradient\(([^()]|\(([^()]|\([^()]*\))*\))*\)' page.html | sort -u | head
 grep -oE 'style="[^"]*(transform|filter|mask)[^"]*"' page.html | head
 ```
 
