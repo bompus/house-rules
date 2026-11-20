@@ -16,7 +16,7 @@ One exception. Where the image contains text you can identify as body copy, assu
 
 ## Colors, which are the reliable part
 
-Sample the actual pixels rather than describing what you see. Then hand the values to `hr-better-colors`:
+Sample the actual pixels with a script on the image file rather than describing what you see. With no file to read, colors are estimates and tiered inferred. Then measure against `hr-better-colors`, which owns these checks:
 
 - Convert each to OKLCH, so lightness is comparable across hues.
 - Sort by lightness to see whether the samples form a ramp and whether steps sit denser at the light end.

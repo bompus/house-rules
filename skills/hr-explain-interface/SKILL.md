@@ -5,7 +5,7 @@ disable-model-invocation: true
 license: MIT
 metadata:
   upstream: https://github.com/jakubkrehel/skills
-  upstream_ref: a72290d140249813898ba8648becf6415abcb059
+  upstream_ref: 672ae44ace6aaed65b86cbb1e2fd6fbea0e79578
   upstream_path: skills/explain-interface/
   local_patches: "Explicit-only; routes findings to the hr-better-* skills; follows the host's browser and scratch rules; stacking-context and CSSImportRule guards; selected callable/token/range/keyframe/inference recipes; passive media inventory avoids context creation; screenshot-description reconstruction boundary"
   house_rules_patches: "Portable provenance; hr- skill names; theme tokens compared by computed value; pseudo-element geometry from its own computed style; translucent and overlay background colors in the layer search"

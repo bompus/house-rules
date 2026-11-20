@@ -4,7 +4,7 @@ description: "Color rules for web UI: palette ramps, semantic color tokens, colo
 license: MIT
 metadata:
   upstream: https://github.com/jakubkrehel/skills
-  upstream_ref: a72290d140249813898ba8648becf6415abcb059
+  upstream_ref: 672ae44ace6aaed65b86cbb1e2fd6fbea0e79578
   upstream_path: skills/better-colors/
   local_patches: "Use-when description; 14pt bold = 18.67px; P3 fallback severity matches Reporting; better-ui handoff dropped (not vendored); enforce tokens with a lint or guard; gamut mapping described as chroma reduction; light-end spacing outranks even lightness steps"
   house_rules_patches: "Portable provenance and review verdict"
@@ -66,39 +66,28 @@ The space is a look, not a correctness setting. Default to `in oklab`, and reach
 
 ## Before you finish
 
-| Pattern                                                                                                | Fix                                                                                                     |
-| ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------- |
-| A hex, `rgb(` or `oklch(` literal in a component file where a token exists                             | Reuse or add the role token, in the project's notation                                                  |
-| One `oklch(` value in a codebase otherwise written in hex                                              | Write it in the established notation unless a migration is in scope                                     |
-| `var(--blue-600)` or `bg-blue-600` in a component file                                                 | Point a semantic token at the primitive and use that                                                    |
-| A semantic name containing a hue or a component, as in `--color-blue-button` or `--color-sidebar-gray` | Rename it for its role: `--color-accent-solid`, `--color-bg-surface`                                    |
-| `--color-primary` and `--color-text-primary` both defined                                              | Rename the brand token `accent`                                                                         |
-| A `border` or `separator` token inside `color:`, or a `text` token inside `background:`                | Add a token for the missing role                                                                        |
-| `hsl(` ramp values that differ only in lightness                                                       | Rebuild with a constant perceived hue, in the project's notation                                        |
-| `50`–`200` stepping as far apart in OKLCH `L` as mid-ramp steps do                                     | Tighten the light end to about `0.04`–`0.05` per step                                                   |
-| One chroma or saturation number copied across every hue's ramp                                         | Use the same proportion of each hue's own maximum                                                       |
-| A status hue within `15°` of the accent hue                                                            | Move it at least `15°` away, or give the destructive action a distinct treatment                        |
-| Dark tokens equal to the light ramp in reverse step order                                              | Lower the accent's chroma, widen the dark end and remeasure every pair                                  |
-| Color tokens set under both `prefers-color-scheme` and a `.dark` class                                 | Pick one switching mechanism and use it throughout                                                      |
-| A contrast fix that changes hue and leaves lightness                                                   | Change lightness, the channel contrast responds to                                                      |
-| `prefers-contrast: more` overriding a color for both appearances in one block                          | Give each appearance its own increased-contrast value                                                   |
-| Text on a color with alpha, such as `/50`, `rgba(` or `color-mix(` with `transparent`                  | Measure the rendered result, or use a solid token                                                       |
-| `text-white` on a Tailwind `500` fill                                                                  | Measure it; white on most `500` hues fails 4.5:1, so move the fill to the first darker step that passes |
-| `oklch()` chroma beyond sRGB with no sRGB value declared before it                                     | Declare the sRGB value first, then the vivid one inside `@media (color-gamut: p3)`                      |
+| Pattern                                                                                                | Fix                                                                                |
+| ------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------- |
+| A hex, `rgb(` or `oklch(` literal in a component file where a token exists                             | Reuse or add the role token, in the project's notation                             |
+| One `oklch(` value in a codebase otherwise written in hex                                              | Write it in the established notation unless a migration is in scope                |
+| `var(--blue-600)` or `bg-blue-600` in a component file                                                 | Point a semantic token at the primitive and use that                               |
+| A semantic name containing a hue or a component, as in `--color-blue-button` or `--color-sidebar-gray` | Rename it for its role: `--color-accent-solid`, `--color-bg-surface`               |
+| `--color-primary` and `--color-text-primary` both defined                                              | Rename the brand token `accent`                                                    |
+| A `border` or `separator` token inside `color:`, or a `text` token inside `background:`                | Add a token for the missing role                                                   |
+| `hsl(` ramp values that differ only in lightness                                                       | Rebuild with a constant perceived hue, in the project's notation                   |
+| `50`–`200` stepping as far apart in OKLCH `L` as mid-ramp steps do                                     | Tighten the light end to about `0.04`–`0.05` per step                              |
+| One chroma or saturation number copied across every hue's ramp                                         | Use the same proportion of each hue's own maximum                                  |
+| A status hue within `15°` of the accent hue                                                            | Move it at least `15°` away, or give the destructive action a distinct treatment   |
+| Dark tokens equal to the light ramp in reverse step order                                              | Lower the accent's chroma, widen the dark end and remeasure every pair             |
+| Color tokens set under both `prefers-color-scheme` and a `.dark` class                                 | Pick one switching mechanism and use it throughout                                 |
+| A contrast fix that changes hue and leaves lightness                                                   | Change lightness, the channel contrast responds to                                 |
+| `prefers-contrast: more` overriding a color for both appearances in one block                          | Give each appearance its own increased-contrast value                              |
+| Text on a color with alpha, such as `/50`, `rgba(` or `color-mix(` with `transparent`                  | Measure the rendered result, or use a solid token                                  |
+| `text-white` on a Tailwind `500` fill                                                                  | Measure and report it; white on most `500` hues and several `600` hues fails 4.5:1 |
+| `oklch()` chroma beyond sRGB with no sRGB value declared before it                                     | Declare the sRGB value first, then the vivid one inside `@media (color-gamut: p3)` |
 
 ## Reporting
 
-**Severity.** `HIGH` makes content unreadable or assigns a misleading semantic color. `MEDIUM` is a noticeable theme, token or gamut failure. `LOW` is isolated polish.
-
-Three symptoms are `HIGH` on sight whatever the surface, matching `hr-better-interface`'s escalation triggers. They are body or control text whose rendered pair fails its required ratio, state or meaning carried by color alone and a semantic color used against its meaning.
-
 **Verification.** Without a browser: token values, the gamut of every declared color, both theme blocks present and contrast computed from the declared token pair. With one: the background actually rendered behind the text, including opacity and any image beneath it, measured in both light and dark. Report every check you could not run as `Not verified`.
 
-**Format.** Group findings under the principle each violates, ordered by severity, one row per root cause listing every location it appears in:
-
-| Severity | Location | Before | After | Why |
-| -------- | -------- | ------ | ----- | --- |
-
-`Location` is `path/to/file:line`. `Why` names the principle and the user impact.
-
-Report `Block` when any `HIGH` remains, `Approve` otherwise, leaving the rest in the table as work to do. Never `Approve` coverage you did not inspect. With nothing to report, state "No actionable color findings" and report verification.
+A standalone review takes its severity ladder and format from [reporting.md](reporting.md).

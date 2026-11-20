@@ -30,8 +30,8 @@ Semantic CSS gives you a hashed class name instead (`Hero_glow__a1b2c`). Take th
 A multi-stop gradient is usually too specific for a utility, so it lands in a `style` attribute:
 
 ```bash
-grep -oE 'linear-gradient\([^)]*\)' page.html | sort -u | head
-grep -oE 'radial-gradient\([^)]*\)' page.html | sort -u | head
+grep -oE 'linear-gradient\(([^()]|\([^()]*\))*\)' page.html | sort -u | head
+grep -oE 'radial-gradient\(([^()]|\([^()]*\))*\)' page.html | sort -u | head
 grep -oE 'style="[^"]*(transform|filter|mask)[^"]*"' page.html | head
 ```
 

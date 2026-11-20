@@ -191,14 +191,14 @@ Copyright (c) 2026 Lauren Tan
 
 ## jakubkrehel/skills
 
-Source: https://github.com/jakubkrehel/skills (compared at revision `a72290d140249813898ba8648becf6415abcb059`)
+Source: https://github.com/jakubkrehel/skills (compared at revision `672ae44ace6aaed65b86cbb1e2fd6fbea0e79578`)
 
 - `skills/hr-better-accessibility/`, `skills/hr-better-colors/`, `skills/hr-better-layout/`,
   `skills/hr-better-typography/` and `skills/hr-better-writing/`: adapted skill bundles,
   including their supporting references and discovery metadata.
 - `skills/hr-better-interface/` and `skills/hr-break/` (revision
   `592aedc44d7d5b3e29740984252902f3e5402a1c`) and `skills/hr-explain-interface/`
-  (revision `a72290d140249813898ba8648becf6415abcb059`): adapted skill bundles that
+  (revision `672ae44ace6aaed65b86cbb1e2fd6fbea0e79578`): adapted skill bundles that
   carry their MIT notice.
 
 Copyright (c) 2026 Jakub Krehel

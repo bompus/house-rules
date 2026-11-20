@@ -4,7 +4,7 @@ This notice accompanies the hr-better-colors bundle when copied on its own.
 
 ## jakubkrehel/skills
 
-Source: https://github.com/jakubkrehel/skills (compared at revision `a72290d140249813898ba8648becf6415abcb059`)
+Source: https://github.com/jakubkrehel/skills (compared at revision `672ae44ace6aaed65b86cbb1e2fd6fbea0e79578`)
 
 - `skills/hr-better-accessibility/`, `skills/hr-better-colors/`, `skills/hr-better-layout/`,
   `skills/hr-better-typography/` and `skills/hr-better-writing/`: adapted skill bundles,

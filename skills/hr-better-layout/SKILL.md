@@ -4,9 +4,9 @@ description: "Layout rules for web UI: grouping, alignment, spacing, reading ord
 license: MIT
 metadata:
   upstream: https://github.com/jakubkrehel/skills
-  upstream_ref: a72290d140249813898ba8648becf6415abcb059
+  upstream_ref: 672ae44ace6aaed65b86cbb1e2fd6fbea0e79578
   upstream_path: skills/better-layout/
-  local_patches: "Use-when description; peek-scroller arithmetic; better-ui handoff dropped (not vendored); dvh/svh, viewport-fit, theme-color and row-squeeze rules (from emilkowalski/skills)"
+  local_patches: "Use-when description; better-ui handoff dropped (not vendored); dvh/svh, viewport-fit, theme-color and row-squeeze rules (from emilkowalski/skills)"
   house_rules_patches: "Portable provenance and review verdict"
   mobile_native_source: https://github.com/emilkowalski/skills/blob/e8a175de22ae1e49370fc144c1f3bb9aeedf988d/skills/mobile-native/SKILL.md
   break_ui_source: https://github.com/emilkowalski/skills/blob/e8a175de22ae1e49370fc144c1f3bb9aeedf988d/skills/break-ui/SKILL.md
@@ -42,7 +42,7 @@ The most important content sits near the top and the leading edge. Within a row,
 
 ## One primary action per view
 
-Give each view one primary action. Put secondary actions behind a menu once there are more than 3. Prefer a short view that links deeper over one long view that shows everything at the top level. `hr-better-colors` owns how color marks the primary action.
+Give each view one primary action. Once a view has more than 3 secondary actions, put them behind a menu. Prefer a short view that links deeper over one long view that shows everything at the top level. `hr-better-colors` owns how color marks the primary action.
 
 ## Hint at hidden content
 
@@ -93,15 +93,6 @@ Never park a critical action where resizing, zoom or scrolling clips it. Keep it
 
 ## Reporting
 
-**Severity.** `HIGH` blocks content or an action at a supported viewport. Clipping or overlap at 320px width or 200% zoom is always `HIGH`, as is truncated content with no way to the full value. So is content past a scroll edge or behind a disclosure with no visible cue. `MEDIUM` harms hierarchy, reading order or adaptability. `LOW` is isolated alignment or spacing polish.
-
 **Verification.** Without a browser, check logical properties in place of physical ones, container and media queries against the supported viewport list and DOM order against visual order. With one, check every supported width, 320px, 200% zoom and the RTL mirror. Report every check you could not run as `Not verified`.
 
-**Format.** Group findings under the principle each violates, ordered by severity, one row per root cause listing every location it appears in:
-
-| Severity | Location | Before | After | Why |
-| -------- | -------- | ------ | ----- | --- |
-
-`Location` is `path/to/file:line`. `Why` names the principle and the user impact.
-
-Report `Block` when any `HIGH` remains, `Approve` otherwise, leaving the rest in the table as work to do. Never `Approve` coverage you did not inspect. With nothing to report, state "No actionable layout findings" and report verification.
+A standalone review takes its severity ladder and format from [reporting.md](reporting.md).

@@ -53,14 +53,13 @@ Reduced motion targets vestibular triggers, not feedback.
 ## Autoplay and timed UI
 
 - **Visible controls on anything that runs on its own** (2.2.2). Moving, blinking or scrolling content that lasts more than 5 seconds needs a pause, stop or hide control, muted looping hero videos included. Auto-updating content needs one however long it runs, and a frequency control satisfies it. Both apply to content shown alongside other content; an essential update, such as a progress indicator on a screen with nothing else, is exempt.
-- **Explicit dismissal over timers.** Auto-dismissal suits low-stakes confirmations and nothing else. A toast carrying an action, an error or information the user may need stays until dismissed.
+- **Explicit dismissal over timers.** Auto-dismissal suits low-stakes confirmations and nothing else.
 - **Pause on attention.** Where a toast must time out, give it at least 5 seconds, and pause the timer while it is hovered or focused.
 - **Never put critical information only in a timed element.** A vanished toast with the only link to an undo action is data loss on a schedule.
 
 ## Zoom and reflow
 
-- **200% text resize** (1.4.4). All content and functionality survives text scaled to 200%, and the viewport leaves the reader able to zoom.
-- **Reflow at 320px** (1.4.10). At 400% zoom on a 1280px viewport, equivalent to a 320px one, the page must work with vertical scrolling alone. Genuinely 2D content is the exception: tables, maps and code blocks scroll inside their own container.
+The 320px of 1.4.10 is a 1280px viewport at 400% zoom. Genuinely 2D content is the exception: tables, maps and code blocks scroll inside their own container. The viewport must also leave the reader able to zoom.
 
 Fixed heights are what break under zoom. Use `min-height` on anything containing text and let containers grow.
 
