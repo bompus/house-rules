@@ -196,10 +196,8 @@ Source: https://github.com/jakubkrehel/skills (compared at revision `672ae44ace6
 - `skills/hr-better-accessibility/`, `skills/hr-better-colors/`, `skills/hr-better-layout/`,
   `skills/hr-better-typography/` and `skills/hr-better-writing/`: adapted skill bundles,
   including their supporting references and discovery metadata.
-- `skills/hr-better-interface/` and `skills/hr-break/` (revision
-  `592aedc44d7d5b3e29740984252902f3e5402a1c`) and `skills/hr-explain-interface/`
-  (revision `672ae44ace6aaed65b86cbb1e2fd6fbea0e79578`): adapted skill bundles that
-  carry their MIT notice.
+- `skills/hr-better-interface/`, `skills/hr-break/` and `skills/hr-explain-interface/`:
+  adapted skill bundles that carry their MIT notice.
 
 Copyright (c) 2026 Jakub Krehel
 

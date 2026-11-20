@@ -5,7 +5,7 @@ disable-model-invocation: true
 license: MIT
 metadata:
   upstream: https://github.com/jakubkrehel/skills
-  upstream_ref: 592aedc44d7d5b3e29740984252902f3e5402a1c
+  upstream_ref: 672ae44ace6aaed65b86cbb1e2fd6fbea0e79578
   upstream_path: skills/break/
   local_patches: "Explicit-only; routes findings to the hr-better-* skills; conditional Next server-client boundary, viewport versus containers, owned-server stop; schema/plural/missing-data axes; upstream skipped-observation/fixture/explicit-cleanup refinements; no state-machine install"
   house_rules_patches: "Portable provenance; hr- skill names"
@@ -13,7 +13,7 @@ metadata:
 
 # Break
 
-This skill takes one component and renders it on a harness page under every scenario that can actually reach it. That page is the deliverable: a visual report the user scrolls through, every state side by side, with the breaks marked. A component built against one happy path looks finished right up until real content arrives.
+This skill takes one component and renders it on a harness page under every scenario that can actually reach it. That page is the deliverable: a visual report the user scrolls through, every scenario on one page, with the breaks marked. A component built against one happy path looks finished right up until real content arrives.
 
 It observes rather than judges. A finding here is something that visibly broke on the page, named in the vocabulary of the domain skill that owns the fix. Reviewing code against a standard is `hr-code-review` and `hr-better-interface`; exploring design alternatives is `hr-design-exploration`.
 
@@ -78,19 +78,10 @@ When the user requests deletion, remove the page and fixtures, then search for t
 
 ## Before you finish
 
-| Mistake                                                    | Fix                                                                                        |
-| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| Every axis run against every component                     | Keep only the axes whose cue matches, and say which you dropped                            |
-| A predicted failure reported as observed                   | Render it, or leave it out                                                                 |
-| A scenario missing the content it was fed                  | The harness is broken, not the component; check the server-to-client boundary and re-check |
-| A rebuilt lookalike component in the harness               | Import the real component from the project                                                 |
-| The harness restyles or re-themes the component            | The app's layout, fonts and tokens as they are; labels and widths are all the page adds    |
-| A browser launched, debugged or screenshotted per scenario | One load and one look, or hand the URL over and skip the look                              |
-| Findings phrased as taste                                  | Report what was visible on the page, or nothing                                            |
-| A break reported without an owner                          | Name the domain skill whose rules diagnose it                                              |
-| A clean run padded with suggestions                        | "Everything survived" plus the scenario list is the report                                 |
-| The viewport resized scenario by scenario                  | Widths are fixed containers on the page; one load shows them all                           |
-| A break in the table but unmarked on the page              | Note it under the scenario's label; the page reads as the report on its own                |
-| Page deleted in the same turn as the report                | The page is half the report; delete only on the user's word                                |
-| A dev server left running after the session                | Stop the server you started; give the restart command                                      |
-| Viewport breakpoints judged from fixed-width containers    | Containers do not trigger media queries; name the breakpoint for a resize check            |
+| Mistake                                                 | Fix                                                                                        |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| A scenario missing the content it was fed               | The harness is broken, not the component; check the server-to-client boundary and re-check |
+| The viewport resized scenario by scenario               | Widths are fixed containers on the page; one load shows them all                           |
+| A break in the table but unmarked on the page           | Note it under the scenario's label; the page reads as the report on its own                |
+| A dev server left running after the session             | Stop the server you started; give the restart command                                      |
+| Viewport breakpoints judged from fixed-width containers | Containers do not trigger media queries; name the breakpoint for a resize check            |

@@ -6,9 +6,9 @@ This is the format for a review `hr-better-interface` orchestrates. A domain ski
 
 State the exact scope, stack and styling conventions, the project convention documents found in recon and any review boundary. Then show coverage:
 
-| Domain        | Evidence inspected                   | Result                    |
-| ------------- | ------------------------------------ | ------------------------- |
-| Accessibility | Files, components, states, or checks | Findings count or `Clear` |
+| Domain        | Evidence inspected                  | Result                                                     |
+| ------------- | ----------------------------------- | ---------------------------------------------------------- |
+| Accessibility | Files, components, states or checks | Findings count, including any the cap excluded, or `Clear` |
 
 Include every domain listed under `hr-better-interface`'s **Use domain skills as the sources of truth**. `Clear` means inspected with no actionable finding; `Not reviewed` must explain why.
 
@@ -26,7 +26,7 @@ One table, ordered by severity, then by reach:
 - **Why** names the violated principle and its user impact.
 - **Domain** is the owning skill without the `hr-better-` prefix.
 
-Each row is one root cause. Consolidate a repeated systemic issue into one row and list every affected location. Respect the finding cap. With no findings, omit the table and state "No actionable interface findings."
+Each row is one root cause. Consolidate a repeated systemic issue into one row and list every affected location. When the cap excluded findings, say how many under the table. With no findings, omit the table and state "No actionable interface findings."
 
 ## Verification
 

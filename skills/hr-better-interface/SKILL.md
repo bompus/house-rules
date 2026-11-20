@@ -5,9 +5,9 @@ disable-model-invocation: true
 license: MIT
 metadata:
   upstream: https://github.com/jakubkrehel/skills
-  upstream_ref: 592aedc44d7d5b3e29740984252902f3e5402a1c
+  upstream_ref: 672ae44ace6aaed65b86cbb1e2fd6fbea0e79578
   upstream_path: skills/better-interface/
-  local_patches: "Explicit-only; routes findings to the hr-better-* skills (better-ui is not included); count-first inventory, stock scanner and read-only review; selective upstream verdict/evidence-format clarity; 592aedc4 reviewed, upstream heading flattening, verify-first section order and description rewording not ported (numbered principles and the stock-scan step stay)"
+  local_patches: "Explicit-only; routes findings to the hr-better-* skills (better-ui is not included); count-first inventory, stock scanner and read-only review; selective upstream verdict/evidence-format clarity; 672ae44 reviewed, upstream heading flattening, verify-first section order and description rewording not ported, motion and better-motion not included (numbered principles and the stock-scan step stay)"
   house_rules_patches: "Portable provenance; hr- skill names"
 ---
 
@@ -70,7 +70,7 @@ When two skills appear to cover one issue, assign it to the owner of the underly
 
 ### 5. Require evidence
 
-Every finding cites `path/to/file:line` and shows the current implementation. Do not report a code-level finding from visual appearance alone or a visual finding from source code alone when runtime behavior determines the result.
+Every finding cites `path/to/file:line` and shows the current implementation. Source alone cannot support a visual finding when runtime behavior determines the result. A result that follows from declared values, such as a fixed `384px` panel at a 320px viewport, is a source finding. A screenshot alone cannot support a code finding.
 
 ### 6. Rank by user impact
 
@@ -98,7 +98,7 @@ Within a severity, rank by how many places the finding reaches and how much one 
 - A semantic color used against its meaning, such as the danger hue on a non-destructive action.
 - A state change carried by motion alone, with no color, icon, or label left behind when the animation does not run.
 
-Triggers rank above every other finding. A confirmed trigger is always reported in full, even past the cap: the cap limits the other findings, never a blocker.
+Triggers rank above every other finding and are exempt from the cap, so list every one. A cap may shorten a report; it may never be why a blocker went unreported.
 
 These set severity, not new rules. The owning skill decides whether the symptom is present; this list decides what it costs.
 

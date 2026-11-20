@@ -4,9 +4,9 @@ This notice accompanies the hr-break bundle when copied on its own.
 
 ## jakubkrehel/skills
 
-Source: https://github.com/jakubkrehel/skills/tree/592aedc44d7d5b3e29740984252902f3e5402a1c/skills/break
+Source: https://github.com/jakubkrehel/skills/tree/672ae44ace6aaed65b86cbb1e2fd6fbea0e79578/skills/break
 
-Adapted from `skills/break/` at revision `592aedc44d7d5b3e29740984252902f3e5402a1c`.
+Adapted from `skills/break/` at revision `672ae44ace6aaed65b86cbb1e2fd6fbea0e79578`.
 
 Copyright (c) 2026 Jakub Krehel
 
