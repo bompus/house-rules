@@ -404,7 +404,7 @@ function readReviewState(owner: string, name: string, n: number): ReviewState {
     expectedHead = pr.headRefOid;
     requiredChecks = requiredCheckNames(pr.baseRef);
     viewer = data.viewer as Author;
-    viewerPermission = repo.viewerPermission as string | null;
+    viewerPermission = repo.viewerPermission;
     const commits = record(pr.commits).nodes;
     if (!Array.isArray(commits) || commits.length !== 1) {
       throw new Error("missing head commit");
@@ -461,7 +461,7 @@ function readReviewState(owner: string, name: string, n: number): ReviewState {
     statusCheckRollup: { contexts: { nodes: collected.contexts as Context[] } },
   };
   return {
-    headRefOid: expectedHead!,
+    headRefOid: expectedHead,
     appActive,
     viewer,
     viewerPermission,

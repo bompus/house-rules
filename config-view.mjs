@@ -11,10 +11,9 @@ function display() {
     /** @type {Parameters<typeof styleText>[0]} */ style,
     /** @type {string} */ text,
   ) => (color ? styleText(style, text, { validateStream: false }) : text);
-  const width = Math.max(
-    24,
-    Math.min(/** @type {number | undefined} */ (process.stdout.columns) ?? 100, 120),
-  );
+  // `columns` is typed number but is undefined when stdout is not a terminal.
+  const columns = Number.isFinite(process.stdout.columns) ? process.stdout.columns : 100;
+  const width = Math.max(24, Math.min(columns, 120));
   const wrap = (/** @type {unknown} */ text, /** @type {number} */ size) => {
     const words = clean(text).split(/\s+/);
     const lines = [""];

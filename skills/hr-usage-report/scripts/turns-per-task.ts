@@ -528,7 +528,7 @@ async function main(args: string[]) {
   if (byArg !== undefined && byArg !== "model" && byArg !== "origin") {
     throw new Error("--by takes model or origin");
   }
-  const by = byArg as "model" | "origin" | undefined;
+  const by = byArg;
   const rootsFromArgs = arg(args, "--claude-projects")?.split(",");
   const roots = rootsFromArgs ?? claudeProjectRoots(homedir());
   for (const r of roots) {

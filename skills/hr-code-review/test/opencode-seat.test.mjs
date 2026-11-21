@@ -46,7 +46,7 @@ function spawnSync(command, args, options) {
     args = [...args.slice(0, 4), ...dirs.flatMap((d) => ["--bin-dir", d]), ...args.slice(4)];
   }
   return /** @type {import("node:child_process").SpawnSyncReturns<string>} */ (
-    spawnSyncPlain(command, args, /** @type {any} */ (options))
+    spawnSyncPlain(command, args, options)
   );
 }
 const script = fileURLToPath(new URL("../scripts/opencode-seat.mjs", import.meta.url));
