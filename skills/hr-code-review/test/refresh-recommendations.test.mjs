@@ -1020,6 +1020,12 @@ test("member names are screened like values, and names fold the way a person rea
       ["Straße", "STRASSE"],
       ["ΟΔΥΣΣΕΥΣ", "Οδυσσευς"],
       ["Οδυσσεύς", "ΟΔΥΣΣΕΎΣ"],
+      // A capital sharp s, and a sigma whose form depends on what follows it in the published string.
+      ["Straße", "STRAẞE"],
+      ["STRAẞE", "Straße"],
+      ["ΟΔΥΣΣΕΥΣ", "ΟΔΥΣΣΕΥΣTOOL"],
+      ["ΟΔΥΣΣΕΥΣ", "ΟΔΥΣΣΕΥΣ.example"],
+      ["Οδυσσευς", "ΟΔΥΣΣΕΥΣ.example"],
     ]) {
       writeFileSync(paths.spec, serialize({ ...spec, own: { ...spec.own, task: published } }));
       writeFileSync(deny, `${listed}\n`);

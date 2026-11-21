@@ -51,14 +51,17 @@ const MAX_BOARD_BYTES = 20 * 1024 * 1024;
 const readJson = (path) => parseStrict(readFileSync(path, "utf8"), path);
 
 // Compared with case, spacing and punctuation removed, so "Internal Tool" and "internal_tool" match "internal-tool".
-// Compatibility-normalized, upper then lower case (a sharp s matches SS, a final sigma its capital), normalized
-// again, then only letters and digits kept.
+// Compatibility-normalized, upper then lower case, normalized again; then the two letters whose lower case depends
+// on context or has no single form are folded by hand (a final or medial sigma is one letter, and a sharp s, small or
+// capital, is ss); then only letters and digits kept.
 const squash = (/** @type {string} */ s) =>
   s
     .normalize("NFKC")
     .toUpperCase()
     .toLowerCase()
     .normalize("NFKC")
+    .replaceAll("ς", "σ")
+    .replaceAll("ß", "ss")
     .replace(/[^\p{L}\p{N}]/gu, "");
 /** @param {unknown} v a finite number that is not negative */
 const nonNegative = (v) => typeof v === "number" && Number.isFinite(v) && v >= 0;
