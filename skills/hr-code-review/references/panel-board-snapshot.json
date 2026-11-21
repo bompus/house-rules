@@ -1,0 +1,1598 @@
+{
+  "version": 1,
+  "fetched": "2026-11-21",
+  "boardUpdated": "2026-11-19",
+  "plantedTotal": 105,
+  "rows": [
+    {
+      "model": "DeepSeek V4-Flash",
+      "harness": "Claude Code / OpenRouter",
+      "effort": "default",
+      "runs": 1,
+      "fixed": 14,
+      "wallMinutes": 48.5,
+      "costUsd": null,
+      "date": "2026-08-01"
+    },
+    {
+      "model": "DeepSeek V4-Pro",
+      "harness": "Claude Code / DeepSeek API",
+      "effort": "high",
+      "runs": 1,
+      "fixed": 13,
+      "wallMinutes": 26.6,
+      "costUsd": null,
+      "date": "2026-09-10"
+    },
+    {
+      "model": "DeepSeek V4-Pro",
+      "harness": "Claude Code / DeepSeek API",
+      "effort": "max",
+      "runs": 1,
+      "fixed": 16,
+      "wallMinutes": 37.2,
+      "costUsd": null,
+      "date": "2026-09-10"
+    },
+    {
+      "model": "DeepSeek V4.1 Flash",
+      "harness": "Claude Code / DeepSeek API",
+      "effort": "high",
+      "runs": 1,
+      "fixed": 19,
+      "wallMinutes": 26.1,
+      "costUsd": null,
+      "date": "2026-09-10"
+    },
+    {
+      "model": "DeepSeek V4.1 Flash",
+      "harness": "Claude Code / DeepSeek API",
+      "effort": "max",
+      "runs": 3,
+      "fixed": 21.7,
+      "wallMinutes": 55.9,
+      "costUsd": null,
+      "date": "2026-09-15"
+    },
+    {
+      "model": "DeepSeek V4.1 Flash 1017",
+      "harness": "Claude Code / DeepSeek API",
+      "effort": "high",
+      "runs": 5,
+      "fixed": 36.4,
+      "wallMinutes": 54.5,
+      "costUsd": null,
+      "date": "2026-10-17"
+    },
+    {
+      "model": "DeepSeek V4.1 Flash 1017",
+      "harness": "Claude Code / DeepSeek API",
+      "effort": "low",
+      "runs": 5,
+      "fixed": 34.4,
+      "wallMinutes": 44.5,
+      "costUsd": null,
+      "date": "2026-10-17"
+    },
+    {
+      "model": "DeepSeek V4.1 Flash 1017",
+      "harness": "Claude Code / DeepSeek API",
+      "effort": "max",
+      "runs": 7,
+      "fixed": 39.1,
+      "wallMinutes": 57.7,
+      "costUsd": null,
+      "date": "2026-10-18"
+    },
+    {
+      "model": "DeepSeek V4.1 Flash 1017",
+      "harness": "DeepSeek Harness / DeepSeek API",
+      "effort": "high",
+      "runs": 5,
+      "fixed": 39.2,
+      "wallMinutes": 53,
+      "costUsd": null,
+      "date": "2026-10-18"
+    },
+    {
+      "model": "DeepSeek V4.1 Flash 1017",
+      "harness": "DeepSeek Harness / DeepSeek API",
+      "effort": "low",
+      "runs": 5,
+      "fixed": 34.8,
+      "wallMinutes": 33.8,
+      "costUsd": null,
+      "date": "2026-10-18"
+    },
+    {
+      "model": "DeepSeek V4.1 Flash 1017",
+      "harness": "DeepSeek Harness / DeepSeek API",
+      "effort": "max",
+      "runs": 7,
+      "fixed": 42.7,
+      "wallMinutes": 62.1,
+      "costUsd": null,
+      "date": "2026-10-18"
+    },
+    {
+      "model": "DeepSeek V4.1 Flash 1017",
+      "harness": "OpenCode / DeepSeek API",
+      "effort": "high",
+      "runs": 5,
+      "fixed": 36.6,
+      "wallMinutes": 41.6,
+      "costUsd": null,
+      "date": "2026-10-19"
+    },
+    {
+      "model": "DeepSeek V4.1 Flash 1017",
+      "harness": "OpenCode / DeepSeek API",
+      "effort": "low",
+      "runs": 5,
+      "fixed": 32.8,
+      "wallMinutes": 41.2,
+      "costUsd": null,
+      "date": "2026-10-19"
+    },
+    {
+      "model": "DeepSeek V4.1 Flash 1017",
+      "harness": "OpenCode / DeepSeek API",
+      "effort": "max",
+      "runs": 5,
+      "fixed": 37.6,
+      "wallMinutes": 55.7,
+      "costUsd": null,
+      "date": "2026-10-18"
+    },
+    {
+      "model": "DeepSeek V4.1 Flash 1017",
+      "harness": "Pi / DeepSeek API",
+      "effort": "high",
+      "runs": 5,
+      "fixed": 40.4,
+      "wallMinutes": 48.3,
+      "costUsd": null,
+      "date": "2026-10-18"
+    },
+    {
+      "model": "DeepSeek V4.1 Flash 1017",
+      "harness": "Pi / DeepSeek API",
+      "effort": "low",
+      "runs": 5,
+      "fixed": 33.8,
+      "wallMinutes": 33.2,
+      "costUsd": null,
+      "date": "2026-10-18"
+    },
+    {
+      "model": "DeepSeek V4.1 Flash 1017",
+      "harness": "Pi / DeepSeek API",
+      "effort": "max",
+      "runs": 5,
+      "fixed": 42.2,
+      "wallMinutes": 54.1,
+      "costUsd": null,
+      "date": "2026-10-18"
+    },
+    {
+      "model": "Fable 5",
+      "harness": "Claude Code",
+      "effort": "high",
+      "runs": 1,
+      "fixed": 24,
+      "wallMinutes": 31.4,
+      "costUsd": 74.52,
+      "date": "2026-07-26"
+    },
+    {
+      "model": "Fable 5",
+      "harness": "Claude Code",
+      "effort": "max",
+      "runs": 1,
+      "fixed": 29,
+      "wallMinutes": 57.3,
+      "costUsd": 112.4,
+      "date": "2026-08-01"
+    },
+    {
+      "model": "Fable 5.1",
+      "harness": "Claude Code",
+      "effort": "high",
+      "runs": 1,
+      "fixed": 33,
+      "wallMinutes": 36.3,
+      "costUsd": 48.58,
+      "date": "2026-09-01"
+    },
+    {
+      "model": "Fable 5.1",
+      "harness": "Claude Code",
+      "effort": "low",
+      "runs": 1,
+      "fixed": 29,
+      "wallMinutes": 33.2,
+      "costUsd": 33,
+      "date": "2026-09-02"
+    },
+    {
+      "model": "Fable 5.1",
+      "harness": "Claude Code",
+      "effort": "max",
+      "runs": 1,
+      "fixed": 43,
+      "wallMinutes": 73.1,
+      "costUsd": 87.18,
+      "date": "2026-09-01"
+    },
+    {
+      "model": "Fable 5.1",
+      "harness": "Claude Code",
+      "effort": "medium",
+      "runs": 1,
+      "fixed": 21,
+      "wallMinutes": 23,
+      "costUsd": 23.73,
+      "date": "2026-09-10"
+    },
+    {
+      "model": "Fable 5.1",
+      "harness": "Claude Code",
+      "effort": "xhigh",
+      "runs": 1,
+      "fixed": 29,
+      "wallMinutes": 59.5,
+      "costUsd": 53.61,
+      "date": "2026-09-10"
+    },
+    {
+      "model": "Fable 5.2",
+      "harness": "Claude Code",
+      "effort": "high",
+      "runs": 2,
+      "fixed": 43,
+      "wallMinutes": 39.5,
+      "costUsd": 46.67,
+      "date": "2026-11-10"
+    },
+    {
+      "model": "Fable 5.2",
+      "harness": "Claude Code",
+      "effort": "low",
+      "runs": 2,
+      "fixed": 41,
+      "wallMinutes": 18.7,
+      "costUsd": 24.32,
+      "date": "2026-11-10"
+    },
+    {
+      "model": "Fable 5.2",
+      "harness": "Claude Code",
+      "effort": "max",
+      "runs": 3,
+      "fixed": 58,
+      "wallMinutes": 142.8,
+      "costUsd": 139.65,
+      "date": "2026-11-09"
+    },
+    {
+      "model": "Fable 5.2",
+      "harness": "Claude Code",
+      "effort": "medium",
+      "runs": 2,
+      "fixed": 41.5,
+      "wallMinutes": 19.8,
+      "costUsd": 26.55,
+      "date": "2026-11-10"
+    },
+    {
+      "model": "Fable 5.2",
+      "harness": "Claude Code",
+      "effort": "xhigh",
+      "runs": 3,
+      "fixed": 49,
+      "wallMinutes": 57,
+      "costUsd": 61.01,
+      "date": "2026-11-10"
+    },
+    {
+      "model": "Gemini 3.7 Flash",
+      "harness": "Antigravity CLI",
+      "effort": "high",
+      "runs": 1,
+      "fixed": 16,
+      "wallMinutes": 22.7,
+      "costUsd": 6.36,
+      "date": "2026-08-28"
+    },
+    {
+      "model": "Gemini 3.7 Flash",
+      "harness": "Gemini CLI (retired) + model-pinning gateway",
+      "effort": "high",
+      "runs": 1,
+      "fixed": 22,
+      "wallMinutes": 96.8,
+      "costUsd": 8.43,
+      "date": "2026-08-24"
+    },
+    {
+      "model": "Gemini 3.8 Flash",
+      "harness": "Antigravity CLI",
+      "effort": "high",
+      "runs": 3,
+      "fixed": 18,
+      "wallMinutes": 38.7,
+      "costUsd": 11.03,
+      "date": "2026-09-15"
+    },
+    {
+      "model": "Gemini 4 Argon",
+      "harness": "Antigravity CLI",
+      "effort": "high",
+      "runs": 3,
+      "fixed": 40.7,
+      "wallMinutes": 56.5,
+      "costUsd": 7.16,
+      "date": "2026-10-14"
+    },
+    {
+      "model": "Gemini 4 Argon",
+      "harness": "Antigravity CLI",
+      "effort": "low",
+      "runs": 3,
+      "fixed": 35.3,
+      "wallMinutes": 59.6,
+      "costUsd": 6.47,
+      "date": "2026-10-14"
+    },
+    {
+      "model": "Gemini 4 Argon",
+      "harness": "Antigravity CLI",
+      "effort": "medium",
+      "runs": 3,
+      "fixed": 39.3,
+      "wallMinutes": 59.9,
+      "costUsd": 7.5,
+      "date": "2026-10-14"
+    },
+    {
+      "model": "Gemini 4 Carbon",
+      "harness": "Antigravity CLI",
+      "effort": "high",
+      "runs": 3,
+      "fixed": 57.3,
+      "wallMinutes": 114,
+      "costUsd": 31.32,
+      "date": "2026-11-10"
+    },
+    {
+      "model": "Gemini 4 Carbon",
+      "harness": "Antigravity CLI",
+      "effort": "low",
+      "runs": 3,
+      "fixed": 46,
+      "wallMinutes": 60.4,
+      "costUsd": 7.67,
+      "date": "2026-11-13"
+    },
+    {
+      "model": "Gemini 4 Carbon",
+      "harness": "Antigravity CLI",
+      "effort": "medium",
+      "runs": 3,
+      "fixed": 56,
+      "wallMinutes": 81.1,
+      "costUsd": 24.95,
+      "date": "2026-11-10"
+    },
+    {
+      "model": "Gemini 4 Hydrogen",
+      "harness": "Antigravity CLI",
+      "effort": "high",
+      "runs": 3,
+      "fixed": 28.3,
+      "wallMinutes": 22.4,
+      "costUsd": 4.42,
+      "date": "2026-11-13"
+    },
+    {
+      "model": "Gemini 4 Hydrogen",
+      "harness": "Antigravity CLI",
+      "effort": "low",
+      "runs": 3,
+      "fixed": 10.3,
+      "wallMinutes": 7.2,
+      "costUsd": 0.43,
+      "date": "2026-11-13"
+    },
+    {
+      "model": "Gemini 4 Hydrogen",
+      "harness": "Antigravity CLI",
+      "effort": "medium",
+      "runs": 3,
+      "fixed": 24.7,
+      "wallMinutes": 19.9,
+      "costUsd": 2.1,
+      "date": "2026-11-13"
+    },
+    {
+      "model": "Gemini 4 Hydrogen",
+      "harness": "Antigravity CLI",
+      "effort": "xhigh",
+      "runs": 3,
+      "fixed": 32.7,
+      "wallMinutes": 35.8,
+      "costUsd": 7.07,
+      "date": "2026-11-13"
+    },
+    {
+      "model": "Gemini 4 Neon",
+      "harness": "Antigravity CLI",
+      "effort": "high",
+      "runs": 3,
+      "fixed": 57,
+      "wallMinutes": 45.4,
+      "costUsd": 29.11,
+      "date": "2026-11-19"
+    },
+    {
+      "model": "Gemini 4 Neon",
+      "harness": "Antigravity CLI",
+      "effort": "low",
+      "runs": 3,
+      "fixed": 29.7,
+      "wallMinutes": 10.8,
+      "costUsd": 5.29,
+      "date": "2026-11-19"
+    },
+    {
+      "model": "Gemini 4 Neon",
+      "harness": "Antigravity CLI",
+      "effort": "medium",
+      "runs": 3,
+      "fixed": 47.7,
+      "wallMinutes": 24.5,
+      "costUsd": 12.84,
+      "date": "2026-11-19"
+    },
+    {
+      "model": "Gemini 4 Neon",
+      "harness": "Antigravity CLI",
+      "effort": "xhigh",
+      "runs": 3,
+      "fixed": 63,
+      "wallMinutes": 75.9,
+      "costUsd": 46.34,
+      "date": "2026-11-19"
+    },
+    {
+      "model": "Gemma 4 31B",
+      "harness": "Claude Code / OpenRouter",
+      "effort": "default",
+      "runs": 1,
+      "fixed": 4,
+      "wallMinutes": 221.8,
+      "costUsd": null,
+      "date": "2026-09-16"
+    },
+    {
+      "model": "Gemma 4 31B 4-bit",
+      "harness": "Claude Code / OpenRouter",
+      "effort": "default",
+      "runs": 1,
+      "fixed": 3,
+      "wallMinutes": 24.9,
+      "costUsd": null,
+      "date": "2026-09-16"
+    },
+    {
+      "model": "GLM-5.3",
+      "harness": "Claude Code / Z.ai API",
+      "effort": "max",
+      "runs": 1,
+      "fixed": 19,
+      "wallMinutes": 40.4,
+      "costUsd": 15.93,
+      "date": "2026-09-10"
+    },
+    {
+      "model": "GLM-5.3 Flash",
+      "harness": "Claude Code / OpenRouter",
+      "effort": "default",
+      "runs": 1,
+      "fixed": 13,
+      "wallMinutes": 57.1,
+      "costUsd": null,
+      "date": "2026-08-27"
+    },
+    {
+      "model": "GLM-5.3 Flash",
+      "harness": "Claude Code / Z.ai API",
+      "effort": "high",
+      "runs": 1,
+      "fixed": 16,
+      "wallMinutes": 62.3,
+      "costUsd": 0.94,
+      "date": "2026-09-13"
+    },
+    {
+      "model": "GLM-5.3 Flash",
+      "harness": "Claude Code / Z.ai API",
+      "effort": "low",
+      "runs": 1,
+      "fixed": 9,
+      "wallMinutes": 29,
+      "costUsd": 0.42,
+      "date": "2026-09-13"
+    },
+    {
+      "model": "GLM-5.3 Flash",
+      "harness": "Claude Code / Z.ai API",
+      "effort": "max",
+      "runs": 3,
+      "fixed": 17.7,
+      "wallMinutes": 63.2,
+      "costUsd": 1.03,
+      "date": "2026-09-15"
+    },
+    {
+      "model": "GPT-5.6 Luna",
+      "harness": "Codex CLI",
+      "effort": "high",
+      "runs": 1,
+      "fixed": 13,
+      "wallMinutes": 64.1,
+      "costUsd": 0.57,
+      "date": "2026-07-31"
+    },
+    {
+      "model": "GPT-5.6 Luna",
+      "harness": "Codex CLI",
+      "effort": "low",
+      "runs": 1,
+      "fixed": 4,
+      "wallMinutes": 5.8,
+      "costUsd": 0.1,
+      "date": "2026-08-27"
+    },
+    {
+      "model": "GPT-5.6 Luna",
+      "harness": "Codex CLI",
+      "effort": "max",
+      "runs": 3,
+      "fixed": 31.3,
+      "wallMinutes": 187.1,
+      "costUsd": 3.15,
+      "date": "2026-09-22"
+    },
+    {
+      "model": "GPT-5.6 Luna",
+      "harness": "Codex CLI",
+      "effort": "medium",
+      "runs": 1,
+      "fixed": 9,
+      "wallMinutes": 15.4,
+      "costUsd": 0.33,
+      "date": "2026-08-27"
+    },
+    {
+      "model": "GPT-5.6 Luna",
+      "harness": "Codex CLI",
+      "effort": "xhigh",
+      "runs": 1,
+      "fixed": 23,
+      "wallMinutes": 135.6,
+      "costUsd": 2.5,
+      "date": "2026-08-28"
+    },
+    {
+      "model": "GPT-5.6 Sol",
+      "harness": "Codex CLI",
+      "effort": "high",
+      "runs": 1,
+      "fixed": 34,
+      "wallMinutes": 66.7,
+      "costUsd": 33.92,
+      "date": "2026-07-31"
+    },
+    {
+      "model": "GPT-5.6 Sol",
+      "harness": "Codex CLI",
+      "effort": "max",
+      "runs": 2,
+      "fixed": 43.5,
+      "wallMinutes": 253.1,
+      "costUsd": 95.35,
+      "date": "2026-09-16"
+    },
+    {
+      "model": "GPT-5.6 Sol",
+      "harness": "Codex CLI",
+      "effort": "medium",
+      "runs": 1,
+      "fixed": 29,
+      "wallMinutes": 47.6,
+      "costUsd": 15.77,
+      "date": "2026-09-06"
+    },
+    {
+      "model": "GPT-5.6 Sol",
+      "harness": "Codex CLI",
+      "effort": "xhigh",
+      "runs": 1,
+      "fixed": 39,
+      "wallMinutes": 126.2,
+      "costUsd": 52.75,
+      "date": "2026-08-28"
+    },
+    {
+      "model": "GPT-5.6 Terra",
+      "harness": "Codex CLI",
+      "effort": "high",
+      "runs": 1,
+      "fixed": 18,
+      "wallMinutes": 28.1,
+      "costUsd": 5.89,
+      "date": "2026-08-27"
+    },
+    {
+      "model": "GPT-5.6 Terra",
+      "harness": "Codex CLI",
+      "effort": "max",
+      "runs": 1,
+      "fixed": 32,
+      "wallMinutes": 159.7,
+      "costUsd": 27.98,
+      "date": "2026-08-27"
+    },
+    {
+      "model": "GPT-5.6 Terra",
+      "harness": "Codex CLI",
+      "effort": "medium",
+      "runs": 1,
+      "fixed": 15,
+      "wallMinutes": 20.2,
+      "costUsd": 3.87,
+      "date": "2026-08-27"
+    },
+    {
+      "model": "GPT-5.6 Terra",
+      "harness": "Codex CLI",
+      "effort": "xhigh",
+      "runs": 1,
+      "fixed": 20,
+      "wallMinutes": 56.6,
+      "costUsd": 8.98,
+      "date": "2026-08-28"
+    },
+    {
+      "model": "GPT-6 Astra",
+      "harness": "Codex CLI",
+      "effort": "high",
+      "runs": 1,
+      "fixed": 35,
+      "wallMinutes": 40.5,
+      "costUsd": 20.6,
+      "date": "2026-09-04"
+    },
+    {
+      "model": "GPT-6 Astra",
+      "harness": "Codex CLI",
+      "effort": "low",
+      "runs": 1,
+      "fixed": 27,
+      "wallMinutes": 32.1,
+      "costUsd": 11.69,
+      "date": "2026-09-05"
+    },
+    {
+      "model": "GPT-6 Astra",
+      "harness": "Codex CLI",
+      "effort": "max",
+      "runs": 3,
+      "fixed": 45,
+      "wallMinutes": 89.8,
+      "costUsd": 33.03,
+      "date": "2026-09-14"
+    },
+    {
+      "model": "GPT-6 Astra",
+      "harness": "Codex CLI",
+      "effort": "medium",
+      "runs": 1,
+      "fixed": 34,
+      "wallMinutes": 28,
+      "costUsd": 15.78,
+      "date": "2026-09-05"
+    },
+    {
+      "model": "GPT-6 Astra",
+      "harness": "Codex CLI",
+      "effort": "xhigh",
+      "runs": 1,
+      "fixed": 43,
+      "wallMinutes": 58.8,
+      "costUsd": 24.22,
+      "date": "2026-09-04"
+    },
+    {
+      "model": "GPT-6 Luna",
+      "harness": "Codex CLI",
+      "effort": "high",
+      "runs": 1,
+      "fixed": 9,
+      "wallMinutes": 24.4,
+      "costUsd": 0.13,
+      "date": "2026-09-23"
+    },
+    {
+      "model": "GPT-6 Luna",
+      "harness": "Codex CLI",
+      "effort": "low",
+      "runs": 1,
+      "fixed": 4,
+      "wallMinutes": 19.3,
+      "costUsd": 0.2,
+      "date": "2026-09-23"
+    },
+    {
+      "model": "GPT-6 Luna",
+      "harness": "Codex CLI",
+      "effort": "max",
+      "runs": 3,
+      "fixed": 18.3,
+      "wallMinutes": 99.2,
+      "costUsd": 0.52,
+      "date": "2026-09-23"
+    },
+    {
+      "model": "GPT-6 Luna",
+      "harness": "Codex CLI",
+      "effort": "medium",
+      "runs": 1,
+      "fixed": 4,
+      "wallMinutes": 8.6,
+      "costUsd": 0.06,
+      "date": "2026-09-23"
+    },
+    {
+      "model": "GPT-6 Luna",
+      "harness": "Codex CLI",
+      "effort": "xhigh",
+      "runs": 1,
+      "fixed": 14,
+      "wallMinutes": 57,
+      "costUsd": 0.39,
+      "date": "2026-09-23"
+    },
+    {
+      "model": "GPT-6 Sol",
+      "harness": "Codex CLI",
+      "effort": "high",
+      "runs": 1,
+      "fixed": 20,
+      "wallMinutes": 33.9,
+      "costUsd": 4.16,
+      "date": "2026-09-23"
+    },
+    {
+      "model": "GPT-6 Sol",
+      "harness": "Codex CLI",
+      "effort": "low",
+      "runs": 1,
+      "fixed": 6,
+      "wallMinutes": 11.1,
+      "costUsd": 1.08,
+      "date": "2026-09-23"
+    },
+    {
+      "model": "GPT-6 Sol",
+      "harness": "Codex CLI",
+      "effort": "max",
+      "runs": 3,
+      "fixed": 29.3,
+      "wallMinutes": 63.4,
+      "costUsd": 9.33,
+      "date": "2026-09-23"
+    },
+    {
+      "model": "GPT-6 Sol",
+      "harness": "Codex CLI",
+      "effort": "medium",
+      "runs": 1,
+      "fixed": 14,
+      "wallMinutes": 24.5,
+      "costUsd": 2.39,
+      "date": "2026-09-23"
+    },
+    {
+      "model": "GPT-6 Sol",
+      "harness": "Codex CLI",
+      "effort": "xhigh",
+      "runs": 1,
+      "fixed": 25,
+      "wallMinutes": 51.4,
+      "costUsd": 7.67,
+      "date": "2026-09-23"
+    },
+    {
+      "model": "GPT-6.1 Sol",
+      "harness": "Codex CLI",
+      "effort": "high",
+      "runs": 2,
+      "fixed": 36.5,
+      "wallMinutes": 70.3,
+      "costUsd": 3.26,
+      "date": "2026-09-30"
+    },
+    {
+      "model": "GPT-6.1 Sol",
+      "harness": "Codex CLI",
+      "effort": "low",
+      "runs": 2,
+      "fixed": 22.5,
+      "wallMinutes": 25.4,
+      "costUsd": 1.34,
+      "date": "2026-10-01"
+    },
+    {
+      "model": "GPT-6.1 Sol",
+      "harness": "Codex CLI",
+      "effort": "max",
+      "runs": 3,
+      "fixed": 44.3,
+      "wallMinutes": 139.3,
+      "costUsd": 5.88,
+      "date": "2026-09-30"
+    },
+    {
+      "model": "GPT-6.1 Sol",
+      "harness": "Codex CLI",
+      "effort": "medium",
+      "runs": 2,
+      "fixed": 29,
+      "wallMinutes": 29.8,
+      "costUsd": 1.76,
+      "date": "2026-09-30"
+    },
+    {
+      "model": "GPT-6.1 Sol",
+      "harness": "Codex CLI",
+      "effort": "xhigh",
+      "runs": 3,
+      "fixed": 42.7,
+      "wallMinutes": 98.7,
+      "costUsd": 4.35,
+      "date": "2026-09-30"
+    },
+    {
+      "model": "GPT-6.1 Terra",
+      "harness": "Codex CLI",
+      "effort": "high",
+      "runs": 3,
+      "fixed": 9.7,
+      "wallMinutes": 12.6,
+      "costUsd": 0.56,
+      "date": "2026-10-26"
+    },
+    {
+      "model": "GPT-6.1 Terra",
+      "harness": "Codex CLI",
+      "effort": "low",
+      "runs": 3,
+      "fixed": 6,
+      "wallMinutes": 10.1,
+      "costUsd": 0.3,
+      "date": "2026-10-27"
+    },
+    {
+      "model": "GPT-6.1 Terra",
+      "harness": "Codex CLI",
+      "effort": "max",
+      "runs": 3,
+      "fixed": 40.7,
+      "wallMinutes": 37.3,
+      "costUsd": 3.88,
+      "date": "2026-10-26"
+    },
+    {
+      "model": "GPT-6.1 Terra",
+      "harness": "Codex CLI",
+      "effort": "medium",
+      "runs": 3,
+      "fixed": 7.3,
+      "wallMinutes": 9.6,
+      "costUsd": 0.31,
+      "date": "2026-10-27"
+    },
+    {
+      "model": "GPT-6.1 Terra",
+      "harness": "Codex CLI",
+      "effort": "xhigh",
+      "runs": 3,
+      "fixed": 11.3,
+      "wallMinutes": 15.9,
+      "costUsd": 0.75,
+      "date": "2026-10-26"
+    },
+    {
+      "model": "GPT-6.2 Astra",
+      "harness": "Codex CLI",
+      "effort": "high",
+      "runs": 5,
+      "fixed": 59.6,
+      "wallMinutes": 48.5,
+      "costUsd": 19.84,
+      "date": "2026-11-18"
+    },
+    {
+      "model": "GPT-6.2 Astra",
+      "harness": "Codex CLI",
+      "effort": "low",
+      "runs": 3,
+      "fixed": 46.3,
+      "wallMinutes": 17.7,
+      "costUsd": 7.28,
+      "date": "2026-11-18"
+    },
+    {
+      "model": "GPT-6.2 Astra",
+      "harness": "Codex CLI",
+      "effort": "max",
+      "runs": 3,
+      "fixed": 62.7,
+      "wallMinutes": 121.8,
+      "costUsd": 28.35,
+      "date": "2026-11-18"
+    },
+    {
+      "model": "GPT-6.2 Astra",
+      "harness": "Codex CLI",
+      "effort": "medium",
+      "runs": 3,
+      "fixed": 50.3,
+      "wallMinutes": 30.2,
+      "costUsd": 12.34,
+      "date": "2026-11-18"
+    },
+    {
+      "model": "GPT-6.2 Astra",
+      "harness": "Codex CLI",
+      "effort": "xhigh",
+      "runs": 5,
+      "fixed": 60.2,
+      "wallMinutes": 84,
+      "costUsd": 22.82,
+      "date": "2026-11-18"
+    },
+    {
+      "model": "GPT-6.2 Sol",
+      "harness": "Codex CLI",
+      "effort": "high",
+      "runs": 3,
+      "fixed": 49.7,
+      "wallMinutes": 42.4,
+      "costUsd": 4.14,
+      "date": "2026-11-18"
+    },
+    {
+      "model": "GPT-6.2 Sol",
+      "harness": "Codex CLI",
+      "effort": "low",
+      "runs": 3,
+      "fixed": 36,
+      "wallMinutes": 18.9,
+      "costUsd": 1.96,
+      "date": "2026-11-18"
+    },
+    {
+      "model": "GPT-6.2 Sol",
+      "harness": "Codex CLI",
+      "effort": "max",
+      "runs": 3,
+      "fixed": 54.7,
+      "wallMinutes": 68.2,
+      "costUsd": 7,
+      "date": "2026-11-18"
+    },
+    {
+      "model": "GPT-6.2 Sol",
+      "harness": "Codex CLI",
+      "effort": "medium",
+      "runs": 3,
+      "fixed": 45.7,
+      "wallMinutes": 31.7,
+      "costUsd": 3.22,
+      "date": "2026-11-18"
+    },
+    {
+      "model": "GPT-6.2 Sol",
+      "harness": "Codex CLI",
+      "effort": "xhigh",
+      "runs": 3,
+      "fixed": 49,
+      "wallMinutes": 41.4,
+      "costUsd": 3.89,
+      "date": "2026-11-18"
+    },
+    {
+      "model": "gpt-oss-120b",
+      "harness": "Claude Code / OpenRouter",
+      "effort": "default",
+      "runs": 3,
+      "fixed": 0,
+      "wallMinutes": 3.7,
+      "costUsd": null,
+      "date": "2026-09-15"
+    },
+    {
+      "model": "gpt-oss-20b",
+      "harness": "Claude Code / OpenRouter",
+      "effort": "default",
+      "runs": 3,
+      "fixed": 0,
+      "wallMinutes": 7.4,
+      "costUsd": null,
+      "date": "2026-09-15"
+    },
+    {
+      "model": "Grok 4.5",
+      "harness": "Grok Build CLI (ACP)",
+      "effort": "high",
+      "runs": 1,
+      "fixed": 17,
+      "wallMinutes": 27.9,
+      "costUsd": null,
+      "date": "2026-08-06"
+    },
+    {
+      "model": "Grok 4.6",
+      "harness": "Grok Build CLI (ACP)",
+      "effort": "high",
+      "runs": 1,
+      "fixed": 23,
+      "wallMinutes": 33,
+      "costUsd": null,
+      "date": "2026-08-28"
+    },
+    {
+      "model": "Grok 4.6",
+      "harness": "Grok Build CLI (ACP)",
+      "effort": "low",
+      "runs": 1,
+      "fixed": 15,
+      "wallMinutes": 18,
+      "costUsd": null,
+      "date": "2026-08-27"
+    },
+    {
+      "model": "Grok 4.6",
+      "harness": "Grok Build CLI (ACP)",
+      "effort": "medium",
+      "runs": 1,
+      "fixed": 22,
+      "wallMinutes": 26.5,
+      "costUsd": null,
+      "date": "2026-08-28"
+    },
+    {
+      "model": "Grok 4.6",
+      "harness": "Grok Build CLI (ACP)",
+      "effort": "xhigh",
+      "runs": 3,
+      "fixed": 28.7,
+      "wallMinutes": 43.1,
+      "costUsd": null,
+      "date": "2026-09-14"
+    },
+    {
+      "model": "Grok 4.7",
+      "harness": "Grok Build CLI (ACP)",
+      "effort": "high",
+      "runs": 3,
+      "fixed": 19.3,
+      "wallMinutes": 37.9,
+      "costUsd": null,
+      "date": "2026-09-21"
+    },
+    {
+      "model": "Grok 4.7",
+      "harness": "Grok Build CLI (ACP)",
+      "effort": "low",
+      "runs": 3,
+      "fixed": 15.7,
+      "wallMinutes": 22.2,
+      "costUsd": null,
+      "date": "2026-09-21"
+    },
+    {
+      "model": "Grok 4.7",
+      "harness": "Grok Build CLI (ACP)",
+      "effort": "medium",
+      "runs": 3,
+      "fixed": 26.7,
+      "wallMinutes": 30.7,
+      "costUsd": null,
+      "date": "2026-09-21"
+    },
+    {
+      "model": "Grok 4.7",
+      "harness": "Grok Build CLI (ACP)",
+      "effort": "xhigh",
+      "runs": 5,
+      "fixed": 29,
+      "wallMinutes": 44.7,
+      "costUsd": null,
+      "date": "2026-10-08"
+    },
+    {
+      "model": "Haiku 4.5",
+      "harness": "Claude Code",
+      "effort": "default",
+      "runs": 2,
+      "fixed": 1.5,
+      "wallMinutes": 16.9,
+      "costUsd": 2.22,
+      "date": "2026-10-08"
+    },
+    {
+      "model": "Haiku 5.5",
+      "harness": "Claude Code",
+      "effort": "high",
+      "runs": 2,
+      "fixed": 16,
+      "wallMinutes": 19.3,
+      "costUsd": 3.56,
+      "date": "2026-10-07"
+    },
+    {
+      "model": "Haiku 5.5",
+      "harness": "Claude Code",
+      "effort": "low",
+      "runs": 1,
+      "fixed": 11,
+      "wallMinutes": 8.7,
+      "costUsd": 1.61,
+      "date": "2026-10-08"
+    },
+    {
+      "model": "Haiku 5.5",
+      "harness": "Claude Code",
+      "effort": "max",
+      "runs": 2,
+      "fixed": 21.5,
+      "wallMinutes": 32.5,
+      "costUsd": 5.83,
+      "date": "2026-10-07"
+    },
+    {
+      "model": "Haiku 5.5",
+      "harness": "Claude Code",
+      "effort": "medium",
+      "runs": 1,
+      "fixed": 12,
+      "wallMinutes": 15.5,
+      "costUsd": 2.66,
+      "date": "2026-10-08"
+    },
+    {
+      "model": "Haiku 5.5",
+      "harness": "Claude Code",
+      "effort": "xhigh",
+      "runs": 3,
+      "fixed": 18.3,
+      "wallMinutes": 24.1,
+      "costUsd": 4.8,
+      "date": "2026-10-07"
+    },
+    {
+      "model": "Hy4 Preview",
+      "harness": "Claude Code / OpenRouter",
+      "effort": "default",
+      "runs": 1,
+      "fixed": 18,
+      "wallMinutes": 67.5,
+      "costUsd": null,
+      "date": "2026-08-28"
+    },
+    {
+      "model": "Kimi K3",
+      "harness": "Claude Code / OpenRouter",
+      "effort": "default",
+      "runs": 1,
+      "fixed": 21,
+      "wallMinutes": 107.8,
+      "costUsd": 25.27,
+      "date": "2026-07-26"
+    },
+    {
+      "model": "Kimi K3.1 Pro",
+      "harness": "Claude Code / Moonshot API",
+      "effort": "max",
+      "runs": 3,
+      "fixed": 36,
+      "wallMinutes": 64.8,
+      "costUsd": null,
+      "date": "2026-10-23"
+    },
+    {
+      "model": "MiMo-V2.6-Flash",
+      "harness": "Claude Code / OpenRouter",
+      "effort": "default",
+      "runs": 3,
+      "fixed": 23.3,
+      "wallMinutes": 70.7,
+      "costUsd": null,
+      "date": "2026-09-22"
+    },
+    {
+      "model": "MiMo-V2.6-Pro",
+      "harness": "Claude Code / OpenRouter",
+      "effort": "default",
+      "runs": 3,
+      "fixed": 22.7,
+      "wallMinutes": 90.9,
+      "costUsd": null,
+      "date": "2026-09-22"
+    },
+    {
+      "model": "MiMo-V2.6-Pro",
+      "harness": "Claude Code / Xiaomi first-party",
+      "effort": "enabled",
+      "runs": 1,
+      "fixed": 18,
+      "wallMinutes": 74.9,
+      "costUsd": 0.59,
+      "date": "2026-09-22"
+    },
+    {
+      "model": "Mistral Large 4",
+      "harness": "Claude Code / OpenRouter",
+      "effort": "high",
+      "runs": 3,
+      "fixed": 15,
+      "wallMinutes": 111.1,
+      "costUsd": null,
+      "date": "2026-10-07"
+    },
+    {
+      "model": "Muse Spark 1.2",
+      "harness": "Claude Code / Meta API",
+      "effort": "xhigh",
+      "runs": 1,
+      "fixed": 17,
+      "wallMinutes": 35.7,
+      "costUsd": 13.99,
+      "date": "2026-08-06"
+    },
+    {
+      "model": "Muse Spark 1.3",
+      "harness": "Muse Code / Meta API",
+      "effort": "high",
+      "runs": 3,
+      "fixed": 18.7,
+      "wallMinutes": 75.6,
+      "costUsd": 12.94,
+      "date": "2026-09-14"
+    },
+    {
+      "model": "Muse Spark 1.3",
+      "harness": "Muse Code / Meta API",
+      "effort": "low",
+      "runs": 3,
+      "fixed": 9.7,
+      "wallMinutes": 36.4,
+      "costUsd": 5.61,
+      "date": "2026-09-14"
+    },
+    {
+      "model": "Muse Spark 1.3",
+      "harness": "Muse Code / Meta API",
+      "effort": "max",
+      "runs": 5,
+      "fixed": 32.2,
+      "wallMinutes": 85.6,
+      "costUsd": 18.11,
+      "date": "2026-09-17"
+    },
+    {
+      "model": "Muse Spark 1.3",
+      "harness": "Muse Code / Meta API",
+      "effort": "medium",
+      "runs": 3,
+      "fixed": 13,
+      "wallMinutes": 58.3,
+      "costUsd": 9.24,
+      "date": "2026-09-14"
+    },
+    {
+      "model": "Muse Spark 1.3",
+      "harness": "Muse Code / Meta API",
+      "effort": "xhigh",
+      "runs": 3,
+      "fixed": 20.3,
+      "wallMinutes": 63.8,
+      "costUsd": 13.71,
+      "date": "2026-09-14"
+    },
+    {
+      "model": "Muse Wonder 1.0",
+      "harness": "Muse Code / Meta API",
+      "effort": "max",
+      "runs": 3,
+      "fixed": 31.7,
+      "wallMinutes": 96.2,
+      "costUsd": 27.87,
+      "date": "2026-10-13"
+    },
+    {
+      "model": "Muse Wonder Full 1.0",
+      "harness": "Muse Code / Meta API",
+      "effort": "max",
+      "runs": 2,
+      "fixed": 42,
+      "wallMinutes": 145.3,
+      "costUsd": null,
+      "date": "2026-10-14"
+    },
+    {
+      "model": "Muse Wonder Full 1.0",
+      "harness": "Muse Code / Meta API",
+      "effort": "xhigh",
+      "runs": 2,
+      "fixed": 41.5,
+      "wallMinutes": 90.5,
+      "costUsd": null,
+      "date": "2026-10-14"
+    },
+    {
+      "model": "Opus 4.8",
+      "harness": "Claude Code",
+      "effort": "high",
+      "runs": 1,
+      "fixed": 9,
+      "wallMinutes": 34.8,
+      "costUsd": 21.3,
+      "date": "2026-07-26"
+    },
+    {
+      "model": "Opus 4.8",
+      "harness": "Claude Code",
+      "effort": "max",
+      "runs": 1,
+      "fixed": 15,
+      "wallMinutes": 108.8,
+      "costUsd": 58.11,
+      "date": "2026-09-10"
+    },
+    {
+      "model": "Opus 5",
+      "harness": "Claude Code",
+      "effort": "high",
+      "runs": 1,
+      "fixed": 21,
+      "wallMinutes": 37.4,
+      "costUsd": 41.51,
+      "date": "2026-07-26"
+    },
+    {
+      "model": "Opus 5",
+      "harness": "Claude Code",
+      "effort": "max",
+      "runs": 1,
+      "fixed": 27,
+      "wallMinutes": 60,
+      "costUsd": 54.94,
+      "date": "2026-08-01"
+    },
+    {
+      "model": "Opus 5",
+      "harness": "Claude Code",
+      "effort": "medium",
+      "runs": 1,
+      "fixed": 24,
+      "wallMinutes": 30.5,
+      "costUsd": 37.4,
+      "date": "2026-08-27"
+    },
+    {
+      "model": "Opus 5",
+      "harness": "Claude Code",
+      "effort": "xhigh",
+      "runs": 1,
+      "fixed": 26,
+      "wallMinutes": 49.9,
+      "costUsd": 63.25,
+      "date": "2026-08-28"
+    },
+    {
+      "model": "Opus 5.5",
+      "harness": "Claude Code",
+      "effort": "high",
+      "runs": 3,
+      "fixed": 31.7,
+      "wallMinutes": 23.9,
+      "costUsd": 22.25,
+      "date": "2026-09-23"
+    },
+    {
+      "model": "Opus 5.5",
+      "harness": "Claude Code",
+      "effort": "low",
+      "runs": 3,
+      "fixed": 22.3,
+      "wallMinutes": 11.5,
+      "costUsd": 8.34,
+      "date": "2026-09-23"
+    },
+    {
+      "model": "Opus 5.5",
+      "harness": "Claude Code",
+      "effort": "max",
+      "runs": 3,
+      "fixed": 41.7,
+      "wallMinutes": 66.9,
+      "costUsd": 58.53,
+      "date": "2026-09-23"
+    },
+    {
+      "model": "Opus 5.5",
+      "harness": "Claude Code",
+      "effort": "medium",
+      "runs": 3,
+      "fixed": 30.3,
+      "wallMinutes": 17,
+      "costUsd": 15.68,
+      "date": "2026-09-23"
+    },
+    {
+      "model": "Opus 5.5",
+      "harness": "Claude Code",
+      "effort": "xhigh",
+      "runs": 3,
+      "fixed": 36,
+      "wallMinutes": 42.5,
+      "costUsd": 34.98,
+      "date": "2026-09-23"
+    },
+    {
+      "model": "Ox Alpha (stealth)",
+      "harness": "Claude Code / OpenRouter",
+      "effort": "default",
+      "runs": 1,
+      "fixed": 16,
+      "wallMinutes": 59.4,
+      "costUsd": null,
+      "date": "2026-08-25"
+    },
+    {
+      "model": "Pareto (ex-Union Alpha)",
+      "harness": "Claude Code / OpenRouter",
+      "effort": "default",
+      "runs": 3,
+      "fixed": 30.7,
+      "wallMinutes": 38.2,
+      "costUsd": 4.81,
+      "date": "2026-09-17"
+    },
+    {
+      "model": "Qwen3.8-27B",
+      "harness": "Claude Code / Alibaba API",
+      "effort": "xhigh",
+      "runs": 3,
+      "fixed": 15,
+      "wallMinutes": 56.8,
+      "costUsd": 5.55,
+      "date": "2026-09-15"
+    },
+    {
+      "model": "Qwen3.8-27B 8-bit",
+      "harness": "Claude Code / OpenRouter",
+      "effort": "default",
+      "runs": 3,
+      "fixed": 10.7,
+      "wallMinutes": 56.6,
+      "costUsd": null,
+      "date": "2026-09-16"
+    },
+    {
+      "model": "Qwen3.8-Flash",
+      "harness": "Claude Code / Alibaba API",
+      "effort": "low",
+      "runs": 1,
+      "fixed": 23,
+      "wallMinutes": 98.1,
+      "costUsd": 1.37,
+      "date": "2026-09-11"
+    },
+    {
+      "model": "Qwen3.8-Flash",
+      "harness": "Claude Code / Alibaba API",
+      "effort": "max",
+      "runs": 1,
+      "fixed": 26,
+      "wallMinutes": 97.3,
+      "costUsd": 1.81,
+      "date": "2026-09-11"
+    },
+    {
+      "model": "Qwen3.8-Max",
+      "harness": "Claude Code / Alibaba API",
+      "effort": "max",
+      "runs": 3,
+      "fixed": 25.7,
+      "wallMinutes": 117.1,
+      "costUsd": 26.76,
+      "date": "2026-09-15"
+    },
+    {
+      "model": "Sonnet 5",
+      "harness": "Claude Code",
+      "effort": "high",
+      "runs": 1,
+      "fixed": 9,
+      "wallMinutes": 32.8,
+      "costUsd": 11.38,
+      "date": "2026-07-26"
+    },
+    {
+      "model": "Sonnet 5",
+      "harness": "Claude Code",
+      "effort": "max",
+      "runs": 1,
+      "fixed": 9,
+      "wallMinutes": 61.3,
+      "costUsd": 17.96,
+      "date": "2026-09-10"
+    },
+    {
+      "model": "Sonnet 5.5",
+      "harness": "Claude Code",
+      "effort": "high",
+      "runs": 3,
+      "fixed": 34.3,
+      "wallMinutes": 27.9,
+      "costUsd": 19.85,
+      "date": "2026-09-29"
+    },
+    {
+      "model": "Sonnet 5.5",
+      "harness": "Claude Code",
+      "effort": "low",
+      "runs": 3,
+      "fixed": 19,
+      "wallMinutes": 8.5,
+      "costUsd": 5.73,
+      "date": "2026-09-30"
+    },
+    {
+      "model": "Sonnet 5.5",
+      "harness": "Claude Code",
+      "effort": "max",
+      "runs": 3,
+      "fixed": 51.3,
+      "wallMinutes": 287.1,
+      "costUsd": 154.03,
+      "date": "2026-09-29"
+    },
+    {
+      "model": "Sonnet 5.5",
+      "harness": "Claude Code",
+      "effort": "medium",
+      "runs": 3,
+      "fixed": 23.3,
+      "wallMinutes": 17.4,
+      "costUsd": 11.11,
+      "date": "2026-09-30"
+    },
+    {
+      "model": "Sonnet 5.5",
+      "harness": "Claude Code",
+      "effort": "xhigh",
+      "runs": 3,
+      "fixed": 36,
+      "wallMinutes": 72.7,
+      "costUsd": 42.86,
+      "date": "2026-09-29"
+    }
+  ]
+}

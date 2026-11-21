@@ -12,13 +12,12 @@ const catalog = JSON.parse(read("references/panel-recommendations.json"));
 
 const fields = [
   "id",
+  "kind",
   "profiles",
   "task",
   "model",
   "harness",
-  "route",
   "efforts",
-  "sourceUrl",
   "checked",
   "samples",
   "metric",
@@ -28,6 +27,8 @@ const fields = [
   "rationale",
   "status",
 ];
+// A board entry also names its route and its public source; an own-evaluation entry names its provenance.
+const boardFields = ["route", "sourceUrl"];
 
 test("every catalog entry records the evidence the setup procedure promises", () => {
   assert.equal(catalog.version, 1);
@@ -41,7 +42,16 @@ test("every catalog entry records the evidence the setup procedure promises", ()
     assert(!ids.has(entry.id), `duplicate ${entry.id}`);
     ids.add(entry.id);
     assert.match(entry.checked, /^\d{4}-\d{2}-\d{2}$/);
-    assert.match(entry.sourceUrl, /^https:\/\//);
+    assert(["board", "own-evaluation"].includes(entry.kind), `${entry.id}: kind`);
+    if (entry.kind === "board") {
+      for (const field of boardFields) {
+        assert.notEqual(entry[field], undefined, `${entry.id}: ${field}`);
+      }
+      assert.match(entry.sourceUrl, /^https:\/\//);
+    } else {
+      assert.equal(entry.provenance, "own-evaluation", entry.id);
+      assert.equal(entry.sourceUrl, undefined, `${entry.id}: an own result has no public source`);
+    }
     assert(["current", "superseded", "withdrawn", "unverified"].includes(entry.status));
     for (const profile of entry.profiles) {
       assert(["quick", "balanced", "deep"].includes(profile));
@@ -49,7 +59,11 @@ test("every catalog entry records the evidence the setup procedure promises", ()
     assert(entry.efforts.length > 0);
     for (const row of entry.efforts) {
       assert.equal(typeof row.effort, "string");
-      for (const value of [row.fixed, row.listCostUsd, row.wallMinutes]) {
+      const figures =
+        entry.kind === "board"
+          ? [row.fixed, row.listCostUsd, row.wallMinutes]
+          : [row.found, row.of, row.falseSharePercent, row.wallMinutes];
+      for (const value of figures) {
         assert(value === "unknown" || Number.isFinite(value), `${entry.id}: ${row.effort}`);
       }
     }

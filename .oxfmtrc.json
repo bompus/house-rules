@@ -1,6 +1,12 @@
 {
   "$schema": "./node_modules/oxfmt/configuration_schema.json",
   "printWidth": 100,
-  "ignorePatterns": ["bun.lock", "skills/*/test/fixtures/**"],
+  "ignorePatterns": [
+    "bun.lock",
+    "skills/*/test/fixtures/**",
+    "skills/hr-code-review/references/panel-board-snapshot.json",
+    "skills/hr-code-review/references/panel-recommendations.json",
+    "skills/hr-code-review/references/panel-recommendations.own.json"
+  ],
   "sortPackageJson": true
 }

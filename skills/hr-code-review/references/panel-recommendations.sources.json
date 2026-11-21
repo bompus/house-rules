@@ -1,0 +1,84 @@
+{
+  "version": 1,
+  "board": {
+    "url": "https://bughunt.productcompass.pm/data/benchmark.json",
+    "task": "Find planted bugs: 105 across two repositories, count fixed",
+    "noisePoints": 1.5,
+    "timeDefinition": "wall clock summed over both repositories; the board says its machines were shared with other work for some rows, so times compare loosely at best",
+    "costDefinition": "list-rate API price estimated from usage counts, summed over both repositories; not an invoice or subscription billing"
+  },
+  "own": {
+    "task": "Find known defects in code changes under review",
+    "timeDefinition": "wall-clock minutes per review as recorded by the evaluator; reviews may have shared the machine with other work",
+    "limitations": "Measured by the repository owner on a private set of code-review cases that this repository does not publish, so it cannot be reproduced here; some of the cases also chose between seats, so treat the figure as the owner's result on the owner's cases, not a ranking; it does not compare with the board entries, which use a different task",
+    "rationaleTail": "A result on the owner's cases that a user can weigh beside the board entries, not a measured guarantee"
+  },
+  "entries": [
+    {
+      "id": "opus-5-5-bug-hunt",
+      "profiles": ["balanced"],
+      "model": "claude-opus-5-5",
+      "boardModel": "Opus 5.5",
+      "harness": "Claude Code",
+      "boardHarness": "Claude Code",
+      "route": "Anthropic first-party API",
+      "efforts": ["medium", "high", "xhigh"],
+      "limitations": "Counts planted bugs, not review quality on real changes; repeated attempts are not independent replications; runs used a 1M context window, and the board says its older Opus 5 rows are not comparable to these; the board also lists low and max rungs that this entry leaves out",
+      "rationaleTail": "A lower effort supports a balanced starting point, not equivalence"
+    },
+    {
+      "id": "sonnet-5-5-bug-hunt",
+      "profiles": ["balanced"],
+      "model": "claude-sonnet-5-5",
+      "boardModel": "Sonnet 5.5",
+      "harness": "Claude Code",
+      "boardHarness": "Claude Code",
+      "route": "Anthropic first-party API",
+      "efforts": ["high", "xhigh"],
+      "timeDefinition": "wall clock summed over both repositories; the board says the machine was idle for these runs, so the times do not compare with the Opus entry's",
+      "costDefinition": "list-rate API price estimated from usage counts, summed over both repositories; the board notes its harness priced this model on another model's table, so the dollar figure is less certain than the usage counts",
+      "limitations": "Same board limits as the Opus entry; its older Sonnet 5 rows are not comparable to these; the board also lists low, medium and max rungs that this entry leaves out",
+      "rationaleTail": "Suggest it only where the user allows that model and effort"
+    },
+    {
+      "id": "muse-wonder-full-bug-hunt",
+      "profiles": ["balanced"],
+      "model": "muse-wonder-full-1.0",
+      "boardModel": "Muse Wonder Full 1.0",
+      "harness": "Muse Code (Meta's agent CLI)",
+      "boardHarness": "Muse Code / Meta API",
+      "route": "Meta API through a Muse Code subscription plan; no per-use price",
+      "efforts": ["xhigh", "max"],
+      "timeDefinition": "active wall clock summed over both repositories; the board says its machine was shared with other work, and some runs were resumed in segments, so only active time is counted",
+      "costDefinition": "unknown: Meta publishes no price for this model, so no dollar figure is recorded",
+      "limitations": "Few runs per effort, and the board measures a median run-to-run move of about a point and a half on three-run configurations, so a gap of that size between efforts is not a difference; the board lists no high or lower rung; reachable only through a Muse Code subscription plan, so it fits a user who already has one; its usage draws on that plan's rolling windows, which the board does not measure",
+      "rationaleTail": "Suggest it as an additional seat from a different model family where the user has a Muse Code plan and allows the effort; start at xhigh, and use max only on request"
+    },
+    {
+      "id": "gpt-6-2-astra-bug-hunt",
+      "profiles": ["balanced"],
+      "model": "gpt-6.2-astra",
+      "boardModel": "GPT-6.2 Astra",
+      "harness": "Codex CLI",
+      "boardHarness": "Codex CLI",
+      "route": "OpenAI Codex CLI on a ChatGPT account; no per-use price",
+      "efforts": ["medium", "high", "xhigh"],
+      "timeDefinition": "wall clock summed over both repositories on cloud machines, not the laptop most other rows ran on, so it does not compare with them",
+      "limitations": "Counts planted bugs, not review quality on real changes; the board ran every GPT-6.2 row with file timestamps flattened and a newer Codex than earlier OpenAI rows, so a gap against them is model plus client plus machine; the board also lists low and max rungs that this entry leaves out; list cost is an estimate, not what a ChatGPT plan charges",
+      "rationaleTail": "A lower effort supports a balanced starting point, not equivalence; suggest it where the user has a Codex plan and allows the model and effort"
+    },
+    {
+      "id": "gemini-4-neon-bug-hunt",
+      "profiles": ["balanced"],
+      "model": "gemini-4-neon",
+      "boardModel": "Gemini 4 Neon",
+      "harness": "Antigravity CLI",
+      "boardHarness": "Antigravity CLI",
+      "route": "Google AI Ultra subscription through the Antigravity CLI",
+      "efforts": ["high", "xhigh"],
+      "timeDefinition": "wall clock summed over both repositories on a laptop, excluding the waits for the subscription's usage windows to reopen",
+      "limitations": "Counts planted bugs, not review quality on real changes; runs were resumed after the subscription's five-hour usage window ran out, so a user on a smaller plan may hit that limit sooner; the board also lists low and medium rungs that this entry leaves out; list cost is an estimate from the CLI's own usage counts, sub-agents included",
+      "rationaleTail": "Suggest it as an additional seat from a different model family where the user has a Google AI Ultra plan and allows the effort"
+    }
+  ]
+}
