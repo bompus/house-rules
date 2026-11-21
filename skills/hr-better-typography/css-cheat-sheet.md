@@ -4,12 +4,13 @@ Tailwind 4 equivalents for the declarations in this skill whose utility is not t
 
 ## One utility, several declarations
 
-| Declaration                                                                                         | Tailwind                |
-| --------------------------------------------------------------------------------------------------- | ----------------------- |
-| `-webkit-font-smoothing` + `-moz-osx-font-smoothing`                                                | `antialiased`           |
-| `overflow: hidden` + `text-overflow: ellipsis` + `white-space: nowrap`                              | `truncate`              |
-| `-webkit-line-clamp` + `display: -webkit-box` + `-webkit-box-orient: vertical` + `overflow: hidden` | `line-clamp-*`          |
-| `max-width` capping text at 60–75 characters (proportional font; monospace: `60ch`–`75ch`)          | `max-w-md` / `max-w-lg` |
+| Declaration                                                                                         | Tailwind                                         |
+| --------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| `-webkit-font-smoothing` + `-moz-osx-font-smoothing`                                                | `antialiased`                                    |
+| `overflow: hidden` + `text-overflow: ellipsis` + `white-space: nowrap`                              | `truncate`                                       |
+| `-webkit-line-clamp` + `display: -webkit-box` + `-webkit-box-orient: vertical` + `overflow: hidden` | `line-clamp-*`                                   |
+| `max-width` capping proportional text at 60–75 characters                                           | `max-w-md` / `max-w-lg`                          |
+| `max-width` capping single-width monospace text at 60–75 characters (not `max-w-md` or `max-w-lg`)  | `max-w-prose` / `max-w-[60ch]` to `max-w-[75ch]` |
 
 ## Arbitrary values only
 

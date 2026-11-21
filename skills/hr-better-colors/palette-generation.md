@@ -95,7 +95,7 @@ Three things almost always need hand-tuning after the swap:
 Use one mechanism throughout:
 
 - **`prefers-color-scheme` alone** is correct with no theme toggle. Nothing to persist, nothing to hydrate.
-- **A `.dark` class** is required as soon as users can override the system setting. A script then reads the media query to set the initial class and, while the user's choice is System, listens for changes to it (`matchMedia("(prefers-color-scheme: dark)").addEventListener("change", …)`) to update the class.
+- **A `.dark` class** is required as soon as users can override the system setting. One function resolves the class: a saved Light or Dark choice wins, and System reads the query's current `matches`. Run it at startup, on every choice change (so choosing System applies the OS value at once) and on the query's `change` event (`matchMedia("(prefers-color-scheme: dark)").addEventListener("change", …)`), which only System mode acts on.
 - **`light-dark()`** collapses both values into one declaration. It needs `color-scheme: light dark` and reads that property rather than a class, so a class-based toggle must set `color-scheme` too.
 
 ```css
