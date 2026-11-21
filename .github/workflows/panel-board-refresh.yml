@@ -1,0 +1,60 @@
+name: Panel board refresh
+
+# Weekly: refetch the public Bug Hunt board for the panel recommendations catalog and, only when it changed,
+# push the regenerated snapshot and catalog to the branch panel-board-refresh and open a pull request. Own
+# results never enter this job (a fetch keeps the catalog's own entries). A pull request opened with the
+# workflow token does not start CI, so the job runs the catalog check and the skill tests itself first.
+
+on:
+  schedule:
+    - cron: "17 14 * * 1" # Monday 14:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: panel-board-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    if: github.repository == 'bompus/house-rules'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      pull-requests: write
+    env:
+      BRANCH: panel-board-refresh
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: true
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: 1.4.4
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      - name: Refetch the board and check the result
+        id: refresh
+        run: bash scripts/refresh-panel-board.sh
+      - name: Push the branch and open the pull request
+        if: steps.refresh.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B "$BRANCH"
+          git add skills/hr-code-review/references
+          git commit -m "Panel recommendations: refresh the board snapshot and catalog"
+          git push --force origin "$BRANCH"
+          if [ -n "$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number')" ]; then
+            echo "a pull request from $BRANCH is already open; the push updated it"
+            exit 0
+          fi
+          if ! gh pr create --base main --head "$BRANCH" \
+            --title "Panel recommendations: refresh the board snapshot and catalog" \
+            --body "The weekly job refetched the public Bug Hunt board and regenerated the snapshot and catalog with scripts/refresh-recommendations.mjs --fetch. The catalog check and the skill tests passed in the job. Own results are unchanged."; then
+            echo "::warning::The branch $BRANCH is pushed but no pull request could be opened (the repository may not allow Actions to create pull requests); open one from it."
+          fi

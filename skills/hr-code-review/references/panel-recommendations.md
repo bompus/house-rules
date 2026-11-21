@@ -48,6 +48,11 @@ the catalog's own entries. `--check` runs offline, with no clock and no network,
 fails when the catalog is not what those inputs generate. A raw results file is never
 kept in this folder: the script refuses a leftover `panel-recommendations.own.json`.
 
+A weekly workflow in the source repository (`.github/workflows/panel-board-refresh.yml`)
+runs `--fetch` against the public board and, only when a row or the board's own update
+changed, pushes the regenerated snapshot and catalog to a branch and opens a pull
+request; it never reads own results, so those stay as the maintainer last imported them.
+
 Check an entry again when a model, route, price or benchmark correction changes the
 choice, and when preparing a release. Only changed entries need new evidence. An
 update shows the old and suggested choices, the evidence date, the expected
