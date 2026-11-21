@@ -4,7 +4,7 @@ Line length, typographic characters and mixed-direction text.
 
 ## Measure (line length)
 
-Any unit works. One `ch` is the width of the `0` in the current font, which is wider than the average character, so 60–75 characters is about `45ch`–`60ch`. At a `16px` body size the range lands roughly between `420px` and `570px` depending on the font. Tailwind's `max-w-md` (`448px`) and `max-w-lg` (`512px`) fit. `max-w-xl` (`576px`) runs a few characters over, and `max-w-prose` (`65ch`) holds 80 or more. Recheck the cap if the body font size changes.
+Any unit works. One `ch` is the width of the `0` in the current font, which is wider than the average character, so 60–75 characters is about `45ch`–`60ch`. At a `16px` body size the range lands roughly between `420px` and `570px` depending on the font. Tailwind's `max-w-md` (`448px`) and `max-w-lg` (`512px`) fit. `max-w-xl` (`576px`) runs a few characters over, and `max-w-prose` (`65ch`) holds 80 or more. That holds for a proportional body font. In a monospace face one `ch` is one character, so the range is `60ch`–`75ch`, and `max-w-md` or `max-w-lg` hold only about 46 to 53 characters. Recheck the cap if the body font or its size changes, and count the characters on a rendered line when the font is not known.
 
 ## Truncation
 

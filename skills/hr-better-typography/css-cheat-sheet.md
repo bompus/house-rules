@@ -9,7 +9,7 @@ Tailwind 4 equivalents for the declarations in this skill whose utility is not t
 | `-webkit-font-smoothing` + `-moz-osx-font-smoothing`                                                | `antialiased`           |
 | `overflow: hidden` + `text-overflow: ellipsis` + `white-space: nowrap`                              | `truncate`              |
 | `-webkit-line-clamp` + `display: -webkit-box` + `-webkit-box-orient: vertical` + `overflow: hidden` | `line-clamp-*`          |
-| `max-width` capping text at 60–75 characters                                                        | `max-w-md` / `max-w-lg` |
+| `max-width` capping text at 60–75 characters (proportional font; monospace: `60ch`–`75ch`)          | `max-w-md` / `max-w-lg` |
 
 ## Arbitrary values only
 

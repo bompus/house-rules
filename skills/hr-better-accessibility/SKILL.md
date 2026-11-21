@@ -115,22 +115,22 @@ Text must survive 200% resize (1.4.4), and the page must reflow at 320px width w
 
 ## Before you finish
 
-| Pattern                                                                      | Fix                                                      |
-| ---------------------------------------------------------------------------- | -------------------------------------------------------- |
-| `outline: none` or `outline-none` with no `focus-visible` replacement nearby | Restore the browser ring or add a verified custom one    |
-| `<div onClick` or `<span onClick`                                            | Use `<button>`, or `<a href>` when it navigates          |
-| `role="button"` or `role="tab"` with no `onKeyDown`                          | Use the native element, or implement the APG key map     |
-| `tabIndex={1}` or any positive `tabindex`                                    | Fix the DOM order and use `0`                            |
-| `disabled={!isValid}` on a submit button                                     | Keep it enabled and validate on submit                   |
-| `{msg && <div role="status">`, region mounted with its text                  | Render the empty region first and update its text        |
-| `aria-live="assertive"` on a success toast                                   | `role="status"`                                          |
-| `<img` with no `alt` attribute                                               | `alt=""` if decorative, otherwise describe the purpose   |
-| `aria-label` whose text omits the visible label                              | Start the name with the visible text                     |
-| `aria-hidden` on an ancestor of a button, link or input                      | Remove it, or make the subtree inert                     |
-| `maximum-scale=1` or `user-scalable=no`                                      | Remove it                                                |
-| Hover treatment stuck after a tap on touch                                   | Gate hover styling with `@media (hover: hover)`          |
-| Tooltip on a natively `disabled` control                                     | Text beside it, or `aria-disabled` so it stays focusable |
-| `onDragStart` or a drag library with no button alternative                   | Add a single-pointer path to the same result             |
+| Pattern                                                                      | Fix                                                                                                     |
+| ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `outline: none` or `outline-none` with no `focus-visible` replacement nearby | Restore the browser ring or add a verified custom one                                                   |
+| `<div onClick` or `<span onClick`                                            | Use `<button>`, or `<a href>` when it navigates                                                         |
+| `role="button"` or `role="tab"` with no `onKeyDown`                          | Use the native element, or implement the APG key map                                                    |
+| `tabIndex={1}` or any positive `tabindex`                                    | Fix the DOM order and use `0`                                                                           |
+| `disabled={!isValid}` on a submit button                                     | Keep it enabled and validate on submit; a destructive confirmation's one stated requirement may gate it |
+| `{msg && <div role="status">`, region mounted with its text                  | Render the empty region first and update its text                                                       |
+| `aria-live="assertive"` on a success toast                                   | `role="status"`                                                                                         |
+| `<img` with no `alt` attribute                                               | `alt=""` if decorative, otherwise describe the purpose                                                  |
+| `aria-label` whose text omits the visible label                              | Start the name with the visible text                                                                    |
+| `aria-hidden` on an ancestor of a button, link or input                      | Remove it, or make the subtree inert                                                                    |
+| `maximum-scale=1` or `user-scalable=no`                                      | Remove it                                                                                               |
+| Hover treatment stuck after a tap on touch                                   | Gate hover styling with `@media (hover: hover)`                                                         |
+| Tooltip on a natively `disabled` control                                     | Text beside it, or `aria-disabled` so it stays focusable                                                |
+| `onDragStart` or a drag library with no button alternative                   | Add a single-pointer path to the same result                                                            |
 
 ## Reporting
 

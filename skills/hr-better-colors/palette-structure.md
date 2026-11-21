@@ -22,7 +22,7 @@ Most products need three kinds of ramp and nothing else:
 | Component hover             | `200`    | `4`   |
 | Component active / selected | `200`    | `5`   |
 | Subtle border, separator    | `200`    | `6`   |
-| Border, focus ring          | `300`    | `7`   |
+| Border                      | `300`    | `7`   |
 | Hovered border              | `400`    | `8`   |
 | Solid fill                  | `600`    | `9`   |
 | Solid fill hover            | `700`    | `10`  |
@@ -36,7 +36,7 @@ The two conventions differ in kind, not only in numbering:
 
 Match whichever the project uses. For a new system prefer Radix's model, because a role-defined step survives a theme change that a lightness-defined step does not. On Tailwind, keep `50`–`950` and put the role mapping in the semantic tier.
 
-Solid fill sits on `600` for blue and red because white text on most Tailwind `500` hues fails 4.5:1; green, teal, cyan, sky, lime, yellow, amber and orange need `700` or darker, so measure the pair. The border rows are decorative edges; an input boundary or a focus ring needs 3:1, which `300` on white does not reach. Where the table repeats a step, those roles render identically. A design that needs, say, component hover and subtle border to differ needs a 12-step ramp.
+Solid fill sits on `600` for blue and red because white text on most Tailwind `500` hues fails 4.5:1; green, teal, cyan, sky, lime, yellow, amber and orange need `700` or darker, so measure the pair. The border rows are decorative edges. An input boundary or a focus ring needs 3:1, which `300` on white does not reach (`--blue-300` measures 1.80:1), so take the first step that measures 3:1 against its surface (`500` for blue, 3.68:1 on white). Where the table repeats a step, those roles render identically. A design that needs, say, component hover and subtle border to differ needs a 12-step ramp.
 
 ## Neutrals
 

@@ -73,7 +73,7 @@ Add `translate="no"` to brand names, code tokens and identifiers so auto-transla
 
 Native `disabled` supplies the platform's complete disabled behavior. It removes the control from the tab order, suppresses activation, applies `:disabled` and excludes form controls from submission. `aria-disabled="true"` only announces the state, changing neither focusability, nor behavior, nor styling.
 
-- Never disable submit to gate validation. Validate on submit instead ([forms.md](forms.md)).
+- Never disable submit to gate validation. Validate on submit instead ([forms.md](forms.md)). A destructive confirmation whose label states its one requirement, such as typing the object's name, may stay disabled until that is met.
 - A natively `disabled` control suppresses pointer events and leaves the tab order, so a tooltip on it never opens for keyboard or touch users. Put the reason in visible text beside the control, or switch to `aria-disabled="true"`, which keeps it focusable and hoverable.
 - `aria-disabled="true"` also covers a custom control that cannot use native `disabled`. Style it explicitly, forced-colors mode included, and explain nearby why the action is unavailable.
 - Never set both `disabled` and `aria-disabled` on the same element.

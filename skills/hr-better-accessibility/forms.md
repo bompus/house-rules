@@ -37,7 +37,7 @@ The complete pattern:
 - `aria-describedby` links the field to its inline error so screen readers announce it with the field.
 - Errors render inline beside their fields, with an icon or text. Never a red border alone, which is a color-only cue.
 - On submit, focus the first invalid field.
-- Put `novalidate` on the `<form>` when you render your own errors. Otherwise native validation blocks the submit event before they run. Then the submit handler must check every constraint the markup declares (`required`, `type`, `pattern`, length) as well as the custom ones, refuse an invalid submit and render each error.
+- Put `novalidate` on the `<form>` only when the submit handler renders the errors, because native validation blocks the submit event before it runs. Then the handler must check every constraint the markup declares (`required`, `type`, `pattern`, length) as well as the custom ones, refuse an invalid submit and render each error. A form that renders each error from its field's `invalid` event keeps native validation and needs no `novalidate`.
 - Accept free text and validate after. Never block typing or filter characters as the user types. Trim values before validating, because autocomplete and text expansion add trailing spaces.
 
 ## Autocomplete and input types
@@ -70,7 +70,7 @@ Disable spellcheck on emails, codes and usernames: `spellcheck="false"`.
 
 ## Submit behavior
 
-- Keep submit enabled until the request starts. While it runs, show a spinner _beside the original label_: "Save" with a spinner, not a bare spinner. The label is what tells assistive tech which button is busy.
+- Keep submit enabled until the request starts (a destructive confirmation whose label states its one requirement, such as typing the object's name, may stay disabled until that is met). While it runs, show a spinner _beside the original label_: "Save" with a spinner, not a bare spinner. The label is what tells assistive tech which button is busy.
 - Mark the pending button `aria-disabled="true"` and ignore repeat clicks in the handler. Native `disabled` on the focused button drops focus to `<body>`.
 - Announce results. Success goes through a polite live region. On failure, focus the first invalid field, which is itself the announcement. Reserve `role="alert"` for form-level errors not tied to a field ([screen-readers.md](screen-readers.md)).
 - Warn on unsaved changes before navigation. A re-render or hydration must never reset a field's typed value or move focus out of it.
