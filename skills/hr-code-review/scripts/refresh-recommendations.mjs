@@ -34,6 +34,8 @@ const skill = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const refs = join(skill, "references");
 /** @param {string} dir the references folder */
 export const pathsIn = (dir) => ({
+  // Raw own results are never kept in the skill folder; a file here is a leftover of an earlier layout.
+  obsoleteOwn: join(dir, "panel-recommendations.own.json"),
   spec: join(dir, "panel-recommendations.sources.json"),
   snapshot: join(dir, "panel-board-snapshot.json"),
   catalog: join(dir, "panel-recommendations.json"),
@@ -150,7 +152,10 @@ export async function withLock(dir, fn, hooks = {}) {
   const lock = join(dir, ".refresh.lock");
   const takeover = join(dir, ".refresh.takeover");
   const mine = join(dir, `.refresh.lock.${process.pid}.${Math.random().toString(36).slice(2)}`);
-  writeFileSync(mine, `${process.pid}\n`, { flag: "wx" });
+  // The file's content is the owner's pid and a token only this call knows, so ownership is read from content
+  // (an inode number is not reliable on every filesystem).
+  const content = `${process.pid} ${Math.random().toString(36).slice(2)}\n`;
+  writeFileSync(mine, content, { flag: "wx" });
   const busy = (/** @type {string} */ why) =>
     new Error(`another refresh holds ${lock} (${why}); retry when it has finished`);
   /** @param {string} path */
@@ -168,7 +173,7 @@ export async function withLock(dir, fn, hooks = {}) {
   /** @param {string} path the owner's pid, "gone" when the file vanished, "unreadable" otherwise */
   const ownerOf = (path) => {
     try {
-      const owner = Number(readFileSync(path, "utf8").trim());
+      const owner = Number(readFileSync(path, "utf8").trim().split(/\s+/)[0]);
       return Number.isInteger(owner) && owner > 0 ? owner : "unreadable";
     } catch (error) {
       if (/** @type {any} */ (error).code === "ENOENT") {
@@ -177,10 +182,10 @@ export async function withLock(dir, fn, hooks = {}) {
       throw error;
     }
   };
-  /** @param {string} path remove a claim only when it is still this call's file */
+  /** @param {string} path remove a claim only when it still holds this call's content */
   const release = (path) => {
     try {
-      if (statSync(path).ino === statSync(mine).ino) {
+      if (readFileSync(path, "utf8") === content) {
         rmSync(path, { force: true });
       }
     } catch {
@@ -745,6 +750,11 @@ export async function run(argv, today = new Date().toISOString().slice(0, 10), d
  * @param {string} today
  */
 async function refresh(paths, values, today) {
+  if (existsSync(paths.obsoleteOwn)) {
+    throw new Error(
+      `${paths.obsoleteOwn} is an obsolete source: own results live only in the catalog; delete the file (keep the raw results outside the skill folder)`,
+    );
+  }
   const spec = readJson(paths.spec);
   const deny = readDeny(values["deny-file"]);
   const vocabulary = {
@@ -769,24 +779,20 @@ async function refresh(paths, values, today) {
   const own = sanitizeOwn(
     values["from-file"] !== undefined
       ? readJson(resolve(values["from-file"]))
-      : {
-          version: 1,
-          results: (committed?.entries ?? [])
-            .filter((/** @type {any} */ e) => e.kind === "own-evaluation")
-            .map((/** @type {any} */ e) => e.facts),
-        },
+      : { version: 1, results: ownFactsOf(committed) },
     vocabulary,
   );
   const catalog = buildCatalog(spec, snapshot, own);
-  // Every string published for an own result is screened as published: each value on its own, never joined
-  // with its neighbours.
+  // Every string of every file this tool publishes, the board snapshot and the whole catalog included, is
+  // screened as published: each value on its own, never joined with its neighbours.
   const denied = deny.map(squash).filter(Boolean);
-  for (const entry of catalog.entries.filter(
-    (/** @type {any} */ e) => e.kind === "own-evaluation",
-  )) {
-    for (const text of stringValues(entry)) {
+  for (const [name, published] of [
+    ["snapshot", snapshot],
+    ["catalog", catalog],
+  ]) {
+    for (const text of stringValues(published)) {
       if (denied.some((word) => squash(text).includes(word))) {
-        throw new Error(`catalog entry ${entry.id} contains a name this repository must not carry`);
+        throw new Error(`the ${name} would publish a name this repository must not carry`);
       }
     }
   }
@@ -828,6 +834,35 @@ async function refresh(paths, values, today) {
   writeAll(outputs);
   console.log(`refresh-recommendations: wrote the catalog (${catalog.entries.length} entries)`);
   return 0;
+}
+
+/**
+ * The own facts a committed catalog carries. An entry counts as an own entry by any of its markers (its kind, an
+ * `own-` id, or its facts), so damage to one derived field cannot make a plain run drop the measurements: an
+ * entry with facts keeps them whatever its kind says, and one that looks like an own entry but has no facts
+ * stops the run without changing anything.
+ * @param {any} committed
+ * @returns {any[]}
+ */
+function ownFactsOf(committed) {
+  /** @type {any[]} */
+  const facts = [];
+  for (const entry of committed?.entries ?? []) {
+    const looksOwn =
+      entry?.facts !== undefined ||
+      entry?.kind === "own-evaluation" ||
+      String(entry?.id).startsWith("own-");
+    if (!looksOwn) {
+      continue;
+    }
+    if (entry.facts === null || typeof entry.facts !== "object") {
+      throw new Error(
+        `catalog entry ${entry?.id} looks like an own result but carries no facts: restore it from version control or import the results again`,
+      );
+    }
+    facts.push(entry.facts);
+  }
+  return facts;
 }
 
 /**

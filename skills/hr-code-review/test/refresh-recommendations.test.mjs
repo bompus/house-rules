@@ -712,3 +712,89 @@ test("a second refresh while one holds the lock fails with a retry message", asy
     assert.equal(existsSync(lock), false);
   });
 });
+
+test("a deny file screens every published string, the snapshot's unused rows included", async () => {
+  await inFixture(async (dir) => {
+    const paths = pathsIn(dir);
+    const deny = join(dir, "deny.txt");
+    writeFileSync(deny, "internal-harness\n");
+    const saved = join(dir, "board.json");
+    // A row no recommendation uses still lands in the published snapshot.
+    writeFileSync(
+      saved,
+      JSON.stringify(
+        board([
+          row({ effort: "medium", fixed: 22 }),
+          row(),
+          row({ model: "Other", harness: "Internal Harness" }),
+        ]),
+      ),
+    );
+    const snapshotBefore = readFileSync(paths.snapshot, "utf8");
+    const catalogBefore = readFileSync(paths.catalog, "utf8");
+    const refused = await silent(() =>
+      run(
+        ["--fetch", "--board-file", saved, "--deny-file", deny, "--today", "2026-11-05"],
+        "2026-11-21",
+        dir,
+      ),
+    );
+    assert.equal(refused.code, 1);
+    assert.match(refused.text, /snapshot would publish a name/);
+    assert.equal(readFileSync(paths.snapshot, "utf8"), snapshotBefore);
+    assert.equal(readFileSync(paths.catalog, "utf8"), catalogBefore);
+    // Without the deny file the same board is accepted; the offline check with it then fails.
+    const accepted = await silent(() =>
+      run(["--fetch", "--board-file", saved, "--today", "2026-11-05"], "2026-11-21", dir),
+    );
+    assert.equal(accepted.code, 0, accepted.text);
+    const checked = await silent(() => run(["--check", "--deny-file", deny], "2026-11-21", dir));
+    assert.equal(checked.code, 1);
+    assert.match(checked.text, /must not carry/);
+  });
+});
+
+test("a raw own-results file in the skill folder is an obsolete source: every mode refuses it", async () => {
+  await inFixture(async (dir) => {
+    writeFileSync(
+      join(dir, "panel-recommendations.own.json"),
+      serialize({ version: 1, results: [], project: "acme" }),
+    );
+    for (const argv of [[], ["--check"]]) {
+      const out = await silent(() => run(argv, "2026-11-21", dir));
+      assert.equal(out.code, 1);
+      assert.match(out.text, /obsolete source/);
+    }
+    rmSync(join(dir, "panel-recommendations.own.json"));
+    assert.equal((await check(dir)).code, 0);
+  });
+});
+
+test("damage to an own entry's derived fields never drops its facts", async () => {
+  await inFixture(async (dir) => {
+    const file = pathsIn(dir).catalog;
+    await importOwn(dir, own());
+    const canonical = readFileSync(file, "utf8");
+    // The discriminator is changed or removed: the facts are intact, so a plain run restores the entry.
+    for (const edit of [
+      (/** @type {any} */ e) => void (e.kind = "board"),
+      (/** @type {any} */ e) => void delete e.kind,
+    ]) {
+      const catalog = JSON.parse(canonical);
+      edit(catalog.entries[1]);
+      writeFileSync(file, serialize(catalog));
+      assert.equal((await check(dir)).code, 1);
+      assert.equal((await silent(() => run([], "2026-11-21", dir))).code, 0);
+      assert.equal(readFileSync(file, "utf8"), canonical);
+    }
+    // Facts removed: nothing to recover from, so the run stops and the catalog is left as it was.
+    const catalog = JSON.parse(canonical);
+    delete catalog.entries[1].facts;
+    writeFileSync(file, serialize(catalog));
+    const damaged = readFileSync(file, "utf8");
+    const out = await silent(() => run([], "2026-11-21", dir));
+    assert.equal(out.code, 1);
+    assert.match(out.text, /carries no facts/);
+    assert.equal(readFileSync(file, "utf8"), damaged);
+  });
+});

@@ -40,13 +40,13 @@ why it is suggested. A value that was not recorded is the string `unknown`.
 ## Updating
 
 The catalog is generated, so do not edit [`panel-recommendations.json`](panel-recommendations.json)
-by hand. `scripts/refresh-recommendations.mjs` builds it from three files in this
-folder: the source spec (`panel-recommendations.sources.json`: which board rows each
-entry uses, plus the route, limits and advice that no board states), the board
-snapshot (`panel-board-snapshot.json`: the board's current rows, fetched by
-`--fetch`) and the own results (`panel-recommendations.own.json`). `--check` runs
-offline, with no clock and no network, and fails when the catalog is not what those
-files generate.
+by hand. `scripts/refresh-recommendations.mjs` builds it from the source spec
+(`panel-recommendations.sources.json`: which board rows each entry uses, plus the route,
+limits and advice that no board states), the board snapshot (`panel-board-snapshot.json`:
+the board's current rows, fetched by `--fetch`) and the own results, which live only in
+the catalog's own entries. `--check` runs offline, with no clock and no network, and
+fails when the catalog is not what those inputs generate. A raw results file is never
+kept in this folder: the script refuses a leftover `panel-recommendations.own.json`.
 
 Check an entry again when a model, route, price or benchmark correction changes the
 choice, and when preparing a release. Only changed entries need new evidence. An
