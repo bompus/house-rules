@@ -50,8 +50,9 @@ kept in this folder: the script refuses a leftover `panel-recommendations.own.js
 
 A weekly workflow in the source repository (`.github/workflows/panel-board-refresh.yml`)
 runs `--fetch` against the public board and, only when a row or the board's own update
-changed, pushes the regenerated snapshot and catalog to a branch and opens a pull
-request; it never reads own results, so those stay as the maintainer last imported them.
+changed, pushes the regenerated snapshot and catalog to the branch
+`panel-board-refresh` and logs its URL; it opens no pull request, so a maintainer
+opens one from that branch. It never reads own results, so those stay as the maintainer last imported them.
 
 Check an entry again when a model, route, price or benchmark correction changes the
 choice, and when preparing a release. Only changed entries need new evidence. An

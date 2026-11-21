@@ -1,9 +1,10 @@
 name: Panel board refresh
 
 # Weekly: refetch the public Bug Hunt board for the panel recommendations catalog and, only when it changed,
-# push the regenerated snapshot and catalog to the branch panel-board-refresh and open a pull request. Own
-# results never enter this job (a fetch keeps the catalog's own entries). A pull request opened with the
-# workflow token does not start CI, so the job runs the catalog check and the skill tests itself first.
+# push the regenerated snapshot and catalog to the branch panel-board-refresh and log its URL. The job opens no
+# pull request (this repository does not allow Actions to create them): a maintainer opens one from the branch.
+# Own results never enter this job (a fetch keeps the catalog's own entries). The job runs the catalog check
+# and the skill tests itself before it pushes, because a branch pushed with the workflow token starts no CI.
 
 on:
   schedule:
@@ -24,7 +25,6 @@ jobs:
     timeout-minutes: 15
     permissions:
       contents: write
-      pull-requests: write
     env:
       BRANCH: panel-board-refresh
     steps:
@@ -43,7 +43,7 @@ jobs:
       - name: Refetch the board and check the result
         id: refresh
         run: bash scripts/refresh-panel-board.sh
-      # The write token reaches only the two steps that use it, never the install, the board fetch or the tests.
+      # The write token reaches only this step, never the install, the board fetch or the tests.
       - name: Put the result on the refresh branch
         id: publish
         if: steps.refresh.outputs.changed == 'true'
@@ -52,20 +52,4 @@ jobs:
         run: |
           git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           bash scripts/publish-panel-board.sh
-      - name: Open the pull request
-        if: steps.publish.outputs.ready == 'true'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          # Only a pull request of this repository into main counts, and a failed lookup stops the job.
-          existing="$(gh pr list --base main --head "$BRANCH" --state open --json number,isCrossRepository \
-            --jq '[.[] | select(.isCrossRepository == false)][0].number // empty')"
-          if [ -n "$existing" ]; then
-            echo "pull request #$existing from $BRANCH is already open"
-            exit 0
-          fi
-          if ! gh pr create --base main --head "$BRANCH" \
-            --title "Panel recommendations: refresh the board snapshot and catalog" \
-            --body "The weekly job refetched the public Bug Hunt board and regenerated the snapshot and catalog with scripts/refresh-recommendations.mjs --fetch. The catalog check and the skill tests passed in the job. Own results are unchanged."; then
-            echo "::warning::The branch $BRANCH is pushed but no pull request could be opened (the repository may not allow Actions to create pull requests); open one from it."
-          fi
+          echo "The refresh branch holds the new board: https://github.com/${GITHUB_REPOSITORY}/tree/${BRANCH}" | tee -a "$GITHUB_STEP_SUMMARY"
