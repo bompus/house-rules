@@ -80,5 +80,18 @@
       "limitations": "Counts planted bugs, not review quality on real changes; runs were resumed after the subscription's five-hour usage window ran out, so a user on a smaller plan may hit that limit sooner; the board also lists low and medium rungs that this entry leaves out; list cost is an estimate from the CLI's own usage counts, sub-agents included",
       "rationaleTail": "Suggest it as an additional seat from a different model family where the user has a Google AI Ultra plan and allows the effort"
     }
+  ],
+  "distributed": [
+    "acp-client.md",
+    "evidence.md",
+    "impact.md",
+    "panel-adjudication.md",
+    "panel-board-snapshot.json",
+    "panel-plan.md",
+    "panel-recommendations.json",
+    "panel-recommendations.md",
+    "panel-recommendations.sources.json",
+    "panel-setup.md",
+    "reviewer-role.md"
   ]
 }

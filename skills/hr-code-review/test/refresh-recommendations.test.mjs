@@ -65,7 +65,14 @@ const board = (/** @type {any[]} */ runs) => ({
   meta: { planted_total: 105, updated: "2026-11-02" },
   runs,
 });
+// The fixture folder holds the spec, the snapshot and the catalog, and the spec says so.
+const distributed = [
+  "panel-board-snapshot.json",
+  "panel-recommendations.json",
+  "panel-recommendations.sources.json",
+];
 const spec = {
+  distributed,
   board: {
     url: "https://example.org/b.json",
     task: "t",
@@ -502,7 +509,7 @@ test("the catalog is checked byte for byte: a hand edit, extra field, tampered o
 test("--fetch with a saved board rewrites the snapshot and regenerates; a missing snapshot is rebuilt", async () => {
   await inFixture(async (dir) => {
     const paths = pathsIn(dir);
-    const saved = join(dir, "board.json");
+    const saved = join(external(dir), "board.json");
     writeFileSync(saved, JSON.stringify(board([row({ effort: "medium", fixed: 22 }), row()])));
     rmSync(paths.snapshot);
     const out = await silent(() =>
@@ -733,7 +740,7 @@ test("a deny file screens every published string, the snapshot's unused rows inc
     const paths = pathsIn(dir);
     const deny = join(external(dir), "deny.txt");
     writeFileSync(deny, "internal-harness\n");
-    const saved = join(dir, "board.json");
+    const saved = join(external(dir), "board.json");
     // A row no recommendation uses still lands in the published snapshot.
     writeFileSync(
       saved,
@@ -955,4 +962,95 @@ test("the strict parser reads what JSON.parse reads and refuses a repeated key a
   assert.throws(() => parseStrict('{"a":'), /unexpected character/);
   assert.doesNotThrow(() => parseStrict("[]"));
   assert.doesNotThrow(() => parseStrict(' {"__proto__": 1} '));
+});
+
+test("the catalog container is validated before it is the source of own facts", async () => {
+  await inFixture(async (dir) => {
+    await importOwn(dir, own());
+    const file = pathsIn(dir).catalog;
+    const canonical = readFileSync(file, "utf8");
+    const catalog = JSON.parse(canonical);
+    /** @type {Array<[string, any]>} */
+    const damaged = [
+      ["renamed entries", { version: 1, reviewed: catalog.reviewed, entryList: catalog.entries }],
+      ["nested entries", { ...catalog, entries: [catalog.entries] }],
+      ["extra field", { ...catalog, project: "acme" }],
+      ["wrong version", { ...catalog, version: 2 }],
+      ["not an object", [catalog]],
+      ["entry without an id", { ...catalog, entries: [{ kind: "board" }] }],
+    ];
+    const saved = join(external(dir), "board.json");
+    writeFileSync(saved, JSON.stringify(board([row({ effort: "medium", fixed: 22 }), row()])));
+    for (const [name, value] of damaged) {
+      writeFileSync(file, serialize(value));
+      const bytes = readFileSync(file, "utf8");
+      for (const argv of [
+        [],
+        ["--check"],
+        ["--fetch", "--board-file", saved, "--today", "2026-11-05"],
+      ]) {
+        const out = await silent(() => run(argv, "2026-11-21", dir));
+        assert.equal(out.code, 1, `${name} ${argv.join(" ")}: ${out.text}`);
+        assert.match(out.text, /not a catalog this tool wrote/);
+        assert.equal(readFileSync(file, "utf8"), bytes, name);
+      }
+    }
+    writeFileSync(file, canonical);
+    assert.equal((await check(dir)).code, 0);
+  });
+});
+
+test("member names are screened like values, and names fold the way a person reads them", async () => {
+  await inFixture(async (dir) => {
+    const paths = pathsIn(dir);
+    const deny = join(external(dir), "deny.txt");
+    // A denied name used only as a nested key of the source spec.
+    writeFileSync(deny, "private project\n");
+    writeFileSync(paths.spec, serialize({ ...spec, notes: { "Private Project": true } }));
+    const keyed = await silent(() => run(["--check", "--deny-file", deny], "2026-11-21", dir));
+    assert.equal(keyed.code, 1);
+    assert.match(keyed.text, /source spec would publish a name/);
+    // Case folding goes both ways: a sharp s and SS, a final sigma and a capital sigma.
+    for (const [listed, published] of [
+      ["STRASSE", "Straße"],
+      ["Straße", "STRASSE"],
+      ["ΟΔΥΣΣΕΥΣ", "Οδυσσευς"],
+      ["Οδυσσεύς", "ΟΔΥΣΣΕΎΣ"],
+    ]) {
+      writeFileSync(paths.spec, serialize({ ...spec, own: { ...spec.own, task: published } }));
+      writeFileSync(deny, `${listed}\n`);
+      const out = await silent(() => run(["--check", "--deny-file", deny], "2026-11-21", dir));
+      assert.equal(out.code, 1, `${listed} / ${published}: ${out.text}`);
+    }
+  });
+});
+
+test("the references folder holds the files the spec lists and nothing else; a saved board must be outside it", async () => {
+  await inFixture(async (dir) => {
+    const paths = pathsIn(dir);
+    assert.equal((await check(dir)).code, 0);
+    // A leftover private input of any name, at any depth, fails the offline check.
+    for (const name of ["deny.txt", "incoming.json", "board.json", "notes/raw.csv"]) {
+      const file = join(dir, name);
+      mkdirSync(dirname(file), { recursive: true });
+      writeFileSync(file, "private");
+      const out = await check(dir);
+      assert.equal(out.code, 1, name);
+      assert.match(out.text, new RegExp(`not listed: ${name.replace(".", "\\.")}`));
+      rmSync(join(dir, name.split("/")[0] ?? name), { recursive: true, force: true });
+    }
+    // A listed file that is missing fails too, and a spec without the list is refused.
+    writeFileSync(paths.spec, serialize({ ...spec, distributed: [...distributed, "ghost.md"] }));
+    assert.match((await check(dir)).text, /missing: ghost\.md/);
+    const { distributed: _list, ...bare } = spec;
+    writeFileSync(paths.spec, serialize(bare));
+    assert.match((await check(dir)).text, /no `distributed` list/);
+    writeFileSync(paths.spec, serialize(spec));
+    // A saved board inside the folder is refused as an input.
+    const inside = join(dir, "board.json");
+    writeFileSync(inside, JSON.stringify(board([row()])));
+    const out = await silent(() => run(["--fetch", "--board-file", inside], "2026-11-21", dir));
+    assert.equal(out.code, 1);
+    assert.match(out.text, /--board-file .* inside the skill folder/);
+  });
 });

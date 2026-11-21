@@ -14,8 +14,8 @@
 //                                                              committed files generate; no clock, no network
 //
 // Any other argument, a conflicting pair of modes or an empty value is an error (exit 2).
-import { existsSync, readFileSync, realpathSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { existsSync, readdirSync, readFileSync, realpathSync } from "node:fs";
+import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { parseArgs } from "node:util";
 import { parseStrict, serialize, withLock, writeAll } from "./refresh-files.mjs";
@@ -51,10 +51,14 @@ const MAX_BOARD_BYTES = 20 * 1024 * 1024;
 const readJson = (path) => parseStrict(readFileSync(path, "utf8"), path);
 
 // Compared with case, spacing and punctuation removed, so "Internal Tool" and "internal_tool" match "internal-tool".
+// Compatibility-normalized, upper then lower case (a sharp s matches SS, a final sigma its capital), normalized
+// again, then only letters and digits kept.
 const squash = (/** @type {string} */ s) =>
   s
     .normalize("NFKC")
+    .toUpperCase()
     .toLowerCase()
+    .normalize("NFKC")
     .replace(/[^\p{L}\p{N}]/gu, "");
 /** @param {unknown} v a finite number that is not negative */
 const nonNegative = (v) => typeof v === "number" && Number.isFinite(v) && v >= 0;
@@ -606,7 +610,7 @@ async function refresh(paths, values, today) {
       `${paths.obsoleteOwn} is an obsolete source: own results live only in the catalog; delete the file (keep the raw results outside the skill folder)`,
     );
   }
-  for (const flag of ["from-file", "deny-file"]) {
+  for (const flag of ["from-file", "deny-file", "board-file"]) {
     if (values[flag] !== undefined) {
       requireOutsideSkill(values[flag], dirname(paths.catalog), `--${flag}`);
     }
@@ -632,6 +636,12 @@ async function refresh(paths, values, today) {
   // The own results are the facts the catalog's own entries carry; an import replaces all of them, so the
   // old ones are not read (a newly denied name in them cannot block their replacement).
   const committed = rawCatalog === undefined ? undefined : parseStrict(rawCatalog, paths.catalog);
+  if (committed !== undefined) {
+    requireCatalogShape(committed, paths.catalog);
+  }
+  if (values.check === true) {
+    requireInventory(dirname(paths.catalog), spec.distributed);
+  }
   const own = sanitizeOwn(
     values["from-file"] !== undefined
       ? readJson(resolve(values["from-file"]))
@@ -694,6 +704,57 @@ async function refresh(paths, values, today) {
 }
 
 /**
+ * The catalog is the only copy of the own facts, so before it is used as their source its container must be
+ * what the tool writes: exactly these top-level fields, a list of entries, each an object with a string id. A
+ * renamed or nested list would otherwise read as "no own results" and the next write would erase them.
+ * @param {any} catalog
+ * @param {string} path
+ */
+function requireCatalogShape(catalog, path) {
+  const keys = ["version", "reviewed", "entries"];
+  const damaged =
+    catalog === null ||
+    typeof catalog !== "object" ||
+    Array.isArray(catalog) ||
+    Object.keys(catalog).length !== keys.length ||
+    keys.some((k) => !(k in catalog)) ||
+    catalog.version !== 1 ||
+    !Array.isArray(catalog.entries) ||
+    catalog.entries.some(
+      (/** @type {any} */ e) =>
+        e === null || typeof e !== "object" || Array.isArray(e) || typeof e.id !== "string",
+    );
+  if (damaged) {
+    throw new Error(
+      `${path} is not a catalog this tool wrote (version, reviewed and a list of entries with ids); nothing was changed: restore the file from version control before refreshing`,
+    );
+  }
+}
+
+/**
+ * The files of the references folder are the ones the source spec lists, and only those: anything else in it
+ * (a raw results file, a deny list, a saved board) would be copied to hosts with the skill. Work files of this
+ * tool (names starting `.refresh`) are not files of the folder.
+ * @param {string} dir
+ * @param {unknown} distributed
+ */
+function requireInventory(dir, distributed) {
+  if (!Array.isArray(distributed) || distributed.some((n) => typeof n !== "string")) {
+    throw new Error("the source spec has no `distributed` list of the references folder's files");
+  }
+  const present = readdirSync(dir, { recursive: true, withFileTypes: true })
+    .filter((e) => e.isFile() && !e.name.startsWith(".refresh"))
+    .map((e) => relative(dir, join(e.parentPath, e.name)).split(sep).join("/"));
+  const extra = present.filter((n) => !distributed.includes(n));
+  const missing = distributed.filter((n) => !present.includes(n));
+  if (extra.length > 0 || missing.length > 0) {
+    throw new Error(
+      `the references folder differs from the spec's distributed list (not listed: ${extra.join(", ") || "none"}; missing: ${missing.join(", ") || "none"}); a file that is not public must be removed, one that is must be listed`,
+    );
+  }
+}
+
+/**
  * The own facts a committed catalog carries. An entry counts as an own entry by any of its markers (its kind, an
  * `own-` id, or its facts), so damage to one derived field cannot make a plain run drop the measurements: an
  * entry with facts keeps them whatever its kind says, and one that looks like an own entry but has no facts
@@ -723,7 +784,7 @@ function ownFactsOf(committed) {
 }
 
 /**
- * @param {unknown} value every string value in a JSON value, not its keys
+ * @param {unknown} value every string value and member name in a JSON value
  * @returns {string[]}
  */
 function stringValues(value) {
@@ -734,7 +795,8 @@ function stringValues(value) {
     return value.flatMap(stringValues);
   }
   if (value !== null && typeof value === "object") {
-    return Object.values(value).flatMap(stringValues);
+    // Member names are published text as much as values are.
+    return [...Object.keys(value), ...Object.values(value).flatMap(stringValues)];
   }
   return [];
 }
