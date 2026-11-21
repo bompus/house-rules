@@ -73,7 +73,9 @@ The import also needs a deny file of private names. The script refuses that file
 the results file when either sits inside the skill folder, because the installer copies
 that folder. Any published string that holds a denied name, in the spec, snapshot or
 catalog, fails the run. The spec's `distributed` list names every file of this folder,
-and `--check` fails on any other file, so a leftover private input cannot ship.
+and `--check` fails on any other file of any name, and on any symlink, so a leftover
+private input cannot ship. Only the script's own lock and work files at the top of
+the folder are left out.
 
 A plain run of the script regenerates the catalog and writes the snapshot in its one
 canonical layout, which is what `--check` compares.

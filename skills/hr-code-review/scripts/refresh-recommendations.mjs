@@ -15,7 +15,7 @@
 //
 // Any other argument, a conflicting pair of modes or an empty value is an error (exit 2).
 import { existsSync, readdirSync, readFileSync, realpathSync } from "node:fs";
-import { dirname, join, relative, resolve, sep } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { parseArgs } from "node:util";
 import { parseStrict, serialize, withLock, writeAll } from "./refresh-files.mjs";
@@ -731,10 +731,56 @@ function requireCatalogShape(catalog, path) {
   }
 }
 
+// The tool's own work files, which exist only at the top of the references folder while a run is in progress.
+const WORK_FILE = /^\.refresh\.(?:lock|takeover|lock\.\d+\.[a-z0-9]+)$/;
+const WORK_DIR = /^\.refresh-[A-Za-z0-9]{6}$/;
+const WORK_DIR_ENTRY = /^(?:\.transaction|new-\d+)$/;
+
+/**
+ * Every file under the references folder by relative path, and every entry that is not a plain file or folder (a
+ * symlink, a socket, a pipe), which the installer would copy as a link to a path outside the skill. Only the
+ * tool's own work files at the top level are left out: its lock files and a `.refresh-<six characters>` folder
+ * holding nothing but its marker and `new-<n>` files. A name that merely starts with `.refresh` is a file like any other.
+ * @param {string} dir
+ * @param {string} [rel]
+ * @returns {{ files: string[], refused: string[] }}
+ */
+function inventoryOf(dir, rel = "") {
+  /** @type {string[]} */
+  const files = [];
+  /** @type {string[]} */
+  const refused = [];
+  for (const e of readdirSync(join(dir, rel), { withFileTypes: true })) {
+    const name = rel === "" ? e.name : `${rel}/${e.name}`;
+    const top = rel === "";
+    if (e.isSymbolicLink()) {
+      refused.push(`${name} (a symlink)`);
+    } else if (e.isFile()) {
+      if (!(top && WORK_FILE.test(e.name))) {
+        files.push(name);
+      }
+    } else if (e.isDirectory()) {
+      if (top && WORK_DIR.test(e.name)) {
+        for (const inner of readdirSync(join(dir, name), { withFileTypes: true })) {
+          if (!inner.isFile() || !WORK_DIR_ENTRY.test(inner.name)) {
+            refused.push(`${name}/${inner.name} (not a work file of this tool)`);
+          }
+        }
+      } else {
+        const nested = inventoryOf(dir, name);
+        files.push(...nested.files);
+        refused.push(...nested.refused);
+      }
+    } else {
+      refused.push(`${name} (not a plain file)`);
+    }
+  }
+  return { files, refused };
+}
+
 /**
  * The files of the references folder are the ones the source spec lists, and only those: anything else in it
- * (a raw results file, a deny list, a saved board) would be copied to hosts with the skill. Work files of this
- * tool (names starting `.refresh`) are not files of the folder.
+ * (a raw results file, a deny list, a saved board, a symlink to any of them) would be copied to hosts with the skill.
  * @param {string} dir
  * @param {unknown} distributed
  */
@@ -742,9 +788,12 @@ function requireInventory(dir, distributed) {
   if (!Array.isArray(distributed) || distributed.some((n) => typeof n !== "string")) {
     throw new Error("the source spec has no `distributed` list of the references folder's files");
   }
-  const present = readdirSync(dir, { recursive: true, withFileTypes: true })
-    .filter((e) => e.isFile() && !e.name.startsWith(".refresh"))
-    .map((e) => relative(dir, join(e.parentPath, e.name)).split(sep).join("/"));
+  const { files: present, refused } = inventoryOf(dir);
+  if (refused.length > 0) {
+    throw new Error(
+      `the references folder holds entries that are not plain files: ${refused.join(", ")}; remove them, since the installer would copy a link to a path outside the skill`,
+    );
+  }
   const extra = present.filter((n) => !distributed.includes(n));
   const missing = distributed.filter((n) => !present.includes(n));
   if (extra.length > 0 || missing.length > 0) {

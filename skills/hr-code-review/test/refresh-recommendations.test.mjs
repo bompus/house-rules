@@ -1025,6 +1025,57 @@ test("member names are screened like values, and names fold the way a person rea
   });
 });
 
+test("the inventory refuses symlinks and counts every name, except the tool's own work files at the top level", async () => {
+  await inFixture(async (dir) => {
+    const outside = join(dir, "..", "external");
+    writeFileSync(join(outside, "own.json"), "private");
+    // A symlink of any name or depth (to a file or a folder) is refused: its target path would ship with the skill.
+    for (const [name, target] of [
+      ["own.json", join(outside, "own.json")],
+      ["notes", outside],
+      ["nested/link.json", join(outside, "own.json")],
+    ]) {
+      mkdirSync(dirname(join(dir, String(name))), { recursive: true });
+      symlinkSync(String(target), join(dir, String(name)));
+      const out = await check(dir);
+      assert.equal(out.code, 1, `${name}: ${out.text}`);
+      assert.match(out.text, new RegExp(`${String(name).replace(".", "\\.")}[^;]*symlink`));
+      rmSync(join(dir, String(name).split("/")[0] ?? ""), { recursive: true, force: true });
+    }
+    // A name starting .refresh is not exempt unless it is one of the tool's own work files at the top level.
+    for (const name of [
+      ".refresh-own.json",
+      ".refresh.lock.json",
+      "notes/.refresh-own.json",
+      "notes/.refresh.lock",
+    ]) {
+      mkdirSync(dirname(join(dir, name)), { recursive: true });
+      writeFileSync(join(dir, name), "private");
+      const out = await check(dir);
+      assert.equal(out.code, 1, name);
+      assert.match(out.text, new RegExp(`not listed: ${name.replace(/[.]/g, "\\.")}`));
+      rmSync(join(dir, name.split("/")[0] ?? name), { recursive: true, force: true });
+    }
+    // The tool's own work files do not count: its lock files and a work directory holding only its marker and new-<n> files.
+    writeFileSync(join(dir, ".refresh.lock"), "");
+    writeFileSync(join(dir, ".refresh.takeover"), "");
+    writeFileSync(join(dir, ".refresh.lock.123.abc9"), "");
+    mkdirSync(join(dir, ".refresh-aB3dE9"));
+    writeFileSync(
+      join(dir, ".refresh-aB3dE9", ".transaction"),
+      "refresh-recommendations transaction\n",
+    );
+    writeFileSync(join(dir, ".refresh-aB3dE9", "new-0"), "x");
+    assert.equal((await check(dir)).code, 0);
+    // A work directory holding anything else, or a symlink in place of one, is not exempt.
+    writeFileSync(join(dir, ".refresh-aB3dE9", "own.json"), "private");
+    assert.match((await check(dir)).text, /\.refresh-aB3dE9\/own\.json/);
+    rmSync(join(dir, ".refresh-aB3dE9"), { recursive: true, force: true });
+    symlinkSync(outside, join(dir, ".refresh-aB3dE9"));
+    assert.match((await check(dir)).text, /\.refresh-aB3dE9[^;]*symlink/);
+  });
+});
+
 test("the references folder holds the files the spec lists and nothing else; a saved board must be outside it", async () => {
   await inFixture(async (dir) => {
     const paths = pathsIn(dir);
