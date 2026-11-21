@@ -60,4 +60,8 @@ description, with `provenance: "own-evaluation"` and no public source. It comes 
 a case set this repository does not publish, so it cannot be reproduced here and does
 not compare with the board entries. The generator accepts only a fixed set of plain
 fields for it (no paths, links, addresses, credentials or free text beyond the cohort
-line) and refuses any extra name the maintainer lists in a deny file.
+line) and refuses any extra name the maintainer lists in a deny file. The model and
+harness must be names the source spec already lists, and the cohort line may hold only
+plain words and numbers (no token that mixes letters and digits, no dotted host or
+address). A plain run of the script also rewrites the snapshot and the own results in
+their one canonical layout, which is what `--check` compares.

@@ -295,196 +295,6 @@
       "date": "2026-11-10"
     },
     {
-      "model": "Gemini 3.7 Flash",
-      "harness": "Antigravity CLI",
-      "effort": "high",
-      "runs": 1,
-      "fixed": 16,
-      "wallMinutes": 22.7,
-      "costUsd": 6.36,
-      "date": "2026-08-28"
-    },
-    {
-      "model": "Gemini 3.7 Flash",
-      "harness": "Gemini CLI (retired) + model-pinning gateway",
-      "effort": "high",
-      "runs": 1,
-      "fixed": 22,
-      "wallMinutes": 96.8,
-      "costUsd": 8.43,
-      "date": "2026-08-24"
-    },
-    {
-      "model": "Gemini 3.8 Flash",
-      "harness": "Antigravity CLI",
-      "effort": "high",
-      "runs": 3,
-      "fixed": 18,
-      "wallMinutes": 38.7,
-      "costUsd": 11.03,
-      "date": "2026-09-15"
-    },
-    {
-      "model": "Gemini 4 Argon",
-      "harness": "Antigravity CLI",
-      "effort": "high",
-      "runs": 3,
-      "fixed": 40.7,
-      "wallMinutes": 56.5,
-      "costUsd": 7.16,
-      "date": "2026-10-14"
-    },
-    {
-      "model": "Gemini 4 Argon",
-      "harness": "Antigravity CLI",
-      "effort": "low",
-      "runs": 3,
-      "fixed": 35.3,
-      "wallMinutes": 59.6,
-      "costUsd": 6.47,
-      "date": "2026-10-14"
-    },
-    {
-      "model": "Gemini 4 Argon",
-      "harness": "Antigravity CLI",
-      "effort": "medium",
-      "runs": 3,
-      "fixed": 39.3,
-      "wallMinutes": 59.9,
-      "costUsd": 7.5,
-      "date": "2026-10-14"
-    },
-    {
-      "model": "Gemini 4 Carbon",
-      "harness": "Antigravity CLI",
-      "effort": "high",
-      "runs": 3,
-      "fixed": 57.3,
-      "wallMinutes": 114,
-      "costUsd": 31.32,
-      "date": "2026-11-10"
-    },
-    {
-      "model": "Gemini 4 Carbon",
-      "harness": "Antigravity CLI",
-      "effort": "low",
-      "runs": 3,
-      "fixed": 46,
-      "wallMinutes": 60.4,
-      "costUsd": 7.67,
-      "date": "2026-11-13"
-    },
-    {
-      "model": "Gemini 4 Carbon",
-      "harness": "Antigravity CLI",
-      "effort": "medium",
-      "runs": 3,
-      "fixed": 56,
-      "wallMinutes": 81.1,
-      "costUsd": 24.95,
-      "date": "2026-11-10"
-    },
-    {
-      "model": "Gemini 4 Hydrogen",
-      "harness": "Antigravity CLI",
-      "effort": "high",
-      "runs": 3,
-      "fixed": 28.3,
-      "wallMinutes": 22.4,
-      "costUsd": 4.42,
-      "date": "2026-11-13"
-    },
-    {
-      "model": "Gemini 4 Hydrogen",
-      "harness": "Antigravity CLI",
-      "effort": "low",
-      "runs": 3,
-      "fixed": 10.3,
-      "wallMinutes": 7.2,
-      "costUsd": 0.43,
-      "date": "2026-11-13"
-    },
-    {
-      "model": "Gemini 4 Hydrogen",
-      "harness": "Antigravity CLI",
-      "effort": "medium",
-      "runs": 3,
-      "fixed": 24.7,
-      "wallMinutes": 19.9,
-      "costUsd": 2.1,
-      "date": "2026-11-13"
-    },
-    {
-      "model": "Gemini 4 Hydrogen",
-      "harness": "Antigravity CLI",
-      "effort": "xhigh",
-      "runs": 3,
-      "fixed": 32.7,
-      "wallMinutes": 35.8,
-      "costUsd": 7.07,
-      "date": "2026-11-13"
-    },
-    {
-      "model": "Gemini 4 Neon",
-      "harness": "Antigravity CLI",
-      "effort": "high",
-      "runs": 3,
-      "fixed": 57,
-      "wallMinutes": 45.4,
-      "costUsd": 29.11,
-      "date": "2026-11-19"
-    },
-    {
-      "model": "Gemini 4 Neon",
-      "harness": "Antigravity CLI",
-      "effort": "low",
-      "runs": 3,
-      "fixed": 29.7,
-      "wallMinutes": 10.8,
-      "costUsd": 5.29,
-      "date": "2026-11-19"
-    },
-    {
-      "model": "Gemini 4 Neon",
-      "harness": "Antigravity CLI",
-      "effort": "medium",
-      "runs": 3,
-      "fixed": 47.7,
-      "wallMinutes": 24.5,
-      "costUsd": 12.84,
-      "date": "2026-11-19"
-    },
-    {
-      "model": "Gemini 4 Neon",
-      "harness": "Antigravity CLI",
-      "effort": "xhigh",
-      "runs": 3,
-      "fixed": 63,
-      "wallMinutes": 75.9,
-      "costUsd": 46.34,
-      "date": "2026-11-19"
-    },
-    {
-      "model": "Gemma 4 31B",
-      "harness": "Claude Code / OpenRouter",
-      "effort": "default",
-      "runs": 1,
-      "fixed": 4,
-      "wallMinutes": 221.8,
-      "costUsd": null,
-      "date": "2026-09-16"
-    },
-    {
-      "model": "Gemma 4 31B 4-bit",
-      "harness": "Claude Code / OpenRouter",
-      "effort": "default",
-      "runs": 1,
-      "fixed": 3,
-      "wallMinutes": 24.9,
-      "costUsd": null,
-      "date": "2026-09-16"
-    },
-    {
       "model": "GLM-5.3",
       "harness": "Claude Code / Z.ai API",
       "effort": "max",
@@ -1015,24 +825,194 @@
       "date": "2026-11-18"
     },
     {
-      "model": "gpt-oss-120b",
-      "harness": "Claude Code / OpenRouter",
-      "effort": "default",
+      "model": "Gemini 3.7 Flash",
+      "harness": "Antigravity CLI",
+      "effort": "high",
+      "runs": 1,
+      "fixed": 16,
+      "wallMinutes": 22.7,
+      "costUsd": 6.36,
+      "date": "2026-08-28"
+    },
+    {
+      "model": "Gemini 3.7 Flash",
+      "harness": "Gemini CLI (retired) + model-pinning gateway",
+      "effort": "high",
+      "runs": 1,
+      "fixed": 22,
+      "wallMinutes": 96.8,
+      "costUsd": 8.43,
+      "date": "2026-08-24"
+    },
+    {
+      "model": "Gemini 3.8 Flash",
+      "harness": "Antigravity CLI",
+      "effort": "high",
       "runs": 3,
-      "fixed": 0,
-      "wallMinutes": 3.7,
-      "costUsd": null,
+      "fixed": 18,
+      "wallMinutes": 38.7,
+      "costUsd": 11.03,
       "date": "2026-09-15"
     },
     {
-      "model": "gpt-oss-20b",
+      "model": "Gemini 4 Argon",
+      "harness": "Antigravity CLI",
+      "effort": "high",
+      "runs": 3,
+      "fixed": 40.7,
+      "wallMinutes": 56.5,
+      "costUsd": 7.16,
+      "date": "2026-10-14"
+    },
+    {
+      "model": "Gemini 4 Argon",
+      "harness": "Antigravity CLI",
+      "effort": "low",
+      "runs": 3,
+      "fixed": 35.3,
+      "wallMinutes": 59.6,
+      "costUsd": 6.47,
+      "date": "2026-10-14"
+    },
+    {
+      "model": "Gemini 4 Argon",
+      "harness": "Antigravity CLI",
+      "effort": "medium",
+      "runs": 3,
+      "fixed": 39.3,
+      "wallMinutes": 59.9,
+      "costUsd": 7.5,
+      "date": "2026-10-14"
+    },
+    {
+      "model": "Gemini 4 Carbon",
+      "harness": "Antigravity CLI",
+      "effort": "high",
+      "runs": 3,
+      "fixed": 57.3,
+      "wallMinutes": 114,
+      "costUsd": 31.32,
+      "date": "2026-11-10"
+    },
+    {
+      "model": "Gemini 4 Carbon",
+      "harness": "Antigravity CLI",
+      "effort": "low",
+      "runs": 3,
+      "fixed": 46,
+      "wallMinutes": 60.4,
+      "costUsd": 7.67,
+      "date": "2026-11-13"
+    },
+    {
+      "model": "Gemini 4 Carbon",
+      "harness": "Antigravity CLI",
+      "effort": "medium",
+      "runs": 3,
+      "fixed": 56,
+      "wallMinutes": 81.1,
+      "costUsd": 24.95,
+      "date": "2026-11-10"
+    },
+    {
+      "model": "Gemini 4 Hydrogen",
+      "harness": "Antigravity CLI",
+      "effort": "high",
+      "runs": 3,
+      "fixed": 28.3,
+      "wallMinutes": 22.4,
+      "costUsd": 4.42,
+      "date": "2026-11-13"
+    },
+    {
+      "model": "Gemini 4 Hydrogen",
+      "harness": "Antigravity CLI",
+      "effort": "low",
+      "runs": 3,
+      "fixed": 10.3,
+      "wallMinutes": 7.2,
+      "costUsd": 0.43,
+      "date": "2026-11-13"
+    },
+    {
+      "model": "Gemini 4 Hydrogen",
+      "harness": "Antigravity CLI",
+      "effort": "medium",
+      "runs": 3,
+      "fixed": 24.7,
+      "wallMinutes": 19.9,
+      "costUsd": 2.1,
+      "date": "2026-11-13"
+    },
+    {
+      "model": "Gemini 4 Hydrogen",
+      "harness": "Antigravity CLI",
+      "effort": "xhigh",
+      "runs": 3,
+      "fixed": 32.7,
+      "wallMinutes": 35.8,
+      "costUsd": 7.07,
+      "date": "2026-11-13"
+    },
+    {
+      "model": "Gemini 4 Neon",
+      "harness": "Antigravity CLI",
+      "effort": "high",
+      "runs": 3,
+      "fixed": 57,
+      "wallMinutes": 45.4,
+      "costUsd": 29.11,
+      "date": "2026-11-19"
+    },
+    {
+      "model": "Gemini 4 Neon",
+      "harness": "Antigravity CLI",
+      "effort": "low",
+      "runs": 3,
+      "fixed": 29.7,
+      "wallMinutes": 10.8,
+      "costUsd": 5.29,
+      "date": "2026-11-19"
+    },
+    {
+      "model": "Gemini 4 Neon",
+      "harness": "Antigravity CLI",
+      "effort": "medium",
+      "runs": 3,
+      "fixed": 47.7,
+      "wallMinutes": 24.5,
+      "costUsd": 12.84,
+      "date": "2026-11-19"
+    },
+    {
+      "model": "Gemini 4 Neon",
+      "harness": "Antigravity CLI",
+      "effort": "xhigh",
+      "runs": 3,
+      "fixed": 63,
+      "wallMinutes": 75.9,
+      "costUsd": 46.34,
+      "date": "2026-11-19"
+    },
+    {
+      "model": "Gemma 4 31B",
       "harness": "Claude Code / OpenRouter",
       "effort": "default",
-      "runs": 3,
-      "fixed": 0,
-      "wallMinutes": 7.4,
+      "runs": 1,
+      "fixed": 4,
+      "wallMinutes": 221.8,
       "costUsd": null,
-      "date": "2026-09-15"
+      "date": "2026-09-16"
+    },
+    {
+      "model": "Gemma 4 31B 4-bit",
+      "harness": "Claude Code / OpenRouter",
+      "effort": "default",
+      "runs": 1,
+      "fixed": 3,
+      "wallMinutes": 24.9,
+      "costUsd": null,
+      "date": "2026-09-16"
     },
     {
       "model": "Grok 4.5",
@@ -1593,6 +1573,26 @@
       "wallMinutes": 72.7,
       "costUsd": 42.86,
       "date": "2026-09-29"
+    },
+    {
+      "model": "gpt-oss-120b",
+      "harness": "Claude Code / OpenRouter",
+      "effort": "default",
+      "runs": 3,
+      "fixed": 0,
+      "wallMinutes": 3.7,
+      "costUsd": null,
+      "date": "2026-09-15"
+    },
+    {
+      "model": "gpt-oss-20b",
+      "harness": "Claude Code / OpenRouter",
+      "effort": "default",
+      "runs": 3,
+      "fixed": 0,
+      "wallMinutes": 7.4,
+      "costUsd": null,
+      "date": "2026-09-15"
     }
   ]
 }

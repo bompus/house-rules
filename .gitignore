@@ -6,4 +6,4 @@ __pycache__/
 
 *.py[cod]
 skills/hr-code-review/references/.refresh-*
-skills/hr-code-review/references/.refresh.lock
+skills/hr-code-review/references/.refresh.lock*

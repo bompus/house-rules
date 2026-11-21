@@ -13,15 +13,17 @@
 //
 // Any other argument, a conflicting pair of modes or an empty value is an error (exit 2).
 import {
-  closeSync,
   existsSync,
+  linkSync,
   mkdtempSync,
-  openSync,
+  readdirSync,
   readFileSync,
   renameSync,
   rmSync,
+  statSync,
   writeFileSync,
 } from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { parseArgs } from "node:util";
@@ -57,10 +59,10 @@ const readJson = (path) => JSON.parse(readFileSync(path, "utf8"));
 export const serialize = (/** @type {unknown} */ value) => `${JSON.stringify(value, null, 2)}\n`;
 
 /**
- * Write several files of one folder so that a failure leaves none of them changed. Every output and every
- * before image is staged in a new directory this call creates beside the targets (same filesystem); the
- * renames then run back to back, and a failed rename puts the earlier files back. Nothing outside that
- * directory is created, so an existing file of any name survives, and only that directory is removed.
+ * Write several files of one folder so that a failure leaves none of them changed. The new contents are staged
+ * in a new directory beside the targets (same filesystem, so each rename is atomic); the before images, which
+ * may hold data a replacement removes, go to a private directory outside the skill folder, so no copy of the
+ * skill ever carries them. The renames then run back to back, and a failed rename puts the earlier files back.
  * Readers consume only the catalog, which goes last: an interruption leaves the old catalog complete, and
  * --check reports the sources that are ahead of it until a plain run regenerates it.
  * @param {Array<[string, unknown]>} outputs
@@ -71,6 +73,7 @@ export function writeAll(outputs) {
     throw new Error("the outputs must be in one folder");
   }
   const stage = mkdtempSync(join(dir, ".refresh-"));
+  const backups = mkdtempSync(join(tmpdir(), "refresh-recommendations-"));
   try {
     const staged = outputs.map(([path, value], i) => {
       const file = join(stage, `new-${i}`);
@@ -78,7 +81,7 @@ export function writeAll(outputs) {
       /** @type {string | undefined} */
       let back;
       if (existsSync(path)) {
-        back = join(stage, `old-${i}`);
+        back = join(backups, `old-${i}`);
         writeFileSync(back, readFileSync(path), { flag: "wx" });
       }
       return { path, file, back };
@@ -94,62 +97,203 @@ export function writeAll(outputs) {
         if (item.back === undefined) {
           rmSync(item.path, { force: true });
         } else {
-          renameSync(item.back, item.path);
+          // The before image lives on another filesystem, so it is copied back, not renamed.
+          writeFileSync(item.path, readFileSync(item.back));
         }
       }
       throw error;
     }
   } finally {
     rmSync(stage, { recursive: true, force: true });
+    rmSync(backups, { recursive: true, force: true });
   }
 }
 
 /**
  * Run `fn` holding the folder's refresh lock, so two refreshes cannot interleave their read-build-write.
- * A second refresh fails with a message that says to retry; a lock left by a dead process is taken over.
+ * The lock is a hard link to a file that already holds the owner's pid, so it is never seen empty. A refresh
+ * that finds a live (or unreadable) owner fails with a retry message and removes nothing; a lock whose owner
+ * is dead is renamed away (one rename wins) and re-acquired; a lock is removed only by the process whose file it
+ * still is. Work files of an earlier interrupted refresh are reclaimed under the lock.
  * @template T
  * @param {string} dir
  * @param {() => Promise<T>} fn
+ * @param {{ afterContended?: () => void }} [hooks] a test seam between finding the lock and reading it
  */
-async function withLock(dir, fn) {
+export async function withLock(dir, fn, hooks = {}) {
   const lock = join(dir, ".refresh.lock");
-  /** @type {number | undefined} */
-  let fd;
-  for (let attempt = 0; fd === undefined; attempt++) {
-    try {
-      fd = openSync(lock, "wx");
-      writeFileSync(fd, `${process.pid}\n`);
-    } catch (error) {
-      if (/** @type {any} */ (error).code !== "EEXIST") {
+  const mine = join(dir, `.refresh.lock.${process.pid}.${Math.random().toString(36).slice(2)}`);
+  writeFileSync(mine, `${process.pid}\n`, { flag: "wx" });
+  const busy = (/** @type {string} */ why) =>
+    new Error(`another refresh holds ${lock} (${why}); retry when it has finished`);
+  try {
+    for (let attempt = 0; ; attempt++) {
+      try {
+        linkSync(mine, lock);
+        break;
+      } catch (error) {
+        if (/** @type {any} */ (error).code !== "EEXIST") {
+          throw error;
+        }
+      }
+      hooks.afterContended?.();
+      let text;
+      try {
+        text = readFileSync(lock, "utf8");
+      } catch (error) {
+        if (/** @type {any} */ (error).code === "ENOENT" && attempt < 5) {
+          continue; // the holder finished between the failed link and the read
+        }
         throw error;
       }
-      const owner = Number.parseInt(readFileSync(lock, "utf8"), 10);
+      const owner = Number(text.trim());
+      if (!Number.isInteger(owner) || owner <= 0) {
+        throw busy("its owner cannot be read");
+      }
       let alive = true;
       try {
         process.kill(owner, 0);
-      } catch (e) {
-        alive = /** @type {any} */ (e).code === "EPERM";
+      } catch (error) {
+        alive = /** @type {any} */ (error).code === "EPERM";
       }
-      if (alive || attempt > 0) {
-        throw new Error(
-          `another refresh holds ${lock} (process ${owner}); retry when it has finished`,
-          { cause: error },
-        );
+      if (alive || attempt >= 5) {
+        throw busy(`process ${owner}`);
       }
-      rmSync(lock, { force: true });
+      // Take the dead owner's lock away by rename: of two waiters only one rename succeeds. If what was
+      // renamed is not the lock that was read (a live process took it in between), it is put back.
+      const stale = `${lock}.stale.${process.pid}.${attempt}`;
+      try {
+        renameSync(lock, stale);
+      } catch (error) {
+        if (/** @type {any} */ (error).code === "ENOENT") {
+          continue;
+        }
+        throw error;
+      }
+      const taken = Number(readFileSync(stale, "utf8").trim());
+      if (taken === owner) {
+        rmSync(stale, { force: true });
+      } else {
+        try {
+          linkSync(stale, lock);
+        } finally {
+          rmSync(stale, { force: true });
+        }
+        throw busy(`process ${taken}`);
+      }
     }
-  }
-  try {
+    for (const name of readdirSync(dir)) {
+      if (name.startsWith(".refresh-")) {
+        rmSync(join(dir, name), { recursive: true, force: true });
+      }
+    }
     return await fn();
   } finally {
-    closeSync(fd);
-    rmSync(lock, { force: true });
+    // Remove the lock only when it is still the file this call linked.
+    try {
+      if (statSync(lock).ino === statSync(mine).ino) {
+        rmSync(lock, { force: true });
+      }
+    } catch {
+      // no lock, or not readable: nothing of this call's to remove
+    }
+    rmSync(mine, { force: true });
   }
+}
+
+// Compared with case, spacing and punctuation removed, so "Internal Tool" and "internal_tool" match "internal-tool".
+const squash = (/** @type {string} */ s) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
+/** @param {unknown} v a finite number that is not negative */
+const nonNegative = (v) => typeof v === "number" && Number.isFinite(v) && v >= 0;
+const SNAPSHOT_KEYS = ["version", "fetched", "boardUpdated", "plantedTotal", "rows"];
+const ROW_KEYS = ["model", "harness", "effort", "runs", "fixed", "wallMinutes", "costUsd", "date"];
+/** @param {any} a @param {any} b a total order, so a snapshot has one byte layout */
+const rowOrder = (a, b) =>
+  order(a.model, b.model) ||
+  order(a.harness, b.harness) ||
+  order(a.effort, b.effort) ||
+  order(b.date, a.date) ||
+  b.runs - a.runs ||
+  b.fixed - a.fixed ||
+  (a.wallMinutes ?? -1) - (b.wallMinutes ?? -1) ||
+  (a.costUsd ?? -1) - (b.costUsd ?? -1);
+
+/**
+ * The one snapshot shape: exactly these fields, real dates, integer run counts of at least one, fixed bug means
+ * between zero and the planted total, nonnegative times and prices, and rows in one canonical order. A snapshot
+ * read from disk and a freshly reduced board both pass through here, so neither can hold a value the other
+ * could not.
+ * @param {any} snap
+ */
+export function canonicalSnapshot(snap) {
+  const fail = (/** @type {string} */ why) => {
+    throw new Error(`the board snapshot ${why}`);
+  };
+  if (snap === null || typeof snap !== "object" || Array.isArray(snap)) {
+    fail("is not an object");
+  }
+  const extra = Object.keys(snap).filter((k) => !SNAPSHOT_KEYS.includes(k));
+  if (extra.length > 0 || SNAPSHOT_KEYS.some((k) => !(k in snap))) {
+    fail(`must have exactly the fields ${SNAPSHOT_KEYS.join(", ")}`);
+  }
+  if (snap.version !== 1) {
+    fail("has an unknown version");
+  }
+  if (!isDate(snap.fetched)) {
+    fail(`has a fetched date ${snap.fetched} that is not a real YYYY-MM-DD date`);
+  }
+  if (typeof snap.boardUpdated !== "string") {
+    fail("has no boardUpdated text");
+  }
+  if (!Number.isInteger(snap.plantedTotal) || snap.plantedTotal < 1) {
+    fail("has a planted total that is not a positive integer");
+  }
+  if (!Array.isArray(snap.rows)) {
+    fail("has no rows list");
+  }
+  const rows = snap.rows.map((/** @type {any} */ r) => {
+    const at = `row ${r?.model} ${r?.effort}`;
+    if (
+      r === null ||
+      typeof r !== "object" ||
+      Object.keys(r).length !== ROW_KEYS.length ||
+      ROW_KEYS.some((k) => !(k in r))
+    ) {
+      fail(`${at} must have exactly the fields ${ROW_KEYS.join(", ")}`);
+    }
+    for (const key of ["model", "harness", "effort"]) {
+      if (typeof r[key] !== "string" || r[key] === "") {
+        fail(`${at} has no ${key}`);
+      }
+    }
+    if (!Number.isInteger(r.runs) || r.runs < 1) {
+      fail(`${at} has a run count that is not a positive integer`);
+    }
+    if (!nonNegative(r.fixed) || r.fixed > snap.plantedTotal) {
+      fail(`${at} has a fixed mean outside 0 to ${snap.plantedTotal}`);
+    }
+    for (const key of ["wallMinutes", "costUsd"]) {
+      if (r[key] !== null && !nonNegative(r[key])) {
+        fail(`${at} has a ${key} that is neither null nor a nonnegative number`);
+      }
+    }
+    if (!isDate(r.date)) {
+      fail(`${at} has a date that is not a real YYYY-MM-DD date`);
+    }
+    return Object.fromEntries(ROW_KEYS.map((k) => [k, r[k]]));
+  });
+  return {
+    version: 1,
+    fetched: snap.fetched,
+    boardUpdated: snap.boardUpdated,
+    plantedTotal: snap.plantedTotal,
+    rows: rows.toSorted(rowOrder),
+  };
 }
 
 /**
  * The rows the catalog can use, from a full board: current rows only (a superseded row is the receipt of an
- * earlier figure), with the fields this tool reads.
+ * earlier figure), with the fields this tool reads, validated by the snapshot schema.
  * @param {any} board
  * @param {string} fetched
  */
@@ -166,48 +310,38 @@ export function reduceBoard(board, fetched) {
       if (typeof r.fixed !== "number" || typeof r.n_runs !== "number") {
         throw new Error(`board row ${r.model} ${r.effort} has a figure this tool cannot read`);
       }
-      return r;
-    })
-    .map((/** @type {any} */ r) => ({
-      model: String(r.model),
-      harness: String(r.harness),
-      effort: String(r.effort),
-      runs: Number(r.n_runs),
-      fixed: Number(r.fixed),
-      wallMinutes: typeof r.wall_min === "number" ? r.wall_min : null,
-      costUsd: typeof r.cost_usd === "number" && r.cost_kind === "list" ? r.cost_usd : null,
-      date: String(r.date),
-    }));
-  for (const row of rows) {
-    if (!Number.isFinite(row.runs) || !Number.isFinite(row.fixed) || !isDate(row.date)) {
-      throw new Error(`board row ${row.model} ${row.effort} has a figure this tool cannot read`);
-    }
-  }
-  return {
+      return {
+        model: String(r.model),
+        harness: String(r.harness),
+        effort: String(r.effort),
+        runs: r.n_runs,
+        fixed: r.fixed,
+        wallMinutes: typeof r.wall_min === "number" ? r.wall_min : null,
+        costUsd: typeof r.cost_usd === "number" && r.cost_kind === "list" ? r.cost_usd : null,
+        date: String(r.date),
+      };
+    });
+  return canonicalSnapshot({
     version: 1,
     fetched,
     boardUpdated: String(board.meta.updated ?? "unknown"),
     plantedTotal: board.meta.planted_total,
-    rows: rows.toSorted(
-      (/** @type {any} */ a, /** @type {any} */ b) =>
-        order(a.model, b.model) || order(a.harness, b.harness) || order(a.effort, b.effort),
-    ),
-  };
+    rows,
+  });
 }
 
 /**
- * Whether a published text looks like a credential, an address or a host: an assignment-style word, a
- * provider key prefix, a long hex run, an IPv4 or IPv6 address, or (for free text) a host name or a very long
- * token with digits.
+ * Whether a published text looks like a credential, an address or a host: an assignment-style word, a provider
+ * key with its separator, a long hex run, an IPv4 or IPv6 address, or (for free text) a host name.
  * @param {string} value
- * @param {boolean} [freeText] a cohort or harness line, where a host name or long token can hide
+ * @param {boolean} [freeText] a cohort, harness or model line, where a host name can hide
  */
 export function looksSecret(value, freeText = false) {
   if (/api[_-]?key|token|secret|password|passwd|bearer|credential/i.test(value)) {
     return true;
   }
   if (
-    /(?:^|[^A-Za-z0-9])(?:sk|pk|rk|ghp|gho|ghu|ghs|github_pat|xox[a-z]|AKIA|ASIA|AIza|eyJ)[-_A-Za-z0-9]{6,}/.test(
+    /(?:^|[^A-Za-z0-9])(?:(?:sk|pk|rk)-[A-Za-z0-9_-]{6,}|gh[pousr]_[A-Za-z0-9]{6,}|github_pat_[A-Za-z0-9_]{6,}|xox[a-z]-[A-Za-z0-9-]{6,}|(?:AKIA|ASIA)[A-Z0-9]{12,}|AIza[A-Za-z0-9_-]{20,}|eyJ[A-Za-z0-9_-]{8,})/.test(
       value,
     ) ||
     /\b[0-9a-f]{16,}\b/i.test(value) ||
@@ -216,11 +350,27 @@ export function looksSecret(value, freeText = false) {
   ) {
     return true;
   }
-  return (
-    freeText &&
-    (/[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}\b/.test(value) ||
-      value.split(/\s+/).some((token) => token.length >= 24 && /\d/.test(token)))
-  );
+  return freeText && /[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}\b/.test(value);
+}
+
+/**
+ * A description made only of plain words and numbers: words are letters (hyphenated words allowed, each part at
+ * most 15 letters, an all-capitals part at most 5), numbers are integers or decimals with an optional percent
+ * sign, and the punctuation is , ; : ( ) + and an apostrophe. A token that mixes letters and digits, carries a
+ * dot inside it or runs long (a key, a seed, a host) is not a word, so it is refused whatever it encodes.
+ * @param {string} value
+ */
+export function plainWords(value) {
+  const word = /^[A-Za-z]{1,15}(?:-[A-Za-z]{1,15})*$/;
+  return value
+    .split(/[\s,;:()+']+/)
+    .filter(Boolean)
+    .map((t) => t.replace(/\.$/, ""))
+    .every(
+      (token) =>
+        /^\d+(?:\.\d+)?%?$/.test(token) ||
+        (word.test(token) && token.split("-").every((part) => !/^[A-Z]{6,}$/.test(part))),
+    );
 }
 
 /**
@@ -229,8 +379,10 @@ export function looksSecret(value, freeText = false) {
  * refuse (private names this repository must not know) come from `deny`.
  * @param {any} input
  * @param {string[]} [deny]
+ * @param {{ models: string[], harnesses: string[] }} [vocabulary] the public names a result may use (the source
+ *   spec's entries); a model or harness outside it is refused
  */
-export function sanitizeOwn(input, deny = []) {
+export function sanitizeOwn(input, deny = [], vocabulary = undefined) {
   /** @type {string[]} */
   const problems = [];
   if (
@@ -256,8 +408,6 @@ export function sanitizeOwn(input, deny = []) {
   const MODEL = /^[a-z0-9][a-z0-9.-]{1,60}$/;
   const PLAIN = /^[A-Za-z0-9][A-Za-z0-9 ,.%()+:;'-]{0,139}$/;
   const NAME = /^[A-Za-z0-9][A-Za-z0-9 .+-]{0,39}$/;
-  // Compared with case, spacing and punctuation removed, so "Internal Tool" and "internal_tool" match "internal-tool".
-  const squash = (/** @type {string} */ s) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
   const lowered = deny.map(squash).filter((w) => w !== "");
   const seen = new Set();
   const results = input.results.map((/** @type {any} */ r, /** @type {number} */ i) => {
@@ -273,7 +423,7 @@ export function sanitizeOwn(input, deny = []) {
         problems.push(`${at}.${key}: not a plain value of the allowed shape`);
         return "";
       }
-      if (looksSecret(value, freeText)) {
+      if (looksSecret(value, freeText) || (freeText && key === "cohort" && !plainWords(value))) {
         problems.push(`${at}.${key}: looks like a credential, address or host`);
       }
       for (const word of lowered) {
@@ -287,15 +437,28 @@ export function sanitizeOwn(input, deny = []) {
       /** @type {string} */ key,
       /** @type {number} */ min,
       /** @type {number} */ max,
+      integer = false,
     ) => {
       const value = r?.[key];
-      if (typeof value !== "number" || !Number.isFinite(value) || value < min || value > max) {
-        problems.push(`${at}.${key}: expected a number from ${min} to ${max}`);
+      if (
+        typeof value !== "number" ||
+        !Number.isFinite(value) ||
+        value < min ||
+        value > max ||
+        (integer && !Number.isInteger(value))
+      ) {
+        problems.push(
+          `${at}.${key}: expected ${integer ? "an integer" : "a number"} from ${min} to ${max}`,
+        );
         return 0;
       }
       return value;
     };
     const checked = text("checked", DATE);
+    // The id is words and numbers like a cohort line, not a place to carry anything else.
+    if (typeof r?.id === "string" && !plainWords(r.id.replaceAll("-", " "))) {
+      problems.push(`${at}.id: not made of plain words and numbers`);
+    }
     if (checked !== "" && !isDate(checked)) {
       problems.push(`${at}.checked: not a real date`);
     }
@@ -316,12 +479,22 @@ export function sanitizeOwn(input, deny = []) {
         );
       }
     }
-    const of = number("of", 1, 100000);
-    const found = number("found", 0, of);
+    const of = number("of", 1, 100000, true);
+    const found = number("found", 0, of, true);
+    const model = text("model", MODEL, true);
+    const harness = text("harness", vocabulary === undefined ? NAME : /^.{1,60}$/, true);
+    if (vocabulary !== undefined) {
+      if (!vocabulary.models.includes(model)) {
+        problems.push(`${at}.model: not a model the source spec names`);
+      }
+      if (!vocabulary.harnesses.includes(harness)) {
+        problems.push(`${at}.harness: not a harness the source spec names`);
+      }
+    }
     return {
       id,
-      model: text("model", MODEL),
-      harness: text("harness", NAME, true),
+      model,
+      harness,
       effort,
       found,
       of,
@@ -613,14 +786,20 @@ export async function run(argv, today = new Date().toISOString().slice(0, 10), d
 async function refresh(paths, values, today) {
   const spec = readJson(paths.spec);
   const deny = readDeny(values["deny-file"]);
+  const vocabulary = {
+    models: spec.entries.map((/** @type {any} */ e) => e.model),
+    harnesses: spec.entries.map((/** @type {any} */ e) => e.harness),
+  };
   const rawSnapshot = values.fetch === true ? undefined : readFileSync(paths.snapshot, "utf8");
-  let snapshot = rawSnapshot === undefined ? undefined : JSON.parse(rawSnapshot);
+  let snapshot;
   if (values.fetch === true) {
     const board =
       values["board-file"] !== undefined
         ? readJson(resolve(values["board-file"]))
         : await fetchBoard(spec.board.url);
     snapshot = reduceBoard(board, values.today ?? today);
+  } else {
+    snapshot = canonicalSnapshot(JSON.parse(/** @type {string} */ (rawSnapshot)));
   }
   const rawOwn =
     values["from-file"] === undefined && existsSync(paths.own)
@@ -628,34 +807,40 @@ async function refresh(paths, values, today) {
       : undefined;
   const own =
     values["from-file"] !== undefined
-      ? sanitizeOwn(readJson(resolve(values["from-file"])), deny)
+      ? sanitizeOwn(readJson(resolve(values["from-file"])), deny, vocabulary)
       : rawOwn === undefined
         ? { version: 1, results: [] }
-        : sanitizeOwn(JSON.parse(rawOwn), deny);
+        : sanitizeOwn(JSON.parse(rawOwn), deny, vocabulary);
   const catalog = buildCatalog(spec, snapshot, own);
-  // Every string published for an own result is screened as published, assembled text included.
+  // Every string published for an own result is screened as published: each value on its own (a generated id,
+  // a sample line, the rationale), never joined with its neighbours.
+  const denied = deny.map(squash).filter(Boolean);
   for (const entry of catalog.entries.filter(
     (/** @type {any} */ e) => e.kind === "own-evaluation",
   )) {
-    const flat = JSON.stringify(entry)
-      .toLowerCase()
-      .replace(/[^a-z0-9]/g, "");
-    for (const word of deny.map((w) => w.toLowerCase().replace(/[^a-z0-9]/g, "")).filter(Boolean)) {
-      if (flat.includes(word)) {
+    for (const text of stringValues(entry)) {
+      if (denied.some((word) => squash(text).includes(word))) {
         throw new Error(`catalog entry ${entry.id} contains a name this repository must not carry`);
       }
     }
   }
+  // What each input should hold on disk, so --check and a plain run agree on one repair.
+  const files = [
+    {
+      name: "catalog",
+      path: paths.catalog,
+      have: existsSync(paths.catalog) ? readFileSync(paths.catalog, "utf8") : undefined,
+      want: catalog,
+    },
+    { name: "snapshot", path: paths.snapshot, have: rawSnapshot, want: snapshot },
+    ...(rawOwn === undefined
+      ? []
+      : [{ name: "own results", path: paths.own, have: rawOwn, want: own }]),
+  ];
+  const off = files.filter((f) => f.have !== serialize(f.want));
   if (values.check === true) {
-    // The committed bytes, not their parse: an extra field or a shadowed duplicate key is a difference.
-    const committed = existsSync(paths.catalog) ? readFileSync(paths.catalog, "utf8") : undefined;
-    const files = [
-      ["catalog", committed, serialize(catalog)],
-      ["snapshot", rawSnapshot, serialize(snapshot)],
-      ...(rawOwn === undefined ? [] : [["own results", rawOwn, serialize(own)]]),
-    ];
-    const off = files.filter(([, have, want]) => have !== want);
     if (off.length > 0) {
+      const committed = files.find((f) => f.name === "catalog")?.have;
       const parsed = committed === undefined ? undefined : JSON.parse(committed);
       const ids = new Set(catalog.entries.map((/** @type {any} */ e) => e.id));
       const behind = catalog.entries
@@ -669,24 +854,44 @@ async function refresh(paths, values, today) {
         .filter((/** @type {any} */ c) => !ids.has(c.id))
         .map((/** @type {any} */ c) => c.id);
       console.error(
-        `refresh-recommendations: not what the committed inputs generate: ${off.map(([name]) => name).join(", ")} (entries: ${[...behind, ...extra].join(", ") || "none; bytes, extra fields or duplicate keys"}); run scripts/refresh-recommendations.mjs`,
+        `refresh-recommendations: not what the committed inputs generate: ${off.map((f) => f.name).join(", ")} (entries: ${[...behind, ...extra].join(", ") || "none; bytes, extra fields, duplicate keys or row order"}); run scripts/refresh-recommendations.mjs, which rewrites each of those files in its canonical form`,
       );
       return 1;
     }
     console.log(`refresh-recommendations: catalog matches (${catalog.entries.length} entries)`);
     return 0;
   }
+  // A plain run writes the catalog and the canonical form of every input that differs from it; a fetch or an
+  // import also writes the input it replaces.
   /** @type {Array<[string, unknown]>} */
-  const outputs = [[paths.catalog, catalog]];
-  if (values.fetch === true) {
-    outputs.unshift([paths.snapshot, snapshot]);
+  const outputs = off.filter((f) => f.name !== "catalog").map((f) => [f.path, f.want]);
+  if (values.fetch === true && !outputs.some(([path]) => path === paths.snapshot)) {
+    outputs.push([paths.snapshot, snapshot]);
   }
   if (values["from-file"] !== undefined) {
-    outputs.unshift([paths.own, own]);
+    outputs.push([paths.own, own]);
   }
+  outputs.push([paths.catalog, catalog]);
   writeAll(outputs);
   console.log(`refresh-recommendations: wrote the catalog (${catalog.entries.length} entries)`);
   return 0;
+}
+
+/**
+ * @param {unknown} value every string value in a JSON value, not its keys
+ * @returns {string[]}
+ */
+function stringValues(value) {
+  if (typeof value === "string") {
+    return [value];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(stringValues);
+  }
+  if (value !== null && typeof value === "object") {
+    return Object.values(value).flatMap(stringValues);
+  }
+  return [];
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

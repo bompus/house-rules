@@ -16,13 +16,16 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   buildCatalog,
+  canonicalSnapshot,
   fetchBoard,
   looksSecret,
+  plainWords,
   pathsIn,
   reduceBoard,
   run,
   sanitizeOwn,
   serialize,
+  withLock,
   writeAll,
 } from "../scripts/refresh-recommendations.mjs";
 
@@ -35,8 +38,11 @@ const read = (path) => JSON.parse(readFileSync(path, "utf8"));
 async function inCopy(/** @type {(dir: string) => Promise<void> | void} */ fn) {
   const dir = mkdtempSync(join(tmpdir(), "refresh-rec-"));
   try {
+    // The own file is optional: a checkout without one is a supported state, so the copy does not require it.
     for (const path of Object.values(real)) {
-      cpSync(path, join(dir, path.slice(refs.length + 1)));
+      if (existsSync(path)) {
+        cpSync(path, join(dir, path.slice(refs.length + 1)));
+      }
     }
     await fn(dir);
   } finally {
@@ -219,14 +225,14 @@ test("a name on the deny list is refused wherever it appears, whatever its case"
 });
 
 test("the committed own results and catalog name no private repository, path, address or credential", () => {
-  const text = JSON.stringify([read(real.own), read(real.catalog)]);
+  const text = JSON.stringify([existsSync(real.own) ? read(real.own) : null, read(real.catalog)]);
   assert.doesNotMatch(text, /\/home\/|\/Users\/|@/i);
   // The same detector the importer uses runs over every string the committed files hold.
   const strings = text.match(/"((?:[^"\\]|\\.)*)"/g) ?? [];
   for (const quoted of strings) {
     assert.equal(looksSecret(quoted.slice(1, -1)), false, quoted);
   }
-  sanitizeOwn(read(real.own));
+  sanitizeOwn(existsSync(real.own) ? read(real.own) : { version: 1, results: [] });
 });
 
 test("--from-file sanitizes, rewrites the own file and the catalog, and --check then agrees", async () => {
@@ -468,14 +474,17 @@ test("--check compares the committed bytes: a private extra field or a shadowed 
 test("an interruption between publishing sources and the catalog leaves a complete old catalog that --check flags and a plain run repairs", async () => {
   await inCopy(async (dir) => {
     const before = readFileSync(join(dir, "panel-recommendations.json"), "utf8");
+    const baseline = JSON.parse(before).entries.length;
     // The own file is already new, the catalog still old: what an interruption after the first rename leaves.
     writeFileSync(join(dir, "panel-recommendations.own.json"), serialize(own({ found: 81 })));
     assert.equal(readFileSync(join(dir, "panel-recommendations.json"), "utf8"), before);
-    assert.equal(JSON.parse(before).entries.length, 5);
+    assert.ok(baseline > 0);
     const flagged = await silent(() => run(["--check"], "2026-11-21", dir));
     assert.equal(flagged.code, 1);
     assert.equal((await silent(() => run([], "2026-11-21", dir))).code, 0);
     assert.equal((await silent(() => run(["--check"], "2026-11-21", dir))).code, 0);
+    // The repaired catalog is the old entries plus one for the new result, whatever the baseline was.
+    assert.equal(read(join(dir, "panel-recommendations.json")).entries.length, baseline + 1);
   });
 });
 
@@ -510,7 +519,7 @@ test("the mode picks the inputs: fetch rebuilds a missing snapshot, an import re
       serialize(own({ cohort: "46 cases of widgetco" })),
     );
     const incoming = join(dir, "incoming.json");
-    writeFileSync(incoming, JSON.stringify(own({})));
+    writeFileSync(incoming, JSON.stringify(own({ model: "model-a", harness: "CLI A" })));
     const deny = join(dir, "deny.txt");
     writeFileSync(deny, "widgetco\n");
     const replaced = await silent(() =>
@@ -518,6 +527,10 @@ test("the mode picks the inputs: fetch rebuilds a missing snapshot, an import re
     );
     assert.equal(replaced.code, 0, replaced.text);
     assert.equal(read(join(dir, "panel-recommendations.own.json")).results[0].cohort, good.cohort);
+    // A checkout without the optional own file passes the offline check too.
+    rmSync(join(dir, "panel-recommendations.own.json"));
+    assert.equal((await silent(() => run([], "2026-11-21", dir))).code, 0);
+    assert.equal((await silent(() => run(["--check"], "2026-11-21", dir))).code, 0);
   });
 });
 
@@ -577,5 +590,180 @@ test("an impossible calendar date is refused wherever a fetch date enters", asyn
     const out = await silent(() => run(["--fetch", "--today", "2026-02-31"], "2026-11-21", dir));
     assert.equal(out.code, 2);
     assert.equal(readFileSync(join(dir, "panel-recommendations.json"), "utf8"), before);
+  });
+});
+
+test("a seed, a host or a key in any identifier or description is refused; ordinary words are not", () => {
+  const bad = [
+    { cohort: "46 cases, seed JBSWY3DPEHPK3PXP" },
+    { cohort: "46 cases, seed JBSWYDPEHPKPXPAB" },
+    { cohort: "46 cases, seed jbswy3dpehpk3pxp" },
+    { cohort: "46 cases from bench.internal.example" },
+    { model: "bench.internal.example" },
+    { harness: "bench.internal.example" },
+    { id: "jbswy3dpehpk3pxp" },
+    { id: "key-0123456789abcdef0123" },
+  ];
+  for (const over of bad) {
+    assert.throws(() => sanitizeOwn(own(over)), /own results refused/, JSON.stringify(over));
+  }
+  // "skipping" is a word, not a key; a decimal and a percent are numbers.
+  assert.doesNotThrow(() =>
+    sanitizeOwn(own({ cohort: "46 cases, skipping 2.5% of files (blind)" })),
+  );
+  assert.equal(plainWords("skipping the sk-proj1234567890abcdef"), false);
+  assert.equal(looksSecret("skipping ahead"), false);
+  // A model or harness the source spec does not name is refused even when it is plain.
+  const vocabulary = { models: ["gpt-6.2-astra"], harnesses: ["Codex CLI"] };
+  assert.doesNotThrow(() => sanitizeOwn(own({}), [], vocabulary));
+  assert.throws(() => sanitizeOwn(own({ model: "internal-model" }), [], vocabulary), /spec names/);
+  assert.throws(() => sanitizeOwn(own({ harness: "Internal Tool" }), [], vocabulary), /spec names/);
+});
+
+test("measurements outside their domain are refused, fractional means and durations are not", () => {
+  const bad = (/** @type {any} */ over) =>
+    assert.throws(
+      () => reduceBoard(board([row(over)]), "2026-11-03"),
+      /snapshot|cannot read/,
+      JSON.stringify(over),
+    );
+  bad({ cost_usd: -5 });
+  bad({ wall_min: -1 });
+  bad({ n_runs: 0 });
+  bad({ n_runs: 2.5 });
+  bad({ fixed: 106 });
+  bad({ fixed: -1 });
+  assert.doesNotThrow(() =>
+    reduceBoard(board([row({ fixed: 40.25, wall_min: 12.5, n_runs: 3 })]), "2026-11-03"),
+  );
+  for (const over of [
+    { found: 0.5, of: 2 },
+    { of: 2.5, found: 1 },
+  ]) {
+    assert.throws(() => sanitizeOwn(own(over)), /an integer/);
+  }
+});
+
+test("the snapshot has one schema and one byte layout: an unknown field, a bad date or a changed row order fails offline", async () => {
+  const committed = readFileSync(real.snapshot, "utf8");
+  // Reducing the committed measurements again gives the same bytes.
+  assert.equal(serialize(canonicalSnapshot(JSON.parse(committed))), committed);
+  await inCopy(async (dir) => {
+    const file = join(dir, "panel-board-snapshot.json");
+    const snap = JSON.parse(committed);
+    /** @type {Array<[string, (s: any) => void]>} */
+    const edits = [
+      ["an extra field", (x) => void (x.project = "acme")],
+      ["an impossible date", (x) => void (x.fetched = "2026-02-31")],
+      ["a row reordered", (x) => void x.rows.reverse()],
+      ["a row with an extra field", (x) => void (x.rows[0].note = "x")],
+    ];
+    for (const [name, edit] of edits) {
+      const edited = structuredClone(snap);
+      edit(edited);
+      writeFileSync(file, serialize(edited));
+      const out = await silent(() => run(["--check"], "2026-11-21", dir));
+      assert.equal(out.code, 1, `${name}: ${out.text}`);
+    }
+    writeFileSync(file, committed);
+    assert.equal((await silent(() => run(["--check"], "2026-11-21", dir))).code, 0);
+  });
+});
+
+test("the repair --check prints fixes reformatted inputs: a plain run rewrites each input in its canonical form", async () => {
+  await inCopy(async (dir) => {
+    const snapshot = join(dir, "panel-board-snapshot.json");
+    const ownFile = join(dir, "panel-recommendations.own.json");
+    const canonicalSnap = readFileSync(snapshot, "utf8");
+    writeFileSync(snapshot, JSON.stringify(JSON.parse(canonicalSnap)));
+    writeFileSync(ownFile, JSON.stringify({ version: 1, results: [] }));
+    const flagged = await silent(() => run(["--check"], "2026-11-21", dir));
+    assert.equal(flagged.code, 1);
+    assert.match(flagged.text, /snapshot, own results/);
+    assert.equal((await silent(() => run([], "2026-11-21", dir))).code, 0);
+    assert.equal((await silent(() => run(["--check"], "2026-11-21", dir))).code, 0);
+    assert.equal(readFileSync(snapshot, "utf8"), canonicalSnap);
+  });
+});
+
+test("a deny entry matches only inside one published string, never across neighbouring fields", async () => {
+  await inCopy(async (dir) => {
+    const incoming = join(dir, "incoming.json");
+    writeFileSync(incoming, JSON.stringify(own({ id: "widget" })));
+    const deny = join(dir, "deny.txt");
+    // "widget-kind" spans the id's end and the next key in the serialized entry, but no value holds it.
+    writeFileSync(deny, "widget-kind\n");
+    const ok = await silent(() =>
+      run(["--from-file", incoming, "--deny-file", deny], "2026-11-21", dir),
+    );
+    assert.equal(ok.code, 0, ok.text);
+    writeFileSync(deny, "known defects across 46\n");
+    const refused = await silent(() =>
+      run(["--from-file", incoming, "--deny-file", deny], "2026-11-21", dir),
+    );
+    assert.equal(refused.code, 1);
+  });
+});
+
+test("the refresh lock: an unreadable owner is busy, not stolen; a vanished lock is retried; a stale lock goes to exactly one racer", async () => {
+  await inCopy(async (dir) => {
+    const lock = join(dir, ".refresh.lock");
+    writeFileSync(lock, "");
+    await assert.rejects(() => withLock(dir, async () => 1), /retry/);
+    assert.equal(readFileSync(lock, "utf8"), "");
+    writeFileSync(lock, "not a pid\n");
+    await assert.rejects(() => withLock(dir, async () => 1), /cannot be read/);
+    // The holder finishes between the failed link and the read: the waiter acquires on retry.
+    writeFileSync(lock, `${process.pid}\n`);
+    assert.equal(
+      await withLock(dir, async () => "ran", {
+        afterContended: () => rmSync(lock, { force: true }),
+      }),
+      "ran",
+    );
+    assert.equal(existsSync(lock), false);
+    // Two refreshes race on a dead owner's lock: one runs, the other is told to retry; nothing is left behind.
+    writeFileSync(lock, "2147483646\n");
+    const results = await Promise.allSettled([
+      withLock(dir, async () => "a"),
+      withLock(dir, async () => "b"),
+    ]);
+    assert.deepEqual(results.map((r) => r.status).toSorted(), ["fulfilled", "rejected"]);
+    assert.equal(existsSync(lock), false);
+    assert.deepEqual(
+      readdirSync(dir).filter((n) => n.startsWith(".refresh")),
+      [],
+    );
+    // A lock is removed only by the process whose file it still is.
+    await withLock(dir, async () => {
+      rmSync(lock, { force: true });
+      writeFileSync(lock, "99999\n");
+    });
+    assert.equal(readFileSync(lock, "utf8"), "99999\n");
+  });
+});
+
+test("work files of an interrupted refresh are reclaimed, and no before image is staged in the skill folder", async () => {
+  await inCopy(async (dir) => {
+    const abandoned = join(dir, ".refresh-abandoned");
+    mkdirSync(abandoned);
+    writeFileSync(join(abandoned, "old-0"), "a private name that a replacement removed\n");
+    assert.equal((await silent(() => run([], "2026-11-21", dir))).code, 0);
+    assert.equal(existsSync(abandoned), false);
+    // The before image of a replaced file is kept outside the folder while the renames run.
+    const seen = /** @type {string[]} */ ([]);
+    const a = join(dir, "a.json");
+    writeFileSync(a, "old a\n");
+    const b = join(dir, "b.json");
+    mkdirSync(b);
+    writeFileSync(join(b, "x"), "x");
+    assert.throws(() =>
+      writeAll([
+        [a, { n: 1 }],
+        [b, { n: 2 }],
+      ]),
+    );
+    seen.push(...readdirSync(dir).filter((n) => n.startsWith(".refresh")));
+    assert.deepEqual(seen, []);
   });
 });
