@@ -31,6 +31,10 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          # Always main, even for a manual run started from another branch, and the whole history, so the
+          # publish step can tell which commits the refresh branch has that main lacks.
+          ref: main
+          fetch-depth: 0
           persist-credentials: true
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
@@ -40,17 +44,18 @@ jobs:
       - name: Refetch the board and check the result
         id: refresh
         run: bash scripts/refresh-panel-board.sh
-      - name: Push the branch and open the pull request
+      - name: Put the result on the refresh branch
+        id: publish
         if: steps.refresh.outputs.changed == 'true'
+        run: bash scripts/publish-panel-board.sh
+      - name: Open the pull request
+        if: steps.publish.outputs.ready == 'true'
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git checkout -B "$BRANCH"
-          git add skills/hr-code-review/references
-          git commit -m "Panel recommendations: refresh the board snapshot and catalog"
-          git push --force origin "$BRANCH"
-          if [ -n "$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number')" ]; then
-            echo "a pull request from $BRANCH is already open; the push updated it"
+          # Only a pull request of this repository into main counts, and a failed lookup stops the job.
+          existing="$(gh pr list --base main --head "$BRANCH" --state open --json number,isCrossRepository \
+            --jq '[.[] | select(.isCrossRepository == false)][0].number // empty')"
+          if [ -n "$existing" ]; then
+            echo "pull request #$existing from $BRANCH is already open"
             exit 0
           fi
           if ! gh pr create --base main --head "$BRANCH" \
