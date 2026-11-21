@@ -141,9 +141,9 @@ test(
       git(work, "checkout", "-q", "main");
       changeBoard(work, 5, "2026-12-08");
       const refused = publish(work, "board-refresh");
-      assert.equal(refused.code, 0, refused.text);
+      assert.equal(refused.code, 1, refused.text);
       assert.match(refused.output, /ready=false/);
-      assert.match(refused.text, /not the workflow's/);
+      assert.match(refused.text, /not the workflow's, or is a merge/);
       assert.equal(tipOf(work, "board-refresh"), kept);
       // A commit made as the bot but touching another file is refused as well.
       git(other, "checkout", "-q", "-b", "bot-work", "origin/main");
@@ -249,5 +249,47 @@ test(
       );
       assert.match(before[1] ?? "", /own-gpt-6\.2-astra-medium-held-out/);
     });
+  },
+);
+
+test(
+  "publish: a merge commit on the branch is never the job's, and the push is leased, never forced",
+  { skip },
+  () => {
+    inRepo(({ work, other }) => {
+      changeBoard(work, 1);
+      assert.match(publish(work, "board-refresh").output, /ready=true/);
+      // Someone updates the branch with a merge of main (as GitHub's "Update branch" does).
+      git(other, "fetch", "-q", "origin", "board-refresh");
+      git(other, "checkout", "-q", "-b", "board-refresh", "origin/board-refresh");
+      git(other, "checkout", "-q", "main");
+      git(other, "commit", "-q", "--allow-empty", "-m", "main moves on");
+      git(other, "push", "-q", "origin", "main");
+      git(other, "checkout", "-q", "board-refresh");
+      git(
+        other,
+        "-c",
+        "user.name=github-actions[bot]",
+        "-c",
+        `user.email=${BOT}`,
+        "merge",
+        "-q",
+        "--no-ff",
+        "-m",
+        "Update branch",
+        "main",
+      );
+      git(other, "push", "-q", "origin", "board-refresh");
+      git(work, "checkout", "-q", "main");
+      git(work, "pull", "-q", "origin", "main");
+      changeBoard(work, 7, "2026-12-08");
+      const refused = publish(work, "board-refresh");
+      assert.equal(refused.code, 1, refused.text);
+      assert.match(refused.output, /ready=false/);
+      assert.match(refused.text, /is a merge/);
+    });
+    const script = readFileSync(join(root, "scripts", "publish-panel-board.sh"), "utf8");
+    assert.match(script, /--force-with-lease=/);
+    assert.doesNotMatch(script, /--force(?!-with-lease)/);
   },
 );

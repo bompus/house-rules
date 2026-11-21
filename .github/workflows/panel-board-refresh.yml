@@ -27,7 +27,6 @@ jobs:
       pull-requests: write
     env:
       BRANCH: panel-board-refresh
-      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -35,7 +34,7 @@ jobs:
           # publish step can tell which commits the refresh branch has that main lacks.
           ref: main
           fetch-depth: 0
-          persist-credentials: true
+          persist-credentials: false
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version: 1.4.4
@@ -44,12 +43,19 @@ jobs:
       - name: Refetch the board and check the result
         id: refresh
         run: bash scripts/refresh-panel-board.sh
+      # The write token reaches only the two steps that use it, never the install, the board fetch or the tests.
       - name: Put the result on the refresh branch
         id: publish
         if: steps.refresh.outputs.changed == 'true'
-        run: bash scripts/publish-panel-board.sh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          bash scripts/publish-panel-board.sh
       - name: Open the pull request
         if: steps.publish.outputs.ready == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           # Only a pull request of this repository into main counts, and a failed lookup stops the job.
           existing="$(gh pr list --base main --head "$BRANCH" --state open --json number,isCrossRepository \

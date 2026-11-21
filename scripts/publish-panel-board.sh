@@ -5,8 +5,8 @@
 # replaced with a lease on the SHA that was read. Run from a full clone of main with the regenerated files in place.
 #
 # Usage: BRANCH=panel-board-refresh scripts/publish-panel-board.sh
-# Prints ready=true (the branch holds this board) or ready=false (the branch holds other work and was left alone)
-# to $GITHUB_OUTPUT when set. REMOTE (default origin) names the remote.
+# Prints ready=true (the branch holds this board) or ready=false (the branch holds other work and was left alone;
+# the script then exits 1, so the run is red) to $GITHUB_OUTPUT when set. REMOTE (default origin) names the remote.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -22,6 +22,13 @@ shape() {
   jq -S 'del(.fetched, .reviewed) | if .entries then .entries |= map(del(.checked)) else . end'
 }
 
+# The branch holds work that is not the job's: leave it alone and fail the run, so a stuck refresh is seen.
+refuse() {
+  echo "::error::$1; left alone. Delete or merge the branch so the weekly refresh can continue."
+  echo "ready=false" >>"$out"
+  exit 1
+}
+
 lease=()
 if git ls-remote --exit-code --heads "$remote" "$branch" >/dev/null 2>&1; then
   git fetch --no-tags "$remote" "$branch"
@@ -29,17 +36,15 @@ if git ls-remote --exit-code --heads "$remote" "$branch" >/dev/null 2>&1; then
   # Every commit the branch has that main lacks must be the bot's and touch only the generated files.
   while read -r commit; do
     [ -n "$commit" ] || continue
-    if [ "$(git log -1 --format=%ae "$commit")" != "$bot_email" ]; then
-      echo "::warning::$branch has a commit that is not the workflow's ($commit); left alone."
-      echo "ready=false" >>"$out"
-      exit 0
+    # A merge commit (GitHub's "Update branch" makes one) lists no files of its own, so it is never the job's.
+    if [ "$(git log -1 --format=%ae "$commit")" != "$bot_email" ] \
+      || [ "$(git rev-list --parents -n 1 "$commit" | wc -w)" -ne 2 ]; then
+      refuse "$branch has a commit that is not the workflow's, or is a merge ($commit)"
     fi
     while read -r name; do
       [ -n "$name" ] || continue
       if [ "$name" != "${files[0]}" ] && [ "$name" != "${files[1]}" ]; then
-        echo "::warning::$branch has a commit that touches $name ($commit); left alone."
-        echo "ready=false" >>"$out"
-        exit 0
+        refuse "$branch has a commit that touches $name ($commit)"
       fi
     done < <(git diff-tree --no-commit-id --name-only -r "$commit")
   done < <(git rev-list "$tip" "^HEAD")
