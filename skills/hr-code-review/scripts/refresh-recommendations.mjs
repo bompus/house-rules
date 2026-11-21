@@ -14,21 +14,13 @@
 //                                                              committed files generate; no clock, no network
 //
 // Any other argument, a conflicting pair of modes or an empty value is an error (exit 2).
-import {
-  existsSync,
-  linkSync,
-  mkdtempSync,
-  readdirSync,
-  readFileSync,
-  renameSync,
-  rmSync,
-  statSync,
-  writeFileSync,
-} from "node:fs";
-import { tmpdir } from "node:os";
+import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { parseArgs } from "node:util";
+import { parseStrict, serialize, withLock, writeAll } from "./refresh-files.mjs";
+
+export { parseStrict, serialize, withLock, writeAll };
 
 const skill = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const refs = join(skill, "references");
@@ -56,183 +48,14 @@ const EFFORTS = ["none", "minimal", "low", "medium", "high", "xhigh", "max", "ul
 const MAX_BOARD_BYTES = 20 * 1024 * 1024;
 
 /** @param {string} path */
-const readJson = (path) => JSON.parse(readFileSync(path, "utf8"));
-
-/** The one byte layout every JSON file here is written in, so --check can compare bytes. */
-export const serialize = (/** @type {unknown} */ value) => `${JSON.stringify(value, null, 2)}\n`;
-
-// A work directory of this tool is `.refresh-<six characters>` holding this marker file and `new-<n>` files only;
-// that is the whole of what a later run reclaims.
-const TRANSACTION_MARKER = ".transaction";
-const TRANSACTION_TEXT = "refresh-recommendations transaction\n";
-/** @param {string} dir the references folder */
-function reclaimAbandoned(dir) {
-  for (const name of readdirSync(dir)) {
-    const path = join(dir, name);
-    if (!/^\.refresh-[A-Za-z0-9]{6}$/.test(name) || !statSync(path).isDirectory()) {
-      continue;
-    }
-    const inside = readdirSync(path);
-    if (
-      inside.includes(TRANSACTION_MARKER) &&
-      readFileSync(join(path, TRANSACTION_MARKER), "utf8") === TRANSACTION_TEXT &&
-      inside.every((n) => n === TRANSACTION_MARKER || /^new-\d+$/.test(n))
-    ) {
-      rmSync(path, { recursive: true, force: true });
-    }
-  }
-}
-
-/**
- * Write several files of one folder so that a failure leaves none of them changed. The new contents are staged
- * in a new directory beside the targets (same filesystem, so each rename is atomic); the before images, which
- * may hold data a replacement removes, go to a private directory outside the skill folder, so no copy of the
- * skill ever carries them. The renames then run back to back, and a failed rename puts the earlier files back.
- * Readers consume only the catalog, which goes last: an interruption leaves the old catalog complete, and
- * --check reports the sources that are ahead of it until a plain run regenerates it.
- * @param {Array<[string, unknown]>} outputs
- */
-export function writeAll(outputs) {
-  const dir = dirname(outputs[0]?.[0] ?? ".");
-  if (outputs.some(([path]) => dirname(path) !== dir)) {
-    throw new Error("the outputs must be in one folder");
-  }
-  const stage = mkdtempSync(join(dir, ".refresh-"));
-  writeFileSync(join(stage, TRANSACTION_MARKER), TRANSACTION_TEXT, { flag: "wx" });
-  const backups = mkdtempSync(join(tmpdir(), "refresh-recommendations-"));
-  try {
-    const staged = outputs.map(([path, value], i) => {
-      const file = join(stage, `new-${i}`);
-      writeFileSync(file, serialize(value), { flag: "wx" });
-      /** @type {string | undefined} */
-      let back;
-      if (existsSync(path)) {
-        back = join(backups, `old-${i}`);
-        writeFileSync(back, readFileSync(path), { flag: "wx" });
-      }
-      return { path, file, back };
-    });
-    const done = [];
-    try {
-      for (const item of staged) {
-        renameSync(item.file, item.path);
-        done.push(item);
-      }
-    } catch (error) {
-      for (const item of done) {
-        if (item.back === undefined) {
-          rmSync(item.path, { force: true });
-        } else {
-          // The before image lives on another filesystem, so it is copied back, not renamed.
-          writeFileSync(item.path, readFileSync(item.back));
-        }
-      }
-      throw error;
-    }
-  } finally {
-    rmSync(stage, { recursive: true, force: true });
-    rmSync(backups, { recursive: true, force: true });
-  }
-}
-
-/**
- * Run `fn` holding the folder's refresh lock, so two refreshes cannot interleave their read-build-write.
- * A lock is a hard link to a file that already holds the owner's pid, so it is never seen empty. A refresh that
- * finds a live or unreadable owner fails with a retry message and removes nothing. A dead owner's lock is removed
- * only by the one process that holds the recovery lock (`.refresh.takeover`, claimed the same way), which reads
- * the owner again under it: the lock it removes is the dead owner's, because nobody else removes locks and nobody
- * can link a new one while it exists. A lock is released only by the process whose file it still is.
- * @template T
- * @param {string} dir
- * @param {() => Promise<T>} fn
- * @param {{ afterContended?: () => void | Promise<void>, afterRead?: () => void | Promise<void> }} [hooks]
- *   test seams: after a failed claim, and after the stale owner was read
- */
-export async function withLock(dir, fn, hooks = {}) {
-  const lock = join(dir, ".refresh.lock");
-  const takeover = join(dir, ".refresh.takeover");
-  const mine = join(dir, `.refresh.lock.${process.pid}.${Math.random().toString(36).slice(2)}`);
-  // The file's content is the owner's pid and a token only this call knows, so ownership is read from content
-  // (an inode number is not reliable on every filesystem).
-  const content = `${process.pid} ${Math.random().toString(36).slice(2)}\n`;
-  writeFileSync(mine, content, { flag: "wx" });
-  const busy = (/** @type {string} */ why) =>
-    new Error(`another refresh holds ${lock} (${why}); retry when it has finished`);
-  /** @param {string} path */
-  const claim = (path) => {
-    try {
-      linkSync(mine, path);
-      return true;
-    } catch (error) {
-      if (/** @type {any} */ (error).code === "EEXIST") {
-        return false;
-      }
-      throw error;
-    }
-  };
-  /** @param {string} path the owner's pid, "gone" when the file vanished, "unreadable" otherwise */
-  const ownerOf = (path) => {
-    try {
-      const owner = Number(readFileSync(path, "utf8").trim().split(/\s+/)[0]);
-      return Number.isInteger(owner) && owner > 0 ? owner : "unreadable";
-    } catch (error) {
-      if (/** @type {any} */ (error).code === "ENOENT") {
-        return "gone";
-      }
-      throw error;
-    }
-  };
-  /** @param {string} path remove a claim only when it still holds this call's content */
-  const release = (path) => {
-    try {
-      if (readFileSync(path, "utf8") === content) {
-        rmSync(path, { force: true });
-      }
-    } catch {
-      // no claim, or not readable: nothing of this call's to remove
-    }
-  };
-  try {
-    for (let attempt = 0; !claim(lock); attempt++) {
-      await hooks.afterContended?.();
-      const owner = ownerOf(lock);
-      if (owner === "gone" && attempt < 5) {
-        continue; // the holder finished between the failed claim and the read
-      }
-      if (owner === "gone" || owner === "unreadable") {
-        throw busy("its owner cannot be read");
-      }
-      let alive = true;
-      try {
-        process.kill(owner, 0);
-      } catch (error) {
-        alive = /** @type {any} */ (error).code === "EPERM";
-      }
-      if (alive || attempt >= 5) {
-        throw busy(`process ${owner}`);
-      }
-      await hooks.afterRead?.();
-      if (!claim(takeover)) {
-        throw busy(`a stale lock is being recovered; remove ${takeover} if no refresh is running`);
-      }
-      try {
-        if (ownerOf(lock) === owner) {
-          rmSync(lock, { force: true });
-        }
-      } finally {
-        release(takeover);
-      }
-    }
-    reclaimAbandoned(dir);
-    return await fn();
-  } finally {
-    release(lock);
-    rmSync(mine, { force: true });
-  }
-}
+const readJson = (path) => parseStrict(readFileSync(path, "utf8"), path);
 
 // Compared with case, spacing and punctuation removed, so "Internal Tool" and "internal_tool" match "internal-tool".
-const squash = (/** @type {string} */ s) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
+const squash = (/** @type {string} */ s) =>
+  s
+    .normalize("NFKC")
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]/gu, "");
 /** @param {unknown} v a finite number that is not negative */
 const nonNegative = (v) => typeof v === "number" && Number.isFinite(v) && v >= 0;
 const SNAPSHOT_KEYS = ["version", "fetched", "boardUpdated", "plantedTotal", "rows"];
@@ -661,13 +484,41 @@ export async function fetchBoard(url, fetchImpl = fetch) {
 }
 
 /** @param {string | undefined} file */
-const readDeny = (file) =>
-  file === undefined
-    ? []
-    : readFileSync(file, "utf8")
-        .split("\n")
-        .map((l) => l.trim())
-        .filter(Boolean);
+const readDeny = (file) => {
+  const words =
+    file === undefined
+      ? []
+      : readFileSync(file, "utf8")
+          .split("\n")
+          .map((l) => l.trim())
+          .filter(Boolean);
+  // A name with no letter or digit would match nothing, so the list would silently not cover it.
+  const empty = words.find((w) => squash(w) === "");
+  if (empty !== undefined) {
+    throw new Error(
+      `deny entry ${JSON.stringify(empty)} has no letter or digit, so it cannot match`,
+    );
+  }
+  return words;
+};
+
+/**
+ * Private inputs (raw results, deny lists) must not sit where the installer copies: the references folder or
+ * anywhere in the skill, reached through a symlink or not.
+ * @param {string} file
+ * @param {string} dir the references folder
+ * @param {string} flag
+ */
+function requireOutsideSkill(file, dir, flag) {
+  const real = realpathSync(resolve(file));
+  for (const root of [realpathSync(dir), realpathSync(skill)]) {
+    if (real === root || real.startsWith(`${root}/`) || real.startsWith(`${root}\\`)) {
+      throw new Error(
+        `${flag} ${file} is inside the skill folder, which is copied to hosts; keep private inputs outside it`,
+      );
+    }
+  }
+}
 
 const OPTIONS = /** @type {const} */ ({
   fetch: { type: "boolean" },
@@ -755,6 +606,11 @@ async function refresh(paths, values, today) {
       `${paths.obsoleteOwn} is an obsolete source: own results live only in the catalog; delete the file (keep the raw results outside the skill folder)`,
     );
   }
+  for (const flag of ["from-file", "deny-file"]) {
+    if (values[flag] !== undefined) {
+      requireOutsideSkill(values[flag], dirname(paths.catalog), `--${flag}`);
+    }
+  }
   const spec = readJson(paths.spec);
   const deny = readDeny(values["deny-file"]);
   const vocabulary = {
@@ -771,11 +627,11 @@ async function refresh(paths, values, today) {
         : await fetchBoard(spec.board.url);
     snapshot = reduceBoard(board, values.today ?? today);
   } else {
-    snapshot = canonicalSnapshot(JSON.parse(/** @type {string} */ (rawSnapshot)));
+    snapshot = canonicalSnapshot(parseStrict(/** @type {string} */ (rawSnapshot), paths.snapshot));
   }
   // The own results are the facts the catalog's own entries carry; an import replaces all of them, so the
   // old ones are not read (a newly denied name in them cannot block their replacement).
-  const committed = rawCatalog === undefined ? undefined : JSON.parse(rawCatalog);
+  const committed = rawCatalog === undefined ? undefined : parseStrict(rawCatalog, paths.catalog);
   const own = sanitizeOwn(
     values["from-file"] !== undefined
       ? readJson(resolve(values["from-file"]))
@@ -787,6 +643,7 @@ async function refresh(paths, values, today) {
   // screened as published: each value on its own, never joined with its neighbours.
   const denied = deny.map(squash).filter(Boolean);
   for (const [name, published] of [
+    ["source spec", spec],
     ["snapshot", snapshot],
     ["catalog", catalog],
   ]) {

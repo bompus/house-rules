@@ -68,8 +68,10 @@ exactly these fields: a `model` and `harness` the source spec already lists, an
 `caseSet` (`held-out`, `development` or `mixed`), `judging` (`blind-second-model`,
 `one-model`, `two-models` or `person`) and a `checked` date. The cohort wording and the
 entry id are built from those facts, so no typed text reaches a public file. The
-import also needs a deny file of private names and refuses any published string that
-holds one.
+import also needs a deny file of private names, and the script refuses it and the results
+file when either sits inside the skill folder (the installer copies that folder).
+Any published string that holds a denied name, in the spec, snapshot or catalog, fails
+the run.
 
 A plain run of the script regenerates the catalog and writes the snapshot in its one
 canonical layout, which is what `--check` compares.

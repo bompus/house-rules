@@ -7,6 +7,7 @@ import {
   readFileSync,
   readdirSync,
   rmSync,
+  symlinkSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -16,6 +17,7 @@ import {
   buildCatalog,
   canonicalSnapshot,
   fetchBoard,
+  parseStrict,
   pathsIn,
   reduceBoard,
   run,
@@ -110,7 +112,12 @@ const own = (/** @type {any} */ over = {}) => ({ version: 1, results: [{ ...good
  * @param {(dir: string) => Promise<void> | void} fn
  */
 async function inFixture(fn) {
-  const dir = mkdtempSync(join(tmpdir(), "refresh-rec-"));
+  // The references folder and, beside it, the maintainer's private inputs (raw results, deny list), which
+  // must live outside anything the installer copies.
+  const root = mkdtempSync(join(tmpdir(), "refresh-rec-"));
+  const dir = join(root, "references");
+  mkdirSync(dir);
+  mkdirSync(join(root, "external"));
   try {
     const paths = pathsIn(dir);
     const snapshot = reduceBoard(
@@ -122,20 +129,27 @@ async function inFixture(fn) {
     writeFileSync(paths.catalog, serialize(buildCatalog(spec, snapshot, empty)));
     await fn(dir);
   } finally {
-    rmSync(dir, { recursive: true, force: true });
+    rmSync(root, { recursive: true, force: true });
   }
 }
+/** @param {string} dir the references folder of a fixture */
+const external = (dir) => join(dirname(dir), "external");
 /** Import a result file with a deny file, as a maintainer does. */
 async function importOwn(
   /** @type {string} */ dir,
   /** @type {any} */ file,
   deny = "unrelated-name\n",
 ) {
-  writeFileSync(join(dir, "incoming.json"), JSON.stringify(file));
-  writeFileSync(join(dir, "deny.txt"), deny);
+  writeFileSync(join(external(dir), "incoming.json"), JSON.stringify(file));
+  writeFileSync(join(external(dir), "deny.txt"), deny);
   return silent(() =>
     run(
-      ["--from-file", join(dir, "incoming.json"), "--deny-file", join(dir, "deny.txt")],
+      [
+        "--from-file",
+        join(external(dir), "incoming.json"),
+        "--deny-file",
+        join(external(dir), "deny.txt"),
+      ],
       "2026-11-21",
       dir,
     ),
@@ -418,9 +432,9 @@ test("a refused import changes nothing, and an import needs a deny file", async 
     assert.equal(denied.code, 1);
     assert.match(denied.text, /must not carry/);
     assert.equal(readFileSync(pathsIn(dir).catalog, "utf8"), before);
-    writeFileSync(join(dir, "incoming.json"), JSON.stringify(own()));
+    writeFileSync(join(external(dir), "incoming.json"), JSON.stringify(own()));
     const out = await silent(() =>
-      run(["--from-file", join(dir, "incoming.json")], "2026-11-21", dir),
+      run(["--from-file", join(external(dir), "incoming.json")], "2026-11-21", dir),
     );
     assert.equal(out.code, 2);
     assert.match(out.text, /needs --deny-file/);
@@ -464,8 +478,12 @@ test("the catalog is checked byte for byte: a hand edit, extra field, tampered o
     );
     await edit("extra field", (c) => void (c.entries[1].project = "acme"));
     await edit("extra top-level field", (c) => void (c.project = "acme"));
+    // A repeated key is refused before anything is read, and nothing is rewritten: the original stays as it was.
     writeFileSync(file, canonical.replace('"version": 1,', '"version": 1,\n  "version": 1,'));
-    assert.match((await check(dir)).text, /duplicate keys/);
+    const repeated = readFileSync(file, "utf8");
+    assert.match((await check(dir)).text, /repeated key "version"/);
+    assert.equal((await silent(() => run([], "2026-11-21", dir))).code, 1);
+    assert.equal(readFileSync(file, "utf8"), repeated);
     // A plain run regenerates the catalog from the facts and the board, which repairs the own text.
     writeFileSync(
       file,
@@ -601,13 +619,10 @@ test("a refresh reclaims only its own abandoned transactions", async () => {
     const notes = join(dir, ".refresh-notes");
     mkdirSync(notes);
     writeFileSync(join(notes, "a"), "mine");
-    // An import file named like the prefix is read, and survives.
+    // A file with the prefix is not a directory of the tool's, so it survives.
     const input = join(dir, ".refresh-input.json");
-    writeFileSync(input, JSON.stringify(own()));
-    writeFileSync(join(dir, "deny.txt"), "unrelated-name\n");
-    const out = await silent(() =>
-      run(["--from-file", input, "--deny-file", join(dir, "deny.txt")], "2026-11-21", dir),
-    );
+    writeFileSync(input, "mine");
+    const out = await importOwn(dir, own());
     assert.equal(out.code, 0, out.text);
     assert.equal(existsSync(abandoned), false);
     for (const kept of [
@@ -716,7 +731,7 @@ test("a second refresh while one holds the lock fails with a retry message", asy
 test("a deny file screens every published string, the snapshot's unused rows included", async () => {
   await inFixture(async (dir) => {
     const paths = pathsIn(dir);
-    const deny = join(dir, "deny.txt");
+    const deny = join(external(dir), "deny.txt");
     writeFileSync(deny, "internal-harness\n");
     const saved = join(dir, "board.json");
     // A row no recommendation uses still lands in the published snapshot.
@@ -797,4 +812,147 @@ test("damage to an own entry's derived fields never drops its facts", async () =
     assert.match(out.text, /carries no facts/);
     assert.equal(readFileSync(file, "utf8"), damaged);
   });
+});
+
+test("private inputs inside the skill folder are refused, symlinks included, and external paths work", async () => {
+  await inFixture(async (dir) => {
+    const before = readFileSync(pathsIn(dir).catalog, "utf8");
+    // Inside the references folder: the installer would copy it.
+    writeFileSync(join(dir, "incoming.json"), JSON.stringify(own()));
+    writeFileSync(join(dir, "deny.txt"), "unrelated-name\n");
+    const inside = await silent(() =>
+      run(
+        ["--from-file", join(dir, "incoming.json"), "--deny-file", join(external(dir), "x")],
+        "2026-11-21",
+        dir,
+      ),
+    );
+    assert.equal(inside.code, 1);
+    assert.match(inside.text, /inside the skill folder/);
+    const deny = await silent(() =>
+      run(["--check", "--deny-file", join(dir, "deny.txt")], "2026-11-21", dir),
+    );
+    assert.equal(deny.code, 1);
+    assert.match(deny.text, /inside the skill folder/);
+    // A symlink outside that points inside is refused by its real path.
+    symlinkSync(join(dir, "deny.txt"), join(external(dir), "link.txt"));
+    const linked = await silent(() =>
+      run(["--check", "--deny-file", join(external(dir), "link.txt")], "2026-11-21", dir),
+    );
+    assert.equal(linked.code, 1);
+    assert.equal(readFileSync(pathsIn(dir).catalog, "utf8"), before);
+    // An import from external paths still works.
+    assert.equal((await importOwn(dir, own())).code, 0);
+    // The real skill folder is refused too, not only the folder being refreshed.
+    const realDeny = await silent(() =>
+      run(["--check", "--deny-file", join(refs, "panel-recommendations.md")], "2026-11-21", dir),
+    );
+    assert.equal(realDeny.code, 1);
+    assert.match(realDeny.text, /inside the skill folder/);
+  });
+});
+
+test("a repeated key in any JSON that carries own facts stops the run with the original intact", async () => {
+  await inFixture(async (dir) => {
+    await importOwn(dir, own());
+    const file = pathsIn(dir).catalog;
+    const canonical = readFileSync(file, "utf8");
+    const catalog = JSON.parse(canonical);
+    const textOf = (/** @type {any} */ c) => serialize(c);
+    /** @type {Array<[string, string]>} */
+    const damaged = [
+      // Two entries keys: the first holds the own entry, the second the board entry alone.
+      [
+        "entries",
+        textOf(catalog).replace(
+          '"entries": [',
+          `"entries": ${JSON.stringify(catalog.entries.slice(1))},\n  "entries": [`,
+        ),
+      ],
+      // A repeated key inside the facts.
+      ["found", canonical.replace('"found": 80,', '"found": 80,\n        "found": 0,')],
+    ];
+    for (const [key, text] of damaged) {
+      writeFileSync(file, text);
+      for (const argv of [[], ["--check"]]) {
+        const out = await silent(() => run(argv, "2026-11-21", dir));
+        assert.equal(out.code, 1, `${key}: ${out.text}`);
+        assert.match(out.text, /repeated key/);
+      }
+      assert.equal(readFileSync(file, "utf8"), text);
+    }
+    // A replacement file with a repeated results key never clears the catalog's measurements.
+    writeFileSync(file, canonical);
+    writeFileSync(
+      join(external(dir), "incoming.json"),
+      '{"version":1,"results":[' + JSON.stringify(good) + '],"results":[]}',
+    );
+    writeFileSync(join(external(dir), "deny.txt"), "unrelated-name\n");
+    const out = await silent(() =>
+      run(
+        [
+          "--from-file",
+          join(external(dir), "incoming.json"),
+          "--deny-file",
+          join(external(dir), "deny.txt"),
+        ],
+        "2026-11-21",
+        dir,
+      ),
+    );
+    assert.equal(out.code, 1);
+    assert.match(out.text, /repeated key "results"/);
+    assert.equal(readFileSync(file, "utf8"), canonical);
+  });
+});
+
+test("the deny check covers the source spec and names in any script", async () => {
+  await inFixture(async (dir) => {
+    const paths = pathsIn(dir);
+    const deny = join(external(dir), "deny.txt");
+    // A denied name that only the spec's own-evaluation text holds, with no own result in the catalog.
+    writeFileSync(deny, "private case set\n");
+    writeFileSync(
+      paths.spec,
+      serialize({ ...spec, own: { ...spec.own, task: "Find defects in the private case set" } }),
+    );
+    for (const argv of [
+      ["--check", "--deny-file", deny],
+      ["--deny-file", deny],
+    ]) {
+      const refused = await silent(() => run(argv, "2026-11-21", dir));
+      assert.equal(refused.code, 1, refused.text);
+    }
+    const out = await silent(() => run(["--check", "--deny-file", deny], "2026-11-21", dir));
+    assert.match(out.text, /source spec would publish a name/);
+    // A name written only in non-Latin letters still matches, with or without punctuation.
+    writeFileSync(paths.spec, serialize(spec));
+    const snapshot = JSON.parse(readFileSync(paths.snapshot, "utf8"));
+    // An unused row: a model the spec does not read.
+    snapshot.rows.push({ ...snapshot.rows[0], model: "Unused", harness: "内部工具" });
+    snapshot.rows = canonicalSnapshot(snapshot).rows;
+    writeFileSync(paths.snapshot, serialize(snapshot));
+    for (const name of ["内部工具", "内部-工具", "内部 工具"]) {
+      writeFileSync(deny, `${name}\n`);
+      const found = await silent(() => run(["--check", "--deny-file", deny], "2026-11-21", dir));
+      assert.equal(found.code, 1, name);
+      assert.match(found.text, /would publish a name/);
+    }
+    // An entry with no letter or digit would match nothing, so it is refused, not dropped.
+    writeFileSync(deny, "---\n");
+    const empty = await silent(() => run(["--check", "--deny-file", deny], "2026-11-21", dir));
+    assert.equal(empty.code, 1);
+    assert.match(empty.text, /no letter or digit/);
+  });
+});
+
+test("the strict parser reads what JSON.parse reads and refuses a repeated key at any depth", () => {
+  const text = '{"a":[1,2.5,-3e2,true,false,null,"x\\"y"],"b":{"c":"d"},"e":""}';
+  assert.deepEqual(structuredClone(parseStrict(text)), JSON.parse(text));
+  assert.throws(() => parseStrict('{"a":{"b":1,"b":2}}'), /repeated key "b"/);
+  assert.throws(() => parseStrict('{"a":[{"k":1,"k":1}]}'), /repeated key "k"/);
+  assert.throws(() => parseStrict('{"a":1} x'), /trailing text/);
+  assert.throws(() => parseStrict('{"a":'), /unexpected character/);
+  assert.doesNotThrow(() => parseStrict("[]"));
+  assert.doesNotThrow(() => parseStrict(' {"__proto__": 1} '));
 });
