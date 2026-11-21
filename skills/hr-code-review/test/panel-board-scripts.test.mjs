@@ -4,6 +4,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   cpSync,
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -19,7 +20,19 @@ import { fileURLToPath } from "node:url";
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const refs = "skills/hr-code-review/references";
 const BOT = "41898282+github-actions[bot]@users.noreply.github.com";
-const skip = process.platform === "win32" ? "needs bash, git and jq" : false;
+// These scripts live in the house-rules repository, not in the skill: an installed copy of the skill has neither the
+// root scripts nor the repository layout the fixtures copy, so the tests run only inside the repository.
+const inRepository = [
+  "scripts/publish-panel-board.sh",
+  "scripts/refresh-panel-board.sh",
+  `${refs}/panel-board-snapshot.json`,
+].every((path) => existsSync(join(root, path)));
+const skip =
+  process.platform === "win32"
+    ? "needs bash, git and jq"
+    : inRepository
+      ? false
+      : "runs only in the house-rules repository";
 
 /** @param {string} cwd @param {string} cmd @param {string[]} args @param {Record<string, string>} [env] */
 function run(cwd, cmd, args, env = {}) {
