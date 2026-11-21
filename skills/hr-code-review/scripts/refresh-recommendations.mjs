@@ -18,9 +18,9 @@ import { existsSync, readdirSync, readFileSync, realpathSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { parseArgs } from "node:util";
-import { parseStrict, serialize, withLock, writeAll } from "./refresh-files.mjs";
+import { backupDirFor, parseStrict, serialize, withLock, writeAll } from "./refresh-files.mjs";
 
-export { parseStrict, serialize, withLock, writeAll };
+export { backupDirFor, parseStrict, serialize, withLock, writeAll };
 
 const skill = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const refs = join(skill, "references");
@@ -164,18 +164,37 @@ export function reduceBoard(board, fetched) {
   const rows = board.runs
     .filter((/** @type {any} */ r) => r.superseded === null || r.superseded === undefined)
     .map((/** @type {any} */ r) => {
+      // Every field is checked as the board states it before it becomes snapshot data: a missing identity is
+      // not the text "undefined", and a measurement that is present but not a number is not an absent one.
+      const label = `board row ${JSON.stringify([r?.model, r?.harness, r?.effort]).slice(0, 120)}`;
+      for (const key of ["model", "harness", "effort", "date"]) {
+        if (typeof r?.[key] !== "string" || r[key].trim() === "") {
+          throw new Error(`${label} has no readable ${key}`);
+        }
+      }
       if (typeof r.fixed !== "number" || typeof r.n_runs !== "number") {
-        throw new Error(`board row ${r.model} ${r.effort} has a figure this tool cannot read`);
+        throw new Error(`${label} has a figure this tool cannot read`);
+      }
+      const absent = (/** @type {unknown} */ v) => v === undefined || v === null;
+      if (!absent(r.wall_min) && !(typeof r.wall_min === "number" && Number.isFinite(r.wall_min))) {
+        throw new Error(`${label} has a wall_min this tool cannot read`);
+      }
+      if (
+        r.cost_kind === "list" &&
+        !absent(r.cost_usd) &&
+        !(typeof r.cost_usd === "number" && Number.isFinite(r.cost_usd))
+      ) {
+        throw new Error(`${label} has a cost_usd this tool cannot read`);
       }
       return {
-        model: String(r.model),
-        harness: String(r.harness),
-        effort: String(r.effort),
+        model: r.model,
+        harness: r.harness,
+        effort: r.effort,
         runs: r.n_runs,
         fixed: r.fixed,
         wallMinutes: typeof r.wall_min === "number" ? r.wall_min : null,
         costUsd: typeof r.cost_usd === "number" && r.cost_kind === "list" ? r.cost_usd : null,
-        date: String(r.date),
+        date: r.date,
       };
     });
   return canonicalSnapshot({
@@ -377,6 +396,19 @@ function boardRationale(rows, total, noisePoints) {
 }
 
 /**
+ * The board entries' task text, with the snapshot's planted total in it: the spec states `{plantedTotal}` where
+ * the number goes, so the task and the metric cannot name two different totals.
+ * @param {any} spec
+ * @param {any} snapshot
+ */
+function boardTask(spec, snapshot) {
+  if (typeof spec.board?.task !== "string" || !spec.board.task.includes("{plantedTotal}")) {
+    throw new Error("the source spec's board task must state the planted total as {plantedTotal}");
+  }
+  return spec.board.task.replaceAll("{plantedTotal}", String(snapshot.plantedTotal));
+}
+
+/**
  * The whole catalog from its three inputs. Pure: the same inputs give the same catalog.
  * @param {any} spec
  * @param {any} snapshot
@@ -392,7 +424,7 @@ export function buildCatalog(spec, snapshot, own) {
       id: entry.id,
       kind: "board",
       profiles: entry.profiles,
-      task: spec.board.task,
+      task: boardTask(spec, snapshot),
       model: entry.model,
       harness: entry.harness,
       route: entry.route,
@@ -484,7 +516,8 @@ export async function fetchBoard(url, fetchImpl = fetch) {
     }
     chunks.push(value);
   }
-  return JSON.parse(new TextDecoder().decode(Buffer.concat(chunks)));
+  // The same decoder as a saved board, so a repeated key is refused whichever way the board arrives.
+  return parseStrict(new TextDecoder().decode(Buffer.concat(chunks)), url);
 }
 
 /** @param {string | undefined} file */
@@ -694,7 +727,10 @@ async function refresh(paths, values, today) {
   // the snapshot it read. An import writes the catalog alone.
   /** @type {Array<[string, unknown]>} */
   const outputs = [];
-  if (values.fetch === true || off.some((f) => f.name === "snapshot")) {
+  if (
+    values.fetch === true ||
+    (values["from-file"] === undefined && off.some((f) => f.name === "snapshot"))
+  ) {
     outputs.push([paths.snapshot, snapshot]);
   }
   outputs.push([paths.catalog, catalog]);

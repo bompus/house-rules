@@ -1,18 +1,22 @@
 // File handling for refresh-recommendations.mjs: a JSON reader that refuses a repeated key, the one byte layout of
 // the files it writes, an all-or-nothing multi-file write and the lock that serializes refreshes.
+import { createHash } from "node:crypto";
 import {
   existsSync,
   linkSync,
+  lstatSync,
+  mkdirSync,
   mkdtempSync,
   readdirSync,
   readFileSync,
   renameSync,
+  rmdirSync,
   rmSync,
-  statSync,
+  unlinkSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 
 /** The one byte layout every JSON file here is written in, so --check can compare bytes. */
 export const serialize = (/** @type {unknown} */ value) => `${JSON.stringify(value, null, 2)}\n`;
@@ -21,41 +25,78 @@ export const serialize = (/** @type {unknown} */ value) => `${JSON.stringify(val
 // that is the whole of what a later run reclaims.
 const TRANSACTION_MARKER = ".transaction";
 const TRANSACTION_TEXT = "refresh-recommendations transaction\n";
-/** @param {string} dir the references folder */
+/**
+ * Reclaim the transactions an interrupted run left in the references folder. Nothing is entered or removed
+ * recursively: a work folder is the tool's only when it is a real folder holding the marker file and plain
+ * `new-<n>` files, each checked without following links; those files are unlinked one by one and the folder is
+ * removed with a plain rmdir, which refuses a folder that still holds anything.
+ * @param {string} dir the references folder
+ */
 function reclaimAbandoned(dir) {
   for (const name of readdirSync(dir)) {
     const path = join(dir, name);
-    if (!/^\.refresh-[A-Za-z0-9]{6}$/.test(name) || !statSync(path).isDirectory()) {
+    if (!/^\.refresh-[A-Za-z0-9]{6}$/.test(name) || !lstatSync(path).isDirectory()) {
       continue;
     }
-    const inside = readdirSync(path);
+    const inside = readdirSync(path, { withFileTypes: true });
+    const marker = inside.find((e) => e.name === TRANSACTION_MARKER);
     if (
-      inside.includes(TRANSACTION_MARKER) &&
-      readFileSync(join(path, TRANSACTION_MARKER), "utf8") === TRANSACTION_TEXT &&
-      inside.every((n) => n === TRANSACTION_MARKER || /^new-\d+$/.test(n))
+      marker?.isFile() !== true ||
+      readFileSync(join(path, TRANSACTION_MARKER), "utf8") !== TRANSACTION_TEXT ||
+      !inside.every(
+        (e) => e.isFile() && (e.name === TRANSACTION_MARKER || /^new-\d+$/.test(e.name)),
+      )
     ) {
-      rmSync(path, { recursive: true, force: true });
+      continue;
+    }
+    try {
+      for (const e of inside.filter((e) => e.name !== TRANSACTION_MARKER)) {
+        unlinkSync(join(path, e.name));
+      }
+      unlinkSync(join(path, TRANSACTION_MARKER));
+      rmdirSync(path);
+    } catch {
+      // Something arrived while cleaning up, or a file is held: leave what is left for the next run.
     }
   }
 }
 
 /**
+ * Where the before images of a write to this folder go: one private directory per folder, outside the skill
+ * folder, so no copy of the skill carries them. The folder's lock is held by whoever writes, so a directory
+ * already there is what a run that was killed left behind, and the next write removes it.
+ * @param {string} dir the references folder
+ */
+export const backupDirFor = (dir) =>
+  join(
+    tmpdir(),
+    `refresh-recommendations-${createHash("sha256").update(resolve(dir)).digest("hex").slice(0, 16)}`,
+  );
+
+/**
  * Write several files of one folder so that a failure leaves none of them changed. The new contents are staged
  * in a new directory beside the targets (same filesystem, so each rename is atomic); the before images, which
- * may hold data a replacement removes, go to a private directory outside the skill folder, so no copy of the
- * skill ever carries them. The renames then run back to back, and a failed rename puts the earlier files back.
- * Readers consume only the catalog, which goes last: an interruption leaves the old catalog complete, and
+ * may hold data a replacement removes, go to a private directory outside the skill folder (`backupDirFor`). The
+ * renames then run back to back, and a failed rename puts the earlier files back, each by staging a copy of its
+ * before image beside the target and renaming that over it, so a failure while restoring never leaves a
+ * truncated file. When a file cannot be restored the before images are kept and their folder is named in the
+ * error. Readers consume only the catalog, which goes last: an interruption leaves the old catalog complete, and
  * --check reports the sources that are ahead of it until a plain run regenerates it.
  * @param {Array<[string, unknown]>} outputs
+ * @param {{ rename?: (from: string, to: string) => void }} [io] a test seam for the rename
  */
-export function writeAll(outputs) {
+export function writeAll(outputs, io = {}) {
+  const rename = io.rename ?? renameSync;
   const dir = dirname(outputs[0]?.[0] ?? ".");
   if (outputs.some(([path]) => dirname(path) !== dir)) {
     throw new Error("the outputs must be in one folder");
   }
   const stage = mkdtempSync(join(dir, ".refresh-"));
   writeFileSync(join(stage, TRANSACTION_MARKER), TRANSACTION_TEXT, { flag: "wx" });
-  const backups = mkdtempSync(join(tmpdir(), "refresh-recommendations-"));
+  const backups = backupDirFor(dir);
+  rmSync(backups, { recursive: true, force: true });
+  mkdirSync(backups, { mode: 0o700 });
+  let keepBackups = /** @type {boolean} */ (false);
   try {
     const staged = outputs.map(([path, value], i) => {
       const file = join(stage, `new-${i}`);
@@ -68,26 +109,46 @@ export function writeAll(outputs) {
       }
       return { path, file, back };
     });
+    /** @type {typeof staged} */
     const done = [];
     try {
       for (const item of staged) {
-        renameSync(item.file, item.path);
+        rename(item.file, item.path);
         done.push(item);
       }
     } catch (error) {
-      for (const item of done) {
-        if (item.back === undefined) {
-          rmSync(item.path, { force: true });
-        } else {
-          // The before image lives on another filesystem, so it is copied back, not renamed.
-          writeFileSync(item.path, readFileSync(item.back));
+      /** @type {string[]} */
+      const unrestored = [];
+      done.forEach((item, i) => {
+        try {
+          if (item.back === undefined) {
+            rmSync(item.path, { force: true });
+          } else {
+            // The before image lives on another filesystem: copy it beside the target, then rename it over.
+            const copy = join(stage, `new-${outputs.length + i}`);
+            writeFileSync(copy, readFileSync(item.back), { flag: "wx" });
+            rename(copy, item.path);
+          }
+        } catch (restoreError) {
+          unrestored.push(`${item.path} (${/** @type {Error} */ (restoreError).message})`);
         }
+      });
+      if (unrestored.length > 0) {
+        keepBackups = true;
+        const kept = `${backups}-kept-${Date.now()}`;
+        renameSync(backups, kept);
+        throw new Error(
+          `${/** @type {Error} */ (error).message}; could not put back ${unrestored.join(", ")}; the before images are kept in ${kept}`,
+          { cause: error },
+        );
       }
       throw error;
     }
   } finally {
     rmSync(stage, { recursive: true, force: true });
-    rmSync(backups, { recursive: true, force: true });
+    if (!keepBackups) {
+      rmSync(backups, { recursive: true, force: true });
+    }
   }
 }
 
@@ -126,11 +187,16 @@ export async function withLock(dir, fn, hooks = {}) {
       throw error;
     }
   };
-  /** @param {string} path the owner's pid, "gone" when the file vanished, "unreadable" otherwise */
+  /**
+   * @param {string} path the owner's pid and the whole record (pid and token), "gone" when the file vanished,
+   *   "unreadable" otherwise
+   * @returns {{ pid: number, record: string } | "gone" | "unreadable"}
+   */
   const ownerOf = (path) => {
     try {
-      const owner = Number(readFileSync(path, "utf8").trim().split(/\s+/)[0]);
-      return Number.isInteger(owner) && owner > 0 ? owner : "unreadable";
+      const record = readFileSync(path, "utf8");
+      const pid = Number(record.trim().split(/\s+/)[0]);
+      return Number.isInteger(pid) && pid > 0 ? { pid, record } : "unreadable";
     } catch (error) {
       if (/** @type {any} */ (error).code === "ENOENT") {
         return "gone";
@@ -158,21 +224,31 @@ export async function withLock(dir, fn, hooks = {}) {
       if (owner === "gone" || owner === "unreadable") {
         throw busy("its owner cannot be read");
       }
-      let alive = true;
-      try {
-        process.kill(owner, 0);
-      } catch (error) {
-        alive = /** @type {any} */ (error).code === "EPERM";
-      }
-      if (alive || attempt >= 5) {
-        throw busy(`process ${owner}`);
+      const isAlive = (/** @type {number} */ pid) => {
+        try {
+          process.kill(pid, 0);
+          return true;
+        } catch (error) {
+          return /** @type {any} */ (error).code === "EPERM";
+        }
+      };
+      if (isAlive(owner.pid) || attempt >= 5) {
+        throw busy(`process ${owner.pid}`);
       }
       await hooks.afterRead?.();
       if (!claim(takeover)) {
         throw busy(`a stale lock is being recovered; remove ${takeover} if no refresh is running`);
       }
       try {
-        if (ownerOf(lock) === owner) {
+        // Under the recovery lock the lock must still be the record that was observed, whole (a pid alone can be
+        // reused by a later holder), and its owner still gone.
+        const now = ownerOf(lock);
+        if (
+          now !== "gone" &&
+          now !== "unreadable" &&
+          now.record === owner.record &&
+          !isAlive(now.pid)
+        ) {
           rmSync(lock, { force: true });
         }
       } finally {

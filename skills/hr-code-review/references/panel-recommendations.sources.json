@@ -2,7 +2,7 @@
   "version": 1,
   "board": {
     "url": "https://bughunt.productcompass.pm/data/benchmark.json",
-    "task": "Find planted bugs: 105 across two repositories, count fixed",
+    "task": "Find planted bugs: {plantedTotal} across two repositories, count fixed",
     "noisePoints": 1.5,
     "timeDefinition": "wall clock summed over both repositories; the board says its machines were shared with other work for some rows, so times compare loosely at best",
     "costDefinition": "list-rate API price estimated from usage counts, summed over both repositories; not an invoice or subscription billing"

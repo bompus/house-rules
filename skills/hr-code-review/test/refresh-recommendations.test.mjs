@@ -6,6 +6,7 @@ import {
   mkdtempSync,
   readFileSync,
   readdirSync,
+  renameSync,
   rmSync,
   symlinkSync,
   writeFileSync,
@@ -14,6 +15,7 @@ import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  backupDirFor,
   buildCatalog,
   canonicalSnapshot,
   fetchBoard,
@@ -75,7 +77,7 @@ const spec = {
   distributed,
   board: {
     url: "https://example.org/b.json",
-    task: "t",
+    task: "Find {plantedTotal} bugs",
     timeDefinition: "td",
     costDefinition: "cd",
   },
@@ -569,7 +571,9 @@ test("a fetch goes only to https, and a board larger than the cap is cancelled a
   assert.ok(cancelled);
   assert.ok(pulls <= 25, `pulled ${pulls} chunks`);
   const small = async () => new Response('{"a":1}', { status: 200 });
-  assert.deepEqual(await fetchBoard("https://example.org/b.json", small), { a: 1 });
+  assert.deepEqual(structuredClone(await fetchBoard("https://example.org/b.json", small)), {
+    a: 1,
+  });
 });
 
 test("several outputs are written together or not at all, and nothing else in the folder is touched", async () => {
@@ -1104,4 +1108,158 @@ test("the references folder holds the files the spec lists and nothing else; a s
     assert.equal(out.code, 1);
     assert.match(out.text, /--board-file .* inside the skill folder/);
   });
+});
+
+test("a reclaimed transaction deletes only the files the writer made: a new-<n> folder or link is never entered", async () => {
+  await inFixture(async (dir) => {
+    const outside = join(external(dir), "precious");
+    mkdirSync(outside);
+    writeFileSync(join(outside, "keep.txt"), "mine");
+    // Marked and named like a transaction, but new-0 is a folder holding a file and new-1 a link to a folder.
+    const shaped = join(dir, ".refresh-abc126");
+    mkdirSync(shaped);
+    writeFileSync(join(shaped, ".transaction"), "refresh-recommendations transaction\n");
+    mkdirSync(join(shaped, "new-0"));
+    writeFileSync(join(shaped, "new-0", "notes.txt"), "mine");
+    symlinkSync(outside, join(shaped, "new-1"));
+    // A genuine abandoned transaction beside it is still reclaimed.
+    const genuine = join(dir, ".refresh-abc127");
+    mkdirSync(genuine);
+    writeFileSync(join(genuine, ".transaction"), "refresh-recommendations transaction\n");
+    writeFileSync(join(genuine, "new-0"), "x");
+    const out = await importOwn(dir, own());
+    assert.equal(out.code, 0, out.text);
+    assert.equal(existsSync(genuine), false);
+    assert.equal(readFileSync(join(shaped, "new-0", "notes.txt"), "utf8"), "mine");
+    assert.equal(readFileSync(join(outside, "keep.txt"), "utf8"), "mine");
+  });
+});
+
+test("a failed restore keeps the before image and a complete file; an interrupted run's before images are reclaimed", async () => {
+  await inFixture(async (dir) => {
+    const a = join(dir, "a.json");
+    const b = join(dir, "b.json");
+    writeFileSync(a, "old a\n");
+    writeFileSync(b, "old b\n");
+    // The second rename fails, and so does every rename that tries to put the first file back.
+    let calls = 0;
+    const failing = (/** @type {string} */ from, /** @type {string} */ to) => {
+      calls++;
+      if (calls >= 2) {
+        throw new Error("disk full");
+      }
+      renameSync(from, to);
+    };
+    assert.throws(
+      () =>
+        writeAll(
+          [
+            [a, { n: 1 }],
+            [b, { n: 2 }],
+          ],
+          { rename: failing },
+        ),
+      (error) => {
+        const text = String(/** @type {Error} */ (error).message);
+        assert.match(text, /disk full/);
+        const kept = /before images? (?:is|are) kept in (\S+)/.exec(text)?.[1];
+        assert.ok(kept, text);
+        assert.equal(readFileSync(join(kept, "old-0"), "utf8"), "old a\n");
+        rmSync(kept, { recursive: true, force: true });
+        return true;
+      },
+    );
+    // a.json is complete (the new file), never a truncated one.
+    assert.deepEqual(read(a), { n: 1 });
+    // A run killed after it made its before images leaves them; the next run removes them.
+    const left = backupDirFor(dir);
+    mkdirSync(left, { recursive: true });
+    writeFileSync(join(left, "old-0"), "stale catalog\n");
+    writeAll([[a, { n: 3 }]]);
+    assert.equal(existsSync(left), false);
+    assert.deepEqual(read(a), { n: 3 });
+  });
+});
+
+test("a stale observer compares the whole lock record: a successor with the same pid and another token survives", async () => {
+  await inFixture(async (dir) => {
+    const lock = join(dir, ".refresh.lock");
+    writeFileSync(lock, "2147483646 tokenA\n");
+    const kill = process.kill.bind(process);
+    try {
+      const observer = withLock(dir, async () => "ran", {
+        afterRead: () => {
+          // The pid was reused: another holder with the same pid field and its own token, now alive.
+          rmSync(lock, { force: true });
+          writeFileSync(lock, "2147483646 tokenB\n");
+          process.kill = /** @type {any} */ (
+            (/** @type {number} */ pid, /** @type {any} */ signal) =>
+              pid === 2147483646 ? true : kill(pid, signal)
+          );
+        },
+      });
+      await assert.rejects(observer, /retry/);
+      assert.equal(readFileSync(lock, "utf8"), "2147483646 tokenB\n");
+    } finally {
+      process.kill = kill;
+    }
+  });
+});
+
+test("an import keeps a valid snapshot that is not in canonical form, byte for byte", async () => {
+  await inFixture(async (dir) => {
+    const paths = pathsIn(dir);
+    const compact = JSON.stringify(read(paths.snapshot));
+    writeFileSync(paths.snapshot, compact);
+    const out = await importOwn(dir, own());
+    assert.equal(out.code, 0, out.text);
+    assert.equal(readFileSync(paths.snapshot, "utf8"), compact);
+    assert.equal(read(paths.catalog).entries.at(-1).id, "own-model-a-medium-held-out");
+  });
+});
+
+test("a live board is parsed like a saved one: a repeated measurement is refused", async () => {
+  const dup = async () =>
+    new Response('{"meta":{"planted_total":105},"runs":[{"fixed":31,"fixed":0}]}', { status: 200 });
+  await assert.rejects(() => fetchBoard("https://example.org/b.json", dup), /repeated key/);
+});
+
+test("a board row with a missing identity or an unreadable measurement is refused, not coerced", () => {
+  const reduce = (/** @type {any} */ over) => reduceBoard(board([row(), row(over)]), "2026-11-21");
+  for (const over of [
+    { model: undefined },
+    { harness: undefined },
+    { effort: 3 },
+    { date: undefined },
+    { wall_min: "12" },
+    { wall_min: [] },
+    { cost_usd: "10" },
+    { cost_usd: [] },
+  ]) {
+    assert.throws(() => reduce(over), /board row/, JSON.stringify(over));
+  }
+  // An absent measurement, and a cost the board does not give as a list price, are still allowed.
+  assert.equal(
+    reduce({ wall_min: null, effort: "low" }).rows.find(
+      (/** @type {any} */ r) => r.effort === "low",
+    )?.wallMinutes,
+    null,
+  );
+  assert.equal(reduce({ cost_kind: "unknown", cost_usd: null, effort: "low" }).rows.length, 2);
+});
+
+test("the task text states the snapshot's planted total, so a changed total cannot contradict it", () => {
+  const withTotal = (/** @type {number} */ total) =>
+    reduceBoard(
+      { meta: { planted_total: total, updated: "u" }, runs: [row({ effort: "medium" }), row()] },
+      "2026-11-21",
+    );
+  const templated = { ...spec, board: { ...spec.board, task: "Find {plantedTotal} planted bugs" } };
+  for (const total of [105, 106]) {
+    const entry = buildCatalog(templated, withTotal(total), empty).entries[0];
+    assert.equal(entry.task, `Find ${total} planted bugs`);
+    assert.match(entry.metric, new RegExp(`out of ${total}$`));
+  }
+  const literal = { ...spec, board: { ...spec.board, task: "Find 105 planted bugs" } };
+  assert.throws(() => buildCatalog(literal, withTotal(106), empty), /\{plantedTotal\}/);
 });

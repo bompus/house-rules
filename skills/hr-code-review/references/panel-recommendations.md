@@ -78,4 +78,8 @@ private input cannot ship. Only the script's own lock and work files at the top 
 the folder are left out.
 
 A plain run of the script regenerates the catalog and writes the snapshot in its one
-canonical layout, which is what `--check` compares.
+canonical layout, which is what `--check` compares; an import leaves the snapshot's
+bytes alone. The spec's board task writes the planted total as `{plantedTotal}`, so the
+task text always names the total the snapshot holds. A board row with a missing name or
+an unreadable measurement, or a repeated key anywhere in the board, refuses the refresh
+before any file changes, whether the board is fetched or saved.
