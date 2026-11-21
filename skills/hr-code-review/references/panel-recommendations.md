@@ -55,13 +55,21 @@ tradeoff and the uncertainty; the user confirms before any saved preference
 changes, and installing a newer catalog leaves saved profiles and bindings alone.
 
 An entry with `kind: "own-evaluation"` is a maintainer's own result: model, effort,
-defects found of the total, false share, minutes a review and a one-line cohort
-description, with `provenance: "own-evaluation"` and no public source. It comes from
-a case set this repository does not publish, so it cannot be reproduced here and does
-not compare with the board entries. The generator accepts only a fixed set of plain
-fields for it (no paths, links, addresses, credentials or free text beyond the cohort
-line) and refuses any extra name the maintainer lists in a deny file. The model and
-harness must be names the source spec already lists, and the cohort line may hold only
-plain words and numbers (no token that mixes letters and digits, no dotted host or
-address). A plain run of the script also rewrites the snapshot and the own results in
-their one canonical layout, which is what `--check` compares.
+defects found of the total, false share and minutes a review, with
+`provenance: "own-evaluation"` and no public source. It comes from a case set this
+repository does not publish, so it cannot be reproduced here and does not compare with
+the board entries.
+
+The entry carries the structured facts it is generated from (`facts`), so the catalog
+is the only place the own results live. `--from-file` replaces all of them from a
+file of `{ version: 1, results: [...] }` and writes the catalog alone. Each result has
+exactly these fields: a `model` and `harness` the source spec already lists, an
+`effort`, `found`, `of`, `falseSharePercent`, `wallMinutesPerReview`, `cases`, a
+`caseSet` (`held-out`, `development` or `mixed`), `judging` (`blind-second-model`,
+`one-model`, `two-models` or `person`) and a `checked` date. The cohort wording and the
+entry id are built from those facts, so no typed text reaches a public file. The
+import also needs a deny file of private names and refuses any published string that
+holds one.
+
+A plain run of the script regenerates the catalog and writes the snapshot in its one
+canonical layout, which is what `--check` compares.

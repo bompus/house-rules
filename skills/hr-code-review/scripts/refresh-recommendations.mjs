@@ -1,12 +1,14 @@
-// Regenerates references/panel-recommendations.json from the Bug Hunt board snapshot, the source
-// spec and the sanitized own-results file, so the catalog follows its evidence and is not
-// edited by hand.
+// Regenerates references/panel-recommendations.json from the Bug Hunt board snapshot, the source spec and the
+// maintainer's own results, so the catalog follows its evidence and is not edited by hand. The own results live
+// only inside the catalog (each own entry carries the structured facts it is generated from), so importing them
+// rewrites one file.
 //
 //   bun scripts/refresh-recommendations.mjs                    regenerate the catalog from the committed files
 //   bun scripts/refresh-recommendations.mjs --fetch            read the public board, rewrite the snapshot, regenerate
 //   bun scripts/refresh-recommendations.mjs --fetch --board-file board.json   the same from a saved board file
-//   bun scripts/refresh-recommendations.mjs --from-file own.json [--deny-file words.txt]
-//                                                              sanitize own results, rewrite the own file, regenerate
+//   bun scripts/refresh-recommendations.mjs --from-file own.json --deny-file words.txt
+//                                                              replace the own results with the file's (validated,
+//                                                              structured), regenerate
 //   bun scripts/refresh-recommendations.mjs --check [--deny-file words.txt]
 //                                                              offline: fail when the catalog is not what the
 //                                                              committed files generate; no clock, no network
@@ -34,7 +36,6 @@ const refs = join(skill, "references");
 export const pathsIn = (dir) => ({
   spec: join(dir, "panel-recommendations.sources.json"),
   snapshot: join(dir, "panel-board-snapshot.json"),
-  own: join(dir, "panel-recommendations.own.json"),
   catalog: join(dir, "panel-recommendations.json"),
 });
 
@@ -58,6 +59,28 @@ const readJson = (path) => JSON.parse(readFileSync(path, "utf8"));
 /** The one byte layout every JSON file here is written in, so --check can compare bytes. */
 export const serialize = (/** @type {unknown} */ value) => `${JSON.stringify(value, null, 2)}\n`;
 
+// A work directory of this tool is `.refresh-<six characters>` holding this marker file and `new-<n>` files only;
+// that is the whole of what a later run reclaims.
+const TRANSACTION_MARKER = ".transaction";
+const TRANSACTION_TEXT = "refresh-recommendations transaction\n";
+/** @param {string} dir the references folder */
+function reclaimAbandoned(dir) {
+  for (const name of readdirSync(dir)) {
+    const path = join(dir, name);
+    if (!/^\.refresh-[A-Za-z0-9]{6}$/.test(name) || !statSync(path).isDirectory()) {
+      continue;
+    }
+    const inside = readdirSync(path);
+    if (
+      inside.includes(TRANSACTION_MARKER) &&
+      readFileSync(join(path, TRANSACTION_MARKER), "utf8") === TRANSACTION_TEXT &&
+      inside.every((n) => n === TRANSACTION_MARKER || /^new-\d+$/.test(n))
+    ) {
+      rmSync(path, { recursive: true, force: true });
+    }
+  }
+}
+
 /**
  * Write several files of one folder so that a failure leaves none of them changed. The new contents are staged
  * in a new directory beside the targets (same filesystem, so each rename is atomic); the before images, which
@@ -73,6 +96,7 @@ export function writeAll(outputs) {
     throw new Error("the outputs must be in one folder");
   }
   const stage = mkdtempSync(join(dir, ".refresh-"));
+  writeFileSync(join(stage, TRANSACTION_MARKER), TRANSACTION_TEXT, { flag: "wx" });
   const backups = mkdtempSync(join(tmpdir(), "refresh-recommendations-"));
   try {
     const staged = outputs.map(([path, value], i) => {
@@ -111,43 +135,66 @@ export function writeAll(outputs) {
 
 /**
  * Run `fn` holding the folder's refresh lock, so two refreshes cannot interleave their read-build-write.
- * The lock is a hard link to a file that already holds the owner's pid, so it is never seen empty. A refresh
- * that finds a live (or unreadable) owner fails with a retry message and removes nothing; a lock whose owner
- * is dead is renamed away (one rename wins) and re-acquired; a lock is removed only by the process whose file it
- * still is. Work files of an earlier interrupted refresh are reclaimed under the lock.
+ * A lock is a hard link to a file that already holds the owner's pid, so it is never seen empty. A refresh that
+ * finds a live or unreadable owner fails with a retry message and removes nothing. A dead owner's lock is removed
+ * only by the one process that holds the recovery lock (`.refresh.takeover`, claimed the same way), which reads
+ * the owner again under it: the lock it removes is the dead owner's, because nobody else removes locks and nobody
+ * can link a new one while it exists. A lock is released only by the process whose file it still is.
  * @template T
  * @param {string} dir
  * @param {() => Promise<T>} fn
- * @param {{ afterContended?: () => void }} [hooks] a test seam between finding the lock and reading it
+ * @param {{ afterContended?: () => void | Promise<void>, afterRead?: () => void | Promise<void> }} [hooks]
+ *   test seams: after a failed claim, and after the stale owner was read
  */
 export async function withLock(dir, fn, hooks = {}) {
   const lock = join(dir, ".refresh.lock");
+  const takeover = join(dir, ".refresh.takeover");
   const mine = join(dir, `.refresh.lock.${process.pid}.${Math.random().toString(36).slice(2)}`);
   writeFileSync(mine, `${process.pid}\n`, { flag: "wx" });
   const busy = (/** @type {string} */ why) =>
     new Error(`another refresh holds ${lock} (${why}); retry when it has finished`);
+  /** @param {string} path */
+  const claim = (path) => {
+    try {
+      linkSync(mine, path);
+      return true;
+    } catch (error) {
+      if (/** @type {any} */ (error).code === "EEXIST") {
+        return false;
+      }
+      throw error;
+    }
+  };
+  /** @param {string} path the owner's pid, "gone" when the file vanished, "unreadable" otherwise */
+  const ownerOf = (path) => {
+    try {
+      const owner = Number(readFileSync(path, "utf8").trim());
+      return Number.isInteger(owner) && owner > 0 ? owner : "unreadable";
+    } catch (error) {
+      if (/** @type {any} */ (error).code === "ENOENT") {
+        return "gone";
+      }
+      throw error;
+    }
+  };
+  /** @param {string} path remove a claim only when it is still this call's file */
+  const release = (path) => {
+    try {
+      if (statSync(path).ino === statSync(mine).ino) {
+        rmSync(path, { force: true });
+      }
+    } catch {
+      // no claim, or not readable: nothing of this call's to remove
+    }
+  };
   try {
-    for (let attempt = 0; ; attempt++) {
-      try {
-        linkSync(mine, lock);
-        break;
-      } catch (error) {
-        if (/** @type {any} */ (error).code !== "EEXIST") {
-          throw error;
-        }
+    for (let attempt = 0; !claim(lock); attempt++) {
+      await hooks.afterContended?.();
+      const owner = ownerOf(lock);
+      if (owner === "gone" && attempt < 5) {
+        continue; // the holder finished between the failed claim and the read
       }
-      hooks.afterContended?.();
-      let text;
-      try {
-        text = readFileSync(lock, "utf8");
-      } catch (error) {
-        if (/** @type {any} */ (error).code === "ENOENT" && attempt < 5) {
-          continue; // the holder finished between the failed link and the read
-        }
-        throw error;
-      }
-      const owner = Number(text.trim());
-      if (!Number.isInteger(owner) || owner <= 0) {
+      if (owner === "gone" || owner === "unreadable") {
         throw busy("its owner cannot be read");
       }
       let alive = true;
@@ -159,44 +206,22 @@ export async function withLock(dir, fn, hooks = {}) {
       if (alive || attempt >= 5) {
         throw busy(`process ${owner}`);
       }
-      // Take the dead owner's lock away by rename: of two waiters only one rename succeeds. If what was
-      // renamed is not the lock that was read (a live process took it in between), it is put back.
-      const stale = `${lock}.stale.${process.pid}.${attempt}`;
+      await hooks.afterRead?.();
+      if (!claim(takeover)) {
+        throw busy(`a stale lock is being recovered; remove ${takeover} if no refresh is running`);
+      }
       try {
-        renameSync(lock, stale);
-      } catch (error) {
-        if (/** @type {any} */ (error).code === "ENOENT") {
-          continue;
+        if (ownerOf(lock) === owner) {
+          rmSync(lock, { force: true });
         }
-        throw error;
-      }
-      const taken = Number(readFileSync(stale, "utf8").trim());
-      if (taken === owner) {
-        rmSync(stale, { force: true });
-      } else {
-        try {
-          linkSync(stale, lock);
-        } finally {
-          rmSync(stale, { force: true });
-        }
-        throw busy(`process ${taken}`);
+      } finally {
+        release(takeover);
       }
     }
-    for (const name of readdirSync(dir)) {
-      if (name.startsWith(".refresh-")) {
-        rmSync(join(dir, name), { recursive: true, force: true });
-      }
-    }
+    reclaimAbandoned(dir);
     return await fn();
   } finally {
-    // Remove the lock only when it is still the file this call linked.
-    try {
-      if (statSync(lock).ino === statSync(mine).ino) {
-        rmSync(lock, { force: true });
-      }
-    } catch {
-      // no lock, or not readable: nothing of this call's to remove
-    }
+    release(lock);
     rmSync(mine, { force: true });
   }
 }
@@ -330,59 +355,40 @@ export function reduceBoard(board, fetched) {
   });
 }
 
-/**
- * Whether a published text looks like a credential, an address or a host: an assignment-style word, a provider
- * key with its separator, a long hex run, an IPv4 or IPv6 address, or (for free text) a host name.
- * @param {string} value
- * @param {boolean} [freeText] a cohort, harness or model line, where a host name can hide
- */
-export function looksSecret(value, freeText = false) {
-  if (/api[_-]?key|token|secret|password|passwd|bearer|credential/i.test(value)) {
-    return true;
-  }
-  if (
-    /(?:^|[^A-Za-z0-9])(?:(?:sk|pk|rk)-[A-Za-z0-9_-]{6,}|gh[pousr]_[A-Za-z0-9]{6,}|github_pat_[A-Za-z0-9_]{6,}|xox[a-z]-[A-Za-z0-9-]{6,}|(?:AKIA|ASIA)[A-Z0-9]{12,}|AIza[A-Za-z0-9_-]{20,}|eyJ[A-Za-z0-9_-]{8,})/.test(
-      value,
-    ) ||
-    /\b[0-9a-f]{16,}\b/i.test(value) ||
-    /\b\d{1,3}(?:\.\d{1,3}){3}\b/.test(value) ||
-    (value.match(/:/g) ?? []).length >= 2
-  ) {
-    return true;
-  }
-  return freeText && /[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}\b/.test(value);
-}
+const CASE_SETS = /** @type {Record<string, string>} */ ({
+  "held-out": "held-out",
+  development: "development",
+  mixed: "development and held-out",
+});
+const JUDGING = /** @type {Record<string, string>} */ ({
+  "blind-second-model": "judged blind by a second model",
+  "one-model": "judged by one model",
+  "two-models": "judged by two models",
+  person: "judged by a person",
+});
+const OWN_KEYS = [
+  "model",
+  "harness",
+  "effort",
+  "found",
+  "of",
+  "falseSharePercent",
+  "wallMinutesPerReview",
+  "cases",
+  "caseSet",
+  "judging",
+  "checked",
+];
 
 /**
- * A description made only of plain words and numbers: words are letters (hyphenated words allowed, each part at
- * most 15 letters, an all-capitals part at most 5), numbers are integers or decimals with an optional percent
- * sign, and the punctuation is , ; : ( ) + and an apostrophe. A token that mixes letters and digits, carries a
- * dot inside it or runs long (a key, a seed, a host) is not a word, so it is refused whatever it encodes.
- * @param {string} value
+ * The facts an own result may state, and nothing else: no free text reaches the public catalog. The model and the
+ * harness must be names the source spec lists; the effort, the case set and the judging are fixed choices; the
+ * rest are bounded numbers and a date. The cohort wording and the result's id are built from those facts, so
+ * nothing a maintainer types can carry a name, a host or a credential into a public file.
+ * @param {any} input { version: 1, results: [...] }
+ * @param {{ models: string[], harnesses: string[] }} vocabulary
  */
-export function plainWords(value) {
-  const word = /^[A-Za-z]{1,15}(?:-[A-Za-z]{1,15})*$/;
-  return value
-    .split(/[\s,;:()+']+/)
-    .filter(Boolean)
-    .map((t) => t.replace(/\.$/, ""))
-    .every(
-      (token) =>
-        /^\d+(?:\.\d+)?%?$/.test(token) ||
-        (word.test(token) && token.split("-").every((part) => !/^[A-Z]{6,}$/.test(part))),
-    );
-}
-
-/**
- * The strings an own result may carry: a fixed set of keys, numbers, effort names and one short plain-text
- * cohort line. Anything that could name a private repository, path, case or account is refused; extra words to
- * refuse (private names this repository must not know) come from `deny`.
- * @param {any} input
- * @param {string[]} [deny]
- * @param {{ models: string[], harnesses: string[] }} [vocabulary] the public names a result may use (the source
- *   spec's entries); a model or harness outside it is refused
- */
-export function sanitizeOwn(input, deny = [], vocabulary = undefined) {
+export function sanitizeOwn(input, vocabulary) {
   /** @type {string[]} */
   const problems = [];
   if (
@@ -392,46 +398,22 @@ export function sanitizeOwn(input, deny = [], vocabulary = undefined) {
   ) {
     throw new Error("own results: expected exactly { version: 1, results: [...] }");
   }
-  const keys = new Set([
-    "id",
-    "model",
-    "harness",
-    "effort",
-    "found",
-    "of",
-    "falseSharePercent",
-    "wallMinutesPerReview",
-    "cohort",
-    "checked",
-  ]);
-  const ID = /^[a-z0-9][a-z0-9-]{1,60}$/;
-  const MODEL = /^[a-z0-9][a-z0-9.-]{1,60}$/;
-  const PLAIN = /^[A-Za-z0-9][A-Za-z0-9 ,.%()+:;'-]{0,139}$/;
-  const NAME = /^[A-Za-z0-9][A-Za-z0-9 .+-]{0,39}$/;
-  const lowered = deny.map(squash).filter((w) => w !== "");
   const seen = new Set();
   const results = input.results.map((/** @type {any} */ r, /** @type {number} */ i) => {
     const at = `results[${i}]`;
-    for (const key of Object.keys(r ?? {})) {
-      if (!keys.has(key)) {
-        problems.push(`${at}: field ${key} is not allowed`);
-      }
+    const keys = Object.keys(r ?? {});
+    for (const key of keys.filter((k) => !OWN_KEYS.includes(k))) {
+      problems.push(`${at}: field ${key} is not allowed`);
     }
-    const text = (/** @type {string} */ key, /** @type {RegExp} */ pattern, freeText = false) => {
-      const value = r?.[key];
-      if (typeof value !== "string" || !pattern.test(value)) {
-        problems.push(`${at}.${key}: not a plain value of the allowed shape`);
+    for (const key of OWN_KEYS.filter((k) => !keys.includes(k))) {
+      problems.push(`${at}: field ${key} is missing`);
+    }
+    const choice = (/** @type {string} */ key, /** @type {string[]} */ allowed) => {
+      if (typeof r?.[key] !== "string" || !allowed.includes(r[key])) {
+        problems.push(`${at}.${key}: not one of ${allowed.join(", ")}`);
         return "";
       }
-      if (looksSecret(value, freeText) || (freeText && key === "cohort" && !plainWords(value))) {
-        problems.push(`${at}.${key}: looks like a credential, address or host`);
-      }
-      for (const word of lowered) {
-        if (squash(value).includes(word)) {
-          problems.push(`${at}.${key}: contains a name this repository must not carry`);
-        }
-      }
-      return value;
+      return r[key];
     };
     const number = (
       /** @type {string} */ key,
@@ -454,53 +436,31 @@ export function sanitizeOwn(input, deny = [], vocabulary = undefined) {
       }
       return value;
     };
-    const checked = text("checked", DATE);
-    // The id is words and numbers like a cohort line, not a place to carry anything else.
-    if (typeof r?.id === "string" && !plainWords(r.id.replaceAll("-", " "))) {
-      problems.push(`${at}.id: not made of plain words and numbers`);
+    const model = choice("model", vocabulary.models);
+    const harness = choice("harness", vocabulary.harnesses);
+    const effort = choice("effort", EFFORTS);
+    const caseSet = choice("caseSet", Object.keys(CASE_SETS));
+    const of = number("of", 1, 100000, true);
+    const checked = typeof r?.checked === "string" && isDate(r.checked) ? r.checked : "";
+    if (checked === "") {
+      problems.push(`${at}.checked: not a real YYYY-MM-DD date`);
     }
-    if (checked !== "" && !isDate(checked)) {
-      problems.push(`${at}.checked: not a real date`);
-    }
-    const id = text("id", ID);
+    const id = `${model}-${effort}-${caseSet}`;
     if (seen.has(id)) {
-      problems.push(`${at}.id: duplicate ${id}`);
+      problems.push(`${at}: a second ${model} ${effort} ${caseSet} result`);
     }
     seen.add(id);
-    const effort = r?.effort;
-    if (!EFFORTS.includes(effort)) {
-      problems.push(`${at}.effort: not one of ${EFFORTS.join(", ")}`);
-    }
-    // The published id and every string built from the fields are screened as published, not as entered.
-    for (const word of lowered) {
-      if (squash(`own-${id}`).includes(word) || squash(String(effort)).includes(word)) {
-        problems.push(
-          `${at}: the published id or effort contains a name this repository must not carry`,
-        );
-      }
-    }
-    const of = number("of", 1, 100000, true);
-    const found = number("found", 0, of, true);
-    const model = text("model", MODEL, true);
-    const harness = text("harness", vocabulary === undefined ? NAME : /^.{1,60}$/, true);
-    if (vocabulary !== undefined) {
-      if (!vocabulary.models.includes(model)) {
-        problems.push(`${at}.model: not a model the source spec names`);
-      }
-      if (!vocabulary.harnesses.includes(harness)) {
-        problems.push(`${at}.harness: not a harness the source spec names`);
-      }
-    }
     return {
-      id,
       model,
       harness,
       effort,
-      found,
+      found: number("found", 0, of, true),
       of,
       falseSharePercent: number("falseSharePercent", 0, 100),
       wallMinutesPerReview: number("wallMinutesPerReview", 0, 100000),
-      cohort: text("cohort", PLAIN, true),
+      cases: number("cases", 1, 100000, true),
+      caseSet,
+      judging: choice("judging", Object.keys(JUDGING)),
       checked,
     };
   });
@@ -622,7 +582,7 @@ export function buildCatalog(spec, snapshot, own) {
     };
   });
   const ownEntries = own.results.map((/** @type {any} */ r) => ({
-    id: `own-${r.id}`,
+    id: `own-${r.model}-${r.effort}-${r.caseSet}`,
     kind: "own-evaluation",
     provenance: "own-evaluation",
     profiles: ["balanced"],
@@ -639,13 +599,14 @@ export function buildCatalog(spec, snapshot, own) {
       },
     ],
     checked: r.checked,
-    samples: `${r.of} known defects across ${r.cohort}`,
+    samples: `${r.of} known defects across ${r.cases} ${CASE_SETS[r.caseSet]} code changes, ${JUDGING[r.judging]}`,
     metric: `known defects found, out of ${r.of}; false findings as a share of posted comments`,
     timeDefinition: spec.own.timeDefinition,
     costDefinition: "unknown",
     limitations: spec.own.limitations,
     rationale: `Found ${r.found} of ${r.of} (${Math.round((r.found / r.of) * 100)}%) with ${r.falseSharePercent}% false findings in ${r.wallMinutesPerReview} minutes a review. ${spec.own.rationaleTail}`,
     status: "current",
+    facts: r,
   }));
   const dates = [snapshot.fetched, ...own.results.map((/** @type {any} */ r) => r.checked)];
   return {
@@ -790,6 +751,7 @@ async function refresh(paths, values, today) {
     models: spec.entries.map((/** @type {any} */ e) => e.model),
     harnesses: spec.entries.map((/** @type {any} */ e) => e.harness),
   };
+  const rawCatalog = existsSync(paths.catalog) ? readFileSync(paths.catalog, "utf8") : undefined;
   const rawSnapshot = values.fetch === true ? undefined : readFileSync(paths.snapshot, "utf8");
   let snapshot;
   if (values.fetch === true) {
@@ -801,19 +763,23 @@ async function refresh(paths, values, today) {
   } else {
     snapshot = canonicalSnapshot(JSON.parse(/** @type {string} */ (rawSnapshot)));
   }
-  const rawOwn =
-    values["from-file"] === undefined && existsSync(paths.own)
-      ? readFileSync(paths.own, "utf8")
-      : undefined;
-  const own =
+  // The own results are the facts the catalog's own entries carry; an import replaces all of them, so the
+  // old ones are not read (a newly denied name in them cannot block their replacement).
+  const committed = rawCatalog === undefined ? undefined : JSON.parse(rawCatalog);
+  const own = sanitizeOwn(
     values["from-file"] !== undefined
-      ? sanitizeOwn(readJson(resolve(values["from-file"])), deny, vocabulary)
-      : rawOwn === undefined
-        ? { version: 1, results: [] }
-        : sanitizeOwn(JSON.parse(rawOwn), deny, vocabulary);
+      ? readJson(resolve(values["from-file"]))
+      : {
+          version: 1,
+          results: (committed?.entries ?? [])
+            .filter((/** @type {any} */ e) => e.kind === "own-evaluation")
+            .map((/** @type {any} */ e) => e.facts),
+        },
+    vocabulary,
+  );
   const catalog = buildCatalog(spec, snapshot, own);
-  // Every string published for an own result is screened as published: each value on its own (a generated id,
-  // a sample line, the rationale), never joined with its neighbours.
+  // Every string published for an own result is screened as published: each value on its own, never joined
+  // with its neighbours.
   const denied = deny.map(squash).filter(Boolean);
   for (const entry of catalog.entries.filter(
     (/** @type {any} */ e) => e.kind === "own-evaluation",
@@ -824,33 +790,23 @@ async function refresh(paths, values, today) {
       }
     }
   }
-  // What each input should hold on disk, so --check and a plain run agree on one repair.
+  // What each file should hold on disk, so --check and a plain run agree on one repair.
   const files = [
-    {
-      name: "catalog",
-      path: paths.catalog,
-      have: existsSync(paths.catalog) ? readFileSync(paths.catalog, "utf8") : undefined,
-      want: catalog,
-    },
+    { name: "catalog", path: paths.catalog, have: rawCatalog, want: catalog },
     { name: "snapshot", path: paths.snapshot, have: rawSnapshot, want: snapshot },
-    ...(rawOwn === undefined
-      ? []
-      : [{ name: "own results", path: paths.own, have: rawOwn, want: own }]),
   ];
   const off = files.filter((f) => f.have !== serialize(f.want));
   if (values.check === true) {
     if (off.length > 0) {
-      const committed = files.find((f) => f.name === "catalog")?.have;
-      const parsed = committed === undefined ? undefined : JSON.parse(committed);
       const ids = new Set(catalog.entries.map((/** @type {any} */ e) => e.id));
       const behind = catalog.entries
         .filter(
           (/** @type {any} */ e) =>
             JSON.stringify(e) !==
-            JSON.stringify(parsed?.entries?.find((/** @type {any} */ c) => c.id === e.id)),
+            JSON.stringify(committed?.entries?.find((/** @type {any} */ c) => c.id === e.id)),
         )
         .map((/** @type {any} */ e) => e.id);
-      const extra = (parsed?.entries ?? [])
+      const extra = (committed?.entries ?? [])
         .filter((/** @type {any} */ c) => !ids.has(c.id))
         .map((/** @type {any} */ c) => c.id);
       console.error(
@@ -861,15 +817,12 @@ async function refresh(paths, values, today) {
     console.log(`refresh-recommendations: catalog matches (${catalog.entries.length} entries)`);
     return 0;
   }
-  // A plain run writes the catalog and the canonical form of every input that differs from it; a fetch or an
-  // import also writes the input it replaces.
+  // A plain run writes the catalog and the canonical form of the snapshot when it differs; a fetch also writes
+  // the snapshot it read. An import writes the catalog alone.
   /** @type {Array<[string, unknown]>} */
-  const outputs = off.filter((f) => f.name !== "catalog").map((f) => [f.path, f.want]);
-  if (values.fetch === true && !outputs.some(([path]) => path === paths.snapshot)) {
+  const outputs = [];
+  if (values.fetch === true || off.some((f) => f.name === "snapshot")) {
     outputs.push([paths.snapshot, snapshot]);
-  }
-  if (values["from-file"] !== undefined) {
-    outputs.push([paths.own, own]);
   }
   outputs.push([paths.catalog, catalog]);
   writeAll(outputs);

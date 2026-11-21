@@ -5,8 +5,7 @@
     "bun.lock",
     "skills/*/test/fixtures/**",
     "skills/hr-code-review/references/panel-board-snapshot.json",
-    "skills/hr-code-review/references/panel-recommendations.json",
-    "skills/hr-code-review/references/panel-recommendations.own.json"
+    "skills/hr-code-review/references/panel-recommendations.json"
   ],
   "sortPackageJson": true
 }
