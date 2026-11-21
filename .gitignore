@@ -5,4 +5,5 @@ __pycache__/
 .codegraph/
 
 *.py[cod]
-skills/hr-code-review/references/*.new
+skills/hr-code-review/references/.refresh-*
+skills/hr-code-review/references/.refresh.lock

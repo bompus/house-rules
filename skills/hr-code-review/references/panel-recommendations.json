@@ -39,7 +39,7 @@
       "timeDefinition": "wall clock summed over both repositories; the board says its machines were shared with other work for some rows, so times compare loosely at best",
       "costDefinition": "list-rate API price estimated from usage counts, summed over both repositories; not an invoice or subscription billing",
       "limitations": "Counts planted bugs, not review quality on real changes; repeated attempts are not independent replications; runs used a 1M context window, and the board says its older Opus 5 rows are not comparable to these; the board also lists low and max rungs that this entry leaves out",
-      "rationale": "xhigh fixed the most (36 of 105); medium fixed 5.7 fewer for 55% less cost and 60% less time. A lower effort supports a balanced starting point, not equivalence",
+      "rationale": "xhigh fixed the most (36 of 105); high fixed 4.3 fewer for 36% less cost and 44% less time; medium fixed 5.7 fewer for 55% less cost and 60% less time. A lower effort supports a balanced starting point, not equivalence",
       "status": "current"
     },
     {
@@ -147,7 +147,7 @@
       "timeDefinition": "wall clock summed over both repositories on cloud machines, not the laptop most other rows ran on, so it does not compare with them",
       "costDefinition": "list-rate API price estimated from usage counts, summed over both repositories; not an invoice or subscription billing",
       "limitations": "Counts planted bugs, not review quality on real changes; the board ran every GPT-6.2 row with file timestamps flattened and a newer Codex than earlier OpenAI rows, so a gap against them is model plus client plus machine; the board also lists low and max rungs that this entry leaves out; list cost is an estimate, not what a ChatGPT plan charges",
-      "rationale": "xhigh fixed the most (60.2 of 105); medium fixed 9.9 fewer for 46% less cost and 64% less time. A lower effort supports a balanced starting point, not equivalence; suggest it where the user has a Codex plan and allows the model and effort",
+      "rationale": "xhigh fixed the most (60.2 of 105); high (59.6) is within the board's run-to-run spread of it for 13% less cost and 42% less time; medium fixed 9.9 fewer for 46% less cost and 64% less time. A lower effort supports a balanced starting point, not equivalence; suggest it where the user has a Codex plan and allows the model and effort",
       "status": "current"
     },
     {
