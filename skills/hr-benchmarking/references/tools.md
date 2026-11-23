@@ -140,6 +140,11 @@ subtract, so the unit's own CPU counts); and, comparing every sample with the fi
 changed set of optional counters, or a `memory.current` or `io.stat` that was readable and later is not (one never readable stays `unknown`). A
 host or workload CPU counter or a PSI total that goes backward also rejects.
 
+The 10 ms and 100 ms PSI limits are provisional engineering budgets, not calibrated interference
+thresholds: no sensitivity study ties a stall of that size to a timing error. The observer applies
+them unchanged, and a host with its own calibration passes its limits with `--mem-psi-ms` and
+`--io-psi-ms`.
+
 If the first sample
 already fails (unreadable PSI, available memory under the floor, an unreadable workload counter, reads
 that took longer than 2.5 s, or no `pswpout` in a `--storage-phase` run) the
