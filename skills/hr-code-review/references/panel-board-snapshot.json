@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "fetched": "2026-11-21",
+  "fetched": "2026-11-24",
   "boardUpdated": "2026-11-19",
   "plantedTotal": 105,
   "rows": [
@@ -56,36 +56,6 @@
     },
     {
       "model": "DeepSeek V4.1 Flash 1017",
-      "harness": "Claude Code / DeepSeek API",
-      "effort": "high",
-      "runs": 5,
-      "fixed": 36.4,
-      "wallMinutes": 54.5,
-      "costUsd": null,
-      "date": "2026-10-17"
-    },
-    {
-      "model": "DeepSeek V4.1 Flash 1017",
-      "harness": "Claude Code / DeepSeek API",
-      "effort": "low",
-      "runs": 5,
-      "fixed": 34.4,
-      "wallMinutes": 44.5,
-      "costUsd": null,
-      "date": "2026-10-17"
-    },
-    {
-      "model": "DeepSeek V4.1 Flash 1017",
-      "harness": "Claude Code / DeepSeek API",
-      "effort": "max",
-      "runs": 7,
-      "fixed": 39.1,
-      "wallMinutes": 57.7,
-      "costUsd": null,
-      "date": "2026-10-18"
-    },
-    {
-      "model": "DeepSeek V4.1 Flash 1017",
       "harness": "DeepSeek Harness / DeepSeek API",
       "effort": "high",
       "runs": 5,
@@ -111,66 +81,6 @@
       "runs": 7,
       "fixed": 42.7,
       "wallMinutes": 62.1,
-      "costUsd": null,
-      "date": "2026-10-18"
-    },
-    {
-      "model": "DeepSeek V4.1 Flash 1017",
-      "harness": "OpenCode / DeepSeek API",
-      "effort": "high",
-      "runs": 5,
-      "fixed": 36.6,
-      "wallMinutes": 41.6,
-      "costUsd": null,
-      "date": "2026-10-19"
-    },
-    {
-      "model": "DeepSeek V4.1 Flash 1017",
-      "harness": "OpenCode / DeepSeek API",
-      "effort": "low",
-      "runs": 5,
-      "fixed": 32.8,
-      "wallMinutes": 41.2,
-      "costUsd": null,
-      "date": "2026-10-19"
-    },
-    {
-      "model": "DeepSeek V4.1 Flash 1017",
-      "harness": "OpenCode / DeepSeek API",
-      "effort": "max",
-      "runs": 5,
-      "fixed": 37.6,
-      "wallMinutes": 55.7,
-      "costUsd": null,
-      "date": "2026-10-18"
-    },
-    {
-      "model": "DeepSeek V4.1 Flash 1017",
-      "harness": "Pi / DeepSeek API",
-      "effort": "high",
-      "runs": 5,
-      "fixed": 40.4,
-      "wallMinutes": 48.3,
-      "costUsd": null,
-      "date": "2026-10-18"
-    },
-    {
-      "model": "DeepSeek V4.1 Flash 1017",
-      "harness": "Pi / DeepSeek API",
-      "effort": "low",
-      "runs": 5,
-      "fixed": 33.8,
-      "wallMinutes": 33.2,
-      "costUsd": null,
-      "date": "2026-10-18"
-    },
-    {
-      "model": "DeepSeek V4.1 Flash 1017",
-      "harness": "Pi / DeepSeek API",
-      "effort": "max",
-      "runs": 5,
-      "fixed": 42.2,
-      "wallMinutes": 54.1,
       "costUsd": null,
       "date": "2026-10-18"
     },

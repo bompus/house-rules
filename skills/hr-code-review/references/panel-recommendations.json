@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "reviewed": "2026-11-21",
+  "reviewed": "2026-11-24",
   "entries": [
     {
       "id": "opus-5-5-bug-hunt",
@@ -33,7 +33,7 @@
         }
       ],
       "sourceUrl": "https://bughunt.productcompass.pm/data/benchmark.json",
-      "checked": "2026-11-21",
+      "checked": "2026-11-24",
       "samples": "3 runs per effort, current rows; each run covers both repositories",
       "metric": "planted bugs fixed, mean of 3, out of 105",
       "timeDefinition": "wall clock summed over both repositories; the board says its machines were shared with other work for some rows, so times compare loosely at best",
@@ -67,7 +67,7 @@
         }
       ],
       "sourceUrl": "https://bughunt.productcompass.pm/data/benchmark.json",
-      "checked": "2026-11-21",
+      "checked": "2026-11-24",
       "samples": "3 runs per effort, current rows; each run covers both repositories",
       "metric": "planted bugs fixed, mean of 3, out of 105",
       "timeDefinition": "wall clock summed over both repositories; the board says the machine was idle for these runs, so the times do not compare with the Opus entry's",
@@ -101,7 +101,7 @@
         }
       ],
       "sourceUrl": "https://bughunt.productcompass.pm/data/benchmark.json",
-      "checked": "2026-11-21",
+      "checked": "2026-11-24",
       "samples": "2 runs per effort, current rows; each run covers both repositories",
       "metric": "planted bugs fixed, mean of 2, out of 105",
       "timeDefinition": "active wall clock summed over both repositories; the board says its machine was shared with other work, and some runs were resumed in segments, so only active time is counted",
@@ -141,7 +141,7 @@
         }
       ],
       "sourceUrl": "https://bughunt.productcompass.pm/data/benchmark.json",
-      "checked": "2026-11-21",
+      "checked": "2026-11-24",
       "samples": "3 to 5 runs per effort, current rows; each run covers both repositories",
       "metric": "planted bugs fixed, mean of 3 to 5, out of 105",
       "timeDefinition": "wall clock summed over both repositories on cloud machines, not the laptop most other rows ran on, so it does not compare with them",
@@ -175,7 +175,7 @@
         }
       ],
       "sourceUrl": "https://bughunt.productcompass.pm/data/benchmark.json",
-      "checked": "2026-11-21",
+      "checked": "2026-11-24",
       "samples": "3 runs per effort, current rows; each run covers both repositories",
       "metric": "planted bugs fixed, mean of 3, out of 105",
       "timeDefinition": "wall clock summed over both repositories on a laptop, excluding the waits for the subscription's usage windows to reopen",
