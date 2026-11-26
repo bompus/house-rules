@@ -1365,6 +1365,44 @@ for (const [name, config, flags, code] of /** @type {[string, any, string[], num
     ["--no-web"],
     0,
   ],
+  [
+    "Devin's mcp_list_servers call (no kind, named in its metadata)",
+    {
+      toolUpdates: [
+        toolUpdate(undefined, "completed", {
+          title: "Listed MCP servers",
+          _meta: { "cognition.ai/inferenceToolName": "mcp_list_servers" },
+        }),
+      ],
+    },
+    ["--no-web"],
+    0,
+  ],
+  [
+    "a Devin web search (no kind, named in its metadata)",
+    {
+      toolUpdates: [
+        toolUpdate(undefined, "completed", {
+          title: "Searched",
+          _meta: { "cognition.ai/inferenceToolName": "web_search" },
+        }),
+      ],
+    },
+    ["--no-web"],
+    5,
+  ],
+  [
+    "a Devin call with no kind and an unlisted tool name",
+    {
+      toolUpdates: [
+        toolUpdate(undefined, "completed", {
+          _meta: { "cognition.ai/inferenceToolName": "webfetch" },
+        }),
+      ],
+    },
+    ["--no-web"],
+    5,
+  ],
   ["a Codex shell", { codex: true, toolUpdates: [toolUpdate("execute")] }, ["--no-web"], 0],
   [
     "a Codex file search through the shell",

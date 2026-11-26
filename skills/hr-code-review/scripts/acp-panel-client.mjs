@@ -606,11 +606,16 @@ const webSearches = new Set();
 // Claude reports Grep and Glob as "search" and its shell as "execute". Edits, deletes and moves are
 // caught by the workspace check instead.
 const OFFLINE = new Set(["read", "think", "edit", "delete", "move"]);
-// Devin reports its skill tool, which loads a local skill file, with no kind and names it only in its
-// metadata; it is a read. Every other call without a kind still counts.
+// Devin reports some local tools with no kind and names them only in their metadata (the update's
+// `_meta`): `skill` loads a local skill file and `mcp_list_servers` lists the configured MCP servers
+// (the client starts Devin with no MCP servers running, so it contacts nothing). Both are reads. A call without a
+// kind whose tool is not named here still counts, and so does one Devin names `web_search` or `webfetch`.
+const DEVIN_LOCAL_TOOLS = new Set(["skill", "mcp_list_servers"]);
 /** @param {Record<string, unknown> | undefined} meta */
-const devinKind = (meta) =>
-  meta?.["cognition.ai/inferenceToolName"] === "skill" ? "read" : undefined;
+const devinKind = (meta) => {
+  const name = meta?.["cognition.ai/inferenceToolName"];
+  return typeof name === "string" && DEVIN_LOCAL_TOOLS.has(name) ? "read" : undefined;
+};
 /**
  * @param {string | undefined} kind
  * @param {string} id
