@@ -4,6 +4,7 @@ Notable changes to house-rules. Versions follow [semantic versioning](https://se
 
 ## Unreleased
 
+- `hr-read-reddit`'s `thread` command reads a thread from the keyless Arctic Shift archive when Reddit's feed fails (or with `--archive`), prints each score as "at capture", and says on stderr that the source is the archive. The skill states the limits: a snapshot that can lag, up to 2000 comments per read, no uptime promise or request budget, and no archive search.
 - `hr-maintainability-review` adds two structural checks to `What to challenge`—competing implementations for one job (after confirming the copies share a contract) and circular dependencies or unowned shared mutable state (when a concrete reversal or ownership split removes them without a pass-through layer)—and notes mechanical guards in `Restructure` when a restructure removes a drifted copy or boundary violation. `hr-extract-shared-steps` adds a boundary-lock step after deleting old inline copies so callers add or note a cheap type or lint guard scoped to the extracted operation against re-drift when one exists.
 - `hr-benchmarking`'s `references/tools.md` labels the observer's 10 ms memory and 100 ms I/O full-PSI limits as provisional engineering budgets rather than calibrated interference thresholds, and names the flags that set them. The observer's behavior and defaults are unchanged.
 

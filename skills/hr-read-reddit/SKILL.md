@@ -1,6 +1,6 @@
 ---
 name: hr-read-reddit
-description: Read Reddit posts and comments from Reddit's public feeds (output can omit comments) and search subreddits, with links kept inline. Use whenever a task needs Reddit content or needs to collect links posted on Reddit; generic web fetch and reddit.com JSON are blocked for agents. Reddit announced that RSS support ends November 13, 2026, so feeds can fail; a partial search fallback remains.
+description: Read Reddit posts and comments from Reddit's public feeds (output can omit comments) and search subreddits, with links kept inline; a thread read falls back to a public archive when the feed fails. Use whenever a task needs Reddit content or needs to collect links posted on Reddit; generic web fetch and reddit.com JSON are blocked for agents. Reddit announced that RSS support ends November 13, 2026, so feeds can fail; search has only a partial web-search fallback.
 ---
 
 # Read Reddit
@@ -13,14 +13,14 @@ comments; do not present it as an exhaustive thread.
 
 [Reddit's announcement](https://www.reddit.com/r/modnews/comments/1wubgvt/continuing_our_infrastructure_updates_whats/)
 says RSS support ends November 13, 2026, so a feed request can fail. Try the feeds
-below, report any retrieval failure and use the partial search fallback below when
-one fails; do not assume a feed is supported. On that day search feeds answered
+below, report any retrieval failure and use the fallbacks below when one fails; do
+not assume a feed is supported. On that day search feeds answered
 HTTP 403 while a thread feed still answered.
 
 Read feeds with:
 
 ```bash
-bun scripts/reddit.ts thread <reddit or redd.it URL>... [--json]
+bun scripts/reddit.ts thread <reddit or redd.it URL>... [--archive] [--json]
 bun scripts/reddit.ts search <subreddit|all> "<query>" [--pages N] [--since 2026-06-01] [--sort new|relevance|top] [--json]
 ```
 
@@ -41,5 +41,22 @@ Limits to state when they matter:
 3. Search covers what Reddit's own search indexes. A deleted, removed or
    private thread fails with its HTTP status.
 
-If the feeds are blocked, fall back to the host's web search tool with
+When a thread feed fails, `thread` reads the thread from the keyless
+[Arctic Shift](https://arctic-shift.photon-reddit.com) archive instead and says so
+on stderr; `--archive` goes there directly. Its limits:
+
+1. The copy is a snapshot. Scores and comment counts are as of capture (a post
+   can show score 0 and the comment total from its first minute), and the output
+   marks each score "at capture". New posts of a busy subreddit appeared within
+   about two minutes; the newest comments of a live thread may lag, so do not
+   call the result current.
+2. One read returns the post and up to 2000 comments, with replies after their
+   parent and no nesting marks. An archive thread with more says nothing about
+   the rest.
+3. The archive promises no uptime and states no request budget, and the script
+   handles one 429 by waiting. In a test, 142 reads within about three minutes
+   all succeeded; `--archive` has no search, so search failures fall back below.
+4. A thread the archive never captured fails as "not in the archive".
+
+If the feeds are blocked and the thread is not in the archive, fall back to the host's web search tool with
 `site:reddit.com`. Say that the results are partial snippets.

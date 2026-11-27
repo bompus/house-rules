@@ -1,9 +1,14 @@
 #!/usr/bin/env bun
 // Read Reddit threads and subreddit searches through Reddit's public Atom (RSS)
 // feeds: no key, full post and comment bodies, links kept inline.
+// A thread read falls back to the Arctic Shift archive when the feed fails.
 import { parseArgs as parseCli } from "node:util";
 
 const ORIGIN = "https://www.reddit.com";
+// Keyless public archive of Reddit; the thread fallback when the feed fails.
+const ARCHIVE = "https://arctic-shift.photon-reddit.com/api";
+// One archive request returns at most this many comments of a thread.
+const ARCHIVE_COMMENTS = 2000;
 // Reddit blocks generic agents; its API rules ask for a descriptive user agent.
 const HEADERS = { "user-agent": "linux:agent-read-reddit:v1 (read-only research)" };
 const HOSTS = /^(?:www\.|old\.|new\.|np\.|m\.)?reddit\.com$/;
@@ -16,11 +21,14 @@ export type Entry = {
   title: string;
   url: string;
   text: string;
+  /** Archive reads only: the vote score when the archive captured the item, not now. */
+  score?: number;
 };
 export type Options = {
   command: string | undefined;
   args: string[];
   json: boolean;
+  archive: boolean;
   pages: number;
   since: number | null;
   sort: string;
@@ -104,6 +112,69 @@ export function parseFeed(xml: string): Entry[] {
   });
 }
 
+type ArchiveItem = {
+  id?: string;
+  author?: string;
+  created_utc?: number;
+  title?: string;
+  selftext?: string;
+  body?: string;
+  permalink?: string;
+  url?: string;
+  score?: number;
+  replies?: { data?: { children?: { data?: ArchiveItem }[] } } | "";
+};
+
+/** Markdown as plain text with a link as `text (url)`, matching the feed output. */
+export function markdownToText(md: string): string {
+  return decodeEntities(md)
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, (_, words: string, url: string) =>
+      words === url ? url : `${words} (${url})`,
+    )
+    .trim();
+}
+
+/** Archive post then its comments in thread order (replies follow their parent), as feed-shaped entries. */
+export function archiveEntries(post: ArchiveItem, tree: { data?: ArchiveItem }[]): Entry[] {
+  const when = (item: ArchiveItem) =>
+    item.created_utc ? new Date(item.created_utc * 1000).toISOString() : "";
+  const link = (item: ArchiveItem) => (item.permalink ? `${ORIGIN}${item.permalink}` : "");
+  const out: Entry[] = [
+    {
+      id: `t3_${post.id}`,
+      kind: "post",
+      author: post.author ?? "[deleted]",
+      published: when(post),
+      title: post.title ?? "",
+      url: link(post),
+      text: markdownToText(post.selftext ?? post.url ?? ""),
+      score: post.score,
+    },
+  ];
+  const walk = (nodes: { data?: ArchiveItem }[]) => {
+    for (const { data } of nodes) {
+      if (!data) {
+        continue;
+      }
+      out.push({
+        id: `t1_${data.id}`,
+        kind: "comment",
+        author: data.author ?? "[deleted]",
+        published: when(data),
+        title: "",
+        url: link(data),
+        text: markdownToText(data.body ?? ""),
+        score: data.score,
+      });
+      walk(
+        data.replies && typeof data.replies === "object" ? (data.replies.data?.children ?? []) : [],
+      );
+    }
+  };
+  walk(tree);
+  return out;
+}
+
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 let waitUntil = 0;
 
@@ -132,6 +203,37 @@ async function getFeed(url: string): Promise<Entry[]> {
   throw new Error(`HTTP 429 three times for ${url}`);
 }
 
+/** GET archive JSON, waiting out one 429 for the `x-ratelimit-reset` seconds (at most 60). */
+async function getArchive<T>(path: string): Promise<T> {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const res = await fetch(`${ARCHIVE}${path}`, { headers: HEADERS });
+    if (res.status === 429 && attempt === 0) {
+      const reset = Math.min(Number(res.headers.get("x-ratelimit-reset")) || 30, 60);
+      console.error(`archive rate limit: waiting ${reset + 1} s`);
+      await sleep((reset + 1) * 1000);
+      continue;
+    }
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status} for ${ARCHIVE}${path}`);
+    }
+    return (await res.json()) as T;
+  }
+  throw new Error(`HTTP 429 twice for ${ARCHIVE}${path}`);
+}
+
+/** A thread from the archive: the post and up to ARCHIVE_COMMENTS comments; throws when the archive lacks it. */
+async function getArchiveThread(id: string): Promise<Entry[]> {
+  const posts = await getArchive<{ data?: ArchiveItem[] }>(`/posts/ids?ids=${id}`);
+  const post = posts.data?.[0];
+  if (!post) {
+    throw new Error(`thread ${id} is not in the archive`);
+  }
+  const tree = await getArchive<{ data?: { data?: ArchiveItem }[] }>(
+    `/comments/tree?link_id=${id}&limit=${ARCHIVE_COMMENTS}`,
+  );
+  return archiveEntries(post, tree.data ?? []);
+}
+
 const SORTS = new Set(["new", "relevance", "top"]);
 
 export function parseArgs(argv: string[]): Options | { error: string } {
@@ -142,6 +244,7 @@ export function parseArgs(argv: string[]): Options | { error: string } {
       allowPositionals: true,
       options: {
         json: { type: "boolean" },
+        archive: { type: "boolean" },
         pages: { type: "string" },
         since: { type: "string" },
         sort: { type: "string" },
@@ -164,7 +267,18 @@ export function parseArgs(argv: string[]): Options | { error: string } {
   if (!SORTS.has(sort)) {
     return { error: `bad --sort value ${sort}` };
   }
-  const opts: Options = { command, args, json: values.json === true, pages, since, sort };
+  const opts: Options = {
+    command,
+    args,
+    json: values.json === true,
+    archive: values.archive === true,
+    pages,
+    since,
+    sort,
+  };
+  if (opts.archive && command !== "thread") {
+    return { error: "--archive applies to the thread command only" };
+  }
   if (command === "thread" && args.length > 0) {
     return opts;
   }
@@ -180,14 +294,15 @@ function print(entry: Entry, json: boolean): void {
     return;
   }
   const head = entry.kind === "post" ? `### ${entry.title}\n${entry.url}\n` : "#### comment ";
-  console.log(`${head}u/${entry.author} · ${entry.published}\n\n${entry.text}\n`);
+  const score = entry.score === undefined ? "" : ` · score ${entry.score} at capture`;
+  console.log(`${head}u/${entry.author} · ${entry.published}${score}\n\n${entry.text}\n`);
 }
 
 async function main(argv: string[]): Promise<number> {
   const opts = parseArgs(argv);
   if ("error" in opts) {
     console.error(opts.error);
-    console.error("usage: reddit.ts thread <url>... [--json]");
+    console.error("usage: reddit.ts thread <url>... [--archive] [--json]");
     console.error(
       "       reddit.ts search <subreddit|all> <query> [--pages N] [--since ISO-date] [--sort new|relevance|top] [--json]",
     );
@@ -203,15 +318,33 @@ async function main(argv: string[]): Promise<number> {
         continue;
       }
       const path = ref.sub ? `/r/${ref.sub}/comments/${ref.id}` : `/comments/${ref.id}`;
-      try {
-        if (!opts.json) {
-          console.log(`## ${input}`);
+      if (!opts.json) {
+        console.log(`## ${input}`);
+      }
+      let entries: Entry[] | undefined;
+      let feedError = "";
+      if (!opts.archive) {
+        try {
+          entries = await getFeed(`${ORIGIN}${path}/.rss?limit=500`);
+        } catch (error) {
+          feedError = `${error instanceof Error ? error.message : String(error)}; `;
         }
-        for (const entry of await getFeed(`${ORIGIN}${path}/.rss?limit=500`)) {
+      }
+      try {
+        if (!entries) {
+          // The feed failed (or --archive): read the archive and say so, since its copy can lag.
+          entries = await getArchiveThread(ref.id);
+          console.error(
+            `${feedError}source: Arctic Shift archive (scores and counts are as of capture, comments may lag)`,
+          );
+        }
+        for (const entry of entries) {
           print(entry, opts.json);
         }
       } catch (error) {
-        console.log(`fetch failed: ${error instanceof Error ? error.message : String(error)}\n`);
+        console.log(
+          `fetch failed: ${feedError}${error instanceof Error ? error.message : String(error)}\n`,
+        );
         failed++;
       }
     }

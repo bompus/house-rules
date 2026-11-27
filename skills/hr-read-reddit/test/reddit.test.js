@@ -1,5 +1,12 @@
 import { describe, expect, test } from "bun:test";
-import { htmlToText, parseArgs, parseFeed, parseThreadUrl } from "../scripts/reddit.ts";
+import {
+  archiveEntries,
+  htmlToText,
+  markdownToText,
+  parseArgs,
+  parseFeed,
+  parseThreadUrl,
+} from "../scripts/reddit.ts";
 
 test("thread URLs on reddit.com subdomains and redd.it parse; other URLs do not", () => {
   expect(
@@ -57,6 +64,63 @@ test("feed entries split into posts and comments with decoded text", () => {
   ]);
 });
 
+test("archive Markdown links become `text (url)`, matching the feed output", () => {
+  expect(
+    markdownToText(
+      "see [the post](https://example.org/a?x=1&amp;y=2) and [https://b.test](https://b.test)",
+    ),
+  ).toBe("see the post (https://example.org/a?x=1&y=2) and https://b.test");
+});
+
+test("archive post and nested comments flatten in thread order with capture scores", () => {
+  const child = {
+    data: {
+      id: "c2",
+      author: "b",
+      created_utc: 1790000100,
+      body: "reply",
+      score: 3,
+      permalink: "/r/f/comments/p1/x/c2/",
+    },
+  };
+  const entries = archiveEntries(
+    {
+      id: "p1",
+      author: "a",
+      created_utc: 1790000000,
+      title: "T",
+      selftext: "body",
+      permalink: "/r/f/comments/p1/x/",
+      score: 5,
+    },
+    [
+      {
+        data: {
+          id: "c1",
+          author: "[deleted]",
+          created_utc: 1790000050,
+          body: "[removed]",
+          score: 1,
+          replies: { data: { children: [child] } },
+        },
+      },
+      { data: { id: "c3", created_utc: 1790000200, body: "later", score: 2, replies: "" } },
+    ],
+  );
+  expect(entries.map((e) => [e.id, e.kind, e.score])).toEqual([
+    ["t3_p1", "post", 5],
+    ["t1_c1", "comment", 1],
+    ["t1_c2", "comment", 3],
+    ["t1_c3", "comment", 2],
+  ]);
+  expect(entries[0]).toMatchObject({
+    url: "https://www.reddit.com/r/f/comments/p1/x/",
+    published: "2026-09-21T14:13:20.000Z",
+    text: "body",
+  });
+  expect(entries[3]?.author).toBe("[deleted]");
+});
+
 describe("reddit parseArgs", () => {
   test("thread takes URLs; search takes a subreddit and a query", () => {
     expect(parseArgs(["thread", "u1", "u2", "--json"])).toMatchObject({
@@ -64,6 +128,7 @@ describe("reddit parseArgs", () => {
       args: ["u1", "u2"],
       json: true,
     });
+    expect(parseArgs(["thread", "u", "--archive"])).toMatchObject({ archive: true });
     expect(
       parseArgs(["search", "selfhosted", "backup tools", "--pages", "3", "--since", "2026-06-01"]),
     ).toMatchObject({
@@ -86,6 +151,7 @@ describe("reddit parseArgs", () => {
     expect(errorOf(["search", "a", "q", "--since", "soon"])).toContain("--since");
     expect(errorOf(["search", "a", "q", "--sort", "hot"])).toContain("--sort");
     expect(errorOf(["thread", "u", "--media"])).toContain("--media");
+    expect(errorOf(["search", "a", "q", "--archive"])).toContain("--archive");
     expect(errorOf(["search", "a"])).toContain("search");
     expect(errorOf([])).toBe("missing command");
   });
