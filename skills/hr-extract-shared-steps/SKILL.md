@@ -115,7 +115,15 @@ decides what a decline means for its own records.
    caller) or a bug (fix it, and say so in the change description).
 4. Delete the old inline copies. Done when a search for the old request
    building or provider call finds only the shared function.
-5. Run the project's full required checks before landing.
+5. Lock the boundary when a cheap check exists. If a type boundary, lint rule
+   scoped to the extracted operation (such as disallowing direct calls to the
+   raw charge method outside the shared module while still allowing unrelated
+   operations on the same client) or an existing check script can stop future
+   callers from re-introducing inline copies, add it in the same change (done
+   when the check rejects an inline copy without blocking unrelated calls) or
+   note the unchecked boundary in the report. Skip new enforcement machinery
+   when the shared function and its tests are enough.
+6. Run the project's full required checks before landing.
 
 ## Check the result
 
@@ -131,4 +139,5 @@ Revisit the extraction when any of these appear, now or in later changes:
   result type is missing a case.
 
 Report what was extracted, which callers moved, any behavior difference you
-found between the copies and how you resolved it, and the checks you ran.
+found between the copies and how you resolved it, any boundary check you added
+or left unchecked, and the checks you ran.

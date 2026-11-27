@@ -91,6 +91,17 @@ not reviewed. Report gaps rather than claiming a complete audit from a sample.
 - **Logic in the wrong home.** Code that reaches into another module's
   internals, belongs beside the data it reads, or repeats a helper that already
   exists.
+- **Competing implementations for one job.** Two or more helpers, clients,
+  parsers, configs or patterns performing the same semantic operation across the
+  codebase, especially when their defaults or edge-case handling have drifted
+  apart. Inspect every copy and its callers to confirm they share one contract
+  before proposing consolidation; keep separate implementations that encode
+  distinct product rules.
+- **Circular dependencies and unowned shared mutable state.** Modules that
+  import one another in a cycle, or mutable state written from several modules
+  with no single owner. Report one only when you can name the concrete
+  dependency reversal or ownership boundary that removes it without adding a
+  pass-through layer.
 - **Forced ordering.** Independent steps chained one after another, so a slow
   or failing step blocks unrelated ones.
 - **Half-applied updates.** A multi-step write that leaves state inconsistent
@@ -154,7 +165,9 @@ For each finding, give in order:
 2. **Problem**: what makes this shape costly to read or change, in one or two
    sentences.
 3. **Restructure**: the concrete change, with a short sketch when prose is
-   ambiguous.
+   ambiguous. When the restructure removes a drifted copy or a cross-module
+   boundary violation, name any type, lint or import rule, or check that can
+   stop it from returning.
 4. **What goes away**: the branches, types, files or lines removed.
 5. **Behavior check**: why behavior is unchanged, and which tests would show
    it.
