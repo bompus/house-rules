@@ -134,6 +134,13 @@ export function markdownToText(md: string): string {
     .trim();
 }
 
+/** A post's body, then the link or media URL it submitted when that is not the thread itself. */
+function postText(post: ArchiveItem): string {
+  const target = decodeEntities(post.url ?? "").replace(/^\//, `${ORIGIN}/`);
+  const external = target && !target.startsWith(`${ORIGIN}/r/`) ? target : "";
+  return [markdownToText(post.selftext ?? ""), external].filter(Boolean).join("\n\n");
+}
+
 /** Archive post then its comments in thread order (replies follow their parent), as feed-shaped entries. */
 export function archiveEntries(post: ArchiveItem, tree: { data?: ArchiveItem }[]): Entry[] {
   const when = (item: ArchiveItem) =>
@@ -145,9 +152,9 @@ export function archiveEntries(post: ArchiveItem, tree: { data?: ArchiveItem }[]
       kind: "post",
       author: post.author ?? "[deleted]",
       published: when(post),
-      title: post.title ?? "",
+      title: decodeEntities(post.title ?? ""),
       url: link(post),
-      text: markdownToText(post.selftext ?? post.url ?? ""),
+      text: postText(post),
       score: post.score,
     },
   ];
@@ -232,6 +239,15 @@ async function getArchiveThread(id: string): Promise<Entry[]> {
     `/comments/tree?link_id=${id}&limit=${ARCHIVE_COMMENTS}`,
   );
   return archiveEntries(post, tree.data ?? []);
+}
+
+/** A thread feed with at least one entry; an empty or non-feed 200 answer is a failed read. */
+export async function getThreadFeed(url: string): Promise<Entry[]> {
+  const entries = await getFeed(url);
+  if (entries.length === 0) {
+    throw new Error(`feed had no entries for ${url}`);
+  }
+  return entries;
 }
 
 const SORTS = new Set(["new", "relevance", "top"]);
@@ -325,7 +341,7 @@ async function main(argv: string[]): Promise<number> {
       let feedError = "";
       if (!opts.archive) {
         try {
-          entries = await getFeed(`${ORIGIN}${path}/.rss?limit=500`);
+          entries = await getThreadFeed(`${ORIGIN}${path}/.rss?limit=500`);
         } catch (error) {
           feedError = `${error instanceof Error ? error.message : String(error)}; `;
         }

@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
   archiveEntries,
+  getThreadFeed,
   htmlToText,
   markdownToText,
   parseArgs,
@@ -119,6 +120,54 @@ test("archive post and nested comments flatten in thread order with capture scor
     text: "body",
   });
   expect(entries[3]?.author).toBe("[deleted]");
+});
+
+test("archive posts keep the submitted link and decode the title", () => {
+  const first = (/** @type {object} */ post) => archiveEntries(post, [])[0];
+  expect(
+    first({
+      id: "p1",
+      title: "Q&amp;A &lt;2026&gt;",
+      selftext: "",
+      url: "https://example.org/a?x=1&amp;y=2",
+      permalink: "/r/f/comments/p1/x/",
+    }),
+  ).toMatchObject({ title: "Q&A <2026>", text: "https://example.org/a?x=1&y=2" });
+  expect(
+    first({
+      id: "p2",
+      title: "t",
+      selftext: "caption",
+      url: "https://i.redd.it/pic.jpg",
+      permalink: "/r/f/comments/p2/x/",
+    })?.text,
+  ).toBe("caption\n\nhttps://i.redd.it/pic.jpg");
+  expect(
+    first({
+      id: "p3",
+      title: "t",
+      selftext: "body",
+      url: "https://www.reddit.com/r/f/comments/p3/x/",
+      permalink: "/r/f/comments/p3/x/",
+    })?.text,
+  ).toBe("body");
+});
+
+test("a thread feed answer with no entries is a failed read", async () => {
+  const real = globalThis.fetch;
+  globalThis.fetch = Object.assign(
+    async () => new Response("<html>blocked</html>", { status: 200 }),
+    { preconnect: real.preconnect },
+  );
+  try {
+    const error = await getThreadFeed("https://www.reddit.com/r/f/comments/p1/.rss").catch(
+      (/** @type {unknown} */ e) => e,
+    );
+    expect(error).toBeInstanceOf(Error);
+    expect(String(error)).toContain("no entries");
+  } finally {
+    globalThis.fetch = real;
+  }
 });
 
 describe("reddit parseArgs", () => {
