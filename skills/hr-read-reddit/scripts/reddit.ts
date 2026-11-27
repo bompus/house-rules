@@ -137,7 +137,8 @@ export function markdownToText(md: string): string {
 /** A post's body, then the link or media URL it submitted when that is not the thread itself. */
 function postText(post: ArchiveItem): string {
   const target = decodeEntities(post.url ?? "").replace(/^\//, `${ORIGIN}/`);
-  const external = target && !target.startsWith(`${ORIGIN}/r/`) ? target : "";
+  const own = `${ORIGIN}${(post.permalink ?? "").replace(/\/+$/, "")}`;
+  const external = target && target.replace(/\/+$/, "") !== own ? target : "";
   return [markdownToText(post.selftext ?? ""), external].filter(Boolean).join("\n\n");
 }
 

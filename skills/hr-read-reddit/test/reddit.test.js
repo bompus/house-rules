@@ -144,6 +144,24 @@ test("archive posts keep the submitted link and decode the title", () => {
   ).toBe("caption\n\nhttps://i.redd.it/pic.jpg");
   expect(
     first({
+      id: "p4",
+      title: "t",
+      selftext: "",
+      url: "/r/other/comments/p0/orig/",
+      permalink: "/r/f/comments/p4/x/",
+    })?.text,
+  ).toBe("https://www.reddit.com/r/other/comments/p0/orig/");
+  expect(
+    first({
+      id: "p5",
+      title: "t",
+      selftext: "",
+      url: "https://www.reddit.com/r/other/comments/p0/orig/c1/",
+      permalink: "/r/f/comments/p5/x/",
+    })?.text,
+  ).toBe("https://www.reddit.com/r/other/comments/p0/orig/c1/");
+  expect(
+    first({
       id: "p3",
       title: "t",
       selftext: "body",
