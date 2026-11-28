@@ -803,8 +803,12 @@ test("damage to an own entry's derived fields never drops its facts", async () =
     const canonical = readFileSync(file, "utf8");
     // The discriminator is changed or removed: the facts are intact, so a plain run restores the entry.
     for (const edit of [
-      (/** @type {any} */ e) => void (e.kind = "board"),
-      (/** @type {any} */ e) => void delete e.kind,
+      (/** @type {any} */ e) => {
+        e.kind = "board";
+      },
+      (/** @type {any} */ e) => {
+        delete e.kind;
+      },
     ]) {
       const catalog = JSON.parse(canonical);
       edit(catalog.entries[1]);
