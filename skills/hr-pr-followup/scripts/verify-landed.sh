@@ -89,9 +89,12 @@ git fetch "$REMOTE" "+refs/heads/$DEFAULT:refs/remotes/$REMOTE/$DEFAULT" >/dev/n
   }
 
 WTLS="$(git worktree list --porcelain)"
+# awk reads the whole list: stopping at the first match would close the pipe on printf, which then dies of
+# SIGPIPE (status 141 under pipefail) whenever the list is longer than the pipe holds, as a repository with
+# hundreds of worktrees has, and `set -e` would end the check before it printed anything.
 HOLDER="$(printf '%s\n' "$WTLS" | awk -v want="branch refs/heads/$DEFAULT" '
   /^worktree / { path = substr($0, 10) }
-  $0 == want { print path; exit }
+  $0 == want && !found { print path; found = 1 }
 ')"
 HERE="$(git rev-parse --show-toplevel)"
 
@@ -316,7 +319,7 @@ if git show-ref --verify --quiet "refs/heads/$DEFAULT"; then
       if REF_ERR="$(git update-ref -m "verify-landed: fast-forward $DEFAULT" "refs/heads/$DEFAULT" "$UPSTREAM" "$LOCAL" 2>&1)"; then
         echo "local $DEFAULT: fast-forwarded $BEHIND commit(s) to $UPSTREAM (not checked out anywhere)"
       else
-        skip "refs/heads/$DEFAULT" "fast-forward refused: $(printf '%s' "$REF_ERR" | head -n 1)"
+        skip "refs/heads/$DEFAULT" "fast-forward refused: ${REF_ERR%%$'\n'*}"
       fi
     else
       # The state is read right before the merge; Git refuses it if edits would be overwritten.
@@ -330,10 +333,10 @@ if git show-ref --verify --quiet "refs/heads/$DEFAULT"; then
         else
           echo "local $DEFAULT: fast-forwarded $BEHIND commit(s) to $UPSTREAM in $HOLDER"
         fi
-      elif printf '%s' "$MERGE_ERR" | grep -q "would be overwritten"; then
+      elif [[ "$MERGE_ERR" == *"would be overwritten"* ]]; then
         skip "$HOLDER" "fast-forward refused: local edits would be overwritten"
       else
-        skip "$HOLDER" "fast-forward refused: $(printf '%s' "$MERGE_ERR" | head -n 1)"
+        skip "$HOLDER" "fast-forward refused: ${MERGE_ERR%%$'\n'*}"
       fi
     fi
   else

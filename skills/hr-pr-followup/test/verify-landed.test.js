@@ -112,6 +112,34 @@ test("merged commit with no corpse passes", () => {
   expect(r.out).toContain("no leftover branch:");
 });
 
+test("a repository with hundreds of worktrees never ends the check with SIGPIPE (exit 141)", () => {
+  const { work } = fixture();
+  sh(work, "git", "checkout", "-b", "feature");
+  sh(work, "git", "commit", "--allow-empty", "-m", "work");
+  const sha = sh(work, "git", "rev-parse", "HEAD");
+  sh(work, "git", "checkout", "main");
+  sh(work, "git", "merge", "--no-ff", "feature", "-m", "merge");
+  sh(work, "git", "push", "origin", "main");
+  // Linked-worktree records written directly, so the list is longer than a pipe holds (64 KiB) without 400 checkouts.
+  const admin = join(work, ".git", "worktrees");
+  const head = sh(work, "git", "rev-parse", "HEAD");
+  for (let i = 0; i < 450; i++) {
+    const name = `task-${String(i).padStart(4, "0")}`;
+    const path = join(admin, name);
+    mkdirSync(path, { recursive: true });
+    writeFileSync(join(path, "gitdir"), join(dir(), "x".repeat(150), name, ".git") + "\n");
+    writeFileSync(join(path, "HEAD"), head + "\n");
+    writeFileSync(join(path, "commondir"), "../..\n");
+  }
+  expect(sh(work, "git", "worktree", "list", "--porcelain").length).toBeGreaterThan(70_000);
+  // The failure was a race between printf and awk, so one run can pass by luck.
+  for (let i = 0; i < 12; i++) {
+    const r = runScript(work, "--commit", sha);
+    expect(r.code).toBe(0);
+    expect(r.out).toContain("local main: current");
+  }
+});
+
 test("unmerged commit fails containment", () => {
   const { work } = fixture();
   sh(work, "git", "checkout", "-b", "feature");
