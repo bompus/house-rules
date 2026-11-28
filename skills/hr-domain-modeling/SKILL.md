@@ -4,7 +4,7 @@ description: "Build and sharpen a project's domain model. Use when resolving or 
 license: MIT
 metadata:
   upstream: https://github.com/mattpocock/skills
-  upstream_ref: 24fe0ef7737efae15c87225755e9f6f5965e4888
+  upstream_ref: bbadaa631c37af594e5a05c9cefacd9956136b18
   upstream_path: skills/engineering/domain-modeling/
   local_patches: "Description limits terminology triggers to resolving or changing the model"
   house_rules_patches: "Portable provenance; hr- skill names; reuse a project's existing glossary and decision-record locations"

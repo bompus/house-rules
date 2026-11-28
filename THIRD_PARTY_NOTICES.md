@@ -108,7 +108,7 @@ Source: https://github.com/mattpocock/skills (compared at revision `d81f3a1`)
 - `skills/hr-codebase-design/`: adapted from `skills/engineering/codebase-design/`
   at revision `a496f5513d4a4cf889bc48e189e579f4b0bdf6aa`.
 - `skills/hr-domain-modeling/`: adapted from `skills/engineering/domain-modeling/`
-  at revision `24fe0ef7737efae15c87225755e9f6f5965e4888`.
+  at revision `bbadaa631c37af594e5a05c9cefacd9956136b18`.
 - `skills/hr-grilling/`: adapted from `skills/productivity/grilling/` at revision
   `a496f5513d4a4cf889bc48e189e579f4b0bdf6aa`.
 

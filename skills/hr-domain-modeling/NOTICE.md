@@ -4,9 +4,9 @@ This notice accompanies the hr-domain-modeling bundle when copied on its own.
 
 ## mattpocock/skills
 
-Source: https://github.com/mattpocock/skills/tree/24fe0ef7737efae15c87225755e9f6f5965e4888/skills/engineering/domain-modeling
+Source: https://github.com/mattpocock/skills/tree/bbadaa631c37af594e5a05c9cefacd9956136b18/skills/engineering/domain-modeling
 
-Adapted from `skills/engineering/domain-modeling/` at revision `24fe0ef7737efae15c87225755e9f6f5965e4888`.
+Adapted from `skills/engineering/domain-modeling/` at revision `bbadaa631c37af594e5a05c9cefacd9956136b18`.
 
 Copyright (c) 2026 Matt Pocock
 
